@@ -2,7 +2,7 @@
 - [When is this step relevant?](#when-is-this-step-relevant)
 - [What does the code do and what’s the output?](#what-does-the-code-do-and-whats-the-output)
 - [Code to copy linear measurements](#code-to-copy-linear-measurements)
-- [Code to copy angle measurements](#code-to-copy-angle-measurements
+- [Code to copy angle measurements](#code-to-copy-angle-measurements)
 
 ### When is this step relevant?
 This will be important when all your measurements are done in the environment and you need to collate them. 
