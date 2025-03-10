@@ -72,12 +72,12 @@ newPlaneNode.SetOrigin(point1)
 
 # Set the normal of the new plane
 newPlaneNode.SetNormal(planeNormal)
-
 ```
 
 ![NIB lmrks allocated](https://github.com/user-attachments/assets/584631f2-598e-4cdf-8f09-ef4f7bc798ff)
 View after only the first 3 landmarks are allocated correctly
 ![INB as is](https://github.com/user-attachments/assets/50f064e9-2267-4135-90b3-3518bf718fe9)
+
 The generated INB plane view
 
 ![enlraged plane](https://github.com/user-attachments/assets/77feb12a-cc3b-438d-9f53-5a4193aed721)
