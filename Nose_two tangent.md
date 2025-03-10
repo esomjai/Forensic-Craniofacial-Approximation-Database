@@ -7,13 +7,13 @@ The method followed here is the one described by Gatliff (1984), as the interpre
 
 The summarised theory is that the tip of the soft nose (pronasale) can be predicted by where two tangents meet: (a) the tangent running between the nasion to rhinion OR the line following the bony nose shape in profile view and (b) the tangent aligning with the anterior 1/3rd of the nasal spine OR following its direction as an arrow.
 
-**To achieve this, we will 
+To achieve this, we will 
 
 1. [Establish an INB plane (Rynn et al. 2012) as the cut plane to establish a standard profile view](#inb-plane)
 2. [Make a profile view](#profile-view-model) along the INB plane by cutting the Bone model
 3. [Draw or code the two tangents](#establishing-the-tangents) and programmatically ensure they are aligned in the INB plane
 4. [Elongate the aligned tangents](#elongating-the-tangents) to find their meeting point - the soft nose tip _pronasale_
-5. Optionally, connect the predicted nose tip and the actual nose tip for [error rate](#error-rate) (you can also compare the coordinates instead)**
+5. Optionally, connect the predicted nose tip and the actual nose tip for [error rate](#error-rate) (you can also compare the coordinates instead)
 
 Landmarks in this guide: 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
@@ -32,8 +32,8 @@ Illustration of the method:
 > [!WARNING]
 > Before you proceed, please make sure you completed the following steps: 
 
-- [ ] The scan has to be re-aligned in the FHP
-- [ ] You should have a Bone and Skin model via segmentation (explained later)
+[ ] The scan has to be re-aligned in the FHP
+[ ] You should have a Bone and Skin model via segmentation (explained later)
 
 
 
@@ -99,11 +99,15 @@ To open the appropriate module, click on the magnifying glass icon next to the m
 ![module](https://github.com/user-attachments/assets/08aeb820-240a-4cfd-a9c7-01d017c09c36)
 
 And start typing “dynamic modeller” in the search bar.
+
 ![module2](https://github.com/user-attachments/assets/c9dfd153-3c8b-4e99-82a2-8ed83320aec7)
+
 Click “Switch to Module” to open. 
 
 You’ll see this menu on the left side of the screen: 
+
 ![dynamic-modeller](https://github.com/user-attachments/assets/035ea262-8235-4665-8c4d-c3df49945944)
+
 The "INB” is established in the environment. To cut the model along this plane (technically cutting it in 2 and choosing which side to keep), choose the first button (Plane Cut).
 
 > [!IMPORTANT]
@@ -117,11 +121,11 @@ Make sure you create your cut model with the settings on the screenshot to cut t
 [ ] - You MUST chose the **Create new model as...** from the drop-down menu and type in the custom name with the **bone** prefix - otherwise you'll override your existing models
 [ ] - DO NOT FORGET TO CLICK APPLY
 
-![image](https://github.com/user-attachments/assets/e4fc0f15-acfe-41d4-854c-354188e4f7b0)
+    ![image](https://github.com/user-attachments/assets/e4fc0f15-acfe-41d4-854c-354188e4f7b0)
 
 [ ] - Check if this was executed by finding your 2 new models under the "Models" module
 With these settings, the Model list will be the following: 
-![image](https://github.com/user-attachments/assets/2e2fcaab-2716-49e4-a3e7-c34bc4df30bd)
+    ![image](https://github.com/user-attachments/assets/2e2fcaab-2716-49e4-a3e7-c34bc4df30bd)
 
 
 And you should have the following individual views (excluding/hiding the original full models for demonstration purposes):
@@ -314,7 +318,7 @@ The output will look like this:
 
 
 
-###Bibliography: 
+### Bibliography: 
 
 1. [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
 2. Gerasimov, M. (1955). "Vosstanovlenie lica po cerepu." Akademii Nauk SSSR.
