@@ -32,8 +32,8 @@ Illustration of the method:
 > [!WARNING]
 > Before you proceed, please make sure you completed the following steps: 
 
-[ ] The scan has to be re-aligned in the FHP
-[ ] You should have a Bone and Skin model via segmentation (explained later)
+- [ ] The scan has to be re-aligned in the FHP
+- [ ] You should have a Bone and Skin model via segmentation (explained later)
 
 
 
@@ -99,15 +99,11 @@ To open the appropriate module, click on the magnifying glass icon next to the m
 ![module](https://github.com/user-attachments/assets/08aeb820-240a-4cfd-a9c7-01d017c09c36)
 
 And start typing “dynamic modeller” in the search bar.
-
 ![module2](https://github.com/user-attachments/assets/c9dfd153-3c8b-4e99-82a2-8ed83320aec7)
-
 Click “Switch to Module” to open. 
 
 You’ll see this menu on the left side of the screen: 
-
 ![dynamic-modeller](https://github.com/user-attachments/assets/035ea262-8235-4665-8c4d-c3df49945944)
-
 The "INB” is established in the environment. To cut the model along this plane (technically cutting it in 2 and choosing which side to keep), choose the first button (Plane Cut).
 
 > [!IMPORTANT]
@@ -115,17 +111,18 @@ The "INB” is established in the environment. To cut the model along this plane
 
 Make sure you create your cut model with the settings on the screenshot to cut the Bone model at the INB Plane: 
 
-[ ] - Make sure the source volume is the full model of the Bone
-[ ] - Choose INB as the plane node
-[ ] - Operation type should be **Intersection**
-[ ] - You MUST chose the **Create new model as...** from the drop-down menu and type in the custom name with the **bone** prefix - otherwise you'll override your existing models
-[ ] - DO NOT FORGET TO CLICK APPLY
+- [ ] Make sure the source volume is the full model of the Bone
+- [ ] Choose INB as the plane node
+- [ ]  Operation type should be **Intersection**
+- [ ]  You MUST chose the **Create new model as...** from the drop-down menu and type in the custom name with the **bone** prefix - otherwise you'll override your existing models
+- [ ] DO NOT FORGET TO CLICK APPLY
 
-    ![image](https://github.com/user-attachments/assets/e4fc0f15-acfe-41d4-854c-354188e4f7b0)
+![image](https://github.com/user-attachments/assets/e4fc0f15-acfe-41d4-854c-354188e4f7b0)
 
-[ ] - Check if this was executed by finding your 2 new models under the "Models" module
+- [ ] Check if this was executed by finding your 2 new models under the "Models" module
+
 With these settings, the Model list will be the following: 
-    ![image](https://github.com/user-attachments/assets/2e2fcaab-2716-49e4-a3e7-c34bc4df30bd)
+![image](https://github.com/user-attachments/assets/2e2fcaab-2716-49e4-a3e7-c34bc4df30bd)
 
 
 And you should have the following individual views (excluding/hiding the original full models for demonstration purposes):
@@ -308,8 +305,9 @@ To copy the error measurement, use the method described in [this guide](https://
 
 The output will look like this: 
 
-| (unknown) | tangent1 | 76.67370706918534 |
-| (unknown) | tangent2 | 52.81195129766234 | 
+| (unknown) | tangent1   | 76.67370706918534 |
+|-----------|------------|-------------------|
+| (unknown) | tangent2   | 52.81195129766234 |
 | (unknown) | pred error | 16.34060755830103 |
 
 > [!IMPORTANT]
@@ -318,7 +316,7 @@ The output will look like this:
 
 
 
-### Bibliography: 
+## Bibliography: 
 
 1. [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
 2. Gerasimov, M. (1955). "Vosstanovlenie lica po cerepu." Akademii Nauk SSSR.
