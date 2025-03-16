@@ -6,8 +6,8 @@ The method interpretation for the threefold ANS in this guide is based on Rynn e
 
 Stephan et al. 2003 trialled _“substituting original nasal spine length for that determined by margin of most prominent lateral nasal aperture line to tip of nasal spine on lateral radiographs where the vomer was not detectable_ (referred in Rynn et al. 2010 as PLB)”, but found larger margins of error. Therefore, the VMJ in this guide will be described as the junction of the vomer and maxilla (at the base of the nasal spine) and placed at the purple dot on figure 1 (modified from Grey's 1918). 
 
+<img src="https://github.com/user-attachments/assets/7e44016c-eaee-4b31-96ea-27af828d6bdf" width="500">
 
-![krogman pic 1](https://github.com/user-attachments/assets/7e44016c-eaee-4b31-96ea-27af828d6bdf)
 
 
 
@@ -101,8 +101,8 @@ newPlaneNode.SetOrigin(point1)
 newPlaneNode.SetNormal(planeNormal)
 
 ```
+<img src="https://github.com/user-attachments/assets/536f67fe-0479-43ce-a871-b70eb6f0abf6" width="500">
 
-![image](https://github.com/user-attachments/assets/536f67fe-0479-43ce-a871-b70eb6f0abf6)
 
 View after only the first 3 landmarks are allocated correctly AND INB extended via the toggles (dots)
 
@@ -143,13 +143,16 @@ Make sure you create your cut model with the settings on the screenshot to cut t
 - [ ] Check if this was executed by finding your 2 new models under the "Models" module
 
 With these settings, the Model list will be the following: 
+
+
 ![image](https://github.com/user-attachments/assets/ca5973b4-e666-4070-8a1c-e1c12584bf46)
 
 
 
 And you should have the following individual views (excluding/hiding the original full models for demonstration purposes):
 
-![krogman cropped models](https://github.com/user-attachments/assets/1c18929a-71af-4793-a502-f02438d7ee68)
+<img src="(https://github.com/user-attachments/assets/1c18929a-71af-4793-a502-f02438d7ee68)" width="500">
+
 
 You can now allocate the remainder of the landmarks on either model - they should appear on ALL of them. 
 
@@ -159,7 +162,8 @@ Re-orient the view of either your left-bone model to see its right side OR your 
 
 To establish the tangent described as in the general direction of the acanthion, like an arrow, manually draw a vector in the general direction of the acanthion by going to “Markups” >”line” and creating a tangent relatively in the vicinity of the INB plane. Name this line “aca vector” (by double clicking on the name automatically added to the line - likely "L"- and typing it in)
 
-![image](https://github.com/user-attachments/assets/57341433-009a-47cf-be85-a6fd329fa4b8)
+<img src="https://github.com/user-attachments/assets/57341433-009a-47cf-be85-a6fd329fa4b8" width="500">
+
 
 Now, execute the **aca vector to INB** code  that projects the lines to the INB, ensures that it bisects the acanthion and elongates the line in both directions. 
 
@@ -209,8 +213,7 @@ projected_line.AddControlPoint(projected_point2.tolist())
 projected_line.SetName('aca vector projected onto INB plane')
 ```
 
-
-![image](https://github.com/user-attachments/assets/f792e15c-1def-482d-ac0c-8ff577017d9c)
+<img src="https://github.com/user-attachments/assets/f792e15c-1def-482d-ac0c-8ff577017d9c" width="500">
 
 
 
@@ -266,14 +269,19 @@ midpointIndex = hardTissueNode.AddControlPoint(midpoint)
 hardTissueNode.SetNthControlPointLabel(midpointIndex, "mp")
 ```
 If this “mp” does not meet the model, you may have to manually allocate it onto the surface of the maxilla. The script saves “mp” in the “hard tissue” node, in case you’d have to re-allocate or find it.
-![image](https://github.com/user-attachments/assets/58f738d2-d20f-4610-b039-472f26cf9bf4)
+
+<img src="https://github.com/user-attachments/assets/58f738d2-d20f-4610-b039-472f26cf9bf4" width="500">
+
 Example of programmatically placing mp that does not meet the bone surface
 
-![image](https://github.com/user-attachments/assets/628a6079-f810-4ea8-9fc9-5d8294dc45d3)
+<img src="https://github.com/user-attachments/assets/628a6079-f810-4ea8-9fc9-5d8294dc45d3" width="500">
+
 Example of the manually adjusted mp
 
 For the soft tissue depth ”marker”, establish manually a line on both sides of the **mp** landmark that aligns with the surface of the maxilla called **reference for mp** (do not worry if the line does not meet the mp, the script will make sure it does), like this:
-![image](https://github.com/user-attachments/assets/89d0d6ea-02a3-49c8-bf8f-061f397989ee)
+
+
+<img src="https://github.com/user-attachments/assets/89d0d6ea-02a3-49c8-bf8f-061f397989ee3" width="500">
 
 
 This is needed to create the mid-philtrum soft tissue thickness’ direction perpendicular to the maxillary plane. An issue I found is that the average soft tissue thickness measurements often do not meet the acanthion vector. Therefore, a 5 cm extension is built-in the codes: **elongated mp soft tissue depth** and **cyl KrogmanIscan soft tissue ext** .
@@ -281,11 +289,21 @@ This is needed to create the mid-philtrum soft tissue thickness’ direction per
 
 ### Soft tissue depth markers
 You have paths to establish a soft tissue depth marker for the method and ultimately, the pronasale prediction. The FSTT in the example is arbitrarily set to 12mm - if you wish to change this, look for either 
-1) _# Set the length of the perpendicular line
-length = 12  # mm_ in the **Line Soft tissue Marker script** and re-write the number in the code. 
-2) _# Define cylinder parameters
+
+```python
+# Set the length of the perpendicular line
+length = 12  # mm
+```
+in the **Line Soft tissue Marker script** and re-write the number in the code.
+
+OR
+
+ ```python
+# Define cylinder parameters
 radius = 3.0  # 6mm diameter
-height = 24.0_ in **Cylinder Soft tissue Marker** script and re-write the number in the code. 
+height = 24.0
+```
+in **Cylinder Soft tissue Marker** script and re-write the number in the code. 
 The reason the actual length is doubled in the code is due to the setup of a cylinder. To position it correctly, the mp landmark is in the middle of the cylinder body, so if we want to have 12mm from this, it has to be doubled to represent the correct height on the bone surface.
 
 
@@ -536,7 +554,7 @@ displayNode.SetSelectedColor(0/255, 0/255, 255/255)
 displayNode.SetColor(0/255, 0/255, 255/255)
 
 ```
-![image](https://github.com/user-attachments/assets/5d29afaf-6b5a-485a-bdd6-1f126bd0a826)
+<img src="https://github.com/user-attachments/assets/5d29afaf-6b5a-485a-bdd6-1f126bd0a826" width="500">
 
 To copy the error measurement, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). 
 
@@ -745,6 +763,7 @@ displayNode.SetSelectedColor(255/255, 0/255, 255/255)
 displayNode.SetColor(255/255, 0/255, 255/255)
 
 ```
+<img src="https://github.com/user-attachments/assets/8cb7cd0d-9938-43be-ae59-4f54a96968e4" width="500">
 ![image](https://github.com/user-attachments/assets/8cb7cd0d-9938-43be-ae59-4f54a96968e4)
 
 
