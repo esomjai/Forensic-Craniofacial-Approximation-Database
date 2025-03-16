@@ -39,25 +39,6 @@
   }
 </style>
 
-## Detailed Guide
-
-### INB Plane
-<!-- Detailed content of the guide -->
-
-### Profile View Model
-<!-- Detailed content of the guide -->
-
-### Establishing the Acanthion Vector
-<!-- Detailed content of the guide -->
-
-### Mid-Philtrum Point
-<!-- Detailed content of the guide -->
-
-### Soft Tissue Depth Markers
-<!-- Detailed content of the guide -->
-
-## Bibliography
-<!-- Bibliography content -->
 
 The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010). They describe it as follows:
 
