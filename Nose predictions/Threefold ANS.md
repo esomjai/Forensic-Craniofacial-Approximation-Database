@@ -1,48 +1,9 @@
 # The Threefold ANS Method by Krogman & Iscan, 1986
 
-<!-- Summary content starts -->
-<div id="summary">
-  <h2>Summary</h2>
-  <p>This guide explains the Threefold ANS method as described by Rynn et al. (2010) and implemented by Krogman & Iscan (1986). Key steps include:</p>
-  <ul>
-    <li>Establishing an INB plane</li>
-    <li>Creating a profile view</li>
-    <li>Drawing an acanthion vector</li>
-    <li>Creating and adjusting the mid-philtrum point</li>
-    <li>Choosing a path for soft tissue depth markers</li>
-  </ul>
-  <h3>Key Sections</h3>
-  <ul>
-    <li><a href="#inb-plane">INB Plane</a></li>
-    <li><a href="#profile-view-model">Profile View Model</a></li>
-    <li><a href="#establishing-the-acanthion-vector">Acanthion Vector</a></li>
-    <li><a href="#mid-philtrum-and-reference-to-mp">Mid-Philtrum Point</a></li>
-    <li><a href="#soft-tissue-depth-markers">Soft Tissue Depth Markers</a></li>
-  </ul>
-</div>
-<!-- Summary content ends -->
-
-<style>
-  #summary {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    width: 250px;
-    padding: 10px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  body {
-    margin-right: 270px; /* Make room for the fixed summary on the right */
-  }
-</style>
-
 
 The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010). They describe it as follows:
 
-> “A line is projected, following the direction of the ANS, and the average soft tissue depth at mid-philtrum is vertically transposed up to it. The length of the ANS, from the vomer-maxillary junction (VMJ) to the acanthion (at the tip on the ANS) is tripled and added to the transferred average of soft tissue depth” (CITE Krogman, Taylor)
+> “A line is projected, following the direction of the ANS, and the average soft tissue depth at mid-philtrum is vertically transposed up to it. The length of the ANS, from the vomer-maxillary junction (VMJ) to the acanthion (at the tip on the ANS) is tripled and added to the transferred average of soft tissue depth” (Krogman 1968, Taylor, 2001)
 
 Stephan et al. 2003 trialled _“substituting original nasal spine length for that determined by margin of most prominent lateral nasal aperture line to tip of nasal spine on lateral radiographs where the vomer was not detectable_ (referred in Rynn et al. 2010 as PLB)”, but found larger margins of error. Therefore, the VMJ in this guide will be described as the junction of the vomer and maxilla (at the base of the nasal spine) and placed at the purple dot on figure 1 (modified from Grey's 1918). 
 
