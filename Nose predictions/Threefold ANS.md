@@ -16,16 +16,15 @@ To achieve this, we will
 - [Establish an INB plane](#inb-plane)
 - [Make a profile view](#profile-view-model)
 - [Draw an acanthion vector](#establishing-the-acanthion-vector)
-- [Elongate the aligned tangents](#elongate-the-aligned-tangents)
 - [Create and adjust the mid-philtrum point](#mid-philtrum-and-reference-to-mp)
 - [Choose a path to Soft tissue depth markers](#soft-tissue-depth-markers)
 - [Line as the FSTT](#path1-line-as-the-fstt)
 - [Line error of estimate](#line-error-of-estimate)
-- [Line method output](#line-error-output)
+- [Line method output](#line-method-output)
 - [Cylinder as the FSTT](#path2-cylinder-as-the-fstt)
 - [Cylinder Error of estimate](#cylinder-error-of-estimate)
-- [Cylinder method output](#line-error-output)
-- [Combined method output](#line-error-output)
+- [Cylinder method output](#cylinder-method-output)
+- [Combined method output](#combining-methods-output)
 
 Landmarks in this  guide: 
 
@@ -123,11 +122,15 @@ To open the appropriate module, click on the magnifying glass icon next to the m
 
 And start typing “dynamic modeller” in the search bar.
 ![module2](https://github.com/user-attachments/assets/c9dfd153-3c8b-4e99-82a2-8ed83320aec7)
+
 Click “Switch to Module” to open. 
 
 You’ll see this menu on the left side of the screen: 
+
 ![dynamic-modeller](https://github.com/user-attachments/assets/035ea262-8235-4665-8c4d-c3df49945944)
+
 The "INB” is established in the environment. To cut the model along this plane (technically cutting it in 2 and choosing which side to keep), choose the first button (Plane Cut).
+
 
 ![image](https://github.com/user-attachments/assets/9c297c00-d350-4994-9386-1e2aea9e3e25)
 
@@ -764,7 +767,6 @@ displayNode.SetColor(255/255, 0/255, 255/255)
 
 ```
 <img src="https://github.com/user-attachments/assets/8cb7cd0d-9938-43be-ae59-4f54a96968e4" width="500">
-![image](https://github.com/user-attachments/assets/8cb7cd0d-9938-43be-ae59-4f54a96968e4)
 
 
 ### Cylinder Error of estimate
@@ -801,6 +803,7 @@ displayNode.SetSelectedColor(0/255, 0/255, 255/255)
 displayNode.SetColor(0/255, 0/255, 255/255)
 ```
 ![image](https://github.com/user-attachments/assets/e58fa837-9be8-45eb-9d23-0f741a0068df)
+
 To copy the error measurement, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). 
 
 ### Cylinder method output
