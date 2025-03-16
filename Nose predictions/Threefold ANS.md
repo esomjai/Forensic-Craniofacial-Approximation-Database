@@ -1,4 +1,63 @@
-# The Threefold ANS Method by Krogman & Iscan, 1986 
+# The Threefold ANS Method by Krogman & Iscan, 1986
+
+<!-- Summary content starts -->
+<div id="summary">
+  <h2>Summary</h2>
+  <p>This guide explains the Threefold ANS method as described by Rynn et al. (2010) and implemented by Krogman & Iscan (1986). Key steps include:</p>
+  <ul>
+    <li>Establishing an INB plane</li>
+    <li>Creating a profile view</li>
+    <li>Drawing an acanthion vector</li>
+    <li>Creating and adjusting the mid-philtrum point</li>
+    <li>Choosing a path for soft tissue depth markers</li>
+  </ul>
+  <h3>Key Sections</h3>
+  <ul>
+    <li><a href="#inb-plane">INB Plane</a></li>
+    <li><a href="#profile-view-model">Profile View Model</a></li>
+    <li><a href="#establishing-the-acanthion-vector">Acanthion Vector</a></li>
+    <li><a href="#mid-philtrum-and-reference-to-mp">Mid-Philtrum Point</a></li>
+    <li><a href="#soft-tissue-depth-markers">Soft Tissue Depth Markers</a></li>
+  </ul>
+</div>
+<!-- Summary content ends -->
+
+<style>
+  #summary {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 250px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  body {
+    margin-right: 270px; /* Make room for the fixed summary on the right */
+  }
+</style>
+
+## Detailed Guide
+
+### INB Plane
+<!-- Detailed content of the guide -->
+
+### Profile View Model
+<!-- Detailed content of the guide -->
+
+### Establishing the Acanthion Vector
+<!-- Detailed content of the guide -->
+
+### Mid-Philtrum Point
+<!-- Detailed content of the guide -->
+
+### Soft Tissue Depth Markers
+<!-- Detailed content of the guide -->
+
+## Bibliography
+<!-- Bibliography content -->
 
 The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010). They describe it as follows:
 
