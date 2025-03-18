@@ -9,3 +9,7 @@ If this is your first time working with Slicer, please start at the First Steps.
 When noticing any errors, please contact me!
 
 This is a work in progress repository, so take everything with a pinch of salt :)
+
+
+<img src="https://github.com/user-attachments/assets/87b7a617-e40c-455b-9880-90ee54df7536" width="400">
+
