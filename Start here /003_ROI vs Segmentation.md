@@ -103,9 +103,24 @@ Nonetheless, always include a brief explanation as to why you are using the cert
 
 ### Combining the ROIs as Markups with Segmentations
 
-You may have to use some not-plane specific cropping to make the loading and manipulation of segments quicker - such as cropping out medical devices, hair, etc from both soft tissue and hard tissue models, simply decreasing the area of interest or if you need endocranial strucutres visible from one or multiple sides for landmarking. 
+You may have to use some not-plane specific cropping to make the loading and manipulation of segments quicker - such as cropping out medical devices, hair, etc from both soft tissue and hard tissue models, simply decreasing the area of interest or if you need endocranial strucutres visible from one or multiple sides for landmarking. We can pre-crop (create ROIs) before the general segmentation (for soft and hard tissues) takes place - taking advantage of the easy to manipulate funtion in **Volume Rendering** but also increasing the repeatablity of methods by adhering to threshold values.
+A great example is the [Macho method](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Macho%201968.md), where you need to remove the skullcap and partially the squamous part of the temporal bones so that you see inside the craium from multiple views to allocate the landmarks for the 3D determination of the sellion. We will try to demonstrate step-by-step what we mean by this workflow. 
+#### Step 1 - FHP
+Re-orient the scan in the FHP as described in the [Realign CT](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/002_Realign%20CT%20in%20the%20standard%20FHP.md) guide. It is pertinent to do this first, otherwise the models derived  from the original scan will not align with the re-oriented scan. 
+#### Step 2 - ROIs
+In my example case, I already have my _Volume rendering ROI_ from **Volume Rendering** enabled and visible, but wish to add 3 more - one for the skin, one for bone and one for peaking inside the cranium. 
+Go to _Markups_> Choose _ROI_ and click it as many times as you need. 
+![image](https://github.com/user-attachments/assets/108f6083-0f51-4ec7-9b64-e00a108a0978)
+ You can easily rename them by double clicking on their names and typing in a new one. 
 
+
+
+
+
+[Segmentation](#segmentation)
 
 
 
 Check if you have all the full and all the cropped models adequately - colour code, hide visibilities, hide original scan. When happy, go to Save Data > uncheck the "Medical reality bundle option - a list of ALL the created objects. Uncheck all, except for the new cropped models (will appear as .vtk at the end of the list), set them as .stl and save them to the same folder as you previously did with the full models. Now, you can delete every segmentation and the full models from your scene – but keep the rest (transformations, etc.).
+
+![Segmentation workflow](https://github.com/user-attachments/assets/ca206ec1-a70f-406a-b41f-bca437b1e2d4)
