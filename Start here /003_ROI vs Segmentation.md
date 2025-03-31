@@ -112,7 +112,7 @@ In my example case, I already have my _Volume rendering ROI_ from **Volume Rende
 Go to _Markups_> Choose _ROI_ and click it as many times as you need. 
 ![image](https://github.com/user-attachments/assets/108f6083-0f51-4ec7-9b64-e00a108a0978)
  You can easily rename them by double clicking on their names and typing in a new one. 
-
+<iframe src="https://dundee.cloud.panopto.eu/Panopto/Pages/Embed.aspx?id=2a948b1f-1b0d-404d-b1e8-b2b101105cfd&autoplay=false&offerviewer=false&showtitle=false&showbrand=false&captions=false&start=0&interactivity=all" height="405" width="720" style="border: 1px solid #464646;" allowfullscreen allow="autoplay" aria-label="Panopto Embedded Video Player" aria-description="Mon Mar 31 2025 17:30:38" ></iframe>
 
 
 
