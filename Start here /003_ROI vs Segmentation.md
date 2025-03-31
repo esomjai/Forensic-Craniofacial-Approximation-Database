@@ -32,8 +32,9 @@ Once you chose this, the slices from your DICOM files should appear in the red/g
 
 In this section, you can manually set thresholds for the cranium, but a built-in method works great for bone. Click on **Automatic threshold** and choose **Maximum entropy** – now the parts that will show up in the segmentation should be “blinking” in the slice windows. Then click **Set** and **Apply** in the **Local Histogram** menu and click **Show 3D**at the top. You can also modify the colour of the output segment by clicking on the palette icon. ![palette  widget](https://github.com/user-attachments/assets/5451df67-7c7c-40f8-a415-0552d2e3eccf)
 
+
 > [!WARNING]
-> The suggested automatic thresholds are my personal preferences, but your choice will have to depend on multiple CT settings that suit your scan visibility the best!
+> The suggested (automatic and non-automated) thresholds are my personal preferences, but your choice will have to depend on multiple CT settings that suit your scan visibility the best!
 
 Then, we can create a second segmentation for our surface soft tissues by choosing **Create new Segmentation as…** and naming it **Skin**. Click **Add**, **Threshold” and set the automatic threshold this time to **Otsu**, then click **Set**, **Apply** and **Show 3D**.
 
@@ -98,4 +99,13 @@ The general rule of thumb for using either ROI or Segmentation to access challen
 - Is replicability a concern due to different CT scan settings, etc? 
 ![roi-vs-segment drawio](https://github.com/user-attachments/assets/1a453097-70b7-4fb2-bde6-e5df495ad7e1)
 
-Nonetheless, always include a brief explanation as to why you are using the certain methods you chose and be consistent with it. 
+Nonetheless, always include a brief explanation as to why you are using the certain methods you chose, give a detailed overview and be consistent with it. 
+
+### Combining the ROIs as Markups with Segmentations
+
+You may have to use some not-plane specific cropping to make the loading and manipulation of segments quicker - such as cropping out medical devices, hair, etc from both soft tissue and hard tissue models, simply decreasing the area of interest or if you need endocranial strucutres visible from one or multiple sides for landmarking. 
+
+
+
+
+Check if you have all the full and all the cropped models adequately - colour code, hide visibilities, hide original scan. When happy, go to Save Data > uncheck the "Medical reality bundle option - a list of ALL the created objects. Uncheck all, except for the new cropped models (will appear as .vtk at the end of the list), set them as .stl and save them to the same folder as you previously did with the full models. Now, you can delete every segmentation and the full models from your scene – but keep the rest (transformations, etc.).
