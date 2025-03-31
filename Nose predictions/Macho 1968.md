@@ -2,7 +2,7 @@
 
 The guide of this method represents Rynn’s (2012) interpretation of the original method, which was based on Goldhamer’s (1926) hypothesis by Macho et al. (1965). 
 
-The prerequisite to implement this study is to be able to see the sella turcica on the scan you're collecting data on - then allocate the sellion landmarks. Refer to discussion on this specific landmark (HEADING)
+The prerequisite to implement this study is to be able to see the sella turcica on the scan you're collecting data on - then allocate the sellion landmarks. Refer to discussion on this specific landmark ([Sellion or Sella points](#sellion-or-sella-points))
 
 > [!NOTE]
 > The method is illustrated by the 3D Slicer Sample Data for Post Dental Surgery CT in screenshots. For representing the general population, individuals without facial surgery would be chosen in research - this is only for demonstration purposes. Also note that some landmarks were not visible - again, you would exclude individuals from a study where landmarks cannot be reliably placed, but we proceeded to show our methodology. 
@@ -10,6 +10,32 @@ The prerequisite to implement this study is to be able to see the sella turcica 
 
 > [!WARNING]
 > This method also follows first two steps mentioned in the “Start here” section – after loading the DICOM file, please re-orient the scan in the Frankfort horizontal plane. Please note that the reference plane in this method (SN plane) will NOT be reoriented to act as the transverse plane as its significance is in the measurements, not landmarking. 
+
+Steps in this guide 
+- [Background & framework for Sellion](#sellion-or-sella-points)
+- [Creating the INB plane](#creating-the-inb-plane)
+- [Creating the SN plane and line](#sn-plane-and-line)
+- Establishing the framework for measurements
+  - [Code for projecting the length for apertura piriformis onto the INB plane](#code-for-projecting-the-length-for-apertura-piriformis-onto-the-inb-plane)
+  - [Code for projecting the height of bony nose (no.3) onto the INB plane](#code-for-projecting-the-height-of-bony-nose-no3-onto-the-inb-plane)
+  - [Code for line bisecting P & parallel to SN line](#code-for-line-bisecting-p--parallel-to-sn-line)
+  - [Code for projecting the P parallel line onto INB](#code-for-projecting-the-p-parallel-line-onto-inb)
+  - [Code for creating a line bisecting the rhinion & parallel to SN line](#code-for-creating-a-line-bisecting-the-rhinion--parallel-to-sn-line)
+  - [Code for projecting rhi parallel line to INB](#code-for-projecting-rhi-parallel-line-to-inb)
+  - [Code to find the intersection point of the 3 INB projection line & rhi parallel projection line](#code-to-find-the-intersection-point-of-the-3-inb-projection-line--rhi-parallel-projection-line)
+  - [Code to find the intersection point of the 3 INB projection line & P parallel projection line](#code-to-find-the-intersection-point-of-the-3-inb-projection-line--p-parallel-projection-line)
+- Establishing measurements
+  - [Code for apertura piriformis (measurement no. 2)](#code-for-apertura-piriformis-measurement-no-2)
+  - [Code for the height of bony nose (measurement no.3)](#code-for-the-height-of-bony-nose-measurement-no3)
+  - [Code for P max projection (no.5)](#code-for-p-max-projection-no5)
+  - [Code for height of rhinion (no. 7)](#code-for-height-of-rhinion-no-7)
+  - [Code for prominence of rhinion in relation to the n-aca plane (no.6)](#code-for-prominence-of-rhinion-in-relation-to-the-n-aca-plane-no6)
+  - [Code for P max (no.4)](#code-for-p-max-no4)
+  - [Code for the angle between the plane spina nasalis anterior - nasion & spina nasalis anterior - rhinion plane (no.9)](#code-for-the-angle-between-the-plane-spina-nasalis-anterior---nasion--spina-nasalis-anterior---rhinion-plane-no9)
+- [ALL code in one snippet](#all-code-in-one-snippet)
+- [Output](#output)
+- [Future directions](#future-directions)
+- [Bibliography](#bibliography)
 
  
 Landmarks in this guide: 
@@ -358,7 +384,7 @@ And you can also hide the interaction handles.
 
 
 > [!IMPORTANT]
-> The following codes can be all copied and pasted in one go, we chose to include explanation. For the whole snippet, go to: URL!!!!!!!!
+> The following codes can be all copied and pasted in one go, we chose to include explanation. For the whole snippet, go to: [ALL code in one snippet](#all-code-in-one-snippet)
 
 
 <details>
@@ -1557,7 +1583,7 @@ print("New angle '9 angle between plane n-aca and rhi-aca plane' created success
 
 </details>
 
-## Copying measurement 
+## Copying measurements 
 To copy the measurements, use the method described in [this guide(https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). Please note that you will have to run the second code for copying the angle measurement successfully. 
 
 ### Output 
