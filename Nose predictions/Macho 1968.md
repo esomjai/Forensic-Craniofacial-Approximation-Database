@@ -1584,7 +1584,7 @@ print("New angle '9 angle between plane n-aca and rhi-aca plane' created success
 </details>
 
 ## Copying measurements 
-To copy the measurements, use the method described in [this guide(https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). Please note that you will have to run the second code for copying the angle measurement successfully. 
+To copy the measurements, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). Please note that you will have to run the second code for copying the angle measurement successfully. 
 
 ### Output 
 The output will look like this (provided you copy the linear measurements first): 
