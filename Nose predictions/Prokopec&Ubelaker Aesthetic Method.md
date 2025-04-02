@@ -1,11 +1,11 @@
-# Prokopec and Ubelaker, 2002 - The Aesthetic Method
+# Prokopec and Ubelaker, 2002[^2] - The Aesthetic Method
 
-The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2012).
-The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2012) also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
+The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2010)[^3].
+The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2010)[^3] also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
 
 This will be achieved by:
 
-- Creating the [INB plane](#inb-plane), [NP plane](#np-plane) and [PT plane](#pt-plane) as defined by Rynn et al. (2012)
+- Creating the [INB plane](#inb-plane), [NP plane](#np-plane) and [PT plane](#pt-plane) as defined by Rynn et al. (2010)
 - Using [Maximum nasal width](#maximum-nasal-width) and the rhinion as the reference for equidistant planes
 -  Choosing your [number of planes](#choose-a-number-of-planes) 
 - Creating [reference lines along the INB](#reference-lines-along-the-inb-and-456-mirror-planes) and 4/5/6 mirror planes
@@ -31,13 +31,13 @@ This will be achieved by:
 Landmarks in this guide: 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010      |
-| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010      |
-| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010      |
-| 3                | 4                | prosthion     | prosthion       | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim | Rynn et al. 2010      |
-| 4                | 5                | subspinale      | subspinale       | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A) | Caple and Stephan 2016     |
-| 5                | 6                | rhinion   | rhinion   | Most rostral (end) point on the internasal suture.          |  Rynn et al. 2010|
-| 6                | 7                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010      |
+| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^3]      |
+| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^3]      |
+| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^3]      |
+| 3                | 4                | prosthion     | prosthion       | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim | Rynn et al. 2010[^3]      |
+| 4                | 5                | subspinale      | subspinale       | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A) | Caple and Stephan 2016 [^6]     |
+| 5                | 6                | rhinion   | rhinion   | Most rostral (end) point on the internasal suture.          |  Rynn et al. 2010[^3] |
+| 6                | 7                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^3]     |
 
 
 [Download hard tissue PU.mrk.json](https://github.com/user-attachments/files/19284595/hard.tissue.PU.mrk.json)
@@ -56,7 +56,7 @@ Illustration of the method:
 
 ### INB plane
 
-To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010. 
+To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010[^3]. 
 
 > a midsagittal plane (INB) which bisected the inion, nasion and bregma
 
@@ -2067,6 +2067,7 @@ create_distance_measurement("pred error6", noseprofiletoB6.GetNthControlPointPos
 
 [^1]: [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
 [^2]: (https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm)
-[^3]: Rynn, C. and C. M. Wilkinson (2006). "Appraisal of traditional and recently proposed relationships between the hard and soft dimensions of the nose in profile." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 130(3): 364-373.
-[^4]: Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
-[^5]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
+[^3]: Rynn, C., Wilkinson, C.M. & Peters, H.L. (2010) "Prediction of nasal morphology from the skull." Forensic Sci Med Pathol 6, 20–34. https://doi.org/10.1007/s12024-009-9124-6
+[^4]: Rynn, C. and C. M. Wilkinson (2006). "Appraisal of traditional and recently proposed relationships between the hard and soft dimensions of the nose in profile." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 130(3): 364-373.
+[^5]: Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
+[^6]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
