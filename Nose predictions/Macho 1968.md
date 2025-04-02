@@ -1,6 +1,10 @@
 # The Compound Method by Macho, 1968
 
-The guide of this method represents Rynn’s (2012) interpretation of the original method, which was based on Goldhamer’s (1926) hypothesis by Macho et al. (1965). 
+The guide of this method represents Rynn’s (2012)[^2]
+
+[^1]: My reference.
+[^2]: To add line breaks within a footnote, prefix new lines with 2 spaces.
+  This is a second line. interpretation of the original method, which was based on Goldhamer’s (1926) hypothesis by Macho et al. (1965). 
 
 The prerequisite to implement this study is to be able to see the sella turcica on the scan you're collecting data on - then allocate the sellion landmarks. Refer to discussion on this specific landmark ([Sellion or Sella points](#sellion-or-sella-points))
 
@@ -1628,10 +1632,10 @@ These hard tissue only measurements can be a basis of comparing other hard tissu
 
 ## Bibliography: 
 
-1. [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
-2. Macho G.A. (1986) An appraisal of the plastic reconstruction of the external nose. J. Forensic Sci. 31 (4), 1391–403.
-3. Goldhamer, K. Röntgenologische Studien über das menschliche Profil. I. Äußere Nase. Z. Anat. Entwickl. Gesch. 81, 115–150 (1926). https://doi.org/10.1007/BF02282306
-4. Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
-5. Pittayapat P, Jacobs R, Odri GA, Vasconcelos KD, Willems G, Olszewski R. Reproducibility of the sella turcica landmark in three dimensions using a sella turcica-specific reference system. Imaging Sci Dent. 2015 Mar;45(1):15-22. https://doi.org/10.5624/isd.2015.45.1.15
-6. Pittayapat P, Limchaichana-Bolstad N, Willems G, Jacobs R. Three-dimensional cephalometric analysis in orthodontics: a systematic review. Orthod Craniofac Res 2014;17:69–91.
-12. Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
+[^1]:  [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
+[^2]:  Macho G.A. (1986) An appraisal of the plastic reconstruction of the external nose. J. Forensic Sci. 31 (4), 1391–403.
+[^3]: Goldhamer, K. Röntgenologische Studien über das menschliche Profil. I. Äußere Nase. Z. Anat. Entwickl. Gesch. 81, 115–150 (1926). https://doi.org/10.1007/BF02282306
+[^4]:  Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
+[^5]:  Pittayapat P, Jacobs R, Odri GA, Vasconcelos KD, Willems G, Olszewski R. Reproducibility of the sella turcica landmark in three dimensions using a sella turcica-specific reference system. Imaging Sci Dent. 2015 Mar;45(1):15-22. https://doi.org/10.5624/isd.2015.45.1.15
+[^6]:  Pittayapat P, Limchaichana-Bolstad N, Willems G, Jacobs R. Three-dimensional cephalometric analysis in orthodontics: a systematic review. Orthod Craniofac Res 2014;17:69–91.
+[^7]:  Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
