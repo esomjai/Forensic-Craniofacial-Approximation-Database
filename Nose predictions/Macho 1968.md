@@ -1,15 +1,11 @@
 # The Compound Method by Macho, 1968
 
-The guide of this method represents Rynn’s (2012)[^2]
-
-[^1]: My reference.
-[^2]: To add line breaks within a footnote, prefix new lines with 2 spaces.
-  This is a second line. interpretation of the original method, which was based on Goldhamer’s (1926) hypothesis by Macho et al. (1965). 
+The guide of this method represents Rynn’s (2012)[^2] interpretation of the original method  which was based on Goldhamer’s (1926)[^3] hypothesis by Macho et al. (1965)[^2]. 
 
 The prerequisite to implement this study is to be able to see the sella turcica on the scan you're collecting data on - then allocate the sellion landmarks. Refer to discussion on this specific landmark ([Sellion or Sella points](#sellion-or-sella-points))
 
 > [!NOTE]
-> The method is illustrated by the 3D Slicer Sample Data for Post Dental Surgery CT in screenshots. For representing the general population, individuals without facial surgery would be chosen in research - this is only for demonstration purposes. Also note that some landmarks were not visible - again, you would exclude individuals from a study where landmarks cannot be reliably placed, but we proceeded to show our methodology. 
+> The method is illustrated by the 3D Slicer[^1] Sample Data for Post Dental Surgery CT in screenshots. For representing the general population, individuals without facial surgery would be chosen in research - this is only for demonstration purposes. Also note that some landmarks were not visible - again, you would exclude individuals from a study where landmarks cannot be reliably placed, but we proceeded to show our methodology. 
 
 
 > [!WARNING]
@@ -46,12 +42,12 @@ Landmarks in this guide:
 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010      |
-| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010      |
-| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010      |
-| 3                | 4                | subspinale      | subspinale       | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A)         | Caple and Stephan 2016      |
-| 4               | 5              | rhinion     | rhinion      | Most rostral (end) point on the internasal suture. | Caple and Stephan 2016     |
-| 5             | 6               | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010      |
+| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^8]     |
+| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^8]      |
+| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^8]      |
+| 3                | 4                | subspinale      | subspinale       | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A)         | Caple and Stephan 2016[^7]     |
+| 4               | 5              | rhinion     | rhinion      | Most rostral (end) point on the internasal suture. | Caple and Stephan 2016[^7]    |
+| 5             | 6               | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^8]      |
 | 6                | 7                |  P  |   prominence  | most prominent point among the ossa nasalia      | Macho, 1986 |
 
 [Download hard tissue Macho.mrk.json](https://github.com/user-attachments/files/19533832/hard.tissue.Macho.mrk.json)
@@ -69,7 +65,7 @@ Landmarks in this guide:
 
 ## Sellion or Sella points
 
-By definition, the sella point is a floating landmark. It is used in lateral cephalograms, mainly in dentistry then got adapted for craniofacial measurements in 2D as well.  With the wider use of CBCTs, the allocation of this significant landmark in 3D was debated as some defined it from the profile view (like the original lateral cephalogram and some called for a revised definition of allocating it in 3D. Pittayapat et al. (2014) found no consensus is defining the sellion in 3D, so they initiated one in their later research (Pittayapat et al. 2015). By their definition, the sellion is located within a "coordinate system" comprising of 4 landmarks and vertical plane defined by the mid-APT and mid-ACP points. They also establish Sella 1 and Sella 2 (so not one sellion point) citing "the choice of using Sella 1 or Sella 2 made no significant difference" in reproducibility which with the nasion landmark will be sufficient orientations to fit the SN plane of orientation (sellion1-sellion 2-nasion). 
+By definition, the sella point is a floating landmark. It is used in lateral cephalograms, mainly in dentistry then got adapted for craniofacial measurements in 2D as well.  With the wider use of CBCTs, the allocation of this significant landmark in 3D was debated as some defined it from the profile view (like the original lateral cephalogram and some called for a revised definition of allocating it in 3D. Pittayapat et al. (2014)[^5] found no consensus is defining the sellion in 3D, so they initiated one in their later research (Pittayapat et al. 2015)[^6]. By their definition, the sellion is located within a "coordinate system" comprising of 4 landmarks and vertical plane defined by the mid-APT and mid-ACP points. They also establish Sella 1 and Sella 2 (so not one sellion point) citing "the choice of using Sella 1 or Sella 2 made no significant difference" in reproducibility which with the nasion landmark will be sufficient orientations to fit the SN plane of orientation (sellion1-sellion 2-nasion). 
 
 For the allocation of all landmarks, please download both: 
 [Pittayapat plane.mrk.json](https://github.com/user-attachments/files/19532839/Pittayapat.plane.mrk.json)
@@ -1634,8 +1630,9 @@ These hard tissue only measurements can be a basis of comparing other hard tissu
 
 [^1]:  [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
 [^2]:  Macho G.A. (1986) An appraisal of the plastic reconstruction of the external nose. J. Forensic Sci. 31 (4), 1391–403.
-[^3]: Goldhamer, K. Röntgenologische Studien über das menschliche Profil. I. Äußere Nase. Z. Anat. Entwickl. Gesch. 81, 115–150 (1926). https://doi.org/10.1007/BF02282306
+[^3]:  Goldhamer, K. Röntgenologische Studien über das menschliche Profil. I. Äußere Nase. Z. Anat. Entwickl. Gesch. 81, 115–150 (1926). https://doi.org/10.1007/BF02282306
 [^4]:  Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
 [^5]:  Pittayapat P, Jacobs R, Odri GA, Vasconcelos KD, Willems G, Olszewski R. Reproducibility of the sella turcica landmark in three dimensions using a sella turcica-specific reference system. Imaging Sci Dent. 2015 Mar;45(1):15-22. https://doi.org/10.5624/isd.2015.45.1.15
 [^6]:  Pittayapat P, Limchaichana-Bolstad N, Willems G, Jacobs R. Three-dimensional cephalometric analysis in orthodontics: a systematic review. Orthod Craniofac Res 2014;17:69–91.
 [^7]:  Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
+[^8]:  Rynn, C., Wilkinson, C.M. & Peters, H.L. Prediction of nasal morphology from the skull. Forensic Sci Med Pathol 6, 20–34 (2010). https://doi.org/10.1007/s12024-009-9124-6
