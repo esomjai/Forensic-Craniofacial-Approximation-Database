@@ -1,6 +1,6 @@
-# The Compound Method by Macho, 1968
+# The Compound Method by Macho, 1968[^2]
 
-The guide of this method represents Rynn’s (2012)[^2] interpretation of the original method  which was based on Goldhamer’s (1926)[^3] hypothesis by Macho et al. (1965)[^2]. 
+The guide of this method represents Rynn’s (2010)[^8] interpretation of the original method  which was based on Goldhamer’s (1926)[^3] hypothesis by Macho et al. (1986)[^2]. 
 
 The prerequisite to implement this study is to be able to see the sella turcica on the scan you're collecting data on - then allocate the sellion landmarks. Refer to discussion on this specific landmark ([Sellion or Sella points](#sellion-or-sella-points))
 
@@ -48,7 +48,7 @@ Landmarks in this guide:
 | 3                | 4                | subspinale      | subspinale       | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A)         | Caple and Stephan 2016[^7]     |
 | 4               | 5              | rhinion     | rhinion      | Most rostral (end) point on the internasal suture. | Caple and Stephan 2016[^7]    |
 | 5             | 6               | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^8]      |
-| 6                | 7                |  P  |   prominence  | most prominent point among the ossa nasalia      | Macho, 1986 |
+| 6                | 7                |  P  |   prominence  | most prominent point among the ossa nasalia      | Macho, 1986[^2] |
 
 [Download hard tissue Macho.mrk.json](https://github.com/user-attachments/files/19533832/hard.tissue.Macho.mrk.json)
 
