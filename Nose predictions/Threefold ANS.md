@@ -1,11 +1,11 @@
-# The Threefold ANS Method by Krogman & Iscan, 1986
+# The Threefold ANS Method by Krogman & Iscan, 1986[^2]
 
 
-The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010). They describe it as follows:
+The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010)[^7]. They describe it as follows:
 
-> “A line is projected, following the direction of the ANS, and the average soft tissue depth at mid-philtrum is vertically transposed up to it. The length of the ANS, from the vomer-maxillary junction (VMJ) to the acanthion (at the tip on the ANS) is tripled and added to the transferred average of soft tissue depth” (Krogman 1968, Taylor, 2001)
+> “A line is projected, following the direction of the ANS, and the average soft tissue depth at mid-philtrum is vertically transposed up to it. The length of the ANS, from the vomer-maxillary junction (VMJ) to the acanthion (at the tip on the ANS) is tripled and added to the transferred average of soft tissue depth” (Krogman 1968[^2], Taylor, 2001[^3])
 
-Stephan et al. 2003 trialled _“substituting original nasal spine length for that determined by margin of most prominent lateral nasal aperture line to tip of nasal spine on lateral radiographs where the vomer was not detectable_ (referred in Rynn et al. 2010 as PLB)”, but found larger margins of error. Therefore, the VMJ in this guide will be described as the junction of the vomer and maxilla (at the base of the nasal spine) and placed at the purple dot on figure 1 (modified from Grey's 1918). 
+Stephan et al. 2003[^5] trialled _“substituting original nasal spine length for that determined by margin of most prominent lateral nasal aperture line to tip of nasal spine on lateral radiographs where the vomer was not detectable_ (referred in Rynn et al. 2010[^7] as PLB)”, but found larger margins of error. Therefore, the VMJ in this guide will be described as the junction of the vomer and maxilla (at the base of the nasal spine) and placed at the purple dot on figure 1 (modified from Grey's 1918[^6]). 
 
 <img src="https://github.com/user-attachments/assets/7e44016c-eaee-4b31-96ea-27af828d6bdf" width="500">
 
@@ -39,19 +39,19 @@ Landmarks in this  guide:
 KrogmanIscan soft tissue contains:
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| 0                | 1                | pronasale    | pronasale     | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen           | Caple and Stephan 2016|
+| 0                | 1                | pronasale    | pronasale     | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen           | Caple and Stephan 2016[^8]|
 
 KrogmanIscan hard tissue contains:
 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010      |
-| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010      |
-| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010      |
-| 3                | 4                | subspinale      | subspinale       | Most rostral (end) point on the internasal suture.                                                                            | Rynn et al. 2010      |
-| 4                | 5                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010      |
+| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^7]      |
+| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^7]      |
+| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^7]      |
+| 3                | 4                | subspinale      | subspinale       | Most rostral (end) point on the internasal suture.                                                                            | Rynn et al. 2010[^7]      |
+| 4                | 5                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^7]      |
 | 5                | 6                |  VMJ  | vomer-maxillary junction      |    the point on the cranium where the maxilla and the vomer meet in the midline, at the posterior end of the anterior nasal spine        | Somjai 2025 (unpublished) |
-| 6                | 7                |  prosthion  | prosthion      |   Median point between the central incisors on the anterior most margin of the maxillary alveolar rim        | Caple and Stephan 2016, Martin, 1928, Knussmann 1988 |
+| 6                | 7                |  prosthion  | prosthion      |   Median point between the central incisors on the anterior most margin of the maxillary alveolar rim        | Caple and Stephan 2016[^8], Martin, 1928[^9], Knussmann 1988[^10] |
 
 
 
@@ -67,7 +67,7 @@ Illustration of the method:
 
 ### INB plane
 
-To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010. 
+To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010[^7]. 
 
 > a midsagittal plane (INB) which bisected the inion, nasion and bregma
 
@@ -581,7 +581,7 @@ The output will look like this:
 
 #### PATH2-Cylinder as the FSTT
 FSTT - facial soft tissue thickness
-In Taylor (2001), the method is described with the vinyl cylinders as the soft tissue markers which “are approximately 6 mm in diameter” – we can recreate this via script “” . The cylinder will be found in the “Model” area, called “Cylinder". 
+In Taylor (2001)[^3], the method is described with the vinyl cylinders as the soft tissue markers which “are approximately 6 mm in diameter” – we can recreate this via script “” . The cylinder will be found in the “Model” area, called “Cylinder". 
 
 ```python
 
@@ -844,15 +844,14 @@ You can also just carry out both methods (line/cylinder) one after the other - t
 
 ## Bibliography: 
 
-1. [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
-2. Krogman, W. M. and M. Y. Isçan (1986). The human skeleton in forensic medicine. The human skeleton in forensic medicine. Springfield, IL, Charles C Thomas. 15: 202-208.
-3. Taylor, K. T. (2000). Forensic art and illustration, CRC press.
-4. Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
-8. Gatliff, B. P. (1984). "Facial sculpture on the skull for identification." American Journal of Forensic Medicine and Pathology 5(4): 327-332.
-9. Stephan, C. N., et al. (2003). "Predicting nose projection and pronasale position in facial approximation: a test of published methods and proposal of new guidelines." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 122(3): 240-250.
-10. Henry Gray Anatomy of the Human Body. 1918.[Bartleby link] (https://www.bartleby.com/lit-hub/anatomy-of-the-human-body/fig-173)
-11. Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
-12. Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
-13. Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.	
-14. Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
+[^1]: [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
+[^2]: Krogman, W. M. and M. Y. Isçan (1986). The human skeleton in forensic medicine. The human skeleton in forensic medicine. Springfield, IL, Charles C Thomas. 15: 202-208.
+[^3]: Taylor, K. T. (2001). Forensic art and illustration, CRC press.
+[^4]: Gatliff, B. P. (1984). "Facial sculpture on the skull for identification." American Journal of Forensic Medicine and Pathology 5(4): 327-332.
+[^5]: Stephan, C. N., et al. (2003). "Predicting nose projection and pronasale position in facial approximation: a test of published methods and proposal of new guidelines." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 122(3): 240-250.
+[^6]: Henry Gray Anatomy of the Human Body. 1918.[Bartleby link] (https://www.bartleby.com/lit-hub/anatomy-of-the-human-body/fig-173)
+[^7]: Rynn, C., Wilkinson, C.M. & Peters, H.L. (2010) "Prediction of nasal morphology from the skull." Forensic Sci Med Pathol 6, 20–34. https://doi.org/10.1007/s12024-009-9124-6
+[^8]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
+[^9]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.	
+[^10]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
 	
