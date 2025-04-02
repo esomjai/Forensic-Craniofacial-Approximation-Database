@@ -1,15 +1,15 @@
-# The Two Tangent Method by Gerasimow, 1955
+# The Two Tangent Method by Gerasimow, 1955[^2]
 
 
-Limitations occur in describing this method in detail as his works are available in English only partially, these are (i) the published translations from German (Gerassimow, 1968; Gerasimov, 1971) and the (ii) unpublished Tshernezky translation later used for the development of the Manchester protocol (Wilkinson, 2004; Stephan and Ullrich, 2011; Stephan and Ullrich, 2015). 
+Limitations occur in describing this method in detail as his works are available in English only partially, these are (i) the published translations from German (Gerassimow, 1968[^3]; Gerasimov, 1971[^4]) and the (ii) unpublished Tshernezky translation later used for the development of the Manchester protocol (Wilkinson, 2004[^5]; Stephan and Ullrich, 2011[^6]; Stephan and Ullrich, 2015[^7]). 
 
-The method followed here is the one described by Gatliff (1984), as the interpretation by Stephan (2003) was later scrutinised by Rynn and Wilkinson (2006) and Rynn et al. (2012). 
+The method followed here is the one described by Gatliff (1984)[^8], as the interpretation by Stephan (2003)[^9] was later scrutinised by Rynn and Wilkinson (2006)[^10] and Rynn et al. (2012)[^11]. 
 
 The summarised theory is that the tip of the soft nose (pronasale) can be predicted by where two tangents meet: (a) the tangent running between the nasion to rhinion OR the line following the bony nose shape in profile view and (b) the tangent aligning with the anterior 1/3rd of the nasal spine OR following its direction as an arrow.
 
 To achieve this, we will 
 
-1. [Establish an INB plane (Rynn et al. 2012) as the cut plane to establish a standard profile view](#inb-plane)
+1. [Establish an INB plane (Rynn et al. 2010)[^10] as the cut plane to establish a standard profile view](#inb-plane)
 2. [Make a profile view](#profile-view-model) along the INB plane by cutting the Bone model
 3. [Draw or code the two tangents](#establishing-the-tangents) and programmatically ensure they are aligned in the INB plane
 4. [Elongate the aligned tangents](#elongating-the-tangents) to find their meeting point - the soft nose tip _pronasale_
@@ -18,12 +18,12 @@ To achieve this, we will
 Landmarks in this guide: 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010      |
-| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010      |
-| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010      |
-| 3                | 4                | rhinion      | rhinion       | Most rostral (end) point on the internasal suture.                                                                            | Rynn et al. 2010      |
-| 4                | 5                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010      |
-| 5                | 6                | pronasale    | pronasale     | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen           | Caple and Stephan 2016|
+| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^10]      |
+| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^10]      |
+| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^10]      |
+| 3                | 4                | rhinion      | rhinion       | Most rostral (end) point on the internasal suture.                                                                            | Rynn et al. 2010[^10]      |
+| 4                | 5                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^10]      |
+| 5                | 6                | pronasale    | pronasale     | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen           | Caple and Stephan 2016[^[^11]|
 
 [Gerasimow landmarks.mrk.json](https://github.com/user-attachments/files/19151390/Gerasimow.landmarks.mrk.json)
 
@@ -39,7 +39,7 @@ Illustration of the method:
 
 ### INB plane
 
-To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010. 
+To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010[^10]. 
 
 > a midsagittal plane (INB) which bisected the inion, nasion and bregma
 
@@ -318,15 +318,16 @@ The output will look like this:
 
 ## Bibliography: 
 
-1. [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
-2. Gerasimov, M. (1955). "Vosstanovlenie lica po cerepu." Akademii Nauk SSSR.
-3. Gerassimow, M. (1968). Ich suchte Gesichter. Gutersloh (Germany): C, Bertelsmann Verlag.
-4. Gerasimov, M. (1971). The Face Finder. London, Hutchinson.
-5. Wilkinson, C. (2004). Forensic Facial Reconstruction. Cambridge, UK, Cambridge University Press.
-6. Ullrich, H. and C. N. Stephan (2011). "On Gerasimov’s plastic facial reconstruction technique: new insights to facilitate repeatability." Journal of forensic sciences 56(2): 470-474.
-7. Ullrich, H. and C. Stephan (2016). "Mikhail Mikhaylovich Gerasimov’s Authentic Approach to Plastic Facial Reconstruction." Anthropologie (Czech Republic) 54: 97-107.
-8. Gatliff, B. P. (1984). "Facial sculpture on the skull for identification." American Journal of Forensic Medicine and Pathology 5(4): 327-332.
-9. Stephan, C. N., et al. (2003). "Predicting nose projection and pronasale position in facial approximation: a test of published methods and proposal of new guidelines." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 122(3): 240-250.
-10. Rynn, C. and C. M. Wilkinson (2006). "Appraisal of traditional and recently proposed relationships between the hard and soft dimensions of the nose in profile." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 130(3): 364-373.
-11. Rynn, C., et al. (2012). Relationships between the skull and face. Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
-12. Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
+[^1]: [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
+[^2]:  Gerasimov, M. (1955). "Vosstanovlenie lica po cerepu." Akademii Nauk SSSR.
+[^3]:  Gerassimow, M. (1968). Ich suchte Gesichter. Gutersloh (Germany): C, Bertelsmann Verlag.
+[^4]:  Gerasimov, M. (1971). The Face Finder. London, Hutchinson.
+[^5]:  Wilkinson, C. (2004). Forensic Facial Reconstruction. Cambridge, UK, Cambridge University Press.
+[^6]:  Ullrich, H. and C. N. Stephan (2011). "On Gerasimov’s plastic facial reconstruction technique: new insights to facilitate repeatability." Journal of forensic sciences 56(2): 470-474.
+[^7]:  Ullrich, H. and C. Stephan (2016). "Mikhail Mikhaylovich Gerasimov’s Authentic Approach to Plastic Facial Reconstruction." Anthropologie (Czech Republic) 54: 97-107.
+[^8]:  Gatliff, B. P. (1984). "Facial sculpture on the skull for identification." American Journal of Forensic Medicine and Pathology 5(4): 327-332.
+[^9]:  Stephan, C. N., et al. (2003). "Predicting nose projection and pronasale position in facial approximation: a test of published methods and proposal of new guidelines." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 122(3): 240-250.
+[^10]: Rynn, C., Wilkinson, C.M. & Peters, H.L. (2010) "Prediction of nasal morphology from the skull." Forensic Sci Med Pathol 6, 20–34. https://doi.org/10.1007/s12024-009-9124-6
+[^11]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
+[^12]: Rynn, C. and C. M. Wilkinson (2006). "Appraisal of traditional and recently proposed relationships between the hard and soft dimensions of the nose in profile." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 130(3): 364-373.
+[^13]: Rynn, C., et al. (2012). "Relationships between the skull and face." Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
