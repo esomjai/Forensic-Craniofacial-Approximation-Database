@@ -86,7 +86,7 @@ def copyLineMeasurementsToClipboard():
   slicer.app.clipboard().setText(outputText)
   slicer.util.delayDisplay(f"Copied {len(measurements)} length measurements to the clipboard.")
 
-2 = qt.QShortcut(slicer.util.mainWindow())
+shortcut2 = qt.QShortcut(slicer.util.mainWindow())
 shortcut2.setKey(qt.QKeySequence("Ctrl+m"))
 shortcut2.connect('activated()', copyLineMeasurementsToClipboard)
 ```
