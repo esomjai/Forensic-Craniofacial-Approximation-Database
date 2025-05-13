@@ -391,7 +391,13 @@ for tangent in tangents:
     new_start, new_end = elongate_line(start, end, elongation_distance)
     tangent.SetNthControlPointPosition(0, *new_start)
     tangent.SetNthControlPointPosition(1, *new_end)
+
+
 ```
+Video showing the allocation, projection and elongation of 4 tangents.
+
+https://github.com/user-attachments/assets/9d0c3401-cbd3-4846-9670-b5050c024b84
+
 
 
 
