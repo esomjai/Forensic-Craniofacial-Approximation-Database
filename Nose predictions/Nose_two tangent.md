@@ -293,16 +293,109 @@ They also introduce an additional new reference point for error rate measures; R
 | tangent 4  | follows the direction of the nasal floor to the right of the anterior nasal spine  | tangent4 | |
 
 
+```python
+###Tangents to INB & elongation###
+
+import slicer
+import numpy as np
+
+# Retrieve the INB plane
+INB_plane = slicer.util.getNode('INB')
+
+
+# Function to project a point onto a plane
+def project_point_onto_plane(point, plane_origin, plane_normal):
+    point_vector = np.array(point) - np.array(plane_origin)
+    distance = np.dot(point_vector, plane_normal)
+    projected_point = np.array(point) - distance * np.array(plane_normal)
+    return projected_point
+
+# Retrieve tangent1, tangent2, tangent3 and tangent4
+tangent1 = slicer.util.getNode('tangent1')
+tangent2 = slicer.util.getNode('tangent2')
+tangent3 = slicer.util.getNode('tangent3')
+tangent4 = slicer.util.getNode('tangent4')
+
+# Project tangents onto the INB plane
+plane_origin = INB_plane.GetOrigin()
+plane_normal = INB_plane.GetNormal()
+
+tangent1_start = tangent1.GetNthControlPointPosition(0)
+tangent1_end = tangent1.GetNthControlPointPosition(1)
+tangent1_start_projected = project_point_onto_plane(tangent1_start, plane_origin, plane_normal)
+tangent1_end_projected = project_point_onto_plane(tangent1_end, plane_origin, plane_normal)
+
+tangent2_start = tangent2.GetNthControlPointPosition(0)
+tangent2_end = tangent2.GetNthControlPointPosition(1)
+tangent2_start_projected = project_point_onto_plane(tangent2_start, plane_origin, plane_normal)
+tangent2_end_projected = project_point_onto_plane(tangent2_end, plane_origin, plane_normal)
+
+tangent3_start = tangent3.GetNthControlPointPosition(0)
+tangent3_end = tangent3.GetNthControlPointPosition(1)
+tangent3_start_projected = project_point_onto_plane(tangent3_start, plane_origin, plane_normal)
+tangent3_end_projected = project_point_onto_plane(tangent3_end, plane_origin, plane_normal)
+
+tangent4_start = tangent4.GetNthControlPointPosition(0)
+tangent4_end = tangent4.GetNthControlPointPosition(1)
+tangent4_start_projected = project_point_onto_plane(tangent4_start, plane_origin, plane_normal)
+tangent4_end_projected = project_point_onto_plane(tangent4_end, plane_origin, plane_normal)
+
+# Update tangents with projected points
+tangent1.SetNthControlPointPosition(0, *tangent1_start_projected)
+tangent1.SetNthControlPointPosition(1, *tangent1_end_projected)
+tangent2.SetNthControlPointPosition(0, *tangent2_start_projected)
+tangent2.SetNthControlPointPosition(1, *tangent2_end_projected)
+tangent3.SetNthControlPointPosition(0, *tangent3_start_projected)
+tangent3.SetNthControlPointPosition(1, *tangent3_end_projected)
+tangent4.SetNthControlPointPosition(0, *tangent4_start_projected)
+tangent4.SetNthControlPointPosition(1, *tangent4_end_projected)
+
+
+#import slicer
+import numpy as np
+
+# Function to calculate the direction vector of a line
+def calculate_direction_vector(start, end):
+    return np.array(end) - np.array(start)
+
+# Function to find the intersection point of two lines
+def find_intersection_point(line1_start, line1_dir, line2_start, line2_dir):
+    # Solve for t1 and t2 where line1_start + t1 * line1_dir = line2_start + t2 * line2_dir
+    A = np.array([line1_dir, -line2_dir]).T
+    b = np.array(line2_start) - np.array(line1_start)
+    t = np.linalg.lstsq(A, b, rcond=None)[0]
+    intersection_point = line1_start + t[0] * line1_dir
+    return intersection_point
+
+# Function to elongate a line in both directions
+def elongate_line(start, end, elongation_distance):
+    direction_vector = calculate_direction_vector(start, end)
+    direction_vector_normalized = direction_vector / np.linalg.norm(direction_vector)
+    new_start = start - elongation_distance * direction_vector_normalized
+    new_end = end + elongation_distance * direction_vector_normalized
+    return new_start, new_end
+	
+# Retrieve tangents
+tangent1 = slicer.util.getNode('tangent1')
+tangent2 = slicer.util.getNode('tangent2')
+tangent3 = slicer.util.getNode('tangent3')
+tangent4 = slicer.util.getNode('tangent4')
+
+# Get the start and end points of tangents
+tangents = [tangent1, tangent2, tangent3, tangent4]
+elongation_distance = 100  # Elongation distance in mm
+
+for tangent in tangents:
+    start = np.array(tangent.GetNthControlPointPosition(0))
+    end = np.array(tangent.GetNthControlPointPosition(1))
+    new_start, new_end = elongate_line(start, end, elongation_distance)
+    tangent.SetNthControlPointPosition(0, *new_start)
+    tangent.SetNthControlPointPosition(1, *new_end)
+```
 
 
 
 
-
-
-| (unknown) | tangent(1 for intersection   | tangent(2) for intersection | intersection point |
-|-----------|------------|-------------------|
-| Method 1 (M1) | tangent1   | tangent3 | 
-| (unknown) | pred error | 16.34060755830103 |
 
 
 ### Error rate
