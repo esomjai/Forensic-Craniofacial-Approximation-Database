@@ -274,6 +274,17 @@ print(f"New tangent2 end point: {new_tangent2_end}")
 ```
 
 ### Maltais-Lapointe (2016)`s extra tangents and the nasal spine line
+Tangent 3 (T3) follows the last 1–2 mm of the nasal bone and
+tangent 4 (T4) follows the direction of the nasal floor to the right of the anterior nasal spine, 
+as suggested by Ullrich and Stephan. 
+The nasal spine line is defined as the same as tangent 2.
+They also introduce an additional new reference point for error rate measures; R2 is where the nasal spine line meets the soft tissue nose (R1=pronasale). 
+
+
+| (unknown) | tangent(1 for intersection   | tangent(2) for intersection | intersection point |
+|-----------|------------|-------------------|
+| Method 1 (M1) | tangent1   | tangent3 | 
+| (unknown) | pred error | 16.34060755830103 |
 
 
 ### Error rate
