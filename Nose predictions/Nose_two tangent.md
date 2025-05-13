@@ -1,4 +1,5 @@
-# The Two Tangent Method by Gerasimow, 1955[^2]
+# The Two Tangent Method by Gerasimow, 1955[^2], its revision by Maltais-Laponte(2016)[^14] based on Ullrich and Stephan (2011)[^7]
+
 
 
 Limitations occur in describing this method in detail as his works are available in English only partially, these are (i) the published translations from German (Gerassimow, 1968[^3]; Gerasimov, 1971[^4]) and the (ii) unpublished Tshernezky translation later used for the development of the Manchester protocol (Wilkinson, 2004[^5]; Stephan and Ullrich, 2011[^6]; Stephan and Ullrich, 2015[^7]). 
@@ -13,7 +14,8 @@ To achieve this, we will
 2. [Make a profile view](#profile-view-model) along the INB plane by cutting the Bone model
 3. [Draw or code the two tangents](#establishing-the-tangents) and programmatically ensure they are aligned in the INB plane
 4. [Elongate the aligned tangents](#elongating-the-tangents) to find their meeting point - the soft nose tip _pronasale_
-5. Optionally, connect the predicted nose tip and the actual nose tip for [error rate](#error-rate) (you can also compare the coordinates instead)
+5. Add two maore tangents (T3 and T4) and the nasal spinal line as described by Maltais-Lapointe (2016) [^14]
+6. Optionally, connect the predicted nose tip and the actual nose tip for [error rate](#error-rate) (you can also compare the coordinates instead)
 
 Landmarks in this guide: 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
@@ -270,6 +272,10 @@ print(f"Intersection point added to 'prn pred': {intersection_point}")
 print(f"New tangent1 end point: {new_tangent1_end}")
 print(f"New tangent2 end point: {new_tangent2_end}")
 ```
+
+### Maltais-Lapointe (2016)`s extra tangents and the nasal spine line
+
+
 ### Error rate
 As a research question, you can also allocate the original pronasale (included in the _Gerasimow landmarks.lmrk.json_ as the last item) and check the error rate (copy and paste the code "prn error"). 
 
@@ -303,7 +309,9 @@ print(f"New line created between points: {point1} and {point2} with color burgun
 
 To copy the error measurement, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). 
 
-The output will look like this: 
+### Outputs
+#### Tangents1 and 2 with error
+If you only executed the original Gerasimow two tangent method with the error rates added, your output will look like this: 
 
 | (unknown) | tangent1   | 76.67370706918534 |
 |-----------|------------|-------------------|
@@ -313,6 +321,7 @@ The output will look like this:
 > [!IMPORTANT]
 > Only "pred error" is a true measurement, do not use the other measurements as such in your data analysis!!!!
 
+#### Tangents1,2,3,4 with error
 
 
 
@@ -331,3 +340,4 @@ The output will look like this:
 [^11]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
 [^12]: Rynn, C. and C. M. Wilkinson (2006). "Appraisal of traditional and recently proposed relationships between the hard and soft dimensions of the nose in profile." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 130(3): 364-373.
 [^13]: Rynn, C., et al. (2012). "Relationships between the skull and face." Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
+[^14]:Lapointe, G. M., et al. (2016). "Validation of the New Interpretation of Gerasimov's Nasal Projection Method for Forensic Facial Approximation Using CT Data." Journal of Forensic Sciences 61: S193-S200.
