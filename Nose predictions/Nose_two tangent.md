@@ -35,7 +35,13 @@ Illustration of the method:
 > Before you proceed, please make sure you completed the following steps: 
 
 - [ ] The scan has to be re-aligned in the FHP
-- [ ] You should have a Bone and Skin model via segmentation (explained later)
+- [ ] You should have a Bone and Skin model via segmentation (explained later) If you are following the Maliais-Lapointe guidance as well, make sure you replicate their Hounsfield Unit guidance:
+
+| Tissue/structure | HU min | HU max | 
+|------------------|------------------|--------------|
+| soft tissue          | -700     | 225       | 
+| skull               | 226         |3071 (or maximum available)       |
+
 
 
 
@@ -276,9 +282,21 @@ print(f"New tangent2 end point: {new_tangent2_end}")
 ### Maltais-Lapointe (2016)`s extra tangents and the nasal spine line
 Tangent 3 (T3) follows the last 1–2 mm of the nasal bone and
 tangent 4 (T4) follows the direction of the nasal floor to the right of the anterior nasal spine, 
-as suggested by Ullrich and Stephan. 
 The nasal spine line is defined as the same as tangent 2.
 They also introduce an additional new reference point for error rate measures; R2 is where the nasal spine line meets the soft tissue nose (R1=pronasale). 
+
+| Tangent name | description   | name in the files  | colour |
+|-----------|------------|-------------------|---------------|
+| tangent 1  | follows the last third of the nasal bone   | tangent1 | |
+| tangent 2 | follows the general direction of the anterior nasal spine | tangent2|    |
+| tangent 3  | follows the last 1–2 mm of the nasal bone   | tangent3 | |
+| tangent 4  | follows the direction of the nasal floor to the right of the anterior nasal spine  | tangent4 | |
+
+
+
+
+
+
 
 
 | (unknown) | tangent(1 for intersection   | tangent(2) for intersection | intersection point |
