@@ -40,7 +40,7 @@ Landmarks in this guide:
 | 6                | 7                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^3]     |
 
 
-[Download hard tissue PU.mrk.json](https://github.com/user-attachments/files/19284595/hard.tissue.PU.mrk.json)
+
 
 
 Illustration of the method: 
@@ -50,7 +50,8 @@ Illustration of the method:
 
 - [ ] The scan has to be re-aligned in the FHP
 - [ ] You should have a Bone and Skin model via segmentation (explained later)
-- [ ] Allocate ALL landmarks from the [landmarks](https://github.com/user-attachments/files/19284595/hard.tissue.PU.mrk.json) file 
+- [ ] Allocate ALL landmarks from the [hard_tissue_PU.mrk.json](https://github.com/user-attachments/files/20212741/hard_tissue_PU.mrk.json)
+ file 
 
 
 
@@ -68,8 +69,8 @@ by downloading markups file for this method, allocating the landmarks  and copyi
 import numpy as np
 import slicer
 
-# Get the points from the "hard tissue PU" node
-hardTissueNode = slicer.util.getNode('hard tissue PU')
+# Get the points from the "hard_tissue_PU" node
+hardTissueNode = slicer.util.getNode('hard_tissue_PU')
 point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
 point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
 point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
@@ -116,8 +117,8 @@ import slicer
 # Get the 'INB' plane node
 inbPlaneNode = slicer.util.getNode('INB')
 
-# Get the 'hard tissue PU' point list node
-hardTissueNode = slicer.util.getNode('hard tissue PU')
+# Get the 'hard_tissue_PU' point list node
+hardTissueNode = slicer.util.getNode('hard_tissue_PU')
 
 # Get the coordinates of 'prosthion' and 'nasion' from the point list
 prosthion = np.array(hardTissueNode.GetNthControlPointPositionWorld(0))
@@ -207,7 +208,8 @@ Expected view with all three planes established and extended. Landmarks hidden f
 Rynn et al. (2012) refined the original description from Prokopec and Ubelaker (2002) "4 to 6 equidistant planes" to be constrained to in-between the level of the maximum nasal width and rhinion.  
 
 You will need to switch to the "Skin" model or use the toggle to reveal the soft tissue on the scan for this step. 
-[Download  maximum nasal width MAW.mrk.json](https://github.com/user-attachments/files/19285063/maximum.nasal.width.MAW.mrk.json), and drag-and-drop it into the "Markups" environment (click OK on this pop-up - see screenshot below).
+[Download maximum_nasal_width_MAW.mrk.json](https://github.com/user-attachments/files/20212751/maximum_nasal_width_MAW.mrk.json)
+, and drag-and-drop it into the "Markups" environment (click OK on this pop-up - see screenshot below).
 <img src="https://github.com/user-attachments/assets/9962ad54-f710-4e19-86a2-71f10450b18d" width="500">
 
 
@@ -260,8 +262,8 @@ planeA = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'Plane_A'
 planeA.SetOrigin(mawPosition)
 planeA.SetNormal(ptpPlaneNormal)
 
-# Get the hard tissue PU node position
-hardTissueNode = slicer.util.getNode('hard tissue PU')
+# Get the hard_tissue_PU node position
+hardTissueNode = slicer.util.getNode('hard_tissue_PU')
 rhinionPosition = np.array(hardTissueNode.GetNthControlPointPositionWorld(5))
 
 # Calculate the distance between Plane_A and the rhinion
@@ -312,8 +314,8 @@ planeA = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'Plane_A'
 planeA.SetOrigin(mawPosition)
 planeA.SetNormal(ptpPlaneNormal)
 
-# Get the hard tissue PU node position
-hardTissueNode = slicer.util.getNode('hard tissue PU')
+# Get the hard_tissue_PU node position
+hardTissueNode = slicer.util.getNode('hard_tissue_PU')
 rhinionPosition = np.array(hardTissueNode.GetNthControlPointPositionWorld(5))
 
 # Calculate the distance between Plane_A and the rhinion
@@ -362,8 +364,8 @@ planeA = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'Plane_A'
 planeA.SetOrigin(mawPosition)
 planeA.SetNormal(ptpPlaneNormal)
 
-# Get the hard tissue PU node position
-hardTissueNode = slicer.util.getNode('hard tissue PU')
+# Get the hard_tissue_PU node position
+hardTissueNode = slicer.util.getNode('hard_tissue_PU')
 rhinionPosition = np.array(hardTissueNode.GetNthControlPointPositionWorld(5))
 
 # Calculate the distance between Plane_A and the rhinion
@@ -584,8 +586,8 @@ After this, we establish the lines of reference which are perpendicular to the m
 import slicer
 import vtk
 
-# Get the "hard tissue PU" node
-F = slicer.util.getNode('hard tissue PU')
+# Get the "hard_tissue_PU" node
+F = slicer.util.getNode('hard_tissue_PU')
 
 # Create the first line node
 L_A = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'Line_A')
@@ -1431,6 +1433,258 @@ If you want to programmatically ensure the manually placed midline points points
 <summary>Adjust midline points on 6 planes</summary>
 
 ``` python
+import slicer
+import numpy as np
+
+def is_point_on_line(line_points, point):
+    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+    point = np.array(point)
+    line_vec = p2 - p1
+    point_vec = point - p1
+    cross_product = np.cross(line_vec, point_vec)
+    return np.allclose(cross_product, 0)
+
+def adjust_point_to_line(line_points, point):
+    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+    point = np.array(point)
+    line_vec = p2 - p1
+    line_vec_normalized = line_vec / np.linalg.norm(line_vec)
+    point_vec = point - p1
+    projection_length = np.dot(point_vec, line_vec_normalized)
+    adjusted_point = p1 + projection_length * line_vec_normalized
+    return adjusted_point.tolist()
+
+# Get the line nodes from the scene
+INB_B = slicer.util.getNode('INB_B')
+INB_C = slicer.util.getNode('INB_C')
+INB_D = slicer.util.getNode('INB_D')
+INB_E = slicer.util.getNode('INB_E')
+INB_F = slicer.util.getNode('INB_F')
+INB_A = slicer.util.getNode('INB_A')
+
+# Get the points of the lines
+INB_B_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_C_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_D_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_E_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_F_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_A_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+
+for i in range(INB_B.GetNumberOfControlPoints()):
+    INB_B.GetNthControlPointPosition(i, INB_B_points[i])
+
+for i in range(INB_C.GetNumberOfControlPoints()):
+    INB_C.GetNthControlPointPosition(i, INB_C_points[i])
+
+for i in range(INB_D.GetNumberOfControlPoints()):
+    INB_D.GetNthControlPointPosition(i, INB_D_points[i])
+
+for i in range(INB_E.GetNumberOfControlPoints()):
+    INB_E.GetNthControlPointPosition(i, INB_E_points[i])
+
+for i in range(INB_F.GetNumberOfControlPoints()):
+    INB_F.GetNthControlPointPosition(i, INB_F_points[i])
+
+for i in range(INB_A.GetNumberOfControlPoints()):
+    INB_A.GetNthControlPointPosition(i, INB_A_points[i])
+
+# Get the bone nodes from the scene
+bone1 = slicer.util.getNode('bone1')
+bone2 = slicer.util.getNode('bone2')
+bone3 = slicer.util.getNode('bone3')
+bone4 = slicer.util.getNode('bone4')
+bone5 = slicer.util.getNode('bone5')
+bone6 = slicer.util.getNode('bone6')
+
+# Get the points of the bones
+bone1_point = [0.0, 0.0, 0.0]
+bone2_point = [0.0, 0.0, 0.0]
+bone3_point = [0.0, 0.0, 0.0]
+bone4_point = [0.0, 0.0, 0.0]
+bone5_point = [0.0, 0.0, 0.0]
+bone6_point = [0.0, 0.0, 0.0]
+
+bone1.GetNthControlPointPosition(0, bone1_point)
+bone2.GetNthControlPointPosition(0, bone2_point)
+bone3.GetNthControlPointPosition(0, bone3_point)
+bone4.GetNthControlPointPosition(0, bone4_point)
+bone5.GetNthControlPointPosition(0, bone5_point)
+bone6.GetNthControlPointPosition(0, bone6_point)
+
+# Get the nose profile outline node from the scene
+nose_profile_outline6 = slicer.util.getNode('nose profile outline 6')
+
+# Get the points of the nose profile outline
+nose_profile_outline6_points = [[0.0, 0.0, 0.0] for _ in range(nose_profile_outline6.GetNumberOfControlPoints())]
+
+for i in range(nose_profile_outline6.GetNumberOfControlPoints()):
+    nose_profile_outline6.GetNthControlPointPosition(i, nose_profile_outline6_points[i])
+import slicer
+import numpy as np
+
+def is_point_on_line(line_points, point):
+    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+    point = np.array(point)
+    line_vec = p2 - p1
+    point_vec = point - p1
+    cross_product = np.cross(line_vec, point_vec)
+    return np.allclose(cross_product, 0)
+
+def adjust_point_to_line(line_points, point):
+    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+    point = np.array(point)
+    line_vec = p2 - p1
+    line_vec_normalized = line_vec / np.linalg.norm(line_vec)
+    point_vec = point - p1
+    projection_length = np.dot(point_vec, line_vec_normalized)
+    adjusted_point = p1 + projection_length * line_vec_normalized
+    return adjusted_point.tolist()
+
+# Get the line nodes from the scene
+INB_B = slicer.util.getNode('INB_B')
+INB_C = slicer.util.getNode('INB_C')
+INB_D = slicer.util.getNode('INB_D')
+INB_E = slicer.util.getNode('INB_E')
+INB_F = slicer.util.getNode('INB_F')
+INB_A = slicer.util.getNode('INB_A')
+
+# Get the points of the lines
+INB_B_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_C_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_D_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_E_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_F_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+INB_A_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+
+for i in range(INB_B.GetNumberOfControlPoints()):
+    INB_B.GetNthControlPointPosition(i, INB_B_points[i])
+
+for i in range(INB_C.GetNumberOfControlPoints()):
+    INB_C.GetNthControlPointPosition(i, INB_C_points[i])
+
+for i in range(INB_D.GetNumberOfControlPoints()):
+    INB_D.GetNthControlPointPosition(i, INB_D_points[i])
+
+for i in range(INB_E.GetNumberOfControlPoints()):
+    INB_E.GetNthControlPointPosition(i, INB_E_points[i])
+
+for i in range(INB_F.GetNumberOfControlPoints()):
+    INB_F.GetNthControlPointPosition(i, INB_F_points[i])
+
+for i in range(INB_A.GetNumberOfControlPoints()):
+    INB_A.GetNthControlPointPosition(i, INB_A_points[i])
+
+# Get the bone nodes from the scene
+bone1 = slicer.util.getNode('bone1')
+bone2 = slicer.util.getNode('bone2')
+bone3 = slicer.util.getNode('bone3')
+bone4 = slicer.util.getNode('bone4')
+bone5 = slicer.util.getNode('bone5')
+bone6 = slicer.util.getNode('bone6')
+
+# Get the points of the bones
+bone1_point = [0.0, 0.0, 0.0]
+bone2_point = [0.0, 0.0, 0.0]
+bone3_point = [0.0, 0.0, 0.0]
+bone4_point = [0.0, 0.0, 0.0]
+bone5_point = [0.0, 0.0, 0.0]
+bone6_point = [0.0, 0.0, 0.0]
+
+bone1.GetNthControlPointPosition(0, bone1_point)
+bone2.GetNthControlPointPosition(0, bone2_point)
+bone3.GetNthControlPointPosition(0, bone3_point)
+bone4.GetNthControlPointPosition(0, bone4_point)
+bone5.GetNthControlPointPosition(0, bone5_point)
+bone6.GetNthControlPointPosition(0, bone6_point)
+
+# Get the nose profile outline node from the scene
+nose_profile_outline6 = slicer.util.getNode('nose profile outline 6')
+
+# Get the points of the nose profile outline
+nose_profile_outline6_points = [[0.0, 0.0, 0.0] for _ in range(nose_profile_outline6.GetNumberOfControlPoints())]
+
+for i in range(nose_profile_outline6.GetNumberOfControlPoints()):
+    nose_profile_outline6.GetNthControlPointPosition(i, nose_profile_outline6_points[i])
+
+# Check if points are on the lines and adjust if necessary
+if not is_point_on_line(INB_B_points, bone1_point):
+    bone1_adjusted = adjust_point_to_line(INB_B_points, bone1_point)
+else:
+    bone1_adjusted = bone1_point
+
+if not is_point_on_line(INB_B_points, nose_profile_outline6_points[0]):
+    nose_profile_outline6_point0_adjusted = adjust_point_to_line(INB_B_points, nose_profile_outline6_points[0])
+else:
+    nose_profile_outline6_point0_adjusted = nose_profile_outline6_points[0]
+
+if not is_point_on_line(INB_C_points, bone2_point):
+    bone2_adjusted = adjust_point_to_line(INB_C_points, bone2_point)
+else:
+    bone2_adjusted = bone2_point
+
+if not is_point_on_line(INB_C_points, nose_profile_outline6_points[1]):
+    nose_profile_outline6_point1_adjusted = adjust_point_to_line(INB_C_points, nose_profile_outline6_points[1])
+else:
+    nose_profile_outline6_point1_adjusted = nose_profile_outline6_points[1]
+
+if not is_point_on_line(INB_D_points, bone3_point):
+    bone3_adjusted = adjust_point_to_line(INB_D_points, bone3_point)
+else:
+    bone3_adjusted = bone3_point
+
+if not is_point_on_line(INB_D_points, nose_profile_outline6_points[2]):
+    nose_profile_outline6_point2_adjusted = adjust_point_to_line(INB_D_points, nose_profile_outline6_points[2])
+else:
+    nose_profile_outline6_point2_adjusted = nose_profile_outline6_points[2]
+
+if not is_point_on_line(INB_E_points, bone4_point):
+    bone4_adjusted = adjust_point_to_line(INB_E_points, bone4_point)
+else:
+    bone4_adjusted = bone4_point
+
+if not is_point_on_line(INB_E_points, nose_profile_outline6_points[3]):
+    nose_profile_outline6_point3_adjusted = adjust_point_to_line(INB_E_points, nose_profile_outline6_points[3])
+else:
+    nose_profile_outline6_point3_adjusted = nose_profile_outline6_points[3]
+
+if not is_point_on_line(INB_F_points, bone5_point):
+    bone5_adjusted = adjust_point_to_line(INB_F_points, bone5_point)
+else:
+    bone5_adjusted = bone5_point
+
+if not is_point_on_line(INB_F_points, nose_profile_outline6_points[4]):
+    nose_profile_outline6_point4_adjusted = adjust_point_to_line(INB_F_points, nose_profile_outline6_points[4])
+else:
+    nose_profile_outline6_point4_adjusted = nose_profile_outline6_points[4]
+
+if not is_point_on_line(INB_A_points, bone6_point):
+    bone6_adjusted = adjust_point_to_line(INB_A_points, bone6_point)
+else:
+    bone6_adjusted = bone6_point
+
+if not is_point_on_line(INB_A_points, nose_profile_outline6_points[5]):
+    nose_profile_outline6_point5_adjusted = adjust_point_to_line(INB_A_points, nose_profile_outline6_points[5])
+else:
+    nose_profile_outline6_point5_adjusted = nose_profile_outline6_points[5]
+
+# Update the points with the adjusted positions
+bone1.SetNthControlPointPosition(0, *bone1_adjusted)
+nose_profile_outline6.SetNthControlPointPosition(0, *nose_profile_outline6_point0_adjusted)
+
+bone2.SetNthControlPointPosition(0, *bone2_adjusted)
+nose_profile_outline6.SetNthControlPointPosition(1, *nose_profile_outline6_point1_adjusted)
+
+bone3.SetNthControlPointPosition(0, *bone3_adjusted)
+nose_profile_outline6.SetNthControlPointPosition(2, *nose_profile_outline6_point2_adjusted)
+
+bone4.SetNthControlPointPosition(0, *bone4_adjusted)
+nose_profile_outline6.SetNthControlPointPosition(3, *nose_profile_outline6_point3_adjusted)
+
+bone5.SetNthControlPointPosition(0, *bone5_adjusted)
+nose_profile_outline6.SetNthControlPointPosition(4, *nose_profile_outline6_point4_adjusted)
+
+bone6.SetNthControlPointPosition(0, *bone6_adjusted)
+nose_profile_outline6.Set
 ```
 </details>
 
