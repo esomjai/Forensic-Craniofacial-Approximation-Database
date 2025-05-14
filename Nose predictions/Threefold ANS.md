@@ -1,4 +1,4 @@
-# The Threefold ANS Method by Krogman & Iscan, 1986[^2]
+[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212527/KrogmanIscan_hard_tissue.mrk.json)[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212522/KrogmanIscan_hard_tissue.mrk.json)[KrogmanIscan_soft _tissue.mrk.json](https://github.com/user-attachments/files/20212515/KrogmanIscan_soft._tissue.mrk.json)[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212510/KrogmanIscan_hard_tissue.mrk.json)# The Threefold ANS Method by Krogman & Iscan, 1986[^2]
 
 
 The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010)[^7]. They describe it as follows:
@@ -28,20 +28,19 @@ To achieve this, we will
 - [Combined method output](#combining-methods-output)
 
 Landmarks in this  guide: 
+[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json)
+[KrogmanIscan_soft _tissue.mrk.json](https://github.com/user-attachments/files/20212534/KrogmanIscan_soft._tissue.mrk.json)
 
-[KrogmanIscan soft tissue.mrk.json](https://github.com/user-attachments/files/19208286/KrogmanIscan.soft.tissue.mrk.json)
-
-[KrogmanIscan hard tissue.mrk.json](https://github.com/user-attachments/files/19208288/KrogmanIscan.hard.tissue.mrk.json)
 
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
 
-KrogmanIscan soft tissue contains:
+KrogmanIscan_soft_tissue contains:
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | 0                | 1                | pronasale    | pronasale     | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen           | Caple and Stephan 2016[^8]|
 
-KrogmanIscan hard tissue contains:
+KrogmanIscan_hard_tissue contains:
 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
@@ -71,7 +70,7 @@ To help with the side profile, we will establish the “INB” plane as defined 
 
 > a midsagittal plane (INB) which bisected the inion, nasion and bregma
 
-by downloading the hard tissue markups file for this method: [KrogmanIscan hard tissue.mrk.json](https://github.com/user-attachments/files/19208288/KrogmanIscan.hard.tissue.mrk.json), allocating the first three landmarks (nasion, inion, bregma) and copying and pasting the following code: 
+by downloading the hard tissue markups file for this method: [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/19208288/KrogmanIscan.hard.tissue.mrk.json), allocating the first three landmarks (nasion, inion, bregma) and copying and pasting the following code: 
 
 ```python
 #INB plane#
@@ -79,8 +78,8 @@ by downloading the hard tissue markups file for this method: [KrogmanIscan hard 
 import numpy as np
 import slicer
 
-# Get the points from the "KrogmanIscan hard tissue" node
-hardTissueNode = slicer.util.getNode('KrogmanIscan hard tissue')
+# Get the points from the "KrogmanIscan_hard_tissue" node
+hardTissueNode = slicer.util.getNode('KrogmanIscan_hard_tissue')
 point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
 point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
 point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
@@ -228,7 +227,7 @@ The hard tissue mid-philtrum is defined as the _Median point midway between subs
 ```python
 ###Mid-philtrum landmark & VMJ-aca line###
 
-F=getNode('KrogmanIscan hard tissue')  
+F=getNode('KrogmanIscan_hard_tissue')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(4)     
@@ -239,7 +238,7 @@ L.AddControlPoint(secondPoint)
 L.SetName('VMJ-aca')     
 #name of your measurements#
 
-F=getNode('KrogmanIscan hard tissue')  
+F=getNode('KrogmanIscan_hard_tissue')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(3)     
@@ -256,10 +255,10 @@ from slicer.util import getNode
 # Get the Markups node for the line 'ss-pr'
 lineNode = getNode('ss-pr')
 
-# Get the Markups node for 'KrogmanIscan hard tissue'
-hardTissueNode = getNode('KrogmanIscan hard tissue')
+# Get the Markups node for 'KrogmanIscan_hard_tissue'
+hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
-# Get the coordinates of the endpoints from 'KrogmanIscan hard tissue' at positions 3 and 6
+# Get the coordinates of the endpoints from 'KrogmanIscan_hard_tissue' at positions 3 and 6
 point1 = [0, 0, 0]
 point2 = [0, 0, 0]
 hardTissueNode.GetNthControlPointPosition(3, point1)
@@ -268,7 +267,7 @@ hardTissueNode.GetNthControlPointPosition(6, point2)
 # Calculate the midpoint
 midpoint = [(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2, (point1[2] + point2[2]) / 2]
 
-# Add the midpoint to the 'KrogmanIscan hard tissue' node using AddControlPoint and set its label to "mp"
+# Add the midpoint to the 'KrogmanIscan_hard_tissue' node using AddControlPoint and set its label to "mp"
 midpointIndex = hardTissueNode.AddControlPoint(midpoint)
 hardTissueNode.SetNthControlPointLabel(midpointIndex, "mp")
 ```
@@ -288,7 +287,7 @@ For the soft tissue depth ”marker”, establish manually a line on both sides 
 <img src="https://github.com/user-attachments/assets/89d0d6ea-02a3-49c8-bf8f-061f397989ee3" width="500">
 
 
-This is needed to create the mid-philtrum soft tissue thickness’ direction perpendicular to the maxillary plane. An issue I found is that the average soft tissue thickness measurements often do not meet the acanthion vector. Therefore, a 5 cm extension is built-in the codes: **elongated mp soft tissue depth** and **cyl KrogmanIscan soft tissue ext** .
+This is needed to create the mid-philtrum soft tissue thickness’ direction perpendicular to the maxillary plane. An issue I found is that the average soft tissue thickness measurements often do not meet the acanthion vector. Therefore, a 5 cm extension is built-in the codes: **elongated mp soft tissue depth** and **cyl KrogmanIscan_soft_tissue ext** .
 **Both methods** described will try to establish the line from the endpoint of the tissue marker a line perpendicular to the “aca projected to  INB” and find their intersection point to then measure the aca-VMJ distance 3 times from there, establishing the predicted pronasale as the anterior endpoint of the _"prd pred"/"prn pred-cyl"_ line. 
 
 ### Soft tissue depth markers
@@ -323,8 +322,8 @@ import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the Markups node for 'KrogmanIscan hard tissue'
-hardTissueNode = getNode('KrogmanIscan hard tissue')
+# Get the Markups node for 'KrogmanIscan_hard_tissue'
+hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
 # Get the coordinates of the point 'mp' at position 7
 mp = np.array(hardTissueNode.GetNthControlPointPositionVector(7))
@@ -357,8 +356,8 @@ import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the Markups node for 'KrogmanIscan hard tissue'
-hardTissueNode = getNode('KrogmanIscan hard tissue')
+# Get the Markups node for 'KrogmanIscan_hard_tissue'
+hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
 # Get the coordinates of the point 'mp' at position 7
 mp = np.array(hardTissueNode.GetNthControlPointPositionVector(7))
@@ -422,8 +421,8 @@ direction_vector /= np.linalg.norm(direction_vector)
 # Define the new length (50 mm)
 new_length = 50.0
 
-# Get the start point from "KrogmanIscan hard tissue" at position 7
-krogman_iscan_node = slicer.util.getNode("KrogmanIscan hard tissue")
+# Get the start point from "KrogmanIscan_hard_tissue" at position 7
+krogman_iscan_node = slicer.util.getNode("KrogmanIscan_hard_tissue")
 new_start_point = np.array(krogman_iscan_node.GetNthControlPointPosition(7))
 
 # Calculate the new end point based on the new start point
@@ -465,8 +464,8 @@ acaDirection /= np.linalg.norm(acaDirection)  # Normalize the vector
 # Calculate the intersection point
 intersectionPoint = line_intersection(softTissuePoint1, softTissueDirection, acaPoint1, acaDirection)
 
-# Get the 'KrogmanIscan hard tissue' Markups node
-hardTissueNode = getNode('KrogmanIscan hard tissue')
+# Get the 'KrogmanIscan_hard_tissue' Markups node
+hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
 # Add the intersection point as a new control point
 hardTissueNode.AddControlPoint(intersectionPoint.tolist())
@@ -476,8 +475,8 @@ import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the 'KrogmanIscan hard tissue' Markups node
-hardTissueNode = getNode('KrogmanIscan hard tissue')
+# Get the 'KrogmanIscan_hard_tissue' Markups node
+hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
 # Get the coordinates of the point at position 8
 startPoint = np.array(hardTissueNode.GetNthControlPointPositionVector(8))
@@ -525,7 +524,7 @@ displayNode.SetColor(255/255, 0/255, 255/255)
 Here, the anterior endpoint of the prn pred line will serve as the predicted pronasale (see image under the error section).
 
 ### Line Error of estimate
-As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan soft tissue.lmrk.json_ ) and check the error rate (copy and paste the code "prn error"). 
+As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan_soft_tissue.lmrk.json_ ) and check the error rate (copy and paste the code "prn error"). 
 
 ```python
 ###line prn error####
@@ -540,8 +539,8 @@ prnPredLine = getNode('prn pred')
 # Get the endpoint of the 'prn pred' line (assuming it's the second point)
 prnPredEndpoint = np.array(prnPredLine.GetNthControlPointPositionVector(1))
 
-# Get the 'KrogmanIscan soft tissue' Markups node
-softTissueNode = getNode('KrogmanIscan soft tissue')
+# Get the 'KrogmanIscan_soft_tissue' Markups node
+softTissueNode = getNode('KrogmanIscan_soft_tissue')
 
 # Get the coordinates of the point at position 0
 softTissuePoint = np.array(softTissueNode.GetNthControlPointPositionVector(0))
@@ -592,7 +591,7 @@ import slicer
 
 # Get nodes
 referenceLine = slicer.util.getNode('reference for mp')
-hardTissue = slicer.util.getNode('KrogmanIscan hard tissue')
+hardTissue = slicer.util.getNode('KrogmanIscan_hard_tissue')
 
 # Calculate center point and direction
 centerPoint = np.array(hardTissue.GetNthControlPointPosition(7))
@@ -696,8 +695,8 @@ try:
     # Calculate the end point of the new line in the perpendicular direction
     endPoint = closestPoint + 50 * perpendicularDirection
 
-    # Create a new line node for the "KrogmanIscan soft tissue ext"
-    softTissueExtNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'cyl KrogmanIscan soft tissue ext')
+    # Create a new line node for the "KrogmanIscan_soft_tissue ext"
+    softTissueExtNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'cyl KrogmanIscan_soft_tissue ext')
     softTissueExtNode.AddControlPoint(closestPoint[0], closestPoint[1], closestPoint[2])
     softTissueExtNode.AddControlPoint(endPoint[0], endPoint[1], endPoint[2])
 
@@ -705,15 +704,15 @@ try:
     t = np.dot((closestPoint - acaPoint1), acaDirection) / np.dot(acaDirection, acaDirection)
     intersectionPoint = acaPoint1 + t * acaDirection
 
-    # Add the intersection point to the existing "KrogmanIscan hard tissue" node
-    hardTissueNode = getNode('KrogmanIscan hard tissue')
+    # Add the intersection point to the existing "KrogmanIscan_hard_tissue" node
+    hardTissueNode = getNode('KrogmanIscan_hard_tissue')
     hardTissueNode.AddControlPoint(intersectionPoint[0], intersectionPoint[1], intersectionPoint[2])
     hardTissueNode.SetNthControlPointLabel(hardTissueNode.GetNumberOfControlPoints() - 1, 'cyl intersection')
 
     print(f'The shortest distance is {minDistance} mm')
     print(f'The closest point on the cylinder is {closestPoint}')
-    print(f'The new line "KrogmanIscan soft tissue ext" has been created.')
-    print(f'The intersection point has been added to the "KrogmanIscan hard tissue" node as "cyl intersection"')
+    print(f'The new line "KrogmanIscan_soft_tissue ext" has been created.')
+    print(f'The intersection point has been added to the "KrogmanIscan_hard_tissue" node as "cyl intersection"')
 
 except Exception as e:
     print(f'An error occurred: {e}')
@@ -722,8 +721,8 @@ import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the 'KrogmanIscan hard tissue' Markups node
-hardTissueNode = getNode('KrogmanIscan hard tissue')
+# Get the 'KrogmanIscan_hard_tissue' Markups node
+hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
 # Get the coordinates of the point at position 8
 startPoint = np.array(hardTissueNode.GetNthControlPointPositionVector(8))
@@ -771,7 +770,7 @@ displayNode.SetColor(255/255, 0/255, 255/255)
 
 
 ### Cylinder Error of estimate
-As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan soft tissue.lmrk.json_ ) and check the error rate (copy and paste the code "cylinder prn error"). 
+As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan_soft_tissue.lmrk.json_ ) and check the error rate (copy and paste the code "cylinder prn error"). 
 
 ```python
 ###cylinder prn error###
@@ -786,8 +785,8 @@ prnPredLine = getNode('prn pred - cyl')
 # Get the endpoint of the 'prn pred' line (assuming it's the second point)
 prnPredEndpoint = np.array(prnPredLine.GetNthControlPointPositionVector(1))
 
-# Get the 'KrogmanIscan soft tissue' Markups node
-softTissueNode = getNode('KrogmanIscan soft tissue')
+# Get the 'KrogmanIscan_soft_tissue' Markups node
+softTissueNode = getNode('KrogmanIscan_soft_tissue')
 
 # Get the coordinates of the point at position 0
 softTissuePoint = np.array(softTissueNode.GetNthControlPointPositionVector(0))
@@ -816,7 +815,7 @@ The output will look like this:
 | (unknown) | VMJ-aca | 7.541734760923145 |
 | (unknown) | ss-pr | 10.432451394420564 |
 | (unknown) | reference for mp | 10.678559893806572 |
-| (unknown) | cyl KrogmanIscan soft tissue ext | 50.0 |
+| (unknown) | cyl KrogmanIscan_soft_tissue ext | 50.0 |
 | (unknown) | prn pred - cyl | 22.62520428276943 |
 | (unknown) | prn error - cyl | 7.2860215755338915 |
 
@@ -837,7 +836,7 @@ You can also just carry out both methods (line/cylinder) one after the other - t
 | (unknown) | elongated mp soft tissue depth | 49.99999999999999 |
 | (unknown) | prn pred | 22.62520428276943 |
 | (unknown) | prn error | 7.2860215755338915 |
-| (unknown) | cyl KrogmanIscan soft tissue ext | 50.0 |
+| (unknown) | cyl KrogmanIscan_soft_tissue ext | 50.0 |
 | (unknown) | prn pred - cyl | 22.62520428276943 |
 | (unknown) | prn error - cyl | 7.2860215755338915 |
 
