@@ -29,6 +29,8 @@ To achieve this, we will
 
 Landmarks in this  guide: 
 [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json)
+
+
 [KrogmanIscan_soft _tissue.mrk.json](https://github.com/user-attachments/files/20212534/KrogmanIscan_soft._tissue.mrk.json)
 
 
@@ -70,7 +72,8 @@ To help with the side profile, we will establish the “INB” plane as defined 
 
 > a midsagittal plane (INB) which bisected the inion, nasion and bregma
 
-by downloading the hard tissue markups file for this method: [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/19208288/KrogmanIscan.hard.tissue.mrk.json), allocating the first three landmarks (nasion, inion, bregma) and copying and pasting the following code: 
+by downloading the hard tissue markups file for this method: [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json)
+ allocating the first three landmarks (nasion, inion, bregma) and copying and pasting the following code: 
 
 ```python
 #INB plane#
