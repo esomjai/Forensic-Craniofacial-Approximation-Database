@@ -250,7 +250,7 @@ ptpPlaneNode = slicer.util.getNode('PTP')
 
 # Get the MAW measurement position (assuming it's stored in a node)
 # Replace 'MAW' with the actual node name or method to get the MAW position
-mawNode = slicer.util.getNode('maximum nasal width MAW')
+mawNode = slicer.util.getNode('maximum_nasal_width_MAW')
 mawPosition = np.array(mawNode.GetNthControlPointPositionWorld(0))  # Adjust index if needed
 
 # Get the PTP plane position and normal
@@ -302,7 +302,7 @@ ptpPlaneNode = slicer.util.getNode('PTP')
 
 # Get the MAW measurement position (assuming it's stored in a node)
 # Replace 'MAW' with the actual node name or method to get the MAW position
-mawNode = slicer.util.getNode('maximum nasal width MAW')
+mawNode = slicer.util.getNode('maximum_nasal_width_MAW')
 mawPosition = np.array(mawNode.GetNthControlPointPositionWorld(0))  # Adjust index if needed
 
 # Get the PTP plane position and normal
@@ -352,7 +352,7 @@ import numpy as np
 ptpPlaneNode = slicer.util.getNode('PTP')
 
 # Get the MAW measurement position (assuming it's stored in a node)
-mawNode = slicer.util.getNode('maximum nasal width MAW')
+mawNode = slicer.util.getNode('maximum_nasal_width_MAW')
 mawPosition = np.array(mawNode.GetNthControlPointPositionWorld(0))  # Adjust index if needed
 
 # Get the PTP plane position and normal
