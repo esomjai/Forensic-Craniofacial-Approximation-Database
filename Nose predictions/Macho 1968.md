@@ -1,4 +1,4 @@
-[hard_tissue_Macho.mrk.json](https://github.com/user-attachments/files/20212658/hard_tissue_Macho.mrk.json)# The Compound Method by Macho, 1968[^2]
+# The Compound Method by Macho, 1968[^2]
 
 The guide of this method represents Rynn’s (2010)[^8] interpretation of the original method  which was based on Goldhamer’s (1926)[^3] hypothesis by Macho et al. (1986)[^2]. 
 
