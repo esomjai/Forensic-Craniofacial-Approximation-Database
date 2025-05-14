@@ -1,4 +1,4 @@
-# The Compound Method by Macho, 1968[^2]
+[hard_tissue_Macho.mrk.json](https://github.com/user-attachments/files/20212658/hard_tissue_Macho.mrk.json)# The Compound Method by Macho, 1968[^2]
 
 The guide of this method represents Rynn’s (2010)[^8] interpretation of the original method  which was based on Goldhamer’s (1926)[^3] hypothesis by Macho et al. (1986)[^2]. 
 
@@ -50,7 +50,7 @@ Landmarks in this guide:
 | 5             | 6               | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^8]      |
 | 6                | 7                |  P  |   prominence  | most prominent point among the ossa nasalia      | Macho, 1986[^2] |
 
-[Download hard tissue Macho.mrk.json](https://github.com/user-attachments/files/19533832/hard.tissue.Macho.mrk.json)
+
 
 
 **Illustration of the method:** 
@@ -68,10 +68,11 @@ Landmarks in this guide:
 By definition, the sella point is a floating landmark. It is used in lateral cephalograms, mainly in dentistry then got adapted for craniofacial measurements in 2D as well.  With the wider use of CBCTs, the allocation of this significant landmark in 3D was debated as some defined it from the profile view (like the original lateral cephalogram and some called for a revised definition of allocating it in 3D. Pittayapat et al. (2014)[^5] found no consensus is defining the sellion in 3D, so they initiated one in their later research (Pittayapat et al. 2015)[^6]. By their definition, the sellion is located within a "coordinate system" comprising of 4 landmarks and vertical plane defined by the mid-APT and mid-ACP points. They also establish Sella 1 and Sella 2 (so not one sellion point) citing "the choice of using Sella 1 or Sella 2 made no significant difference" in reproducibility which with the nasion landmark will be sufficient orientations to fit the SN plane of orientation (sellion1-sellion 2-nasion). 
 
 For the allocation of all landmarks, please download both: 
-[Pittayapat plane.mrk.json](https://github.com/user-attachments/files/19532839/Pittayapat.plane.mrk.json)
-[hard tissue Macho.mrk.json](https://github.com/user-attachments/files/19532846/hard.tissue.Macho.mrk.json)
+[Pittayapat_plane.mrk.json](https://github.com/user-attachments/files/20212666/Pittayapat_plane.mrk.json)
+[hard_tissue_Macho.mrk.json](https://github.com/user-attachments/files/20212665/hard_tissue_Macho.mrk.json)
 
-And proceed with the allocation of the Pittayapat plane landmarks first. 
+
+And proceed with the allocation of the Pittayapat_plane landmarks first. 
 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
@@ -96,14 +97,14 @@ The code in the next section will achive the following:
 def calculate_midpoint(point1, point2):
     return [(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2, (point1[2] + point2[2]) / 2]
 
-# Retrieve the Pittayapat plane node
-F = getNode('Pittayapat plane')
+# Retrieve the Pittayapat_plane node
+F = getNode('Pittayapat_plane')
 
 # Calculate midpoints
 midACP = calculate_midpoint(F.GetNthControlPointPositionVector(0), F.GetNthControlPointPositionVector(1))
 midAPT = calculate_midpoint(F.GetNthControlPointPositionVector(2), F.GetNthControlPointPositionVector(3))
 
-# Add the midpoints to the Pittayapat plane node
+# Add the midpoints to the Pittayapat_plane node
 F.AddControlPoint(midACP[0], midACP[1], midACP[2])
 F.SetNthControlPointLabel(F.GetNumberOfControlPoints() - 1, 'midACP')
 
@@ -134,8 +135,8 @@ def add_plane_node(name, origin, normal):
     planeNode.SetNormal(normal.tolist())
     return planeNode
 
-# Retrieve the Pittayapat plane node
-F = slicer.util.getNode('Pittayapat plane')
+# Retrieve the Pittayapat_plane node
+F = slicer.util.getNode('Pittayapat_plane')
 
 # --- Create "mid-ACP" plane ---
 point_midACP_1 = F.GetNthControlPointPositionVector(4)
@@ -233,10 +234,10 @@ def restrict_axis_length_from_point(midpoint, direction, length=200.0):
     end_point = [midpoint[i] + half_length * direction[i] for i in range(3)]
     return start_point, end_point
 
-# Retrieve the Pittayapat plane node
-F = slicer.util.getNode('Pittayapat plane')
+# Retrieve the Pittayapat_plane node
+F = slicer.util.getNode('Pittayapat_plane')
 
-# Get the specific points saved in the Pittayapat plane node
+# Get the specific points saved in the Pittayapat_plane node
 point_for_ACP_axis = F.GetNthControlPointPositionVector(4)  # Position 4
 point_for_APT_axis = F.GetNthControlPointPositionVector(5)  # Position 5
 
@@ -256,13 +257,13 @@ plane_vertical_midAPT = (np.array(vertical_midAPT_plane.GetNormal()), -np.dot(np
 # --- Calculate Intersection Lines ---
 # ACP axis (intersection of mid-ACP and vertical mid-ACP)
 ACP_axis_point, ACP_axis_direction = calculate_intersection_line(plane_midACP, plane_vertical_midACP)
-# Ensure ACP axis is centered at the point at position 4 in Pittayapat plane
+# Ensure ACP axis is centered at the point at position 4 in Pittayapat_plane
 ACP_axis_direction /= np.linalg.norm(ACP_axis_direction)  # Normalize the direction vector
 start_point_ACP, end_point_ACP = restrict_axis_length_from_point(point_for_ACP_axis, ACP_axis_direction)
 
 # APT axis (intersection of mid-APT and vertical mid-APT)
 APT_axis_point, APT_axis_direction = calculate_intersection_line(plane_midAPT, plane_vertical_midAPT)
-# Ensure APT axis is centered at the point at position 5 in Pittayapat plane
+# Ensure APT axis is centered at the point at position 5 in Pittayapat_plane
 APT_axis_direction /= np.linalg.norm(APT_axis_direction)  # Normalize the direction vector
 start_point_APT, end_point_APT = restrict_axis_length_from_point(point_for_APT_axis, APT_axis_direction)
 
@@ -378,10 +379,9 @@ print("Point tracking has been disabled for 'sellion1' and 'sellion2'.")
 And you can also hide the interaction handles. 
 ![image](https://github.com/user-attachments/assets/aa268e72-89d3-454e-bd61-e151ce053efb)
 
-## Allocate all the landmarks in "hard tissue Macho.json"
+## Allocate all the landmarks in "hard_tissue_Macho.json"
 
-[hard tissue Macho.mrk.json](https://github.com/user-attachments/files/19533857/hard.tissue.Macho.mrk.json)
-
+[hard_tissue_Macho.mrk.json](https://github.com/user-attachments/files/20212665/hard_tissue_Macho.mrk.json)
 
 > [!IMPORTANT]
 > The following codes can be all copied and pasted in one go, we chose to include explanation. For the whole snippet, go to: [ALL code in one snippet](#all-code-in-one-snippet)
@@ -402,8 +402,8 @@ And you can also hide the interaction handles.
 import numpy as np
 import slicer
 
-# Get the points from the "hard tissue Macho" node
-hardTissueNode = slicer.util.getNode('hard tissue Macho')
+# Get the points from the "hard_tissue_Macho" node
+hardTissueNode = slicer.util.getNode('hard_tissue_Macho')
 point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
 point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
 point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
@@ -442,13 +442,13 @@ import slicer
 import numpy as np
 
 # Access the necessary nodes
-hardTissueNode = slicer.util.getNode('hard tissue Macho')
+hardTissueNode = slicer.util.getNode('hard_tissue_Macho')
 sellion1Node = slicer.util.getNode('sellion1_node')
 sellion2Node = slicer.util.getNode('sellion2_node')
 
 # Check for node existence
 if not hardTissueNode or not sellion1Node or not sellion2Node:
-    raise Exception("One or more nodes ('hard tissue Macho', 'sellion1_node', 'sellion2_node') not found.")
+    raise Exception("One or more nodes ('hard_tissue_Macho', 'sellion1_node', 'sellion2_node') not found.")
 
 # Get positions from the sellion nodes
 sellion1_pos = [0.0, 0.0, 0.0]
@@ -466,7 +466,7 @@ sellionsLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # Blue color
 # Calculate the midpoint of 'sellions'
 midpoint = (np.array(sellion1_pos) + np.array(sellion2_pos)) / 2
 
-# Add the midpoint to 'hard tissue Macho'
+# Add the midpoint to 'hard_tissue_Macho'
 hardTissueNode.AddControlPoint(midpoint.tolist(), 'midsellion')
 
 # Retrieve the newly added 'midsellion' and the first point
@@ -539,7 +539,7 @@ SN plane and SN line in the environment
 
 ```python
 ###height of apertura piriformis (measurement no. 2 in Macho, 1968)###
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(4)     
 #rhinion#
@@ -602,7 +602,7 @@ projectedLineNode.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)  # RGB values
 <summary>Code for the height of bony nose (measurement no.3)</summary> 
 
 ```python
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(0)     
@@ -665,8 +665,8 @@ projectedLineNode.GetDisplayNode().SetSelectedColor(1.0, 0.0, 1.0)  # RGB values
 <details>
 <summary>Code for line bisecting P & parallel to SN line</summary> 
 
-# Get the 'hard tissue Macho' and 'SN line' nodes
-hard_tissue_node = getNode('hard tissue Macho')
+# Get the 'hard_tissue_Macho' and 'SN line' nodes
+hard_tissue_node = getNode('hard_tissue_Macho')
 SN_line = getNode('SN line')
 
 # Retrieve the coordinates of 'P' at position 6
@@ -745,8 +745,8 @@ projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for y
 <summary>Code for creating a line bisecting the rhinion & parallel to SN line</summary>  
 
 ```python 
-# Get the 'hard tissue Macho' and 'SN line' nodes
-hard_tissue_node = getNode('hard tissue Macho')
+# Get the 'hard_tissue_Macho' and 'SN line' nodes
+hard_tissue_node = getNode('hard_tissue_Macho')
 SN_line = getNode('SN line')
 
 # Retrieve the coordinates of 'rhi' at position 4
@@ -870,12 +870,12 @@ def find_line_intersection(p1, v1, p2, v2):
 try:
     intersection_point = find_line_intersection(start_INB_proj_line, vec_INB_proj_line, start_rhi_parallel_proj, vec_rhi_parallel_proj)
     
-    # Save the intersection point as a new node in 'hard tissue Macho'
-    hard_tissue = getNode('hard tissue Macho')
+    # Save the intersection point as a new node in 'hard_tissue_Macho'
+    hard_tissue = getNode('hard_tissue_Macho')
     new_control_point_index = hard_tissue.AddControlPoint(intersection_point)
     hard_tissue.SetNthControlPointLabel(new_control_point_index, '3INB proj - rhi parallel intersection')
     
-    print("Intersection point successfully added to 'hard tissue Macho' node.")
+    print("Intersection point successfully added to 'hard_tissue_Macho' node.")
 except ValueError as e:
     print(str(e))
 ```
@@ -931,12 +931,12 @@ def find_line_intersection(p1, v1, p2, v2):
 try:
     intersection_point = find_line_intersection(start_INB_proj_line, vec_INB_proj_line, start_P_parallel_proj, vec_P_parallel_proj)
     
-    # Save the intersection point as a new node in 'hard tissue Macho'
-    hard_tissue = getNode('hard tissue Macho')
+    # Save the intersection point as a new node in 'hard_tissue_Macho'
+    hard_tissue = getNode('hard_tissue_Macho')
     new_control_point_index = hard_tissue.AddControlPoint(intersection_point)
     hard_tissue.SetNthControlPointLabel(new_control_point_index, '3INB proj - P parallel intersection')
     
-    print("Intersection point successfully added to 'hard tissue Macho' node.")
+    print("Intersection point successfully added to 'hard_tissue_Macho' node.")
 except ValueError as e:
     print(str(e))
 ``` 
@@ -949,7 +949,7 @@ except ValueError as e:
 
 ```python
 
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(9)     
@@ -970,7 +970,7 @@ line_display.SetSelectedColor(1.0, 0.0, 1.0)
 <summary>Code for height of rhinion (no. 7)</summary>  
 
 ```python
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(8)     
@@ -994,7 +994,7 @@ line_display.SetSelectedColor(1.0, 0.0, 1.0)
 
 
 ```python
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(8)     
@@ -1017,7 +1017,7 @@ line_display.SetSelectedColor(1.0, 0.0, 1.0)
 
 
 ```python
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(9)     
@@ -1043,7 +1043,7 @@ import slicer
 import numpy as np
 
 # Get the nodes for the existing points and lines
-hardTissueNode = slicer.util.getNode('hard tissue Macho')
+hardTissueNode = slicer.util.getNode('hard_tissue_Macho')
 
 # Get the positions of the control points
 apexPoint = np.array(hardTissueNode.GetNthControlPointPosition(5))
@@ -1063,7 +1063,7 @@ print("New angle '9 angle between plane n-aca and rhi-aca plane' created success
 
 <details>
 <summary>ALL code in one snippet </summary>
-Just copy+paste this after you allocated all hard tissue Macho landmarks
+Just copy+paste this after you allocated all hard_tissue_Macho landmarks
 
 
 ```python
@@ -1073,8 +1073,8 @@ Just copy+paste this after you allocated all hard tissue Macho landmarks
 import numpy as np
 import slicer
 
-# Get the points from the "hard tissue Macho" node
-hardTissueNode = slicer.util.getNode('hard tissue Macho')
+# Get the points from the "hard_tissue_Macho" node
+hardTissueNode = slicer.util.getNode('hard_tissue_Macho')
 point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
 point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
 point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
@@ -1099,13 +1099,13 @@ import slicer
 import numpy as np
 
 # Access the necessary nodes
-hardTissueNode = slicer.util.getNode('hard tissue Macho')
+hardTissueNode = slicer.util.getNode('hard_tissue_Macho')
 sellion1Node = slicer.util.getNode('sellion1_node')
 sellion2Node = slicer.util.getNode('sellion2_node')
 
 # Check for node existence
 if not hardTissueNode or not sellion1Node or not sellion2Node:
-    raise Exception("One or more nodes ('hard tissue Macho', 'sellion1_node', 'sellion2_node') not found.")
+    raise Exception("One or more nodes ('hard_tissue_Macho', 'sellion1_node', 'sellion2_node') not found.")
 
 # Get positions from the sellion nodes
 sellion1_pos = [0.0, 0.0, 0.0]
@@ -1123,7 +1123,7 @@ sellionsLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # Blue color
 # Calculate the midpoint of 'sellions'
 midpoint = (np.array(sellion1_pos) + np.array(sellion2_pos)) / 2
 
-# Add the midpoint to 'hard tissue Macho'
+# Add the midpoint to 'hard_tissue_Macho'
 hardTissueNode.AddControlPoint(midpoint.tolist(), 'midsellion')
 
 # Retrieve the newly added 'midsellion' and the first point
@@ -1172,7 +1172,7 @@ if displayNode:
 print("SN line and SN plane created successfully, with the plane meeting the line and parallel to it.")
 
 ###height of apertura piriformis###
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(4)     
 #rhinion#
@@ -1221,7 +1221,7 @@ projectedLineNode.AddControlPoint(projectedEndPoint)
 # Set the color of the new line to green
 projectedLineNode.GetDisplayNode().SetSelectedColor(1.0, 0.0, 1.0)  # RGB values for yellow
 
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(0)     
@@ -1269,8 +1269,8 @@ projectedLineNode.AddControlPoint(projectedEndPoint)
 projectedLineNode.GetDisplayNode().SetSelectedColor(1.0, 0.0, 1.0)  # RGB values for magenta
 
 
-# Get the 'hard tissue Macho' and 'SN line' nodes
-hard_tissue_node = getNode('hard tissue Macho')
+# Get the 'hard_tissue_Macho' and 'SN line' nodes
+hard_tissue_node = getNode('hard_tissue_Macho')
 SN_line = getNode('SN line')
 
 # Retrieve the coordinates of 'P' at position 6
@@ -1335,8 +1335,8 @@ projectedLineNode.AddControlPoint(projectedEndPoint)
 projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
 
 
-# Get the 'hard tissue Macho' and 'SN line' nodes
-hard_tissue_node = getNode('hard tissue Macho')
+# Get the 'hard_tissue_Macho' and 'SN line' nodes
+hard_tissue_node = getNode('hard_tissue_Macho')
 SN_line = getNode('SN line')
 
 # Retrieve the coordinates of 'rhi' at position 4
@@ -1443,12 +1443,12 @@ def find_line_intersection(p1, v1, p2, v2):
 try:
     intersection_point = find_line_intersection(start_INB_proj_line, vec_INB_proj_line, start_rhi_parallel_proj, vec_rhi_parallel_proj)
     
-    # Save the intersection point as a new node in 'hard tissue Macho'
-    hard_tissue = getNode('hard tissue Macho')
+    # Save the intersection point as a new node in 'hard_tissue_Macho'
+    hard_tissue = getNode('hard_tissue_Macho')
     new_control_point_index = hard_tissue.AddControlPoint(intersection_point)
     hard_tissue.SetNthControlPointLabel(new_control_point_index, '3INB proj - rhi parallel intersection')
     
-    print("Intersection point successfully added to 'hard tissue Macho' node.")
+    print("Intersection point successfully added to 'hard_tissue_Macho' node.")
 except ValueError as e:
     print(str(e))
 
@@ -1497,17 +1497,17 @@ def find_line_intersection(p1, v1, p2, v2):
 try:
     intersection_point = find_line_intersection(start_INB_proj_line, vec_INB_proj_line, start_P_parallel_proj, vec_P_parallel_proj)
     
-    # Save the intersection point as a new node in 'hard tissue Macho'
-    hard_tissue = getNode('hard tissue Macho')
+    # Save the intersection point as a new node in 'hard_tissue_Macho'
+    hard_tissue = getNode('hard_tissue_Macho')
     new_control_point_index = hard_tissue.AddControlPoint(intersection_point)
     hard_tissue.SetNthControlPointLabel(new_control_point_index, '3INB proj - P parallel intersection')
     
-    print("Intersection point successfully added to 'hard tissue Macho' node.")
+    print("Intersection point successfully added to 'hard_tissue_Macho' node.")
 except ValueError as e:
     print(str(e))
 
 #####3INB proj - P parallel intersection lines#####
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(9)     
@@ -1521,7 +1521,7 @@ line_display = L.GetDisplayNode()
 line_display.SetSelectedColor(1.0, 0.0, 1.0)
 
 #####3INB proj - rhi parallel intersection lines#####
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(8)     
@@ -1534,7 +1534,7 @@ L.SetName('7 height of rhinion')
 line_display = L.GetDisplayNode()
 line_display.SetSelectedColor(1.0, 0.0, 1.0)
 
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(8)     
@@ -1547,7 +1547,7 @@ L.SetName('6 prominence of rhinion in relation to the n-aca plane')
 line_display = L.GetDisplayNode()
 line_display.SetSelectedColor(1.0, 0.0, 1.0)
 
-F=getNode('hard tissue Macho')  
+F=getNode('hard_tissue_Macho')  
 #opens up the collection of point you stored in the markup file#
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(9)     
@@ -1564,7 +1564,7 @@ import slicer
 import numpy as np
 
 # Get the nodes for the existing points and lines
-hardTissueNode = slicer.util.getNode('hard tissue Macho')
+hardTissueNode = slicer.util.getNode('hard_tissue_Macho')
 
 # Get the positions of the control points
 apexPoint = np.array(hardTissueNode.GetNthControlPointPosition(5))
