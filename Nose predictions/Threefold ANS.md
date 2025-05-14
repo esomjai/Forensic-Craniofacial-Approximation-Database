@@ -1,4 +1,4 @@
-[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212527/KrogmanIscan_hard_tissue.mrk.json)[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212522/KrogmanIscan_hard_tissue.mrk.json)[KrogmanIscan_soft _tissue.mrk.json](https://github.com/user-attachments/files/20212515/KrogmanIscan_soft._tissue.mrk.json)[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212510/KrogmanIscan_hard_tissue.mrk.json)# The Threefold ANS Method by Krogman & Iscan, 1986[^2]
+# The Threefold ANS Method by Krogman & Iscan, 1986[^2]
 
 
 The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010)[^7]. They describe it as follows:
