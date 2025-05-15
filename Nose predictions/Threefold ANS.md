@@ -30,9 +30,7 @@ To achieve this, we will
 Landmarks in this  guide: 
 [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json)
 
-
-[KrogmanIscan_soft _tissue.mrk.json](https://github.com/user-attachments/files/20212534/KrogmanIscan_soft._tissue.mrk.json)
-
+[KrogmanIscan_soft_tissue.mrk.json](https://github.com/user-attachments/files/20234679/KrogmanIscan_soft_tissue.mrk.json)
 
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
