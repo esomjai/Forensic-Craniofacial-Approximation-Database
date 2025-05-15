@@ -1,4 +1,4 @@
-# The Two Tangent Method by Gerasimow, 1955[^2], its revision by Maltais-Laponte(2016)[^14] based on Ullrich and Stephan (2011)[^7]
+# The Two Tangent Method by Gerasimow, 1955[^2], its revision by Maltais-Lapointe (2016)[^14] based on Ullrich and Stephan (2011)[^7]
 # Table of Contents
 
 1. - [Literature context](#literature-context)
