@@ -154,3 +154,110 @@ transform2.SetAndObserveTransformNodeID(transform3.GetID())
 slicer.vtkSlicerTransformLogic().hardenTransform(V)
 
 ```
+# FHP options
+
+You can establish the Frankfort Horizontal Plane in 2 ways: using the landmarks you used for the re-orientation of the scan refer back to the top of the document) OR you can create a bit more precise plane with 4 landmarks (adding the right most posterior orbital rim). Whichever you choose and name 'FHP' will be reflected in the prediction equation measurement. Both FHP establishing codes operate with the plane fit command. 
+Here is a screenshot of comparing the resulting planes with 3- and 4 control points, respectively. I am partial to the 4-point method, especially if there are measurements from the FHP involved.
+
+![Picture2](https://github.com/user-attachments/assets/6d630133-70ca-45bd-a257-67ccb6d44dd3)
+
+<details>
+
+<summary>3-point FHP</summary>
+Landmarks are already allocated by you when re-orienting the scan. Copy and paste the code and elongate the plane in any directions needed. 
+
+``` python
+###3-point FHP###
+
+import slicer
+import numpy as np
+import vtk
+
+# Create a new plane node
+planeNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "FHP")
+
+# Get the landmarks node
+landmarksNode = slicer.util.getNode("FHP_landmarks")
+
+# Extract the control points from the landmarks node
+points = np.array([landmarksNode.GetNthControlPointPosition(i) for i in range(landmarksNode.GetNumberOfControlPoints())])
+
+# Ensure we have at least three points
+if points.shape[0] < 3:
+    raise ValueError("At least three points are required to define a plane.")
+
+# Calculate the centroid of the points
+centroid = points.mean(axis=0)
+
+# Perform Singular Value Decomposition (SVD) to find the normal of the best-fit plane
+_, _, vh = np.linalg.svd(points - centroid)
+normal = vh[2]
+
+# Create a vtkPlane and set its parameters
+plane = vtk.vtkPlane()
+plane.SetOrigin(centroid)
+plane.SetNormal(normal)
+
+# Set the plane parameters in the plane node
+planeNode.SetOrigin(plane.GetOrigin())
+planeNode.SetNormal(plane.GetNormal())
+
+```
+</details>
+
+<details>
+
+<summary>4-point FHP</summary>
+Allocate the 4 landmarks found in file 
+[FH4_landmarks.json](https://github.com/user-attachments/files/20265033/FH4_landmarks.json) - yes, you are re-allocating 3 of the same points.
+
+abbreviation | landmark name | definition | defined by
+-- | -- | -- | --
+zyoL | left orbitale | inferior border of the left orbital rim | Pittayapat et al. 2018
+poR | right porion | upper border of the right external auditory meatus or ear canal | Pittayapat et al. 2018
+poL | left porion | upper border of the leftexternal auditory meatus or ear canal | Pittayapat et al. 2018
+
+
+Copy and paste the code and elongate the plane in any directions needed. 
+
+```python 
+import slicer
+import numpy as np
+import vtk
+
+# Create a new plane node
+planeNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "FHP")
+
+# Get the landmarks node
+landmarksNode = slicer.util.getNode("FH4_landmarks")
+
+# Extract the control points from the landmarks node
+points = np.array([landmarksNode.GetNthControlPointPosition(i) for i in range(landmarksNode.GetNumberOfControlPoints())])
+
+# Ensure we have at least three points
+if points.shape[0] < 3:
+    raise ValueError("At least three points are required to define a plane.")
+
+# Calculate the centroid of the points
+centroid = points.mean(axis=0)
+
+# Perform Singular Value Decomposition (SVD) to find the normal of the best-fit plane
+_, _, vh = np.linalg.svd(points - centroid)
+normal = vh[2]
+
+# Create a vtkPlane and set its parameters
+plane = vtk.vtkPlane()
+plane.SetOrigin(centroid)
+plane.SetNormal(normal)
+
+# Set the plane parameters in the plane node
+planeNode.SetOrigin(plane.GetOrigin())
+planeNode.SetNormal(plane.GetNormal())
+
+# Set the color of the plane to emerald (RGB: 0.31, 0.78, 0.47) when not selected
+displayNode = planeNode.GetDisplayNode()
+displayNode.SetColor(0.31, 0.78, 0.47)
+displayNode.SetSelectedColor(0.31, 0.78, 0.47)
+displayNode.SetVisibility(True)
+```
+</details>
