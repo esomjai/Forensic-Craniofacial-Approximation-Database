@@ -50,7 +50,8 @@ If none of these solutions are quick enough for your workflow, check out the Sli
 
 
 Once the markups are correctly placed, the re-alignment code can be implemented. Ensure you  have the Python console open. The default position of this in on the bottom of the window – if you cannot see it, press this icon ![python](https://github.com/user-attachments/assets/27a499fa-b3f5-4450-8f49-13bb4920f634) in the second line of the menu to open. Click into the python environment to see a cursor moving. Copy and paste the following snippet: 
-```
+
+```python
 
 import numpy
 scene = slicer.mrmlScene
@@ -202,6 +203,16 @@ plane.SetNormal(normal)
 planeNode.SetOrigin(plane.GetOrigin())
 planeNode.SetNormal(plane.GetNormal())
 
+import slicer
+
+# Get the plane node 'FHP'
+planeNode = slicer.util.getNode('FHP')
+
+# Set the color of the plane to emerald (RGB: 0.31, 0.78, 0.47) when not selected
+displayNode = planeNode.GetDisplayNode()
+displayNode.SetColor(0.31, 0.78, 0.47)
+displayNode.SetSelectedColor(0.31, 0.78, 0.47)
+displayNode.SetVisibility(True)
 ```
 </details>
 
@@ -253,6 +264,11 @@ plane.SetNormal(normal)
 # Set the plane parameters in the plane node
 planeNode.SetOrigin(plane.GetOrigin())
 planeNode.SetNormal(plane.GetNormal())
+
+import slicer
+
+# Get the plane node 'FHP'
+planeNode = slicer.util.getNode('FHP')
 
 # Set the color of the plane to emerald (RGB: 0.31, 0.78, 0.47) when not selected
 displayNode = planeNode.GetDisplayNode()
