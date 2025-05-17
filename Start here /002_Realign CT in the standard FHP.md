@@ -211,12 +211,12 @@ planeNode.SetNormal(plane.GetNormal())
 Allocate the 4 landmarks found in file 
 [FH4_landmarks.json](https://github.com/user-attachments/files/20265033/FH4_landmarks.json) - yes, you are re-allocating 3 of the same points.
 
-abbreviation | landmark name | definition | defined by
--- | -- | -- | --
-zyoL | left orbitale | inferior border of the left orbital rim | Pittayapat et al. 2018
-poR | right porion | upper border of the right external auditory meatus or ear canal | Pittayapat et al. 2018
-poL | left porion | upper border of the leftexternal auditory meatus or ear canal | Pittayapat et al. 2018
-
+| position  | no. in table | Name | Description                                                        |
+|---|----|-------|--------------------------------------------------------------------|
+| 0  | 1  | orb1  | inferior border of the left orbital rim                            |
+| 1  | 2  | orb2  | inferior border of the right orbital rim                           |
+| 2  | 3  | por1  | upper border of the right external auditory meatus or ear canal    |
+| 3  | 4  | por2  | upper border of the left external auditory meatus or ear canal     |
 
 Copy and paste the code and elongate the plane in any directions needed. 
 
