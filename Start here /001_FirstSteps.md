@@ -93,12 +93,13 @@ There is a script provided for copying all linear/angular measurements in the sc
 The realignment page (next step) mentions two extensions necessary to be installed to work. Extensions are “enablers” for different functions and can save a lot of time – I would suggest browsing through them if you have time. 
 
 To access extensions, click on the ![extensions](https://github.com/user-attachments/assets/802a10a3-9927-4481-85cd-05aeaf36757c) icon in the second row of the menu on the far right. 
-Find the search bar and find these extensions: _MarkupsToModel_ and _SegmentEditorExtraEffects_ and install both. 
+Find the search bar and find these extensions: _MarkupsToModel_, _SegmentEditorExtraEffects_, and _ExtraMarkups_and install all. 
 
-![extension2-199x300](https://github.com/user-attachments/assets/d27e9d5e-ed7d-46ab-8de6-767c725a061e) ![extension1-171x300](https://github.com/user-attachments/assets/8bbaf2f1-d886-4ac8-af80-7c40db0f16b9)
+![extension2-199x300](https://github.com/user-attachments/assets/d27e9d5e-ed7d-46ab-8de6-767c725a061e) ![extension1-171x300](https://github.com/user-attachments/assets/8bbaf2f1-d886-4ac8-af80-7c40db0f16b9) <img width="222" alt="image" src="https://github.com/user-attachments/assets/de3ea53e-5b3e-4616-b2af-f19b8f3c1947" />
+
 
 > [!NOTE]
-> Slicer will require a restart after installation of ANY new extension or extension update, so make sure you save your progress beforehand
+> Slicer will require a restart after installation of ANY new extension or extension update, so make sure you save your progress beforehand. These extensions are NECESSARY for some of the codes to work (MarkupsToModel and SegmentEditorExtraEffects for example for the initial FHP realignment).
 
 ### Notepad++
 
