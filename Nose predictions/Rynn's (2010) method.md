@@ -411,15 +411,12 @@ https://github.com/user-attachments/assets/3a012692-8a17-4c70-a554-5fac4aa00581
 <summary>GUI for pronasale anterior</summary>
 
 ```python
-# This will store all the user actions for the session
+# === BEGIN SCRIPT FOR SLICER PYTHON INTERACTOR ===
+
+# --- Logging/report system ---
 markup_report_log = []
 
 def add_to_markup_report(markup_type, markup_name, user_choices):
-    """
-    markup_type: string, e.g. 'Angle', 'Line', etc.
-    markup_name: string, the name of the markup node created
-    user_choices: dict, keys are labels, values are what the user picked
-    """
     markup_report_log.append({
         "type": markup_type,
         "name": markup_name,
@@ -436,9 +433,9 @@ def print_markup_report():
 
 import slicer
 import numpy as np
-from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QTextEdit, QSizePolicy
+from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QSizePolicy, Qt
 
-# Function to create a new line in Slicer
+# --- Function to create a new line in Slicer ---
 def create_line(name, length, color, start_point, direction):
     line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
     line.GetDisplayNode().SetSelectedColor(color)
@@ -449,7 +446,6 @@ def create_line(name, length, color, start_point, direction):
     line.AddControlPoint(end_point.tolist())
     return line
 
-# Function to calculate length based on the selected equation
 def calculate_length(equation, Y):
     if equation == "pred Rynn PA":
         return 0.83 * Y - 3.5
@@ -462,50 +458,42 @@ def calculate_length(equation, Y):
     else:
         raise ValueError("Invalid equation choice")
 
-# Function to create the new line based on the chosen equation
 def create_new_line_with_equation(equation):
     print("Inside create_new_line_with_equation function")
-    # Get the required nodes from the scene
     rynn_hard_tissue = slicer.util.getNode("Rynn_hard_tissue")
     line_1 = slicer.util.getNode("1")
     rhi_subs_Y = slicer.util.getNode("rhi-subs Y")
 
-    # Define the start point and REVERSED direction for the new line
     start_point = rynn_hard_tissue.GetNthControlPointPosition(0)
     direction = np.array(line_1.GetNthControlPointPosition(1)) - np.array(line_1.GetNthControlPointPosition(0))
     direction = direction / np.linalg.norm(direction)
     direction = -direction  # Reverse the direction
 
-    # Get two points from the "rhi-subs Y" node
     point1 = np.array(rhi_subs_Y.GetNthControlPointPosition(0))
     point2 = np.array(rhi_subs_Y.GetNthControlPointPosition(1))
-
-    # Calculate Y distance between these points
     Y = np.linalg.norm(point2 - point1)
-
-    # Calculate the length from the chosen equation
     length = calculate_length(equation, Y)
-
-    # Set color to purple (RGB: 0.5, 0.0, 0.5)
     purple = (0.5, 0.0, 0.5)
-
-    # Create the new line
     new_line = create_line(equation, length, purple, start_point, direction)
     print(f"Line '{equation}' created with length: {length:.2f}")
 
-# The GUI class for user interaction
+    # --- LOGGING: record this creation ---
+    user_choices = {
+        "Equation": equation,
+        "Y distance": f"{Y:.2f}",
+        "Line length": f"{length:.2f}"
+    }
+    add_to_markup_report("Line", equation, user_choices)
+
+# --- The Line Creation GUI ---
 class LineCreationWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Pronasale Anterior Prediction")
-
         layout = QVBoxLayout()
-
-        # Add the instruction label at the top
         title_label = QLabel("<b>Please choose the equation(s) for pronasale anterior prediction!</b>")
         layout.addWidget(title_label)
 
-        # Description section with a table
         description_html = """
         <table border="1" cellspacing="0" cellpadding="3">
             <tr>
@@ -551,7 +539,6 @@ class LineCreationWidget(QWidget):
         description_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         layout.addWidget(description_label)
 
-        # Use checkboxes for multiple selection
         self.equations = [
             "pred Rynn PA",
             "pred Sarilita M PA",
@@ -572,7 +559,6 @@ class LineCreationWidget(QWidget):
 
     def on_create_button_clicked(self):
         print("Inside on_create_button_clicked method")
-        # Collect all checked equations
         chosen_equations = [eq for eq, cb in zip(self.equations, self.checkbox_list) if cb.isChecked()]
         if chosen_equations:
             for chosen_equation in chosen_equations:
@@ -584,9 +570,31 @@ class LineCreationWidget(QWidget):
         else:
             print("No equation selected!")
 
-# Create and show the GUI
+# --- Create and show the GUI ---
 line_creation_widget = LineCreationWidget()
 line_creation_widget.show()
+
+# --- Always-on-top PRINT REPORT button widget ---
+class MarkupReportWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Markup Report Printer")
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        layout = QVBoxLayout()
+        print_button = QPushButton("Print Markup Report")
+        print_button.clicked.connect(print_markup_report)
+        layout.addWidget(print_button)
+        self.setLayout(layout)
+
+# Ensure only one instance
+try:
+    markup_report_widget.close()
+except:
+    pass
+markup_report_widget = MarkupReportWidget()
+markup_report_widget.show()
+
+# === END SCRIPT ===
 ```
 </details>
 
@@ -688,17 +696,12 @@ def calculate_pv_length(equation, X):
         raise ValueError("Invalid equation name")
 
 def abbreviate_equation_name(eq):
-    # Example: "pred Rynn PV" -> "RynnPV", "pred Bulut F PV" -> "BulutF-PV"
     eq = eq.replace("pred ", "").replace(" ", "")
-    # Add a dash before PV/PA if there's an M or F, for clarity
     eq = eq.replace("MPV", "M-PV").replace("FPV", "F-PV")
     return eq
 
 def create_parallel_line_to_2(pa_line_node, x_line_node, pv_equation, pa_equation):
-    # We start from the end of the PA line
     end = get_line_endpoints(pa_line_node)[1]
-
-    # Find line "2"
     line2_node = find_line_2()
     if line2_node is None:
         raise ValueError("No line named '2' found in the scene!")
@@ -722,7 +725,20 @@ def create_parallel_line_to_2(pa_line_node, x_line_node, pv_equation, pa_equatio
     new_line.AddControlPoint(end.tolist())
     new_line.AddControlPoint((end + direction * length).tolist())
     print(f"Created new line '{node_name}' of length {length:.2f}, parallel to line '2'")
-    return new_line  # Return the created line for further use
+
+    # --- ADD TO LOG ---
+    # If add_to_markup_report is defined globally, this will work:
+    try:
+        user_choices = {
+            "PA line": pa_equation,
+            "PV equation": pv_equation,
+            "X (length of nas-aca X)": f"{X:.2f}",
+            "PV line length": f"{length:.2f}"
+        }
+        add_to_markup_report("Line (PV parallel)", node_name, user_choices)
+    except Exception as e:
+        print(f"[LOGGING ERROR] {e}")
+    return new_line
 
 def save_pv_endpoint_to_pred_list(pv_line_node, pa_equation, pv_equation):
     try:
@@ -740,12 +756,10 @@ class PVLineCreationWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Pronasale Vertical Prediction (PV) [Parallel to line '2']")
-
         layout = QVBoxLayout()
         title_label = QLabel("<b>Select PA line(s), then PV equation(s) to create lines parallel to line '2'!<br>(X line is always 'nas-aca X')</b>")
         layout.addWidget(title_label)
 
-        # --- Add the description table here ---
         description_html = """
         <table border="1" cellspacing="0" cellpadding="3">
             <tr>
@@ -791,7 +805,6 @@ class PVLineCreationWidget(QWidget):
         description_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         layout.addWidget(description_label)
 
-        # Find PA lines
         self.pa_lines = find_pa_lines()
         self.pa_checkboxes = []
 
@@ -826,26 +839,23 @@ class PVLineCreationWidget(QWidget):
         self.setLayout(layout)
 
     def on_create_button_clicked(self):
-        # Get selected PA lines
         selected_pa_lines = [node for cb, node in self.pa_checkboxes if cb.isChecked()]
         if not selected_pa_lines:
             QMessageBox.warning(self, "Selection Error", "Please select at least one PA line.")
             return
 
-        # Find X line
         x_line_node = find_x_line()
         if x_line_node is None:
             QMessageBox.warning(self, "Selection Error", "No line named 'nas-aca X' found in the scene.")
             return
 
-        # Get selected equations
         chosen_equations = [eq for cb, eq in self.checkbox_list if cb.isChecked()]
         if not chosen_equations:
             QMessageBox.warning(self, "Selection Error", "Please select at least one PV equation.")
             return
 
         for pa_line_node in selected_pa_lines:
-            pa_equation = pa_line_node.GetName()  # This is your PA equation choice name
+            pa_equation = pa_line_node.GetName()
             for pv_eq in chosen_equations:
                 try:
                     pv_line_node = create_parallel_line_to_2(pa_line_node, x_line_node, pv_eq, pa_equation)
@@ -945,7 +955,6 @@ def calculate_pfhp_length(equation, Y):
         raise ValueError("Invalid equation name")
 
 def abbreviate_equation_name(eq):
-    # "pred Rynn pFHP" -> "RynnpFHP", "pred Bulut F pFHP" -> "BulutF-pFHP"
     eq = eq.replace("pred ", "").replace(" ", "")
     eq = eq.replace("MpFHP", "M-pFHP").replace("FpFHP", "F-pFHP")
     return eq
@@ -971,7 +980,6 @@ class PFHPLineCreationWidget(QWidget):
         )
         layout.addWidget(title_label)
 
-        # --- Add the description table here ---
         description_html = """
         <table border="1" cellspacing="0" cellpadding="3">
             <tr>
@@ -1017,7 +1025,6 @@ class PFHPLineCreationWidget(QWidget):
         description_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         layout.addWidget(description_label)
 
-        # Equation checkboxes
         self.equations = [
             "pred Rynn pFHP",
             "pred Sarilita M pFHP",
@@ -1036,13 +1043,11 @@ class PFHPLineCreationWidget(QWidget):
         self.setLayout(layout)
 
     def on_create_button_clicked(self):
-        # Check equation selection
         chosen_equations = [eq for cb, eq in self.checkbox_list if cb.isChecked()]
         if not chosen_equations:
             QMessageBox.warning(self, "Selection Error", "Please select at least one pFHP equation.")
             return
 
-        # Find required nodes
         rynn_hard_tissue = slicer.util.getNode("Rynn_hard_tissue") if slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode") else None
         if not rynn_hard_tissue:
             QMessageBox.warning(self, "Missing Node", "No node named 'Rynn_hard_tissue' found in the scene.")
@@ -1062,7 +1067,6 @@ class PFHPLineCreationWidget(QWidget):
             QMessageBox.warning(self, "Error", "Could not get position 4 from 'Rynn_hard_tissue'.")
             return
 
-        # Get direction of line "3" and reverse it
         line3_start, line3_end = get_line_endpoints(line_3)
         direction = line3_end - line3_start
         norm = np.linalg.norm(direction)
@@ -1071,7 +1075,6 @@ class PFHPLineCreationWidget(QWidget):
             return
         direction = -direction / norm  # REVERSED direction
 
-        # Get Y length
         Y = get_line_length(rhi_subs_Y)
 
         for equation in chosen_equations:
@@ -1079,7 +1082,21 @@ class PFHPLineCreationWidget(QWidget):
                 length = calculate_pfhp_length(equation, Y)
                 abbrev = abbreviate_equation_name(equation)
                 line_name = abbrev
-                create_turquoise_line(start_point, direction, length, line_name)
+                new_line = create_turquoise_line(start_point, direction, length, line_name)
+
+                # --- LOGGING: record this creation ---
+                try:
+                    user_choices = {
+                        "Equation": equation,
+                        "Y distance": f"{Y:.2f}",
+                        "Line length": f"{length:.2f}",
+                        "Start point index": 4,
+                        "Direction ref line": "3 (reversed)"
+                    }
+                    add_to_markup_report("Line (pFHP parallel)", line_name, user_choices)
+                except Exception as logerr:
+                    print(f"[LOGGING ERROR] {logerr}")
+
             except Exception as e:
                 QMessageBox.critical(self, "Error", str(e))
 
@@ -1261,8 +1278,6 @@ def abbreviate_equation_name(eq):
     return eq
 
 def abbreviate_point_label(label):
-    # Example: "Rynn_soft_tissue_pred_sn pred" -> "sn_pred"
-    # You can adjust this logic for your naming style
     label = label.replace(" ", "_")
     return label
 
@@ -1526,9 +1541,29 @@ class NHNLCircleWidgetChooseCenters(QWidget):
             QMessageBox.warning(self, "Missing INB", "Could not find 'INB' plane in the scene.")
             return
 
-        # Draw circles
+        # Draw circles and LOG them
         create_circle_node(nd_center, nh_radius, planeNormal, "NH_circle", color=(1.0,0.2,0.2))  # Red
+        add_to_markup_report(
+            "Circle (NH)",
+            "NH_circle",
+            {
+                "Center label": nd_label,
+                "Center coords": np.round(nd_center, 2).tolist(),
+                "NH equation": nh_equation,
+                "NH radius": f"{nh_radius:.2f}"
+            }
+        )
         create_circle_node(nl_center, nl_radius, planeNormal, "NL_circle", color=(0.2,0.2,1.0))  # Blue
+        add_to_markup_report(
+            "Circle (NL)",
+            "NL_circle",
+            {
+                "Center label": nl_label,
+                "Center coords": np.round(nl_center, 2).tolist(),
+                "NL equation": nl_equation,
+                "NL radius": f"{nl_radius:.2f}"
+            }
+        )
 
         # Find intersection(s) and add only the one closest to line "1"
         inters = find_circle_circle_intersections(nd_center, nh_radius, nl_center, nl_radius, planeNormal)
@@ -1569,6 +1604,19 @@ class NHNLCircleWidgetChooseCenters(QWidget):
             label = f"n' pred_{abbrev_nd}_{abbrev_nh_eq}_{abbrev_nl}_{abbrev_nl_eq}"
 
             pred_node.AddControlPoint(closest_pt.tolist(), label)
+            # LOG intersection point
+            add_to_markup_report(
+                "Intersection Point",
+                label,
+                {
+                    "Closest to line": "1",
+                    "NH center": nd_label,
+                    "NH equation": nh_equation,
+                    "NL center": nl_label,
+                    "NL equation": nl_equation,
+                    "Intersection coords": np.round(closest_pt, 2).tolist(),
+                }
+            )
 
         QMessageBox.information(self, "Done", "Both circles have been drawn and the closest n' pred intersection to line '1' has been marked with all abbreviations.")
 
@@ -1611,9 +1659,104 @@ This GUI creates an angle from the "Rynn_soft_tissue_pred" node where all the no
 <summary>GUI for predicted angle</summary>
 
 ``` python
+import slicer
+import numpy as np
+from qt import QWidget, QVBoxLayout, QLabel, QPushButton, QRadioButton, QButtonGroup, QGroupBox
+
+
+def get_fiducial_labels_and_indices(node):
+    labels = []
+    for i in range(node.GetNumberOfControlPoints()):
+        labels.append((node.GetNthControlPointLabel(i), i))
+    return labels
+
+sourceNode = slicer.util.getNode('Rynn_soft_tissue_pred')
+labels_indices = get_fiducial_labels_and_indices(sourceNode)
+
+first_candidates = [(l, i) for l, i in labels_indices if l.startswith("n' pred_")]
+apex_candidates = [(l, i) for l, i in labels_indices if l.endswith("_pronasale pred")]
+third_candidates = [(l, i) for l, i in labels_indices if l.endswith("_sn pred")]
+
+class AngleCreationWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Create pred n'-pn-sn Angle")
+        layout = QVBoxLayout()
+
+        def create_radio_group(title, candidates):
+            groupBox = QGroupBox(title)
+            vbox = QVBoxLayout()
+            group = QButtonGroup(self)
+            for label, idx in candidates:
+                btn = QRadioButton(label)
+                group.addButton(btn, idx)
+                vbox.addWidget(btn)
+            groupBox.setLayout(vbox)
+            return groupBox, group
+
+        self.firstGroupBox, self.firstGroup = create_radio_group("Choose first control point (starts with n' pred_):", first_candidates)
+        layout.addWidget(self.firstGroupBox)
+
+        self.apexGroupBox, self.apexGroup = create_radio_group("Choose apex (ends with _pronasale pred):", apex_candidates)
+        layout.addWidget(self.apexGroupBox)
+
+        self.thirdGroupBox, self.thirdGroup = create_radio_group("Choose third control point (ends with _sn pred):", third_candidates)
+        layout.addWidget(self.thirdGroupBox)
+
+        self.createButton = QPushButton("Create Angle")
+        self.createButton.clicked.connect(self.create_angle)
+        layout.addWidget(self.createButton)
+
+        self.setLayout(layout)
+        self.angle_counter = 1
+
+    def create_angle(self):
+        idx1 = self.firstGroup.checkedId()
+        idx2 = self.apexGroup.checkedId()
+        idx3 = self.thirdGroup.checkedId()
+
+        if idx1 == -1 or idx2 == -1 or idx3 == -1:
+            print("Please select a point in each group before creating the angle.")
+            return
+
+        # Find the selected radio button texts
+        btn1 = self.firstGroup.button(idx1)
+        btn2 = self.apexGroup.button(idx2)
+        btn3 = self.thirdGroup.button(idx3)
+        label1 = btn1.text() if btn1 else ""
+        label2 = btn2.text() if btn2 else ""
+        label3 = btn3.text() if btn3 else ""
+
+        firstPoint = np.array(sourceNode.GetNthControlPointPosition(idx1))
+        apexPoint = np.array(sourceNode.GetNthControlPointPosition(idx2))
+        thirdPoint = np.array(sourceNode.GetNthControlPointPosition(idx3))
+
+        angle_name = f"pred n'-pn-sn {self.angle_counter}"
+        angleNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsAngleNode', angle_name)
+        angleNode.AddControlPoint(firstPoint)
+        angleNode.AddControlPoint(apexPoint)
+        angleNode.AddControlPoint(thirdPoint)
+
+        # --- LOGGING ---
+        choices = {
+            "First control point": label1,
+            "Apex": label2,
+            "Third control point": label3
+        }
+        add_to_markup_report("Angle", angle_name, choices)
+
+        self.angle_counter += 1
+
+widget = AngleCreationWidget()
+widget.show()
 ```
 </details>
 
+<details>
+
+<summary>Rynn's network</summary>
+
+``` python
 #pt1R#
 F=getNode('Rynn_hard_tissue')  
 G=getNode('Rynn_soft_tissue') 
@@ -3192,10 +3335,7 @@ projectedLineNode.AddControlPoint(projectedEndPoint)
 
 projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
 
-
 #Create PLB point by connecting XR and XL, then finding its intersecction with the INB#
-
-
 import slicer
 import numpy as np
 
@@ -3278,9 +3418,6 @@ angleNode.AddControlPoint(thirdControlPoint)  # Third control point
 
 print("New angle 'n'-pn-sn' created successfully.")
 
-
-
-
 F=getNode('Rynn_hard_tissue')  
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 firstPoint = F.GetNthControlPointPositionVector(9)     #XL#
@@ -3322,7 +3459,6 @@ L.AddControlPoint(firstPoint)
 secondPoint = F.GetNthControlPointPositionVector(14)	#ICL#
 L.AddControlPoint(secondPoint)
 L.SetName('intercanine width')
-
 ```
 </details>
 
