@@ -3462,10 +3462,181 @@ widget.show()
 ```
 </details>
 
+
+## Error rates
+Run only the first code snippet if you want to measure the distance between the predicted landmarks and actual landmarks. 
+Additionally, run the second code if you want to check either the error or displacement vectors in Rynn's triangle network
+
+<details>
+<summary>Error rate between predicted vs true points</summary>
+```python
+import slicer
+import numpy as np
+
+def create_error_lines():
+    # Get the nodes
+    pred_node = slicer.util.getNode("Rynn_soft_tissue_pred")
+    soft_node = slicer.util.getNode("Rynn_soft_tissue")
+
+    # Get the key soft tissue points
+    soft_points = {
+        "nasion": (0, "soft tissue nasion"),
+        "subnasale": (1, "subnasale"),
+        "pronasale": (2, "pronasale")
+    }
+
+    # Extract positions from soft tissue node
+    soft_positions = {}
+    for label, (idx, name) in soft_points.items():
+        soft_positions[label] = (
+            name,
+            np.array(soft_node.GetNthControlPointPosition(idx))
+        )
+
+    # Go through all predicted points
+    for i in range(pred_node.GetNumberOfControlPoints()):
+        pred_label = pred_node.GetNthControlPointLabel(i)
+        pred_pos = np.array(pred_node.GetNthControlPointPosition(i))
+
+        # Connect n' pred (nasion equivalents)
+        if pred_label.startswith("n' pred"):
+            soft_name, soft_pos = soft_positions["nasion"]
+            line_name = f"error_{pred_label}_{soft_name}"
+        # Connect ..._sn pred (subnasale equivalents)
+        elif pred_label.endswith("_sn pred"):
+            soft_name, soft_pos = soft_positions["subnasale"]
+            line_name = f"error_{pred_label}_{soft_name}"
+        # Connect ..._pronasale pred (pronasale equivalents)
+        elif pred_label.endswith("_pronasale pred"):
+            soft_name, soft_pos = soft_positions["pronasale"]
+            line_name = f"error_{pred_label}_{soft_name}"
+        else:
+            continue  # Not a target point
+
+        # Create the error line
+        line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
+        # Set color to hot red (RGB: 1, 0, 0)
+        line_node.GetDisplayNode().SetSelectedColor(1, 0, 0)
+        # Add endpoints
+        line_node.AddControlPoint(pred_pos.tolist())
+        line_node.AddControlPoint(soft_pos.tolist())
+
+        print(f"Created line: {line_name}")
+
+create_error_lines()
+ ```
+</details>
+
+
+
+<details>
+<summary>Error rate between predicted vs true points</summary>
+```python
+import slicer
+import numpy as np
+
+def create_colored_lines_and_displacements():
+    # Define pairs: (soft label, soft idx, hard label, hard idx, line name, color)
+    pairs = [
+        # Red pairs
+        ("pt5L", 12, "CL", 7, "left Point 5 -left inferior turbinate", (1, 0, 0)),  # red
+        ("pt5R", 11, "CR", 8, "right Point 5 -right inferior turbinate", (1, 0, 0)),  # red
+        # Green pairs
+        ("pt7L", 16, "LL", 11, "left Point 7 -left lowest aperture border", (0.13, 0.55, 0.13)),  # forest green
+        ("pt7R", 15, "LR", 12, "right Point 7 -right lowest aperture border", (0.13, 0.55, 0.13)),
+        ("pt4L", 10, "XL", 9, "left Point 4 -left most posterior point on the left piriform border", (0.13, 0.55, 0.13)),
+        ("pt4R", 9, "XR", 10, "right Point 4 -right most posterior point on the right piriform border", (0.13, 0.55, 0.13)),
+    ]
+
+    soft_node = slicer.util.getNode("Rynn_soft_tissue")
+    hard_node = slicer.util.getNode("Rynn_hard_tissue")
+
+    for soft_label, soft_idx, hard_label, hard_idx, line_name, color in pairs:
+        soft_pos = np.array(soft_node.GetNthControlPointPosition(soft_idx))
+        hard_pos = np.array(hard_node.GetNthControlPointPosition(hard_idx))
+        line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
+        line_node.GetDisplayNode().SetSelectedColor(*color)
+        line_node.AddControlPoint(hard_pos.tolist())
+        line_node.AddControlPoint(soft_pos.tolist())
+
+        # Compute displacement (from hard tissue to soft tissue)
+        displacement = soft_pos - hard_pos
+        displacement_length = np.linalg.norm(displacement)
+        print(f"{line_name}:")
+        print(f"  From {hard_label} (hard) at {np.round(hard_pos,2)} to {soft_label} (soft) at {np.round(soft_pos,2)}")
+        print(f"  Displacement vector (soft - hard): {np.round(displacement,2)}")
+        print(f"  Displacement length: {displacement_length:.2f} mm\n")
+
+def closest_point_between_lines(A0, A1, B0, B1):
+    # Returns (pa, pb, dist) where pa is closest point on line A, pb on B, dist is their distance
+    A0 = np.array(A0); A1 = np.array(A1); B0 = np.array(B0); B1 = np.array(B1)
+    u = A1 - A0
+    v = B1 - B0
+    w0 = A0 - B0
+    a = np.dot(u, u)
+    b = np.dot(u, v)
+    c = np.dot(v, v)
+    d = np.dot(u, w0)
+    e = np.dot(v, w0)
+    denom = a * c - b * b
+    if denom == 0:
+        t = np.dot((A0 - B0), v) / np.dot(v, v)
+        pb = B0 + t * v
+        pa = A0
+    else:
+        s = (b * e - c * d) / denom
+        t = (a * e - b * d) / denom
+        pa = A0 + s * u
+        pb = B0 + t * v
+    dist = np.linalg.norm(pa - pb)
+    return pa, pb, dist
+
+def create_shortest_distance_line_between_MNW_and_MAW():
+    MNW = slicer.util.getNode("MNW")
+    MAW = slicer.util.getNode("MAW")
+    MNW_p0 = np.array(MNW.GetNthControlPointPosition(0))
+    MNW_p1 = np.array(MNW.GetNthControlPointPosition(1))
+    MAW_p0 = np.array(MAW.GetNthControlPointPosition(0))
+    MAW_p1 = np.array(MAW.GetNthControlPointPosition(1))
+    pa, pb, dist = closest_point_between_lines(MNW_p0, MNW_p1, MAW_p0, MAW_p1)
+    line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "Shortest MNW-MAW")
+    # Forest green
+    line_node.GetDisplayNode().SetSelectedColor(0.13, 0.55, 0.13)
+    line_node.AddControlPoint(pa.tolist())
+    line_node.AddControlPoint(pb.tolist())
+    displacement = pb - pa
+    print("Shortest MNW-MAW:")
+    print(f"  From MNW at {np.round(pa,2)} to MAW at {np.round(pb,2)}")
+    print(f"  Displacement vector (MAW - MNW): {np.round(displacement,2)}")
+    print(f"  Displacement length: {dist:.2f} mm\n")
+
+# Run both parts
+create_colored_lines_and_displacements()
+create_shortest_distance_line_between_MNW_and_MAW()
+```
+</details>
+
+#### Rynn/Sarilita/Bulut regression predictions
+
+## Outputs
+Depending on whick landmarks you allocated, there are multiple versions of outputs. 
+
+#### Rynn/Sarilita/Bulut regression predictions
+You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landmarks AND did not run any of the "Rynn's triangle" codes
+
+
+
+
+#### Rynn's trinagle included 
+You allocated ALL landmarks AND ran the "Rynn's triangle" codes
+
+
+
+
 # Bibliography
 
 [^1]: 3D Slicer webpage https://www.slicer.org/
-[^2]: thesis
+[^2]: Rynn, C. (2006). Craniofacial Approximation and Reconstruction: Tissue Depth Patterning and the Prediction of the Nose. Anatomy and Forensic Anthropology, School of Life Sciences. Dundee, United Kingdom, University of Dundee. Doctor of Philosophy.
 [^3]: Rynn, C., et al. (2010). "Prediction of nasal morphology from the skull." Forensic Science Medicine and Pathology 6(1): 20-34.
 [^4]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." International Journal of Legal Medicine 130(3): 863-879.
 [^5]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.
