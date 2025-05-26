@@ -1571,7 +1571,7 @@ In the light of improving programmes "reading" 3D data in recent future, the add
 
 For the code below to work, you have to allocate the landmarks NOT highlighted with either blue or orange. 
 The following code created measurements of the distances on all planes for points 1, 2...8. 
-Additionally, more potential relationship measurements from Rynn et al 2006[^2] are featured with suggested comparisons: 
+Additionally, more potential relationship measurements from Rynn et al 2006[^2] (based on Glanville (1969)[^14] are featured with suggested comparisons: 
 
 | Hard Tissue Measurement                           | Soft Tissue Measurement                                 |
 |---------------------------------------------------|---------------------------------------------------------|
@@ -1585,7 +1585,10 @@ Additionally, more potential relationship measurements from Rynn et al 2006[^2] 
 
 <summary>Triangle network code</summary>
 
-``` python
+``` python[Rynn_hard_tissue.mrk.json](https://github.com/user-attachments/files/20445096/Rynn_hard_tissue.mrk.json)
+[Rynn_soft_tissue.mrk.json](https://github.com/user-attachments/files/20445095/Rynn_soft_tissue.mrk.json)
+[FH4_landmarks.json](https://github.com/user-attachments/files/20445094/FH4_landmarks.json)
+
 #pt1R#
 F=getNode('Rynn_hard_tissue')  
 G=getNode('Rynn_soft_tissue') 
