@@ -3468,12 +3468,14 @@ widget.show()
 Run only the first code snippet if you want to measure the distance between the predicted landmarks and actual landmarks. 
 Additionally, run the second code if you want to check either the error or displacement vectors in Rynn's triangle network
 
+
+
 <details>
 <summary>Error rate between predicted vs true points</summary>
-```python
+
+ ```python
 import slicer
 import numpy as np
-
 def create_error_lines():
     # Get the nodes
     pred_node = slicer.util.getNode("Rynn_soft_tissue_pred")
@@ -3525,17 +3527,20 @@ def create_error_lines():
         print(f"Created line: {line_name}")
 
 create_error_lines()
- ```
+```
 </details>
 
 
 
+
+
+
 <details>
-<summary>Error rate between predicted vs true points</summary>
+<summary>Error/displacement between soft-hard tissue points/distances</summary>
+ 
 ```python
 import slicer
 import numpy as np
-
 def create_colored_lines_and_displacements():
     # Define pairs: (soft label, soft idx, hard label, hard idx, line name, color)
     pairs = [
@@ -3617,8 +3622,9 @@ create_shortest_distance_line_between_MNW_and_MAW()
 ```
 </details>
 
+
 ## Outputs
-Depending on whick landmarks you allocated, there are multiple versions of outputs. 
+Depending on which landmarks you allocated, there are multiple versions of outputs. 
 
 #### Rynn/Sarilita/Bulut regression predictions
 You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landmarks AND did not run any of the "Rynn's triangle" codes
