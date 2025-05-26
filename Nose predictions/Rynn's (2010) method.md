@@ -1586,6 +1586,1583 @@ Additionally, more potential relationship measurements from Rynn et al 2006[^2] 
 <summary>Triangle network code</summary>
 
 ``` python
+#pt1R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(3)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt1R')
+
+import numpy as np
+import slicer
+
+# Get the original line node
+originalLineNode = slicer.util.getNode('n-pt1R')
+
+# Get the plane node
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+# Get the start and end points of the original line
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+# Function to project a point onto the plane
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+# Project the start and end points onto the plane
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+# Create a new line node for the projected line
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt1R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+# Set the color of the new line to green
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+# Get the original line node
+originalLineNode = slicer.util.getNode('n-pt1R')
+
+# Get the plane node
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+# Get the start and end points of the original line
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+# Function to project a point onto the plane
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+# Project the start and end points onto the plane
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+# Create a new line node for the projected line
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt1R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+# Set the color of the new line to green
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+# Get the original line node
+originalLineNode = slicer.util.getNode('n-pt1R')
+
+# Get the plane node
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+# Get the start and end points of the original line
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+# Function to project a point onto the plane
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+# Project the start and end points onto the plane
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+# Create a new line node for the projected line
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt1R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+# Set the color of the new line to green
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+##############################################################################
+
+#pt1L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(4)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt1L')
+
+import numpy as np
+import slicer
+
+# Get the original line node
+originalLineNode = slicer.util.getNode('n-pt1L')
+
+# Get the plane node
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+# Get the start and end points of the original line
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+# Function to project a point onto the plane
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+# Project the start and end points onto the plane
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+# Create a new line node for the projected line
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt1L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+# Set the color of the new line to green
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+# Get the original line node
+originalLineNode = slicer.util.getNode('n-pt1L')
+
+# Get the plane node
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+# Get the start and end points of the original line
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+# Function to project a point onto the plane
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+# Project the start and end points onto the plane
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+# Create a new line node for the projected line
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt1L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+# Set the color of the new line to green
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+# Get the original line node
+originalLineNode = slicer.util.getNode('n-pt1L')
+
+# Get the plane node
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+# Get the start and end points of the original line
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+# Function to project a point onto the plane
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+# Project the start and end points onto the plane
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+# Create a new line node for the projected line
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt1L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+# Set the color of the new line to green
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+###################################################################################################
+#pt2R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(5)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt2R')
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt2R')
+
+
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt2R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt2R')
+
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt2R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt2R')
+
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt2R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+#############################################################################################
+#pt2L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(6)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt2L')
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt2L')
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt2L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt2L')
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt2L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt2L')
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt2L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+#########################################################################
+
+#pt3R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(7)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt3R')
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt3R')
+
+
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt3R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt3R')
+
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt3R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt3R')
+
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt3R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+#####################################################################################
+#pt3L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(7)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt3L')
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt3L')
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt3L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt3L')
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt3L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt3L')
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt3L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+##############################################################
+#pt4R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(9)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt4R')
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt4R')
+
+
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt4R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt4R')
+
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt4R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt4R')
+
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt4R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+#####################################################################################
+#pt4L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(10)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt4L')
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt4L')
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt4L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt4L')
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt4L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt4L')
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt4L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+#######################################################################################
+#pt5R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(11)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt5R')
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt5R')
+
+
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt5R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt5R')
+
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt5R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt5R')
+
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt5R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+#####################################################################################
+#pt5L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(12)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt5L')
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt5L')
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt5L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt5L')
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt5L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt5L')
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt5L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+####################################################################################
+#pt6R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(13)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt6R')
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt6R')
+
+
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt6R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt6R')
+
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt6R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt6R')
+
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt6R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+#####################################################################################
+#pt6L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(14)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt6L')
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt6L')
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt6L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt6L')
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt6L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt6L')
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt6L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+########################################################################################
+
+#pt7R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(15)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt7R')
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt7R')
+
+
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt7R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt7R')
+
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt7R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt7R')
+
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt7R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+#####################################################################################
+#pt7L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(16)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt7L')
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt7L')
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt7L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt7L')
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt7L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt7L')
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt7L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+##########################################################################
+#pt8R#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(17)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt8R')
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt8R')
+
+
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt8R lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+
+import numpy as np
+import slicer
+
+
+originalLineNode = slicer.util.getNode('n-pt8R')
+
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt8R ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt8R')
+
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt8R vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
+
+#####################################################################################
+#pt8L#
+F=getNode('Rynn_hard_tissue')  
+G=getNode('Rynn_soft_tissue') 
+L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
+firstPoint = F.GetNthControlPointPositionVector(0)     #nasion#
+L.AddControlPoint(firstPoint)
+secondPoint = G.GetNthControlPointPositionVector(18)	#Rynn_soft_tissue point#
+L.AddControlPoint(secondPoint)
+L.SetName('n-pt8L')
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt8L')
+planeNode = slicer.util.getNode('NPP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt8L lat')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(1, 1, 0)  # RGB values for yellow
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt8L')
+
+planeNode = slicer.util.getNode('PTP')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+
+
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+
+
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt8L ant')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 1, 0)  # RGB values for green
+
+import numpy as np
+import slicer
+
+originalLineNode = slicer.util.getNode('n-pt8L')
+
+planeNode = slicer.util.getNode('INB')
+planeOrigin = np.array(planeNode.GetOrigin())
+planeNormal = np.array(planeNode.GetNormal())
+startPoint = np.array(originalLineNode.GetNthControlPointPosition(0))
+endPoint = np.array(originalLineNode.GetNthControlPointPosition(1))
+def project_point_onto_plane(point, planeOrigin, planeNormal):
+    pointToPlaneVector = point - planeOrigin
+    distanceToPlane = np.dot(pointToPlaneVector, planeNormal)
+    projectedPoint = point - distanceToPlane * planeNormal
+    return projectedPoint
+projectedStartPoint = project_point_onto_plane(startPoint, planeOrigin, planeNormal)
+projectedEndPoint = project_point_onto_plane(endPoint, planeOrigin, planeNormal)
+projectedLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'pt8L vert')
+projectedLineNode.AddControlPoint(projectedStartPoint)
+projectedLineNode.AddControlPoint(projectedEndPoint)
+
+projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
 ```
 </details>
 
