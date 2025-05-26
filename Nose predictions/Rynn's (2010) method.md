@@ -206,7 +206,7 @@ displayNode.SetVisibility(True)
 
 print("New plane 'NPP' created successfully.")
  ```
- ### PT plane
+### PT plane
 May be referred to as PT - Prokopec transverse plane; defined by Rynn as 
 
 > a transverse plane set at right angles to both the INB plane and the NPP, corresponding with the profile prediction lines used by Prokopec and Ubelaker[^11]
@@ -247,6 +247,7 @@ displayNode.SetSelectedColor(0.71, 0.49, 0.86)
 displayNode.SetVisibility(True)
 
 print("New plane 'PTP' created successfully.")
+```
 
 ![image](https://github.com/user-attachments/assets/8b3c4cc4-80eb-430f-af9c-e32179abb6e4)
 
@@ -1653,7 +1654,7 @@ Additionally, more potential relationship measurements from Rynn et al 2006[^2] 
 
 <details>
 
-<summary>Rynn's network</summary>
+<summary>Rynn's triangle network</summary>
 
 ``` python
 #pt1R#
@@ -3616,15 +3617,11 @@ create_shortest_distance_line_between_MNW_and_MAW()
 ```
 </details>
 
-#### Rynn/Sarilita/Bulut regression predictions
-
 ## Outputs
 Depending on whick landmarks you allocated, there are multiple versions of outputs. 
 
 #### Rynn/Sarilita/Bulut regression predictions
 You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landmarks AND did not run any of the "Rynn's triangle" codes
-
-
 
 
 #### Rynn's trinagle included 
