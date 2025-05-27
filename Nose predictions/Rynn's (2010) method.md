@@ -871,7 +871,8 @@ widget.show()
 
 ## Estimating the pFHP
 
-The line(s) created via this code will appear in **turquoise**, named according to the linear regression used and all will run from the subspinale point along the "3" line. The length is calculated by your chosen linear regression. Below the table summarises the options, please refer back to the original literature[^3], [^12], [^13]  if in doubt. 
+The line(s) created via the **GUI for pFHP** code will appear in **turquoise**, named according to the linear regression used and all will run from the subspinale point along the "3" line. The length is calculated by your chosen linear regression. Below the table summarises the options, please refer back to the original literature[^3], [^12], [^13]  if in doubt. 
+After this, the code **GUI for sn** finds the intersection point on the previous turqoise line with the chosen nasal depth equation distance from the predicted pronasale point. 
 
 <table>
   <tr>
@@ -911,6 +912,62 @@ The line(s) created via this code will appear in **turquoise**, named according 
     <td>Males</td>
     <td>pred Bulut M pFHP = 0.518 + 0.777 × Y</td>
     <td>pred Bulut M pFHP</td>
+  </tr>
+</table>
+
+
+<table>
+  <tr>
+    <th colspan="5" style="text-align:center">Pronasale ND</th>
+  </tr>
+  <tr>
+    <th>Literature</th>
+    <th>Ancestry</th>
+    <th>Biological Sex</th>
+    <th>Full Equation</th>
+    <th>Name of Measurement</th>
+  </tr>
+  <tr>
+    <td>Rynn et al. 2010</td>
+    <td>ANY</td>
+    <td>Females</td>
+    <td>pred Rynn F ND = 0.5 × Y + 1.5</td>
+    <td>pred Rynn F ND</td>
+  </tr>
+  <tr>
+    <td>Rynn et al. 2010</td>
+    <td>ANY</td>
+    <td>Males</td>
+    <td>pred Rynn M ND = 0.4 × Y + 5</td>
+    <td>pred Rynn M ND</td>
+  </tr>
+  <tr>
+    <td>Sarilita et al. 2018</td>
+    <td>Indonesian</td>
+    <td>Males</td>
+    <td>pred Sarilita M ND = 0.22 × Z + 4.02</td>
+    <td>pred Sarilita M ND</td>
+  </tr>
+  <tr>
+    <td>Sarilita et al. 2018</td>
+    <td>Indonesian</td>
+    <td>Females</td>
+    <td>pred Sarilita F ND = 0.29 × Y + 6.24</td>
+    <td>pred Sarilita F ND</td>
+  </tr>
+  <tr>
+    <td>Bulut et al. 2019</td>
+    <td>Turkish</td>
+    <td>Females</td>
+    <td>pred Bulut F ND = 5,169 + 0,423 × Y</td>
+    <td>pred Bulut F ND</td>
+  </tr>
+  <tr>
+    <td>Bulut et al. 2019</td>
+    <td>Turkish</td>
+    <td>Males</td>
+    <td>pred Bulut M ND = 6,587 + 0,386 × Y</td>
+    <td>pred Bulut M ND</td>
   </tr>
 </table>
 
@@ -1105,8 +1162,14 @@ widget.show()
 ```
 </details>
 
+
+
+
+
+
 <details>
 <summary>GUI for sn point</summary>
+ 
 ```python
 import slicer
 import numpy as np
@@ -1395,6 +1458,7 @@ class NDIntersectionWidget(QWidget):
 widget = NDIntersectionWidget()
 widget.show()
 ```
+
 </details>
 
 
