@@ -3803,14 +3803,6 @@ class AngleCreationWidget(QWidget):
         angleNode.AddControlPoint(apexPoint)
         angleNode.AddControlPoint(thirdPoint)
 
-        # --- LOGGING ---
-        choices = {
-            "First control point": label1,
-            "Apex": label2,
-            "Third control point": label3
-        }
-        add_to_markup_report("Angle", angle_name, choices)
-
         self.angle_counter += 1
 
 widget = AngleCreationWidget()
