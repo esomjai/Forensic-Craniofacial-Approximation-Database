@@ -3776,6 +3776,7 @@ class AngleCreationWidget(QWidget):
         self.angle_counter = 1
 
     def create_angle(self):
+    print("Button was clicked!")  # Add this
         idx1 = self.firstGroup.checkedId()
         idx2 = self.apexGroup.checkedId()
         idx3 = self.thirdGroup.checkedId()
