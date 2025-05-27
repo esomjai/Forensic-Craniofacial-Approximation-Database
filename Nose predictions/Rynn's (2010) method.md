@@ -1105,7 +1105,297 @@ widget.show()
 ```
 </details>
 
+<details>
+<summary>GUI for sn point</summary>
+```python
+import slicer
+import numpy as np
+from qt import QWidget, QVBoxLayout, QLabel, QRadioButton, QPushButton, QMessageBox, QButtonGroup, QSizePolicy
 
+def get_pronasale_pred_points():
+    points = []
+    node = slicer.util.getNode("Rynn_soft_tissue_pred")
+    for idx in range(node.GetNumberOfControlPoints()):
+        label = node.GetNthControlPointLabel(idx)
+        if "pronasale pred" in label:
+            points.append((label, idx, np.array(node.GetNthControlPointPosition(idx))))
+    return points
+
+def get_pfph_lines():
+    lines = []
+    for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+        if "pFHP" in node.GetName():
+            lines.append(node)
+    return lines
+
+def get_line_length(line_name):
+    line = slicer.util.getNode(line_name)
+    p0 = np.array(line.GetNthControlPointPosition(0))
+    p1 = np.array(line.GetNthControlPointPosition(1))
+    return np.linalg.norm(p1 - p0)
+
+def calculate_radius(equation, Y, Z):
+    if equation == "pred Rynn F ND":
+        return 0.5 * Y + 1.5
+    elif equation == "pred Rynn M ND":
+        return 0.4 * Y + 5
+    elif equation == "pred Sarilita M ND":
+        return 0.22 * Z + 4.02
+    elif equation == "pred Sarilita F ND":
+        return 0.29 * Y + 6.24
+    elif equation == "pred Bulut F ND":
+        return 5.169 + 0.423 * Y
+    elif equation == "pred Bulut M ND":
+        return 6.587 + 0.386 * Y
+    else:
+        raise ValueError("Unknown equation")
+
+def abbreviate_equation_name(eq):
+    eq = eq.replace("pred ", "").replace(" ", "")
+    eq = eq.replace("MND", "M-ND").replace("FND", "F-ND")
+    return eq
+
+def create_nd_circle_node(center, radius, planeNormal):
+    circle = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsShapeNode", "ND_circle")
+    circle.SetShapeName(4)  # 4 is the index for "Ring" shape in ExtraMarkups
+    circle.RemoveAllControlPoints()
+    circle.AddControlPoint(center)
+    norm_pt = center + planeNormal  # Second control point defines the normal
+    circle.AddControlPoint(norm_pt.tolist())
+    circle.SetAttribute("Shape.Radius", str(radius))
+    circle.GetDisplayNode().SetLineThickness(0.5)  # Set circle thickness
+    return circle
+
+def line_circle_intersection_in_plane(center, radius, line_p0, line_p1, plane_normal):
+    plane_normal = np.array(plane_normal)
+    plane_normal = plane_normal / np.linalg.norm(plane_normal)
+    if np.allclose(plane_normal, [0, 0, 1]):
+        u = np.array([1, 0, 0])
+    else:
+        u = np.cross([0, 0, 1], plane_normal)
+        u = u / np.linalg.norm(u)
+    v = np.cross(plane_normal, u)
+    v = v / np.linalg.norm(v)
+    def to_plane_coords(pt):
+        rel = pt - center
+        return np.dot(rel, u), np.dot(rel, v)
+    p0_plane = np.array(to_plane_coords(np.array(line_p0)))
+    p1_plane = np.array(to_plane_coords(np.array(line_p1)))
+    dp = p1_plane - p0_plane
+    a = np.dot(dp, dp)
+    b = 2 * np.dot(p0_plane, dp)
+    c = np.dot(p0_plane, p0_plane) - radius ** 2
+    disc = b ** 2 - 4 * a * c
+    if disc < 0:
+        return []
+    sqrt_disc = np.sqrt(disc)
+    t1 = (-b + sqrt_disc) / (2 * a)
+    t2 = (-b - sqrt_disc) / (2 * a)
+    pts = []
+    for t in [t1, t2]:
+        if 0.0 <= t <= 1.0:
+            plane_xy = p0_plane + t * dp
+            pt3d = center + plane_xy[0] * u + plane_xy[1] * v
+            pts.append(pt3d)
+    return pts
+
+def project_point_to_line(point, line_p0, line_p1):
+    line_vec = np.array(line_p1) - np.array(line_p0)
+    line_len = np.linalg.norm(line_vec)
+    if line_len == 0:
+        return np.array(line_p0)
+    line_vec_norm = line_vec / line_len
+    point_vec = np.array(point) - np.array(line_p0)
+    proj_length = np.dot(point_vec, line_vec_norm)
+    proj_length = np.clip(proj_length, 0, line_len)  # Clamp to line segment
+    proj_point = np.array(line_p0) + proj_length * line_vec_norm
+    return proj_point
+
+class NDIntersectionWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("ND Circle and pFHP Line Intersection (Soft Tissue ND)")
+
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("<b>1. Choose pronasale pred point (as ND circle center):</b>"))
+        self.points = get_pronasale_pred_points()
+        self.point_buttons = QButtonGroup(self)
+        for i, (label, idx, pos) in enumerate(self.points):
+            radio = QRadioButton(f"{label} at {np.round(pos,2)}")
+            self.point_buttons.addButton(radio, i)
+            layout.addWidget(radio)
+        if not self.points:
+            layout.addWidget(QLabel("No pronasale pred points found."))
+
+        # --- Add the description table here ---
+        table_html = """
+        <b>ND equations from literature:</b>
+        <table border="1" cellspacing="0" cellpadding="3">
+            <tr>
+                <th>Literature</th>
+                <th>Ancestry</th>
+                <th>Biological Sex</th>
+                <th>Full equation</th>
+                <th>Name of measurement in scene</th>
+            </tr>
+            <tr>
+                <td>Rynn et al. 2010</td>
+                <td>ANY</td>
+                <td>Females</td>
+                <td>pred Rynn F ND=0.5*Y + 1.5</td>
+                <td>pred Rynn F ND</td>
+            </tr>
+            <tr>
+                <td>Rynn et al. 2010</td>
+                <td>ANY</td>
+                <td>Males</td>
+                <td>pred Rynn M ND=0.4*Y + 5</td>
+                <td>pred Rynn M ND</td>
+            </tr>
+            <tr>
+                <td>Sarilita et al. 2018</td>
+                <td>Indonesian</td>
+                <td>Males</td>
+                <td>pred Sarilita M ND=0.22*Z + 4.02</td>
+                <td>pred Sarilita M ND</td>
+            </tr>
+            <tr>
+                <td>Sarilita et al. 2018</td>
+                <td>Indonesian</td>
+                <td>Females</td>
+                <td>pred Sarilita F ND=0.29 × Y + 6.24</td>
+                <td>pred Sarilita F ND</td>
+            </tr>
+            <tr>
+                <td>Bulut et al. 2019</td>
+                <td>Turkish</td>
+                <td>Females</td>
+                <td>pred Bulut F ND=5,169 + 0,423*Y</td>
+                <td>pred Bulut F ND</td>
+            </tr>
+            <tr>
+                <td>Bulut et al. 2019</td>
+                <td>Turkish</td>
+                <td>Males</td>
+                <td>pred Bulut M ND=6,587 + 0,386*Y</td>
+                <td>pred Bulut M ND</td>
+            </tr>
+        </table>
+        """
+        description_label = QLabel()
+        description_label.setText(table_html)
+        description_label.setWordWrap(True)
+        description_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        layout.addWidget(description_label)
+
+        layout.addWidget(QLabel("<b>2. Choose ND radius equation:</b>"))
+        self.equations = [
+            "pred Rynn F ND", "pred Rynn M ND",
+            "pred Sarilita M ND", "pred Sarilita F ND",
+            "pred Bulut F ND", "pred Bulut M ND"
+        ]
+        self.equation_buttons = QButtonGroup(self)
+        for i, eq in enumerate(self.equations):
+            radio = QRadioButton(eq)
+            self.equation_buttons.addButton(radio, i)
+            layout.addWidget(radio)
+
+        layout.addWidget(QLabel("<b>3. Choose pFHP line to intersect with:</b>"))
+        self.lines = get_pfph_lines()
+        self.line_buttons = QButtonGroup(self)
+        for i, line in enumerate(self.lines):
+            radio = QRadioButton(line.GetName())
+            self.line_buttons.addButton(radio, i)
+            layout.addWidget(radio)
+        if not self.lines:
+            layout.addWidget(QLabel("No pFHP lines found."))
+
+        self.create_button = QPushButton("Create ND Circle and Find Intersection")
+        self.create_button.clicked.connect(self.on_create)
+        layout.addWidget(self.create_button)
+
+        self.setLayout(layout)
+
+    def on_create(self):
+        center_id = self.point_buttons.checkedId()
+        if center_id == -1:
+            QMessageBox.warning(self, "Missing selection", "Please select a pronasale pred point.")
+            return
+        center_label, center_idx, center = self.points[center_id]
+        eq_id = self.equation_buttons.checkedId()
+        if eq_id == -1:
+            QMessageBox.warning(self, "Missing selection", "Please select a ND radius equation.")
+            return
+        equation = self.equations[eq_id]
+        line_id = self.line_buttons.checkedId()
+        if line_id == -1:
+            QMessageBox.warning(self, "Missing selection", "Please select a pFHP line.")
+            return
+        line_node = self.lines[line_id]
+        line_p0 = np.array(line_node.GetNthControlPointPosition(0))
+        line_p1 = np.array(line_node.GetNthControlPointPosition(1))
+        try:
+            y_len = get_line_length("rhi-subs Y")
+        except Exception as e:
+            QMessageBox.warning(self, "Missing line", "Could not find or read 'rhi-subs Y'.")
+            return
+        try:
+            z_len = get_line_length("nas-subs Z")
+        except Exception:
+            z_len = 0
+        try:
+            radius = calculate_radius(equation, y_len, z_len)
+        except Exception as e:
+            QMessageBox.warning(self, "Equation error", str(e))
+            return
+
+        # Get normal from the INB plane
+        try:
+            inb_plane = slicer.util.getNode("INB")
+            planeNormal = np.array(inb_plane.GetNormal())
+        except Exception:
+            QMessageBox.warning(self, "Missing INB", "Could not find 'INB' plane in the scene.")
+            return
+
+        # Create the ND Circle using MarkupsShapeNode (on INB plane)
+        nd_circle_node = create_nd_circle_node(center, radius, planeNormal)
+        # Thickness already set in create_nd_circle_node
+
+        # Find intersection(s) in the INB plane
+        intersections = line_circle_intersection_in_plane(center, radius, line_p0, line_p1, planeNormal)
+        if not intersections:
+            QMessageBox.warning(self, "No Intersection", "No intersection found between ND circle and line.")
+            return
+
+        # Project intersection(s) onto the actual 3D line so the fiducials are on the line
+        projected_intersections = [project_point_to_line(pt, line_p0, line_p1) for pt in intersections]
+
+        # Add intersection(s) as new fiducial(s) to Rynn_soft_tissue_pred, and draw ND line(s)
+        try:
+            pred_node = slicer.util.getNode("Rynn_soft_tissue_pred")
+        except slicer.util.MRMLNodeNotFoundException:
+            pred_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "Rynn_soft_tissue_pred")
+        pa_abbrev = abbreviate_equation_name(center_label.split("_pronasale")[0])
+        eq_abbrev = abbreviate_equation_name(equation)
+        label = f"{pa_abbrev}_{eq_abbrev}_sn pred"
+        for i, pt in enumerate(projected_intersections):
+            lbl = label if len(projected_intersections)==1 else f"{label}_{i+1}"
+            pred_node.AddControlPoint(pt.tolist(), lbl)
+
+            # Create visual line from ND circle center to intersection, labeled "ND line + abbreviated choices"
+            line_lbl = f"ND_line_{pa_abbrev}_{eq_abbrev}" if len(projected_intersections) == 1 else f"ND_line_{pa_abbrev}_{eq_abbrev}_{i+1}"
+            nd_line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_lbl)
+            nd_line_node.AddControlPoint(center.tolist())
+            nd_line_node.AddControlPoint(pt.tolist())
+            nd_line_node.GetDisplayNode().SetSelectedColor(0.2, 0.6, 1.0)  # Example: light blue
+            nd_line_node.GetDisplayNode().SetLineThickness(0.5)
+
+        QMessageBox.information(self, "Done", f"ND circle, intersection(s), and ND line(s) created!\nLabel: {label}")
+
+widget = NDIntersectionWidget()
+widget.show()
+```
+</details>
 
 
 #### Estimating and placing the nasal depth and nasal length measurements to estimate the soft tissue nasion
