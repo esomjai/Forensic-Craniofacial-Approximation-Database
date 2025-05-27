@@ -918,7 +918,7 @@ After this, the code **GUI for sn** finds the intersection point on the previous
 
 <table>
   <tr>
-    <th colspan="5" style="text-align:center">Pronasale ND</th>
+    <th colspan="5" style="text-align:center">Nasal Depth</th>
   </tr>
   <tr>
     <th>Literature</th>
