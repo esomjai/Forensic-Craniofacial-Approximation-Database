@@ -4406,11 +4406,45 @@ This GUI creates an angle from the "Rynn_soft_tissue_pred" node where all the no
 <summary>GUI for predicted angle</summary>
 
 ``` python
+import os
+import json
 import slicer
 import numpy as np
-from qt import QWidget, QVBoxLayout, QLabel, QPushButton, QRadioButton, QButtonGroup, QGroupBox
+from qt import QWidget, QVBoxLayout, QPushButton, QRadioButton, QButtonGroup, QGroupBox, QMessageBox
 
+# --- Persistent logging system ---
+markup_report_filename = "markup_report.txt"
+markup_report_json = "markup_report.json"
+if "markup_report_log" not in globals():
+    if os.path.exists(markup_report_json):
+        with open(markup_report_json, "r") as f:
+            markup_report_log = json.load(f)
+    else:
+        markup_report_log = []
 
+def add_to_markup_report(markup_type, markup_name, user_choices):
+    markup_report_log.append({
+        "type": markup_type,
+        "name": markup_name,
+        "choices": user_choices.copy()
+    })
+    write_markup_report_to_file()
+    write_markup_report_to_json()
+
+def write_markup_report_to_file():
+    with open(markup_report_filename, "w") as f:
+        f.write("=== Markup Creation Report ===\n")
+        for i, entry in enumerate(markup_report_log, 1):
+            f.write(f"\n{i}. {entry['type']} '{entry['name']}'\n")
+            for label, choice in entry['choices'].items():
+                f.write(f"   {label}: {choice}\n")
+        f.write("=============================\n")
+
+def write_markup_report_to_json():
+    with open(markup_report_json, "w") as f:
+        json.dump(markup_report_log, f, indent=2)
+
+# --- Angle Creator Widget ---
 def get_fiducial_labels_and_indices(node):
     labels = []
     for i in range(node.GetNumberOfControlPoints()):
@@ -4433,21 +4467,25 @@ class AngleCreationWidget(QWidget):
         def create_radio_group(title, candidates):
             groupBox = QGroupBox(title)
             vbox = QVBoxLayout()
-            group = QButtonGroup(self)
+            buttonGroup = QButtonGroup(self)
+            buttonGroup.setExclusive(True)
             for label, idx in candidates:
                 btn = QRadioButton(label)
-                group.addButton(btn, idx)
+                buttonGroup.addButton(btn, idx)  # idx is the control point index!
                 vbox.addWidget(btn)
             groupBox.setLayout(vbox)
-            return groupBox, group
+            return groupBox, buttonGroup
 
-        self.firstGroupBox, self.firstGroup = create_radio_group("Choose first control point (starts with n' pred_):", first_candidates)
+        self.firstGroupBox, self.firstGroup = create_radio_group(
+            "Choose first control point (starts with n' pred_):", first_candidates)
         layout.addWidget(self.firstGroupBox)
 
-        self.apexGroupBox, self.apexGroup = create_radio_group("Choose apex (ends with _pronasale pred):", apex_candidates)
+        self.apexGroupBox, self.apexGroup = create_radio_group(
+            "Choose apex (ends with _pronasale pred):", apex_candidates)
         layout.addWidget(self.apexGroupBox)
 
-        self.thirdGroupBox, self.thirdGroup = create_radio_group("Choose third control point (ends with _sn pred):", third_candidates)
+        self.thirdGroupBox, self.thirdGroup = create_radio_group(
+            "Choose third control point (ends with _sn pred):", third_candidates)
         layout.addWidget(self.thirdGroupBox)
 
         self.createButton = QPushButton("Create Angle")
@@ -4458,37 +4496,57 @@ class AngleCreationWidget(QWidget):
         self.angle_counter = 1
 
     def create_angle(self):
-        print("Button was clicked!")  # Add this
         idx1 = self.firstGroup.checkedId()
         idx2 = self.apexGroup.checkedId()
         idx3 = self.thirdGroup.checkedId()
+        print(f"Selected indices: {idx1}, {idx2}, {idx3}")
 
         if idx1 == -1 or idx2 == -1 or idx3 == -1:
-            print("Please select a point in each group before creating the angle.")
+            QMessageBox.warning(self, "Selection Error", "Please select a point in each group before creating the angle.")
             return
 
-        # Find the selected radio button texts
-        btn1 = self.firstGroup.button(idx1)
-        btn2 = self.apexGroup.button(idx2)
-        btn3 = self.thirdGroup.button(idx3)
-        label1 = btn1.text() if btn1 else ""
-        label2 = btn2.text() if btn2 else ""
-        label3 = btn3.text() if btn3 else ""
+        btn1 = self.firstGroup.checkedButton()
+        btn2 = self.apexGroup.checkedButton()
+        btn3 = self.thirdGroup.checkedButton()
+        label1 = btn1.text if btn1 else ""
+        label2 = btn2.text if btn2 else ""
+        label3 = btn3.text if btn3 else ""
+
+        print(f"Labels: {label1}, {label2}, {label3}")
 
         firstPoint = np.array(sourceNode.GetNthControlPointPosition(idx1))
         apexPoint = np.array(sourceNode.GetNthControlPointPosition(idx2))
         thirdPoint = np.array(sourceNode.GetNthControlPointPosition(idx3))
 
-        angle_name = f"pred n'-pn-sn {self.angle_counter}"
+        angle_name = f"pred n'-pn-sn {self.angle_counter}: {label1}, {label2}, {label3}"
         angleNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsAngleNode', angle_name)
         angleNode.AddControlPoint(firstPoint)
         angleNode.AddControlPoint(apexPoint)
         angleNode.AddControlPoint(thirdPoint)
-
         self.angle_counter += 1
 
-widget = AngleCreationWidget()
-widget.show()
+        # --- LOG THE ANGLE CREATION ---
+        add_to_markup_report(
+            "Angle",
+            angle_name,
+            {
+                "First label": label1,
+                "First index": idx1,
+                "Apex label": label2,
+                "Apex index": idx2,
+                "Third label": label3,
+                "Third index": idx3,
+            }
+        )
+
+        QMessageBox.information(self, "Success", f"Angle '{angle_name}' created!")
+
+try:
+    angle_creation_widget.close()
+except:
+    pass
+angle_creation_widget = AngleCreationWidget()
+angle_creation_widget.show()
 ```
 </details>
 
