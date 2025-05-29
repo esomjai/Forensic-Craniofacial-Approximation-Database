@@ -3589,7 +3589,7 @@ projectedLineNode.AddControlPoint(projectedEndPoint)
 
 projectedLineNode.GetDisplayNode().SetSelectedColor(0, 0, 1)  # RGB values for blue
 
-#Create PLB point by connecting XR and XL, then finding its intersecction with the INB#
+#Create PLB point by connecting XR and XL, then finding its intersection with the INB#
 import slicer
 import numpy as np
 
@@ -3635,7 +3635,7 @@ import slicer
 import numpy as np
 
 # Get the nodes for the existing points and lines
-hardTissueNode = slicer.util.getNode('lmrks_Stephan')
+hardTissueNode = slicer.util.getNode('Rynn_soft_tissue')
 PLBnode=slicer.util.getNode('PLB')
 
 # Get the positions of the control points
