@@ -684,10 +684,11 @@ https://github.com/user-attachments/assets/f40a61ad-a615-4f46-80f0-1f897f134b35
 ``` python
 import slicer
 import numpy as np
-from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QMessageBox, QSizePolicy
+from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QMessageBox, QSizePolicy, Qt
 
-# --- LOGGING SYSTEM ---
+# --- Logging/report system ---
 markup_report_log = []
+markup_report_filename = "markup_report.txt"
 
 def add_to_markup_report(markup_type, markup_name, user_choices):
     markup_report_log.append({
@@ -695,14 +696,62 @@ def add_to_markup_report(markup_type, markup_name, user_choices):
         "name": markup_name,
         "choices": user_choices.copy()
     })
+    write_markup_report_to_file()
+
+def write_markup_report_to_file():
+    with open(markup_report_filename, "w") as f:
+        f.write("=== Markup Creation Report ===\n")
+        for i, entry in enumerate(markup_report_log, 1):
+            f.write(f"\n{i}. {entry['type']} '{entry['name']}'\n")
+            for label, choice in entry['choices'].items():
+                f.write(f"   {label}: {choice}\n")
+        f.write("=============================\n")
 
 def print_markup_report():
-    print("=== Markup Creation Report ===")
+    with open(markup_report_filename, "r") as f:
+        print(f.read())
+
+def show_markup_report_popup():
+    if not markup_report_log:
+        QMessageBox.information(None, "Markup Report", "No markup entries yet!")
+        return
+    report_text = "=== Markup Creation Report ===\n"
     for i, entry in enumerate(markup_report_log, 1):
-        print(f"\n{i}. {entry['type']} '{entry['name']}'")
+        report_text += f"\n{i}. {entry['type']} '{entry['name']}'\n"
         for label, choice in entry['choices'].items():
-            print(f"   {label}: {choice}")
-    print("=============================")
+            report_text += f"   {label}: {choice}\n"
+    report_text += "============================="
+    msg = QMessageBox()
+    msg.setWindowTitle("Markup Creation Report")
+    msg.setText(report_text)
+    msg.setStandardButtons(QMessageBox.Ok)
+    msg.exec_()
+
+# ... (all your helper functions here, unchanged) ...
+
+def get_custom_plane_point_and_normal():
+    node = slicer.util.getNode("Rynn_hard_tissue")
+    p0 = np.array(node.GetNthControlPointPosition(0))
+    p1 = np.array(node.GetNthControlPointPosition(5))
+    p2 = np.array(node.GetNthControlPointPosition(6))
+    v1 = p1 - p0
+    v2 = p2 - p0
+    normal = np.cross(v1, v2)
+    norm = np.linalg.norm(normal)
+    if norm == 0:
+        raise ValueError("Custom plane points are colinear or missing.")
+    normal = normal / norm
+    return p0, normal
+
+def project_point_onto_plane(point, plane_point, plane_normal):
+    point = np.array(point)
+    plane_point = np.array(plane_point)
+    plane_normal = np.array(plane_normal)
+    plane_normal = plane_normal / np.linalg.norm(plane_normal)
+    vector = point - plane_point
+    distance = np.dot(vector, plane_normal)
+    projected = point - distance * plane_normal
+    return projected
 
 def find_pa_lines():
     all_nodes = slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode")
@@ -758,8 +807,7 @@ def create_parallel_line_to_2(pa_line_node, x_line_node, pv_equation, pa_equatio
     norm_dir = np.linalg.norm(direction)
     if norm_dir == 0:
         raise ValueError("Line '2' has zero length!")
-    direction = direction / norm_dir
-    direction = -direction
+    direction = -direction / norm_dir
 
     X = get_line_length(x_line_node)
     length = calculate_pv_length(pv_equation, X)
@@ -768,20 +816,16 @@ def create_parallel_line_to_2(pa_line_node, x_line_node, pv_equation, pa_equatio
     pa_abbrev = abbreviate_equation_name(pa_equation)
     pv_abbrev = abbreviate_equation_name(pv_equation)
     node_name = f"{pa_abbrev}_{pv_abbrev}_pronasale pred"
+
+    plane_point, plane_normal = get_custom_plane_point_and_normal()
+    start_on_plane = project_point_onto_plane(end, plane_point, plane_normal)
+    end_on_plane = project_point_onto_plane(end + direction * length, plane_point, plane_normal)
+
     new_line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", node_name)
     new_line.GetDisplayNode().SetSelectedColor(yellow)
-    new_line.AddControlPoint(end.tolist())
-    new_line.AddControlPoint((end + direction * length).tolist())
+    new_line.AddControlPoint(start_on_plane.tolist())
+    new_line.AddControlPoint(end_on_plane.tolist())
     print(f"Created new line '{node_name}' of length {length:.2f}, parallel to line '2'")
-
-    # --- ADD TO LOG ---
-    user_choices = {
-        "PA line": pa_equation,
-        "PV equation": pv_equation,
-        "X (length of nas-aca X)": f"{X:.2f}",
-        "PV line length": f"{length:.2f}"
-    }
-    add_to_markup_report("Line (PV parallel)", node_name, user_choices)
     return new_line
 
 def save_pv_endpoint_to_pred_list(pv_line_node, pa_equation, pv_equation):
@@ -800,6 +844,7 @@ class PVLineCreationWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Pronasale Vertical Prediction (PV) [Parallel to line '2']")
+
         layout = QVBoxLayout()
         title_label = QLabel("<b>Select PA line(s), then PV equation(s) to create lines parallel to line '2'!<br>(X line is always 'nas-aca X')</b>")
         layout.addWidget(title_label)
@@ -904,11 +949,46 @@ class PVLineCreationWidget(QWidget):
                 try:
                     pv_line_node = create_parallel_line_to_2(pa_line_node, x_line_node, pv_eq, pa_equation)
                     save_pv_endpoint_to_pred_list(pv_line_node, pa_equation, pv_eq)
+                    # --- LOGGING: record this creation ---
+                    X = get_line_length(x_line_node)
+                    length = calculate_pv_length(pv_eq, X)
+                    user_choices = {
+                        "PA line": pa_equation,
+                        "PV equation": pv_eq,
+                        "X (length of nas-aca X)": f"{X:.2f}",
+                        "PV line length": f"{length:.2f}"
+                    }
+                    pa_abbrev = abbreviate_equation_name(pa_equation)
+                    pv_abbrev = abbreviate_equation_name(pv_eq)
+                    node_name = f"{pa_abbrev}_{pv_abbrev}_pronasale pred"
+                    add_to_markup_report("Line (PV parallel)", node_name, user_choices)
                 except Exception as e:
                     QMessageBox.critical(self, "Error", str(e))
 
 widget = PVLineCreationWidget()
 widget.show()
+
+# --- Optional: Markup Report Viewer ---
+class MarkupReportWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Markup Report Viewer")
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        layout = QVBoxLayout()
+        print_button = QPushButton("Print Markup Report to Console")
+        print_button.clicked.connect(print_markup_report)
+        layout.addWidget(print_button)
+        popup_button = QPushButton("Show Markup Report Popup")
+        popup_button.clicked.connect(show_markup_report_popup)
+        layout.addWidget(popup_button)
+        self.setLayout(layout)
+
+try:
+    markup_report_widget.close()
+except:
+    pass
+markup_report_widget = MarkupReportWidget()
+markup_report_widget.show()
 ```
 </details>
 
