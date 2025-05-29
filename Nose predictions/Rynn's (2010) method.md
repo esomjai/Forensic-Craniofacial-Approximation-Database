@@ -2672,7 +2672,11 @@ In his thesis, Rynn (2006)[^2] concluded that
 In the light of improving programmes "reading" 3D data in recent future, the addition of egressions to be executed automatically is much more user friendly. To create these regressions accurately and precisely (that provide distances from the nasion along all 3 aforementioned planes), measuring the distances of each of these defined points from all planes may be of worth reproducing and analysing. This theory of visualising the points as almost "toggles" along the distinct planes may be easier to execute than the analysis of the coordinates of these points - also worth a data analysis question. 
 
 For the code below to work, you have to allocate the landmarks NOT highlighted with either blue or orange. 
-The following code created measurements of the distances on all planes for points 1, 2...8. 
+The following code created measurements of the distances on all planes for points 1, 2...8 with the colour coding: 
+-vertical - blue
+-anterior - green
+-lateral - yellow 
+
 Additionally, more potential relationship measurements from Rynn et al 2006[^2] (based on Glanville (1969)[^14] are featured with suggested comparisons: 
 
 | Hard Tissue Measurement                           | Soft Tissue Measurement                                 |
@@ -2688,7 +2692,7 @@ Additionally, more potential relationship measurements from Rynn et al 2006[^2] 
 
 <summary>Rynn's triangle network</summary>
 
-``` python
+```python
 #pt1R#
 F=getNode('Rynn_hard_tissue')  
 G=getNode('Rynn_soft_tissue') 
@@ -4334,21 +4338,21 @@ print("New angle 'rhi-PLB-aca' created successfully.")
 import slicer
 import numpy as np
 
-# Get the nodes for the existing points and lines
 softTissueNode = slicer.util.getNode('Rynn_soft_tissue')
 
-# Get the positions of the control points
 apexPoint = np.array(softTissueNode.GetNthControlPointPosition(0))
 firstControlPoint = np.array(softTissueNode.GetNthControlPointPosition(2))
 thirdControlPoint = np.array(softTissueNode.GetNthControlPointPosition(1))
 
-# Create the angle node
-angleNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsAngleNode', 'n'-pn-sn')
+# Manually define the labels for the node name
+pn = "pronasale"
+sn = "subnasale"
+angleNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsAngleNode', f'n-{pn}-{sn}')
 angleNode.AddControlPoint(firstControlPoint)  # First control point
 angleNode.AddControlPoint(apexPoint)          # Second control point (apex)
 angleNode.AddControlPoint(thirdControlPoint)  # Third control point
 
-print("New angle 'n'-pn-sn' created successfully.")
+print(f"New angle 'n-{pn}-{sn}' created successfully.")
 
 F=getNode('Rynn_hard_tissue')  
 L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
