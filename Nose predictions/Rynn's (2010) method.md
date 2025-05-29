@@ -686,8 +686,9 @@ import slicer
 import numpy as np
 from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QMessageBox, QSizePolicy, Qt
 
-# --- Logging/report system ---
-markup_report_log = []
+# --- Persistent log: only create once ---
+if "markup_report_log" not in globals():
+    markup_report_log = []
 markup_report_filename = "markup_report.txt"
 
 def add_to_markup_report(markup_type, markup_name, user_choices):
@@ -697,6 +698,9 @@ def add_to_markup_report(markup_type, markup_name, user_choices):
         "choices": user_choices.copy()
     })
     write_markup_report_to_file()
+    # Update live window if it exists
+    if "live_markup_report_widget" in globals():
+        live_markup_report_widget.update_report()
 
 def write_markup_report_to_file():
     with open(markup_report_filename, "w") as f:
@@ -726,6 +730,36 @@ def show_markup_report_popup():
     msg.setText(report_text)
     msg.setStandardButtons(QMessageBox.Ok)
     msg.exec_()
+
+# --- Live report widget! (fixed layout name) ---
+class LiveMarkupReportWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Live Markup Report")
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        mainLayout = QVBoxLayout()  # Don't use self.layout!
+        self.label = QLabel("No markup entries yet!")
+        self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        mainLayout.addWidget(self.label)
+        self.setLayout(mainLayout)
+        self.update_report()
+    def update_report(self):
+        if not markup_report_log:
+            self.label.setText("No markup entries yet!")
+        else:
+            report_text = "=== Markup Creation Report ===<br>"
+            for i, entry in enumerate(markup_report_log, 1):
+                report_text += f"<br>{i}. {entry['type']} '{entry['name']}'<br>"
+                for label, choice in entry['choices'].items():
+                    report_text += f"&nbsp;&nbsp;&nbsp;&nbsp;{label}: {choice}<br>"
+            self.label.setText(report_text + "<br>=============================")
+
+# Show the live updating report window (only one instance!)
+if "live_markup_report_widget" not in globals():
+    live_markup_report_widget = LiveMarkupReportWidget()
+    live_markup_report_widget.show()
+else:
+    live_markup_report_widget.update_report()
 
 # ... (all your helper functions here, unchanged) ...
 
@@ -807,7 +841,7 @@ def create_parallel_line_to_2(pa_line_node, x_line_node, pv_equation, pa_equatio
     norm_dir = np.linalg.norm(direction)
     if norm_dir == 0:
         raise ValueError("Line '2' has zero length!")
-    direction = -direction / norm_dir
+    direction = direction / norm_dir
 
     X = get_line_length(x_line_node)
     length = calculate_pv_length(pv_equation, X)
@@ -974,14 +1008,14 @@ class MarkupReportWidget(QWidget):
         super().__init__()
         self.setWindowTitle("Markup Report Viewer")
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-        layout = QVBoxLayout()
+        vbox = QVBoxLayout()
         print_button = QPushButton("Print Markup Report to Console")
         print_button.clicked.connect(print_markup_report)
-        layout.addWidget(print_button)
+        vbox.addWidget(print_button)
         popup_button = QPushButton("Show Markup Report Popup")
         popup_button.clicked.connect(show_markup_report_popup)
-        layout.addWidget(popup_button)
-        self.setLayout(layout)
+        vbox.addWidget(popup_button)
+        self.setLayout(vbox)
 
 try:
     markup_report_widget.close()
