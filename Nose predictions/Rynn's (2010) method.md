@@ -413,9 +413,19 @@ From this point on, a floating widget will appear to recall the decisions the us
 ```python
 # === BEGIN SCRIPT FOR SLICER PYTHON INTERACTOR ===
 
-# --- Logging/report system ---
-markup_report_log = []
+import os
+import json
+
 markup_report_filename = "markup_report.txt"
+markup_report_json = "markup_report.json"
+
+# Load previous log if it exists, else create empty
+if "markup_report_log" not in globals():
+    if os.path.exists(markup_report_json):
+        with open(markup_report_json, "r") as f:
+            markup_report_log = json.load(f)
+    else:
+        markup_report_log = []
 
 def add_to_markup_report(markup_type, markup_name, user_choices):
     markup_report_log.append({
@@ -423,7 +433,8 @@ def add_to_markup_report(markup_type, markup_name, user_choices):
         "name": markup_name,
         "choices": user_choices.copy()
     })
-    write_markup_report_to_file()  # Save the log to file every time it changes
+    write_markup_report_to_file()
+    write_markup_report_to_json()
 
 def write_markup_report_to_file():
     with open(markup_report_filename, "w") as f:
@@ -434,90 +445,71 @@ def write_markup_report_to_file():
                 f.write(f"   {label}: {choice}\n")
         f.write("=============================\n")
 
+def write_markup_report_to_json():
+    with open(markup_report_json, "w") as f:
+        json.dump(markup_report_log, f, indent=2)
+
 def print_markup_report():
-    # You can still print to the console if you want
     with open(markup_report_filename, "r") as f:
         print(f.read())
 
-# --- Popup report function! ---
-from qt import QMessageBox
+# --- Scrollable popup report dialog with Save As... at the top ---
+from qt import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QTextEdit, QFileDialog, QMessageBox
 
 def show_markup_report_popup():
     if not markup_report_log:
         QMessageBox.information(None, "Markup Report", "No markup entries yet!")
         return
+
     report_text = "=== Markup Creation Report ===\n"
     for i, entry in enumerate(markup_report_log, 1):
         report_text += f"\n{i}. {entry['type']} '{entry['name']}'\n"
         for label, choice in entry['choices'].items():
             report_text += f"   {label}: {choice}\n"
     report_text += "============================="
-    msg = QMessageBox()
-    msg.setWindowTitle("Markup Creation Report")
-    msg.setText(report_text)
-    msg.setStandardButtons(QMessageBox.Ok)
-    msg.exec_()
+
+    dialog = QDialog()
+    dialog.setWindowTitle("Markup Creation Report")
+    vbox = QVBoxLayout(dialog)
+
+    # Button row at the top
+    button_row = QHBoxLayout()
+    save_button = QPushButton("Save As...")
+    close_button = QPushButton("Close")
+    button_row.addWidget(save_button)
+    button_row.addWidget(close_button)
+    vbox.addLayout(button_row)
+
+    # Scrollable, selectable text area
+    text_edit = QTextEdit()
+    text_edit.setReadOnly(True)
+    text_edit.setPlainText(report_text)
+    vbox.addWidget(text_edit)
+
+    def save_report():
+        filename = QFileDialog.getSaveFileName(
+            dialog, "Save Markup Report As...", "markup_report.txt", "Text Files (*.txt)"
+        )[0]
+        if filename:
+            with open(filename, "w") as f:
+                f.write(report_text)
+            QMessageBox.information(dialog, "Saved", f"Report saved to:\n{filename}")
+
+    save_button.clicked.connect(save_report)
+    close_button.clicked.connect(lambda *args: dialog.accept())
+    dialog.setMinimumSize(700, 400)
+    dialog.exec_()
 
 import slicer
 import numpy as np
-from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QSizePolicy, Qt
+from qt import QCheckBox, QLabel, QSizePolicy, Qt
 
-# --- Function to create a new line in Slicer ---
-def create_line(name, length, color, start_point, direction):
-    line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
-    line.GetDisplayNode().SetSelectedColor(color)
-    start_point = np.array(start_point)
-    direction = np.array(direction)
-    line.AddControlPoint(start_point.tolist())
-    end_point = start_point + direction * length
-    line.AddControlPoint(end_point.tolist())
-    return line
-
-def calculate_length(equation, Y):
-    if equation == "pred Rynn PA":
-        return 0.83 * Y - 3.5
-    elif equation == "pred Sarilita M PA":
-        return 0.57 * Y + 2.33
-    elif equation == "pred Bulut F PA":
-        return 2.711 + 0.681 * Y
-    elif equation == "pred Bulut M PA":
-        return -0.481 + 0.776 * Y
-    else:
-        raise ValueError("Invalid equation choice")
-
-def create_new_line_with_equation(equation):
-    print("Inside create_new_line_with_equation function")
-    rynn_hard_tissue = slicer.util.getNode("Rynn_hard_tissue")
-    line_1 = slicer.util.getNode("1")
-    rhi_subs_Y = slicer.util.getNode("rhi-subs Y")
-
-    start_point = rynn_hard_tissue.GetNthControlPointPosition(0)
-    direction = np.array(line_1.GetNthControlPointPosition(1)) - np.array(line_1.GetNthControlPointPosition(0))
-    direction = direction / np.linalg.norm(direction)
-    direction = -direction  # Reverse the direction
-
-    point1 = np.array(rhi_subs_Y.GetNthControlPointPosition(0))
-    point2 = np.array(rhi_subs_Y.GetNthControlPointPosition(1))
-    Y = np.linalg.norm(point2 - point1)
-    length = calculate_length(equation, Y)
-    purple = (0.5, 0.0, 0.5)
-    new_line = create_line(equation, length, purple, start_point, direction)
-    print(f"Line '{equation}' created with length: {length:.2f}")
-
-    # --- LOGGING: record this creation ---
-    user_choices = {
-        "Equation": equation,
-        "Y distance": f"{Y:.2f}",
-        "Line length": f"{length:.2f}"
-    }
-    add_to_markup_report("Line", equation, user_choices)
-
-# --- The Line Creation GUI ---
-class LineCreationWidget(QWidget):
+class LineCreationWidget(QDialog):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Pronasale Anterior Prediction")
         layout = QVBoxLayout()
+        self.setLayout(layout)
         title_label = QLabel("<b>Please choose the equation(s) for pronasale anterior prediction!</b>")
         layout.addWidget(title_label)
 
@@ -582,14 +574,10 @@ class LineCreationWidget(QWidget):
         create_button.clicked.connect(self.on_create_button_clicked)
         layout.addWidget(create_button)
 
-        self.setLayout(layout)
-
     def on_create_button_clicked(self):
-        print("Inside on_create_button_clicked method")
         chosen_equations = [eq for eq, cb in zip(self.equations, self.checkbox_list) if cb.isChecked()]
         if chosen_equations:
             for chosen_equation in chosen_equations:
-                print(f"Chosen equation: {chosen_equation}")
                 try:
                     create_new_line_with_equation(chosen_equation)
                 except Exception as e:
@@ -597,11 +585,54 @@ class LineCreationWidget(QWidget):
         else:
             print("No equation selected!")
 
-# --- Create and show the GUI ---
-line_creation_widget = LineCreationWidget()
-line_creation_widget.show()
+def create_line(name, length, color, start_point, direction):
+    line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+    line.GetDisplayNode().SetSelectedColor(color)
+    start_point = np.array(start_point)
+    direction = np.array(direction)
+    line.AddControlPoint(start_point.tolist())
+    end_point = start_point + direction * length
+    line.AddControlPoint(end_point.tolist())
+    return line
 
-# --- Always-on-top REPORT BUTTON widget (now with popup!) ---
+def calculate_length(equation, Y):
+    if equation == "pred Rynn PA":
+        return 0.83 * Y - 3.5
+    elif equation == "pred Sarilita M PA":
+        return 0.57 * Y + 2.33
+    elif equation == "pred Bulut F PA":
+        return 2.711 + 0.681 * Y
+    elif equation == "pred Bulut M PA":
+        return -0.481 + 0.776 * Y
+    else:
+        raise ValueError("Invalid equation choice")
+
+def create_new_line_with_equation(equation):
+    rynn_hard_tissue = slicer.util.getNode("Rynn_hard_tissue")
+    line_1 = slicer.util.getNode("1")
+    rhi_subs_Y = slicer.util.getNode("rhi-subs Y")
+
+    start_point = rynn_hard_tissue.GetNthControlPointPosition(0)
+    direction = np.array(line_1.GetNthControlPointPosition(1)) - np.array(line_1.GetNthControlPointPosition(0))
+    direction = direction / np.linalg.norm(direction)
+    direction = -direction  # Reverse the direction
+
+    point1 = np.array(rhi_subs_Y.GetNthControlPointPosition(0))
+    point2 = np.array(rhi_subs_Y.GetNthControlPointPosition(1))
+    Y = np.linalg.norm(point2 - point1)
+    length = calculate_length(equation, Y)
+    purple = (0.5, 0.0, 0.5)
+    new_line = create_line(equation, length, purple, start_point, direction)
+    print(f"Line '{equation}' created with length: {length:.2f}")
+
+    user_choices = {
+        "Equation": equation,
+        "Y distance": f"{Y:.2f}",
+        "Line length": f"{length:.2f}"
+    }
+    add_to_markup_report("Line", equation, user_choices)
+
+# --- Always-on-top REPORT BUTTON widget (with scrollable popup) ---
 class MarkupReportWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -616,7 +647,6 @@ class MarkupReportWidget(QWidget):
         layout.addWidget(popup_button)
         self.setLayout(layout)
 
-# Ensure only one instance
 try:
     markup_report_widget.close()
 except:
@@ -624,7 +654,17 @@ except:
 markup_report_widget = MarkupReportWidget()
 markup_report_widget.show()
 
+# --- Show the main GUI ---
+try:
+    line_creation_widget.close()
+except:
+    pass
+line_creation_widget = LineCreationWidget()
+line_creation_widget.show()
+
 # === END SCRIPT ===
+
+
 ```
 </details>
 
