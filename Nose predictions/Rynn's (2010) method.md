@@ -4717,10 +4717,132 @@ Depending on which landmarks you allocated, there are multiple versions of outpu
 You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landmarks AND did not run any of the "Rynn's triangle" codes
 
 
-#### Rynn's trinagle included 
-You allocated ALL landmarks AND ran the "Rynn's triangle" codes
+#### Rynn's triangle included 
+<details>
+<summary>You allocated ALL landmarks AND ran the "Rynn's triangle" codes</summary>
+| #  | Name/Label                                                                                                                             | Value                | Notes  |
+|----|----------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------|
+| 1  | nas-aca X                                                                                                                              | 47.68614759456322    |        |
+| 2  | rhi-subs Y                                                                                                                             | 35.711927301850885   |        |
+| 3  | nas-subs Z                                                                                                                             | 50.33159339076192    |        |
+| 4  | 1                                                                                                                                      | 200.0                |  ❌ - not a real measurement      |
+| 5  | 2                                                                                                                                      | 199.99999999999997   |   ❌- not a real measurement          |
+| 6  | 3                                                                                                                                      | 200.0                |  ❌ - not a real measurement          |
+| 7  | pred Rynn PA                                                                                                                           | 26.14089966053623    |        |
+| 8  | pred Sarilita M PA                                                                                                                     | 22.685798562055012   |        |
+| 9  | pred Bulut F PA                                                                                                                        | 27.03082249256045    |        |
+| 10 | pred Bulut M PA                                                                                                                        | 27.231455586236287   |        |
+| 11 | RynnPA_RynnPV_pronasale pred                                                                                                           | 40.91742286907582    |        |
+| 12 | SarilitaMPA_SarilitaM-PV_pronasale pred                                                                                                | 42.643695277808185   |        |
+| 13 | BulutFPA_BulutF-PV_pronasale pred                                                                                                      | 42.648394358128435   |        |
+| 14 | BulutMPA_BulutM-PV_pronasale pred                                                                                                      | 41.96247203060092    |        |
+| 15 | RynnpFHP                                                                                                                               | 27.21209239072132    |        |
+| 16 | SarilitaM-pFHP                                                                                                                         | 25.262917835073512   |        |
+| 17 | BulutF-pFHP                                                                                                                            | 28.83774365893444    |        |
+| 18 | BulutM-pFHP                                                                                                                            | 28.26616751353814    |        |
+| 19 | ND_line_RynnPA_RynnPV_RynnF-ND                                                                                                         | 19.36770941403008    |        |
+| 20 | ND_line_RynnPA_RynnPV_RynnM-ND                                                                                                         | 19.29656052189243    |        |
+| 21 | ND_line_SarilitaMPA_SarilitaM-PV_SarilitaM-ND                                                                                          | 15.104544935940718   |        |
+| 22 | ND_line_BulutFPA_BulutF-PV_BulutF-ND                                                                                                   | 20.28692098750594    |        |
+| 23 | ND_line_BulutMPA_BulutM-PV_BulutM-ND                                                                                                   | 20.38373068116414    |        |
+| 24 | n-pt1R                                                                                                                                | 52.517531183582      |        |
+| 25 | pt1R lat                                                                                                                              | 48.95907045664307    |        |
+| 26 | pt1R ant                                                                                                                              | 19.960971942618837   |        |
+| 27 | pt1R vert                                                                                                                             | 52.16082037664343    |        |
+| 28 | n-pt1L                                                                                                                                | 53.254592544618696   |        |
+| 29 | pt1L lat                                                                                                                              | 50.232370085731354   |        |
+| 30 | pt1L ant                                                                                                                              | 19.0343896315686     |        |
+| 31 | pt1L vert                                                                                                                             | 52.78734944198722    |        |
+| 32 | n-pt2R                                                                                                                                | 54.92899586095154    |        |
+| 33 | pt2R lat                                                                                                                              | 54.0721051759535     |        |
+| 34 | pt2R ant                                                                                                                              | 19.051244075629675   |        |
+| 35 | pt2R vert                                                                                                                             | 52.41799990076187    |        |
+| 36 | n-pt2L                                                                                                                                | 55.12104924293038    |        |
+| 37 | pt2L lat                                                                                                                              | 54.04351940306945    |        |
+| 38 | pt2L ant                                                                                                                              | 19.84745081372386    |        |
+| 39 | pt2L vert                                                                                                                             | 52.55508392163388    |        |
+| 40 | n-pt3R                                                                                                                                | 52.42984405398978    |        |
+| 41 | pt3R lat                                                                                                                              | 49.7514896516584     |        |
+| 42 | pt3R ant                                                                                                                              | 22.352094122242377   |        |
+| 43 | pt3R vert                                                                                                                             | 50.22897829781849    |        |
+| 44 | n-pt3L                                                                                                                                | 52.42984405398978    |        |
+| 45 | pt3L lat                                                                                                                              | 49.7514896516584     |        |
+| 46 | pt3L ant                                                                                                                              | 22.352094122242377   |        |
+| 47 | pt3L vert                                                                                                                             | 50.22897829781849    |        |
+| 48 | n-pt4R                                                                                                                                | 48.97856208550116    |        |
+| 49 | pt4R lat                                                                                                                              | 48.09740483892407    |        |
+| 50 | pt4R ant                                                                                                                              | 24.178076511649845   |        |
+| 51 | pt4R vert                                                                                                                             | 43.58737606101144    |        |
+| 52 | n-pt4L                                                                                                                                | 48.32425743105154    |        |
+| 53 | pt4L lat                                                                                                                              | 48.0915380375917     |        |
+| 54 | pt4L ant                                                                                                                              | 22.57720340677763    |        |
+| 55 | pt4L vert                                                                                                                             | 42.987690889752855   |        |
+| 56 | n-pt5R                                                                                                                                | 40.71911125361886    |        |
+| 57 | pt5R lat                                                                                                                              | 38.81282477169566    |        |
+| 58 | pt5R ant                                                                                                                              | 20.867405403446277   |        |
+| 59 | pt5R vert                                                                                                                             | 37.070312482349685   |        |
+| 60 | n-pt5L                                                                                                                                | 41.0109203165674     |        |
+| 61 | pt5L lat                                                                                                                              | 39.301862830806336   |        |
+| 62 | pt5L ant                                                                                                                              | 20.335455448478882   |        |
+| 63 | pt5L vert                                                                                                                             | 37.49165240630367    |        |
+| 64 | n-pt6R                                                                                                                                | 51.329169826978145   |        |
+| 65 | pt6R lat                                                                                                                              | 50.37708096303613    |        |
+| 66 | pt6R ant                                                                                                                              | 24.39461902344511    |        |
+| 67 | pt6R vert                                                                                                                             | 46.221419564939815   |        |
+| 68 | n-pt6L                                                                                                                                | 51.82396956581465    |        |
+| 69 | pt6L lat                                                                                                                              | 50.75109621397737    |        |
+| 70 | pt6L ant                                                                                                                              | 24.288093302843592   |        |
+| 71 | pt6L vert                                                                                                                             | 46.966609414656915   |        |
+| 72 | n-pt7R                                                                                                                                | 55.57986422838206    |        |
+| 73 | pt7R lat                                                                                                                              | 55.07503451005156    |        |
+| 74 | pt7R ant                                                                                                                              | 18.456752035511787   |        |
+| 75 | pt7R vert                                                                                                                             | 52.95593916934181    |        |
+| 76 | n-pt7L                                                                                                                                | 56.40758208920251    |        |
+| 77 | pt7L lat                                                                                                                              | 55.76407103604729    |        |
+| 78 | pt7L ant                                                                                                                              | 17.472457938599025   |        |
+| 79 | pt7L vert                                                                                                                             | 54.302046272408546   |        |
+| 80 | n-pt8R                                                                                                                                | 53.306885310698185   |        |
+| 81 | pt8R lat                                                                                                                              | 50.9515303290367     |        |
+| 82 | pt8R ant                                                                                                                              | 16.077469720580428   |        |
+| 83 | pt8R vert                                                                                                                             | 53.18556728633185    |        |
+| 84 | n-pt8L                                                                                                                                | 52.82969248623565    |        |
+| 85 | pt8L lat                                                                                                                              | 50.986222483844244   |        |
+| 86 | pt8L ant                                                                                                                              | 14.46921894416375    |        |
+| 87 | pt8L vert                                                                                                                             | 52.6592787299089     |        |
+| 88 | MAW                                                                                                                                   | 28.756225191316588   |        |
+| 89 | MNW                                                                                                                                   | 44.23666650309385    |        |
+| 90 | incisor width L                                                                                                                       | 8.125                  |        |
+| 91 | incisor width R                                                                                                                       | 8.256                  |        |
+| 92 | intercanine width                                                                                                                     | 26.1                  |        |
+| 93 | error_RynnPA_RynnPV_pronasale pred_pronasale                                                                                          | 4.179532133208764    |        |
+| 94 | error_SarilitaMPA_SarilitaM-PV_pronasale pred_pronasale                                                                               | 2.9096270515076      |        |
+| 95 | error_BulutFPA_BulutF-PV_pronasale pred_pronasale                                                                                     | 3.7132079279987673   |        |
+| 96 | error_BulutMPA_BulutM-PV_pronasale pred_pronasale                                                                                     | 4.163940888757147    |        |
+| 97 | error_RynnPA_RynnPV_RynnF-ND_sn pred_subnasale                                                                                        | 5.290766592274599    |        |
+| 98 | error_RynnPA_RynnPV_RynnM-ND_sn pred_subnasale                                                                                        | 5.216973796159568    |        |
+| 99 | error_SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn pred_subnasale                                                                         | 4.828119724665061    |        |
+| 100| error_BulutFPA_BulutF-PV_BulutF-ND_sn pred_subnasale                                                                                  | 6.331184646523755    |        |
+| 101| error_BulutMPA_BulutM-PV_BulutM-ND_sn pred_subnasale                                                                                  | 5.928350481811929    |        |
+| 102| error_n' pred_RynnPA_RynnPV_RynnF-ND_sn_pred_RynnEAF-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL_soft tissue nasion                      | 3.2113327157475458   |        |
+| 103| error_n' pred_RynnPA_RynnPV_RynnM-ND_sn_pred_RynnEAM-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL_soft tissue nasion                      | 3.179651790718931    |        |
+| 104| error_n' pred_SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn_pred_SarilitaM-NH_SarilitaMPA_SarilitaM-PV_pronasale_pred_SarilitaM-NL_soft tissue nasion | 18.059068455254547   |        |
+| 105| error_n' pred_BulutMPA_BulutM-PV_BulutM-ND_sn_pred_BulutM-NH_BulutFPA_BulutF-PV_pronasale_pred_BulutM-NL_soft tissue nasion           | 10.437804685957788   |        |
+| 106| left Point 5 -left inferior turbinate                                                                                                 | 14.173636190576149   |        |
+| 107| right Point 5 -right inferior turbinate                                                                                                | 14.214297621194774   |        |
+| 108| left Point 7 -left lowest aperture border                                                                                             | 18.552040216931964   |        |
+| 109| right Point 7 -right lowest aperture border                                                                                            | 17.833356820973947   |        |
+| 110| left Point 4 -left most posterior point on the left piriform border                                                                   | 14.098277992641698   |        |
+| 111| right Point 4 -right most posterior point on the right piriform border                                                                | 18.578620254017814   |        |
+| 112| Shortest MNW-MAW                                                                                                                      | 17.701844140680834   |        |
+| 113| rhi-PLB-aca                                                                                                                           | 51.66491871854234    |        |
+| 114| n-pronasale-subnasale                                                                                                                 | 14.311272113497395   |        |
+| 115| pred n'-pn-sn 1: n' pred_RynnPA_RynnPV_RynnF-ND_sn_pred_RynnEAF-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL, RynnPA_RynnPV_pronasale pred, RynnPA_RynnPV_RynnF-ND_sn pred | 102.32204899230395   |        |
+| 116| pred n'-pn-sn 2: n' pred_RynnPA_RynnPV_RynnM-ND_sn_pred_RynnEAM-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL, RynnPA_RynnPV_pronasale pred, RynnPA_RynnPV_RynnM-ND_sn pred | 102.65175998452663   |        |
+| 117| pred n'-pn-sn 3: n' pred_SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn_pred_SarilitaM-NH_SarilitaMPA_SarilitaM-PV_pronasale_pred_SarilitaM-NL, SarilitaMPA_SarilitaM-PV_pronasale pred, SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn pred | 87.7776253044356    |        |
+| 118| pred n'-pn-sn 4: n' pred_BulutMPA_BulutM-PV_BulutM-ND_sn_pred_BulutM-NH_BulutFPA_BulutF-PV_pronasale_pred_BulutM-NL, BulutMPA_BulutM-PV_pronasale pred, BulutMPA_BulutM-PV_BulutM-ND_sn pred | 109.56208651311812  |        |
 
 
+</details>
 
 
 # Bibliography
