@@ -439,6 +439,25 @@ def print_markup_report():
     with open(markup_report_filename, "r") as f:
         print(f.read())
 
+# --- Popup report function! ---
+from qt import QMessageBox
+
+def show_markup_report_popup():
+    if not markup_report_log:
+        QMessageBox.information(None, "Markup Report", "No markup entries yet!")
+        return
+    report_text = "=== Markup Creation Report ===\n"
+    for i, entry in enumerate(markup_report_log, 1):
+        report_text += f"\n{i}. {entry['type']} '{entry['name']}'\n"
+        for label, choice in entry['choices'].items():
+            report_text += f"   {label}: {choice}\n"
+    report_text += "============================="
+    msg = QMessageBox()
+    msg.setWindowTitle("Markup Creation Report")
+    msg.setText(report_text)
+    msg.setStandardButtons(QMessageBox.Ok)
+    msg.exec_()
+
 import slicer
 import numpy as np
 from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QSizePolicy, Qt
@@ -582,16 +601,19 @@ class LineCreationWidget(QWidget):
 line_creation_widget = LineCreationWidget()
 line_creation_widget.show()
 
-# --- Always-on-top PRINT REPORT button widget ---
+# --- Always-on-top REPORT BUTTON widget (now with popup!) ---
 class MarkupReportWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Markup Report Printer")
+        self.setWindowTitle("Markup Report Viewer")
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
         layout = QVBoxLayout()
-        print_button = QPushButton("Print Markup Report")
+        print_button = QPushButton("Print Markup Report to Console")
         print_button.clicked.connect(print_markup_report)
         layout.addWidget(print_button)
+        popup_button = QPushButton("Show Markup Report Popup")
+        popup_button.clicked.connect(show_markup_report_popup)
+        layout.addWidget(popup_button)
         self.setLayout(layout)
 
 # Ensure only one instance
@@ -664,6 +686,24 @@ import slicer
 import numpy as np
 from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QMessageBox, QSizePolicy
 
+# --- LOGGING SYSTEM ---
+markup_report_log = []
+
+def add_to_markup_report(markup_type, markup_name, user_choices):
+    markup_report_log.append({
+        "type": markup_type,
+        "name": markup_name,
+        "choices": user_choices.copy()
+    })
+
+def print_markup_report():
+    print("=== Markup Creation Report ===")
+    for i, entry in enumerate(markup_report_log, 1):
+        print(f"\n{i}. {entry['type']} '{entry['name']}'")
+        for label, choice in entry['choices'].items():
+            print(f"   {label}: {choice}")
+    print("=============================")
+
 def find_pa_lines():
     all_nodes = slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode")
     return [node for node in all_nodes if node.GetName().endswith("PA")]
@@ -735,17 +775,13 @@ def create_parallel_line_to_2(pa_line_node, x_line_node, pv_equation, pa_equatio
     print(f"Created new line '{node_name}' of length {length:.2f}, parallel to line '2'")
 
     # --- ADD TO LOG ---
-    # If add_to_markup_report is defined globally, this will work:
-    try:
-        user_choices = {
-            "PA line": pa_equation,
-            "PV equation": pv_equation,
-            "X (length of nas-aca X)": f"{X:.2f}",
-            "PV line length": f"{length:.2f}"
-        }
-        add_to_markup_report("Line (PV parallel)", node_name, user_choices)
-    except Exception as e:
-        print(f"[LOGGING ERROR] {e}")
+    user_choices = {
+        "PA line": pa_equation,
+        "PV equation": pv_equation,
+        "X (length of nas-aca X)": f"{X:.2f}",
+        "PV line length": f"{length:.2f}"
+    }
+    add_to_markup_report("Line (PV parallel)", node_name, user_choices)
     return new_line
 
 def save_pv_endpoint_to_pred_list(pv_line_node, pa_equation, pv_equation):
