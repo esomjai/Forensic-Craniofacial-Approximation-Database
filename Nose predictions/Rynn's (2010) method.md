@@ -415,6 +415,7 @@ From this point on, a floating widget will appear to recall the decisions the us
 
 # --- Logging/report system ---
 markup_report_log = []
+markup_report_filename = "markup_report.txt"
 
 def add_to_markup_report(markup_type, markup_name, user_choices):
     markup_report_log.append({
@@ -422,14 +423,21 @@ def add_to_markup_report(markup_type, markup_name, user_choices):
         "name": markup_name,
         "choices": user_choices.copy()
     })
+    write_markup_report_to_file()  # Save the log to file every time it changes
+
+def write_markup_report_to_file():
+    with open(markup_report_filename, "w") as f:
+        f.write("=== Markup Creation Report ===\n")
+        for i, entry in enumerate(markup_report_log, 1):
+            f.write(f"\n{i}. {entry['type']} '{entry['name']}'\n")
+            for label, choice in entry['choices'].items():
+                f.write(f"   {label}: {choice}\n")
+        f.write("=============================\n")
 
 def print_markup_report():
-    print("=== Markup Creation Report ===")
-    for i, entry in enumerate(markup_report_log, 1):
-        print(f"\n{i}. {entry['type']} '{entry['name']}'")
-        for label, choice in entry['choices'].items():
-            print(f"   {label}: {choice}")
-    print("=============================")
+    # You can still print to the console if you want
+    with open(markup_report_filename, "r") as f:
+        print(f.read())
 
 import slicer
 import numpy as np
