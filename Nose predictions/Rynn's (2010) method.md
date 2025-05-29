@@ -722,14 +722,24 @@ https://github.com/user-attachments/assets/f40a61ad-a615-4f46-80f0-1f897f134b35
 <summary>GUI for pronasale vertical</summary>
 
 ``` python
+import os
+import json
 import slicer
 import numpy as np
-from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QMessageBox, QSizePolicy, Qt
+from qt import (
+    QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QCheckBox, QLabel,
+    QMessageBox, QSizePolicy, Qt, QDialog, QTextEdit, QFileDialog
+)
 
-# --- Persistent log: only create once ---
-if "markup_report_log" not in globals():
-    markup_report_log = []
+# --- Persistent log: only create once and load from JSON if it exists ---
 markup_report_filename = "markup_report.txt"
+markup_report_json = "markup_report.json"
+if "markup_report_log" not in globals():
+    if os.path.exists(markup_report_json):
+        with open(markup_report_json, "r") as f:
+            markup_report_log = json.load(f)
+    else:
+        markup_report_log = []
 
 def add_to_markup_report(markup_type, markup_name, user_choices):
     markup_report_log.append({
@@ -738,6 +748,7 @@ def add_to_markup_report(markup_type, markup_name, user_choices):
         "choices": user_choices.copy()
     })
     write_markup_report_to_file()
+    write_markup_report_to_json()
     # Update live window if it exists
     if "live_markup_report_widget" in globals():
         live_markup_report_widget.update_report()
@@ -751,25 +762,58 @@ def write_markup_report_to_file():
                 f.write(f"   {label}: {choice}\n")
         f.write("=============================\n")
 
+def write_markup_report_to_json():
+    with open(markup_report_json, "w") as f:
+        json.dump(markup_report_log, f, indent=2)
+
 def print_markup_report():
     with open(markup_report_filename, "r") as f:
         print(f.read())
 
+# --- Scrollable popup report dialog with Save As... at the top ---
 def show_markup_report_popup():
     if not markup_report_log:
         QMessageBox.information(None, "Markup Report", "No markup entries yet!")
         return
+
     report_text = "=== Markup Creation Report ===\n"
     for i, entry in enumerate(markup_report_log, 1):
         report_text += f"\n{i}. {entry['type']} '{entry['name']}'\n"
         for label, choice in entry['choices'].items():
             report_text += f"   {label}: {choice}\n"
     report_text += "============================="
-    msg = QMessageBox()
-    msg.setWindowTitle("Markup Creation Report")
-    msg.setText(report_text)
-    msg.setStandardButtons(QMessageBox.Ok)
-    msg.exec_()
+
+    dialog = QDialog()
+    dialog.setWindowTitle("Markup Creation Report")
+    vbox = QVBoxLayout(dialog)
+
+    # Button row at the top
+    button_row = QHBoxLayout()
+    save_button = QPushButton("Save As...")
+    close_button = QPushButton("Close")
+    button_row.addWidget(save_button)
+    button_row.addWidget(close_button)
+    vbox.addLayout(button_row)
+
+    # Scrollable, selectable text area
+    text_edit = QTextEdit()
+    text_edit.setReadOnly(True)
+    text_edit.setPlainText(report_text)
+    vbox.addWidget(text_edit)
+
+    def save_report():
+        filename = QFileDialog.getSaveFileName(
+            dialog, "Save Markup Report As...", "markup_report.txt", "Text Files (*.txt)"
+        )[0]
+        if filename:
+            with open(filename, "w") as f:
+                f.write(report_text)
+            QMessageBox.information(dialog, "Saved", f"Report saved to:\n{filename}")
+
+    save_button.clicked.connect(save_report)
+    close_button.clicked.connect(lambda *args: dialog.accept())
+    dialog.setMinimumSize(700, 400)
+    dialog.exec_()
 
 # --- Live report widget! (fixed layout name) ---
 class LiveMarkupReportWidget(QWidget):
@@ -777,7 +821,7 @@ class LiveMarkupReportWidget(QWidget):
         super().__init__()
         self.setWindowTitle("Live Markup Report")
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-        mainLayout = QVBoxLayout()  # Don't use self.layout!
+        mainLayout = QVBoxLayout()
         self.label = QLabel("No markup entries yet!")
         self.label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         mainLayout.addWidget(self.label)
@@ -794,7 +838,6 @@ class LiveMarkupReportWidget(QWidget):
                     report_text += f"&nbsp;&nbsp;&nbsp;&nbsp;{label}: {choice}<br>"
             self.label.setText(report_text + "<br>=============================")
 
-# Show the live updating report window (only one instance!)
 if "live_markup_report_widget" not in globals():
     live_markup_report_widget = LiveMarkupReportWidget()
     live_markup_report_widget.show()
@@ -881,7 +924,7 @@ def create_parallel_line_to_2(pa_line_node, x_line_node, pv_equation, pa_equatio
     norm_dir = np.linalg.norm(direction)
     if norm_dir == 0:
         raise ValueError("Line '2' has zero length!")
-    direction = direction / norm_dir
+    direction = - direction / norm_dir
 
     X = get_line_length(x_line_node)
     length = calculate_pv_length(pv_equation, X)
@@ -1175,188 +1218,7 @@ After this, the code **GUI for sn** finds the intersection point on the previous
 <summary>GUI for pFHP</summary>
 
 ```python
-import slicer
-import numpy as np
-from qt import QPushButton, QVBoxLayout, QWidget, QCheckBox, QLabel, QMessageBox, QSizePolicy
 
-def find_line_by_name(line_name):
-    for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
-        if node.GetName() == line_name:
-            return node
-    return None
-
-def get_nth_point(node, n):
-    return np.array(node.GetNthControlPointPosition(n))
-
-def get_line_endpoints(line_node):
-    start = get_nth_point(line_node, 0)
-    end = get_nth_point(line_node, 1)
-    return start, end
-
-def get_line_length(line_node):
-    start, end = get_line_endpoints(line_node)
-    return np.linalg.norm(end - start)
-
-def calculate_pfhp_length(equation, Y):
-    if equation == "pred Rynn pFHP":
-        return 0.93 * Y - 6
-    elif equation == "pred Sarilita M pFHP":
-        return 0.58 * Y + 4.55
-    elif equation == "pred Bulut F pFHP":
-        return 1.161 + 0.775 * Y
-    elif equation == "pred Bulut M pFHP":
-        return 0.518 + 0.777 * Y
-    else:
-        raise ValueError("Invalid equation name")
-
-def abbreviate_equation_name(eq):
-    eq = eq.replace("pred ", "").replace(" ", "")
-    eq = eq.replace("MpFHP", "M-pFHP").replace("FpFHP", "F-pFHP")
-    return eq
-
-def create_turquoise_line(start_point, direction, length, line_name):
-    turquoise = (0, 1, 1)
-    new_line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
-    new_line.GetDisplayNode().SetSelectedColor(turquoise)
-    new_line.AddControlPoint(start_point.tolist())
-    new_line.AddControlPoint((start_point + direction * length).tolist())
-    print(f"Created turquoise line '{line_name}' with length {length:.2f}")
-    return new_line
-
-class PFHPLineCreationWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Prediction of pFHP (Parallel to line '3', reversed direction)")
-
-        layout = QVBoxLayout()
-        title_label = QLabel(
-            "<b>Select pFHP equation(s) to create turquoise lines parallel to (reversed) line '3'<br>"
-            "Start point is position 4 in 'Rynn_hard_tissue', Y is the length of 'rhi-subs Y'</b>"
-        )
-        layout.addWidget(title_label)
-
-        description_html = """
-        <table border="1" cellspacing="0" cellpadding="3">
-            <tr>
-                <th>Literature</th>
-                <th>Ancestry</th>
-                <th>Biological Sex</th>
-                <th>Full equation</th>
-                <th>Name of measurement in scene</th>
-            </tr>
-            <tr>
-                <td>Rynn et al. 2010</td>
-                <td>ANY</td>
-                <td>All</td>
-                <td>pred Rynn pFHP = 0.93 × Y − 6</td>
-                <td>pred Rynn pFHP</td>
-            </tr>
-            <tr>
-                <td>Sarilita et al. 2018</td>
-                <td>Indonesian</td>
-                <td>Males</td>
-                <td>pred Sarilita M pFHP = 0.58 × Y + 4.55</td>
-                <td>pred Sarilita M pFHP</td>
-            </tr>
-            <tr>
-                <td>Bulut et al. 2019</td>
-                <td>Turkish</td>
-                <td>Females</td>
-                <td>pred Bulut F pFHP = 1.161 + 0.775 × Y</td>
-                <td>pred Bulut F pFHP</td>
-            </tr>
-            <tr>
-                <td>Bulut et al. 2019</td>
-                <td>Turkish</td>
-                <td>Males</td>
-                <td>pred Bulut M pFHP = 0.518 + 0.777 × Y</td>
-                <td>pred Bulut M pFHP</td>
-            </tr>
-        </table>
-        """
-        description_label = QLabel()
-        description_label.setText(description_html)
-        description_label.setWordWrap(True)
-        description_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        layout.addWidget(description_label)
-
-        self.equations = [
-            "pred Rynn pFHP",
-            "pred Sarilita M pFHP",
-            "pred Bulut F pFHP",
-            "pred Bulut M pFHP"
-        ]
-        self.checkbox_list = []
-        for eq in self.equations:
-            checkbox = QCheckBox(eq)
-            layout.addWidget(checkbox)
-            self.checkbox_list.append((checkbox, eq))
-
-        create_button = QPushButton("Create Turquoise Line(s)")
-        create_button.clicked.connect(self.on_create_button_clicked)
-        layout.addWidget(create_button)
-        self.setLayout(layout)
-
-    def on_create_button_clicked(self):
-        chosen_equations = [eq for cb, eq in self.checkbox_list if cb.isChecked()]
-        if not chosen_equations:
-            QMessageBox.warning(self, "Selection Error", "Please select at least one pFHP equation.")
-            return
-
-        rynn_hard_tissue = slicer.util.getNode("Rynn_hard_tissue") if slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode") else None
-        if not rynn_hard_tissue:
-            QMessageBox.warning(self, "Missing Node", "No node named 'Rynn_hard_tissue' found in the scene.")
-            return
-        line_3 = find_line_by_name("3")
-        if not line_3:
-            QMessageBox.warning(self, "Missing Node", "No line named '3' found in the scene.")
-            return
-        rhi_subs_Y = find_line_by_name("rhi-subs Y")
-        if not rhi_subs_Y:
-            QMessageBox.warning(self, "Missing Node", "No line named 'rhi-subs Y' found in the scene.")
-            return
-
-        try:
-            start_point = get_nth_point(rynn_hard_tissue, 4)
-        except Exception:
-            QMessageBox.warning(self, "Error", "Could not get position 4 from 'Rynn_hard_tissue'.")
-            return
-
-        line3_start, line3_end = get_line_endpoints(line_3)
-        direction = line3_end - line3_start
-        norm = np.linalg.norm(direction)
-        if norm == 0:
-            QMessageBox.warning(self, "Error", "Line '3' has zero length!")
-            return
-        direction = -direction / norm  # REVERSED direction
-
-        Y = get_line_length(rhi_subs_Y)
-
-        for equation in chosen_equations:
-            try:
-                length = calculate_pfhp_length(equation, Y)
-                abbrev = abbreviate_equation_name(equation)
-                line_name = abbrev
-                new_line = create_turquoise_line(start_point, direction, length, line_name)
-
-                # --- LOGGING: record this creation ---
-                try:
-                    user_choices = {
-                        "Equation": equation,
-                        "Y distance": f"{Y:.2f}",
-                        "Line length": f"{length:.2f}",
-                        "Start point index": 4,
-                        "Direction ref line": "3 (reversed)"
-                    }
-                    add_to_markup_report("Line (pFHP parallel)", line_name, user_choices)
-                except Exception as logerr:
-                    print(f"[LOGGING ERROR] {logerr}")
-
-            except Exception as e:
-                QMessageBox.critical(self, "Error", str(e))
-
-widget = PFHPLineCreationWidget()
-widget.show()
 ```
 </details>
 
