@@ -5,15 +5,39 @@ For reference code snippets and insight for how 3D Slicer works, please refer to
 The technique by Rynn et al 2010[^3] has been applied, tested and recalibrated by numerous studies - mostly the measurements for linear regressions in focus. In this guide, the replication of all their measurements described in the 2006 PhD thesis by Christopher Rynn titled **Craniofacial approximation and reconstruction: tissue depth patterning and the prediction of the nose**. We will also include the recalibrated linear regressions by Sarilita et al. (2018)[^12] and Bulut et al. (2019)[^13].
 
 
-This will be achieved by:
+### This document contains instructions for: 
 
-- Creating the [INB plane](#inb-plane), [NP plane](#np-plane) and [PT plane](#pt-plane) as defined by Rynn et al. (2010)
-
-1) Creating a line from the nasion that is perpendicular to the NPP - for later pronasale ant measurement
-2) Creating a line from the nasion along the NPP - for later pronasale vert measurement
-3) Creating a line from the subspinale that is parallel to the FHP - for later nasal depth/subnasale prediction
-4) Calculating the length of the pronasale anterior (according to the linear regression the chosen method) and measuring it from the nasion onto line 2
-
+- [Landmarks in this guide](#landmarks-in-this-guide)
+  - [Hard tissue landmarks](#hard-tissue-landmarks)
+  - [Soft tissue landmarks](#soft-tissue-landmarks)
+- [INB plane](#inb-plane)
+- [NP plane](#np-plane)
+- [PT plane](#pt-plane)
+- [Creating the x, y and z axes](#creating-the-x-y-and-z-axes)
+- [Creating the reference network of lines](#creating-the-reference-network-of-lines)
+  - [Code for lines 1,2 and 3](#code-for-lines-12-and-3)
+- [Calculating & applying the predicted length of the pronasale anterior](#calculating--applying-the-predicted-length-of-the-pronasale-anterior)
+  - [GUI for pronasale anterior](#gui-for-pronasale-anterior)
+- [Calculating & applying the predicted length of the pronasale vertical](#calculating--applying-the-predicted-length-of-the-pronasale-vertical)
+  - [GUI for pronasale vertical](#gui-for-pronasale-vertical)
+- [Estimating the pFHP](#estimating-the-pfhp)
+  - [GUI for pFHP](#gui-for-pfhp)
+  - [GUI for sn point](#gui-for-sn-point)
+- [Estimating and placing the nasal depth and nasal length measurements to estimate the soft tissue nasion](#estimating-and-placing-the-nasal-depth-and-nasal-length-measurements-to-estimate-the-soft-tissue-nasion)
+  - [GUI for soft tissue nasion](#gui-for-soft-tissue-nasion)
+- [Reproducing Rynn's network of triangles](#reproducing-rynns-network-of-triangles)
+  - [Rynn's triangle network](#rynns-triangle-network)
+- [Optional: compare the predicted n'-pn-sn and the actual angle](#optional-compare-the-predicted-n-pn-sn-and-the-actual-angle)
+  - [GUI for predicted angle](#gui-for-predicted-angle)
+- [Error rates](#error-rates)
+  - [Error rate between predicted vs true points](#error-rate-between-predicted-vs-true-points)
+  - [Error/displacement between soft-hard tissue points/distances](#errordisplacement-between-soft-hard-tissue-pointsdistances)
+- [Outputs](#outputs)
+  - [Rynn/Sarilita/Bulut regression predictions](#rynnsarilitabulut-regression-predictions)
+  - [Rynn's triangle included](#rynns-triangle-included)
+- [Bibliography](#bibliography)
+  
+ 
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
 
@@ -1115,7 +1139,7 @@ markup_report_widget.show()
 </details>
 
 
-## Estimating the pFHP
+### Estimating the pFHP
 
 The line(s) created via the **GUI for pFHP** code will appear in **turquoise**, named according to the linear regression used and all will run from the subspinale point along the "3" line. The length is calculated by your chosen linear regression. Below the table summarises the options, please refer back to the original literature[^3], [^12], [^13]  if in doubt. 
 After this, the code **GUI for sn** finds the intersection point on the previous turqoise line with the chosen nasal depth equation distance from the predicted pronasale point. 
