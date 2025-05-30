@@ -4720,6 +4720,7 @@ You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landma
 #### Rynn's triangle included 
 <details>
 <summary>You allocated ALL landmarks AND ran the "Rynn's triangle" codes</summary>
+ 
 | #  | Name/Label                                                                                                                             | Value                | Notes  |
 |----|----------------------------------------------------------------------------------------------------------------------------------------|----------------------|--------|
 | 1  | nas-aca X                                                                                                                              | 47.68614759456322    |        |
@@ -4840,7 +4841,6 @@ You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landma
 | 116| pred n'-pn-sn 2: n' pred_RynnPA_RynnPV_RynnM-ND_sn_pred_RynnEAM-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL, RynnPA_RynnPV_pronasale pred, RynnPA_RynnPV_RynnM-ND_sn pred | 102.65175998452663   |        |
 | 117| pred n'-pn-sn 3: n' pred_SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn_pred_SarilitaM-NH_SarilitaMPA_SarilitaM-PV_pronasale_pred_SarilitaM-NL, SarilitaMPA_SarilitaM-PV_pronasale pred, SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn pred | 87.7776253044356    |        |
 | 118| pred n'-pn-sn 4: n' pred_BulutMPA_BulutM-PV_BulutM-ND_sn_pred_BulutM-NH_BulutFPA_BulutF-PV_pronasale_pred_BulutM-NL, BulutMPA_BulutM-PV_pronasale pred, BulutMPA_BulutM-PV_BulutM-ND_sn pred | 109.56208651311812  |        |
-
 
 </details>
 
