@@ -531,7 +531,7 @@ def show_markup_report_popup():
 
 import slicer
 import numpy as np
-from qt import QCheckBox, QLabel, QSizePolicy, Qt
+from qt import QCheckBox, QLabel, QSizePolicy, Qt, QWidget
 
 class LineCreationWidget(QDialog):
     def __init__(self):
@@ -692,6 +692,7 @@ line_creation_widget = LineCreationWidget()
 line_creation_widget.show()
 
 # === END SCRIPT ===
+
 
 
 ```
