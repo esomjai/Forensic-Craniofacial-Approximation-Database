@@ -2,7 +2,7 @@
 
 For reference code snippets and insight for how 3D Slicer works, please refer to the official 3D Slicer webpage [^1]. 
 
-The technique by Rynn et al 2010[^3] has been applied, tested and recalibrated by numerous studies - mostly the measurements for linear regressions in focus. In this guide, the replication of all their measurements described in the 2006 PhD thesis by Christopher Rynn titled **Craniofacial approximation and reconstruction: tissue depth patterning and the prediction of the nose**. We will also include the recalibrated linear regressions by Sarilita et al. (2018)[^12] and Bulut et al. (2019)[^13].
+The technique by Rynn et al 2010[^3] has been applied, tested and recalibrated by numerous studies - mostly the measurements for linear regressions in focus. In this guide, the replication of all their measurements described in the 2006 PhD thesis by Christopher Rynn titled **Craniofacial approximation and reconstruction: tissue depth patterning and the prediction of the nose**[^11]. We will also include the recalibrated linear regressions by **Sarilita et al. (2018)**[^12] and **Bulut et al. (2019)**[^13].
 
 
 ### This document contains instructions for: 
