@@ -703,7 +703,6 @@ line_creation_widget.show()
 Please make sure you document which method you used and why - the naming convention of the new line(s) will help jog your memory. The video shows what to expect when running the code. The table below is a quick summary, please refer to the original studies [^3], [^12], [^13] for explanation.
 
 
-https://github.com/user-attachments/assets/f40a61ad-a615-4f46-80f0-1f897f134b35
 
 
 <table>
