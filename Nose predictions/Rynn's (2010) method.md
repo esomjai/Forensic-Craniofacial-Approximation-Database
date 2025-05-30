@@ -4714,7 +4714,53 @@ create_shortest_distance_line_between_MNW_and_MAW()
 Depending on which landmarks you allocated, there are multiple versions of outputs. 
 
 #### Rynn/Sarilita/Bulut regression predictions
-You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landmarks AND did not run any of the "Rynn's triangle" codes
+<details>
+<summary>You allocated ONLY the marked 🔵 hard tissue points and 🟧soft tissue landmarks AND did not run any of the "Rynn's triangle" codes</summary>
+
+| #  | Key                                                                                                  | Value                   | Notes |
+|----|------------------------------------------------------------------------------------------------------|-------------------------|-------|
+| 1  | nas-aca X                                                                                            | 47.68614759456322       |       |
+| 2  | rhi-subs Y                                                                                           | 35.711927301850885      |       |
+| 3  | nas-subs Z                                                                                           | 50.33159339076192       |       |
+| 4  | 1                                                                                                    | 200.0                   |   ❌ - not a real measurement     |
+| 5  | 2                                                                                                    | 199.99999999999997      |   ❌ - not a real measurement     |
+| 6  | 3                                                                                                    | 200.0                   |    ❌ - not a real measurement    |
+| 7  | pred Rynn PA                                                                                         | 26.14089966053623       |       |
+| 8  | pred Sarilita M PA                                                                                   | 22.685798562055012      |       |
+| 9  | pred Bulut F PA                                                                                      | 27.03082249256045       |       |
+| 10 | pred Bulut M PA                                                                                      | 27.231455586236287      |       |
+| 11 | RynnPA_RynnPV_pronasale pred                                                                         | 40.91742286907582       |       |
+| 12 | SarilitaMPA_SarilitaM-PV_pronasale pred                                                              | 42.643695277808185      |       |
+| 13 | BulutFPA_BulutF-PV_pronasale pred                                                                    | 42.648394358128435      |       |
+| 14 | BulutMPA_BulutM-PV_pronasale pred                                                                    | 41.96247203060092       |       |
+| 15 | RynnpFHP                                                                                             | 27.21209239072132       |       |
+| 16 | SarilitaM-pFHP                                                                                       | 25.262917835073512      |       |
+| 17 | BulutF-pFHP                                                                                          | 28.83774365893444       |       |
+| 18 | BulutM-pFHP                                                                                          | 28.26616751353814       |       |
+| 19 | ND_line_RynnPA_RynnPV_RynnF-ND                                                                       | 19.36770941403008       |       |
+| 20 | ND_line_RynnPA_RynnPV_RynnM-ND                                                                       | 19.29656052189243       |       |
+| 21 | ND_line_SarilitaMPA_SarilitaM-PV_SarilitaM-ND                                                        | 15.104544935940718      |       |
+| 22 | ND_line_BulutFPA_BulutF-PV_BulutF-ND                                                                 | 20.28692098750594       |       |
+| 23 | ND_line_BulutMPA_BulutM-PV_BulutM-ND                                                                 | 20.38373068116414       |       |
+| 24 | error_RynnPA_RynnPV_pronasale pred_pronasale                                                         | 4.179532133208764       |       |
+| 25 | error_SarilitaMPA_SarilitaM-PV_pronasale pred_pronasale                                              | 2.9096270515076         |       |
+| 26 | error_BulutFPA_BulutF-PV_pronasale pred_pronasale                                                    | 3.7132079279987673      |       |
+| 27 | error_BulutMPA_BulutM-PV_pronasale pred_pronasale                                                    | 4.163940888757147       |       |
+| 28 | error_RynnPA_RynnPV_RynnF-ND_sn pred_subnasale                                                       | 5.290766592274599       |       |
+| 29 | error_RynnPA_RynnPV_RynnM-ND_sn pred_subnasale                                                       | 5.216973796159568       |       |
+| 30 | error_SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn pred_subnasale                                        | 4.828119724665061       |       |
+| 31 | error_BulutFPA_BulutF-PV_BulutF-ND_sn pred_subnasale                                                 | 6.331184646523755       |       |
+| 32 | error_BulutMPA_BulutM-PV_BulutM-ND_sn pred_subnasale                                                 | 5.928350481811929       |       |
+| 33 | error_n' pred_RynnPA_RynnPV_RynnF-ND_sn_pred_RynnEAF-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL_soft tissue nasion | 3.2113327157475458      |       |
+| 34 | error_n' pred_RynnPA_RynnPV_RynnM-ND_sn_pred_RynnEAM-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL_soft tissue nasion | 3.179651790718931       |       |
+| 35 | error_n' pred_SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn_pred_SarilitaM-NH_SarilitaMPA_SarilitaM-PV_pronasale_pred_SarilitaM-NL_soft tissue nasion | 18.059068455254547      |       |
+| 36 | error_n' pred_BulutMPA_BulutM-PV_BulutM-ND_sn_pred_BulutM-NH_BulutFPA_BulutF-PV_pronasale_pred_BulutM-NL_soft tissue nasion | 10.437804685957788      |       |
+| 37 | pred n'-pn-sn 1: n' pred_RynnPA_RynnPV_RynnF-ND_sn_pred_RynnEAF-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL, RynnPA_RynnPV_pronasale pred, RynnPA_RynnPV_RynnF-ND_sn pred | 102.32204899230395      |       |
+| 38 | pred n'-pn-sn 2: n' pred_RynnPA_RynnPV_RynnM-ND_sn_pred_RynnEAM-NH_RynnPA_RynnPV_pronasale_pred_RynnEANL, RynnPA_RynnPV_pronasale pred, RynnPA_RynnPV_RynnM-ND_sn pred | 102.65175998452663      |       |
+| 39 | pred n'-pn-sn 3: n' pred_SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn_pred_SarilitaM-NH_SarilitaMPA_SarilitaM-PV_pronasale_pred_SarilitaM-NL, SarilitaMPA_SarilitaM-PV_pronasale pred, SarilitaMPA_SarilitaM-PV_SarilitaM-ND_sn pred | 87.7776253044356        |       |
+| 40 | pred n'-pn-sn 4: n' pred_BulutMPA_BulutM-PV_BulutM-ND_sn_pred_BulutM-NH_BulutFPA_BulutF-PV_pronasale_pred_BulutM-NL, BulutMPA_BulutM-PV_pronasale pred, BulutMPA_BulutM-PV_BulutM-ND_sn pred | 109.56208651311812      |       |
+
+</details>
 
 
 #### Rynn's triangle included 
