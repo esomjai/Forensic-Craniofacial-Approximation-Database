@@ -4482,6 +4482,14 @@ This GUI creates an angle from the "Rynn_soft_tissue_pred" node where all the no
 
 <summary>GUI for predicted angle</summary>
 
+What to expect when running this GUI: 
+
+
+https://github.com/user-attachments/assets/1a6375cc-4a71-4a02-b6a9-f197798492f5
+
+
+
+
 ``` python
 import os
 import json
