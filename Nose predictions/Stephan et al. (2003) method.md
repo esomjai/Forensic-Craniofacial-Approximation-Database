@@ -621,58 +621,46 @@ Line “for b-ac” is a line perpendicular to AA FHP which bisects the acanthio
 <details>
 <summary>Code to create b)</summary>
 ``` python
-
 import slicer
 import numpy as np
-
 # Get the 'lmrks_Stephan' node
 hardTissueNode = slicer.util.getNode('lmrks_Stephan')
-
 # Get the position of the fifth point in 'lmrks_Stephan'
 position = [0.0, 0.0, 0.0]
 hardTissueNode.GetNthControlPointPosition(5, position)
-
 # Get the 'AA FHP' line node
 aaFhpLineNode = slicer.util.getNode('AA FHP')
-
 # Get the positions of the control points of 'AA FHP'
 point1 = [0.0, 0.0, 0.0]
 point2 = [0.0, 0.0, 0.0]
 aaFhpLineNode.GetNthControlPointPosition(0, point1)
 aaFhpLineNode.GetNthControlPointPosition(1, point2)
-
 # Calculate the direction vector of 'AA FHP'
 directionAA = np.array(point2) - np.array(point1)
 directionAA = directionAA / np.linalg.norm(directionAA)  # Normalize the direction vector
-
 # Create a direction vector perpendicular to 'AA FHP'
 perpendicularDirection = np.cross(directionAA, [1, 0, 0])
 if np.linalg.norm(perpendicularDirection) == 0:  # If the direction is parallel to the x-axis, use a different unit vector
     perpendicularDirection = np.cross(directionAA, [0, 1, 0])
 perpendicularDirection = perpendicularDirection / np.linalg.norm(perpendicularDirection)  # Normalize the direction vector
-
 # Create a new line node for 'for b - ac'
 newLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'for b - ac')
-
 # Set the 'for b - ac' line to be perpendicular to 'AA FHP' and bisect the 'lmrks_Stephan' node at position 6
 lineLength = 100  # Half of the total length (200mm)
 lineStart = np.array(position) - lineLength * perpendicularDirection
 lineEnd = np.array(position) + lineLength * perpendicularDirection
 newLineNode.AddControlPoint(lineStart)
 newLineNode.AddControlPoint(lineEnd)
-
 # Set the 'for b - ac' line color to yellow
 newLineNode.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)
 newLineNode.GetDisplayNode().SetColor(1.0, 1.0, 0.0)
 ##########################################################
 import slicer
 import numpy as np
-
 # Get the 'lmrks_Stephan' node
 hardTissueNode = slicer.util.getNode('lmrks_Stephan')
 if not hardTissueNode:
     raise ValueError("Node 'lmrks_Stephan' not found")
-
 # Get the positions of the eighth and ninth points in 'lmrks_Stephan'
 position8 = [0.0, 0.0, 0.0]
 position9 = [0.0, 0.0, 0.0]
@@ -681,15 +669,12 @@ if hardTissueNode.GetNumberOfControlPoints() > 8:
     hardTissueNode.GetNthControlPointPosition(9, position9)
 else:
     raise ValueError("Not enough control points in 'lmrks_Stephan'")
-
 # Calculate the midpoint between positions 8 and 9
 midpoint89 = (np.array(position8) + np.array(position9)) / 2
-
 # Get the 'AA FHP' line node
 aaFhpLineNode = slicer.util.getNode('AA FHP')
 if not aaFhpLineNode:
     raise ValueError("Node 'AA FHP' not found")
-
 # Get the positions of the control points of 'AA FHP'
 point1 = [0.0, 0.0, 0.0]
 point2 = [0.0, 0.0, 0.0]
@@ -698,48 +683,37 @@ if aaFhpLineNode.GetNumberOfControlPoints() > 1:
     aaFhpLineNode.GetNthControlPointPosition(1, point2)
 else:
     raise ValueError("Not enough control points in 'AA FHP'")
-
 # Calculate the direction vector of 'AA FHP'
 directionAA = np.array(point2) - np.array(point1)
 directionAA = directionAA / np.linalg.norm(directionAA)  # Normalize the direction vector
-
 # Create a direction vector perpendicular to 'AA FHP'
 perpendicularDirection = np.cross(directionAA, [1, 0, 0])
 if np.linalg.norm(perpendicularDirection) == 0:  # If the direction is parallel to the x-axis, use a different unit vector
     perpendicularDirection = np.cross(directionAA, [0, 1, 0])
 perpendicularDirection = perpendicularDirection / np.linalg.norm(perpendicularDirection)  # Normalize the direction vector
-
 # Create a new line node for 'for b - LL'
 newLineNodeLL = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'for b - LL')
-
 # Set the 'for b - LL' line to be perpendicular to 'AA FHP' and bisect the midpoint between positions 8 and 9
 lineLength = 100  # Half of the total length (200mm)
 lineStartLL = midpoint89 - lineLength * perpendicularDirection
 lineEndLL = midpoint89 + lineLength * perpendicularDirection
 newLineNodeLL.AddControlPoint(lineStartLL)
 newLineNodeLL.AddControlPoint(lineEndLL)
-
 # Set the 'for b - LL' line color to yellow
 newLineNodeLL.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)
 newLineNodeLL.GetDisplayNode().SetColor(1.0, 1.0, 0.0)
-
 # Create a new line node for 'RL-LL'
 newLineNodeRL_LL = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'RL-LL')
-
 # Set the 'RL-LL' line to connect positions 8 and 9
 newLineNodeRL_LL.AddControlPoint(position8)
 newLineNodeRL_LL.AddControlPoint(position9)
-
 # Set the 'RL-LL' line color to blue
 newLineNodeRL_LL.GetDisplayNode().SetSelectedColor(0.0, 0.0, 1.0)
 newLineNodeRL_LL.GetDisplayNode().SetColor(0.0, 0.0, 1.0)
-
 # Create a new fiducial node for 'mid LL/RL'
 midpointFiducial = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', 'mid LL/RL')
-
 # Add the midpoint between positions 8 and 9 as a fiducial point
 midpointFiducial.AddControlPoint(midpoint89)
-
 # Set the fiducial color to green
 midpointFiducial.GetDisplayNode().SetSelectedColor(0.0, 1.0, 0.0)
 midpointFiducial.GetDisplayNode().SetColor(0.0, 1.0, 0.0)
@@ -748,15 +722,13 @@ midpointFiducial.GetDisplayNode().SetColor(0.0, 1.0, 0.0)
 
 import slicer
 import numpy as np
-
-# Function to project a point onto a plane
+#Function to project a point onto a plane
 def project_point_onto_plane(point, plane_origin, plane_normal):
     point_to_origin = np.subtract(point, plane_origin)
     distance_from_plane = np.dot(point_to_origin, plane_normal)
     projected_point = np.subtract(point, plane_normal * distance_from_plane)
     return projected_point
-
-# Function to calculate the closest points between two lines at a specific level
+#Function to calculate the closest points between two lines at a specific level
 def closest_points_between_lines_at_level(line1, line2, level_point):
     point1 = np.array([0.0, 0.0, 0.0])
     point2 = np.array([0.0, 0.0, 0.0])
@@ -786,28 +758,28 @@ def closest_points_between_lines_at_level(line1, line2, level_point):
 
     return closest_point_line1, closest_point_line2
 
-# Get the 'lmrks_Stephan' node
+#Get the 'lmrks_Stephan' node
 hardTissueNode = slicer.util.getNode('lmrks_Stephan')
 
-# Get the position of the seventh point in 'lmrks_Stephan'
+#Get the position of the seventh point in 'lmrks_Stephan'
 position7 = [0.0, 0.0, 0.0]
 hardTissueNode.GetNthControlPointPosition(7, position7)
 
-# Get the 'for b - ac' line node
+#Get the 'for b - ac' line node
 forBAcLineNode = slicer.util.getNode('for b - ac')
 
-# Get the 'for b - LL' line node
+#Get the 'for b - LL' line node
 forBLLLineNode = slicer.util.getNode('for b - LL')
 
-# Calculate the closest points between 'for b - ac' and 'for b - LL' at the level of 'lmrks_Stephan' position 7
+#Calculate the closest points between 'for b - ac' and 'for b - LL' at the level of 'lmrks_Stephan' position 7
 closest_point_for_b_ac, closest_point_for_b_ll = closest_points_between_lines_at_level(forBAcLineNode, forBLLLineNode, position7)
 
-# Create a new line node for 'B)'
+#Create a new line node for 'B)'
 bLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'B)')
 bLineNode.AddControlPoint(closest_point_for_b_ac)
 bLineNode.AddControlPoint(closest_point_for_b_ll)
 
-# Set the 'B)' line color to magenta
+#Set the 'B)' line color to magenta
 bLineNode.GetDisplayNode().SetSelectedColor(1.0, 0.0, 1.0)
 bLineNode.GetDisplayNode().SetColor(1.0, 0.0, 1.0)
 
@@ -1244,20 +1216,20 @@ This measurement is independent from your choice of angle measurements - the dis
 import slicer
 import numpy as np
 
-# Get the nodes for the existing points
+#Get the nodes for the existing points
 hardTissueNode = slicer.util.getNode('lmrks_Stephan')
 pointXNode = slicer.util.getNode('Point X')
 
-# Get the positions of the control points
+#Get the positions of the control points
 startPoint = np.array(hardTissueNode.GetNthControlPointPosition(0))
 endPoint = np.array(pointXNode.GetNthControlPointPosition(0))
 
-# Create the line node
+#Create the line node
 lineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'E)')
 lineNode.AddControlPoint(startPoint)  # Start point
 lineNode.AddControlPoint(endPoint)    # End point
 
-# Set the color to burgundy
+#Set the color to burgundy
 lineNode.GetDisplayNode().SetSelectedColor(0.5, 0.0, 0.13)  # RGB values for burgundy
 
 ```
