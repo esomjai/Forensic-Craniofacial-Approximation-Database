@@ -91,7 +91,7 @@ To help with the side profile, we will establish the “INB” plane as defined 
 
 > a midsagittal plane (INB) which bisected the inion, nasion and bregma
 
-by downloading the [markups file](https://github.com/user-attachments/files/20001090/lmrks.Stephan.mrk.json) for this method and allocating all landmarks on the Bone model or volume. 
+by downloading the [markups file](https://github.com/user-attachments/files/20213400/lmrks_Stephan.mrk.json) for this method and allocating all landmarks on the Bone model or volume. 
 This is a pre-emptive measure to facilitate the later steps: by having the INB and FHP as planes and the following codes containing restrictions in the establisment of later reference planes, the "planes" which would correspond to lines in the original study can indeed remain lines. 
 
 <details>
@@ -129,6 +129,7 @@ newPlaneNode.SetNormal(planeNormal)
 
 
 ![image](https://github.com/user-attachments/assets/88247495-a178-4e97-8faf-69e60165738d)
+
 View after landmarks were placed, the code above employed and INB extended via the toggles (dots)
 
 The following steps can be executed in one step by copy & pasting the entire code (LINK), but for the sake of explanation, the tutorial breaks it down to its components. The method also splits in execution at measurement e) and depends on the biological sex of the skull, so please keep these in mind when batch processing!!!!
@@ -208,6 +209,7 @@ yAxisNode.GetDisplayNode().SetColor(0.0, 0.0, 1.0)
 </details>
 
 Depicted are the INB plane and the two new axes
+
 ![image](https://github.com/user-attachments/assets/044df3d4-75d2-4d77-9cf9-bc20acf5254a)
 
 
@@ -600,11 +602,17 @@ cLineNode.GetDisplayNode().SetColor(1.0, 0.0, 0.0)
 </details>
 
 Depicted are the RL and LL landmarks, note the proximity of the orange (RL y axis) and neon green (LL y axis) lines
+
   ![image](https://github.com/user-attachments/assets/acfe63ee-d9dd-416f-8bae-1401dad05846)
+  
 See how "rhi c)" bisects the rhinion and is parallell to the LL y  axis
+
 ![image](https://github.com/user-attachments/assets/01540185-7601-4eac-859a-17b16f070969)
+
 Measurement C is shown in red
+
 ![image](https://github.com/user-attachments/assets/14b0fcce-8a85-42e4-9f1a-74eb30003022)
+
 
 
 ### Setting up lines "for b-ac" and "for b-LL" to create measurement B)
@@ -806,6 +814,7 @@ bLineNode.GetDisplayNode().SetColor(1.0, 0.0, 1.0)
 ```
 </details>
 
+
 ![image](https://github.com/user-attachments/assets/b70cd603-050c-423f-b31f-364063a410f9)
 
 
@@ -840,7 +849,9 @@ angleNode.AddControlPoint(thirdControlPoint)  # Third control point as the ant e
 ```
 
 Zoomed in image showing the three points of the nasal spine angle for option 1. Note that the model's opacity was reduced to 0.3 for visibility.
+
 ![image](https://github.com/user-attachments/assets/8ee8c877-4c5c-455c-92f3-a664006e78e1)
+
 </details>
 
 <details>
@@ -947,6 +958,7 @@ print("New angle node 'D) nasal spine angle - opt 2' created successfully with a
 
 ```
 Zoomed in image showing the three points of the nasal spine angle for option 2. Note that the model's opacity was reduced to 0.3 for visibility.
+
 ![image](https://github.com/user-attachments/assets/10c00138-089e-461e-afeb-fe94965e9229)
 
 </details>
@@ -1200,16 +1212,25 @@ angleNode.AddControlPoint(firstControlPoint)  # First control point
 angleNode.AddControlPoint(apexPoint)          # Apex point
 angleNode.AddControlPoint(thirdControlPoint)  # Third control point as the ant end of the line Mala 2B A FHP
 ```
+
 The two FHP-parallel lines bisecing the acanthion (aca FHP - purple) and orthodontic point A (A FHP - pink)
+
 ![image](https://github.com/user-attachments/assets/af936f9d-1a6e-497f-a89c-8e284418fe03)
 
+
 Finding the intersection point where the "for b - ac" line meets the A FHP line
+
 ![image](https://github.com/user-attachments/assets/194750c5-55c6-4f57-852f-7231ba275496)
 
+
 Creating the two lines with the length of 2 B) 
+
 ![image](https://github.com/user-attachments/assets/72f39307-b0ec-4e14-b632-60f368866f2b)
 
+
 Defining the angle arm as the diagonal of the "rectangle"
+
+
 ![image](https://github.com/user-attachments/assets/a33c84d7-4e73-4b32-9958-0804bf1c5de9)
 
 </details>
@@ -1323,6 +1344,7 @@ y_pred_node.GetDisplayNode().SetSelectedColor(0.5, 0, 0.5)  # Set color to purpl
 # Update the scene
 slicer.app.processEvents()
 ```
+
 ![image](https://github.com/user-attachments/assets/6383b0c1-d3a5-4bb6-90e1-717c39f0092a)
 
 </details>
@@ -1407,6 +1429,8 @@ y_pred_node.GetDisplayNode().SetSelectedColor(0.5, 0, 0.5)  # Set color to purpl
 slicer.app.processEvents()
 ```
 </details>
+
+
 ![image](https://github.com/user-attachments/assets/d5e039c1-688c-4f43-aef3-4b15681f8662)
 
 
@@ -1489,6 +1513,7 @@ y_pred_node.GetDisplayNode().SetSelectedColor(0.5, 0, 0.5)  # Set color to purpl
 # Update the scene
 slicer.app.processEvents()
 ```
+
 ![image](https://github.com/user-attachments/assets/31d55872-94fd-45c8-86a5-e28d187af423)
 
 </details>
@@ -1651,7 +1676,9 @@ y_pred_node.AddControlPoint((start_point - y * y_axis_direction).tolist())
 # Update the scene
 slicer.app.processEvents()
 ```
+
 ![image](https://github.com/user-attachments/assets/9440720f-2b83-4283-ba95-dba18aeea853)
+
 
 </details>
 
@@ -1732,6 +1759,7 @@ y_pred_node.AddControlPoint((start_point - y * y_axis_direction).tolist())
 slicer.app.processEvents()
 
 ```
+
 ![image](https://github.com/user-attachments/assets/74a69a75-63b1-4f62-9e06-5042af2c79c3)
 
 </details>
@@ -1741,7 +1769,10 @@ slicer.app.processEvents()
 
 The following scripts create a line between the real soft tissue pronasale and the predicted one. 
 For this to work, download the json file containing this landmark and allocate it before running the codes.  [soft tissue Stephan.mrk.json](https://github.com/user-attachments/files/20149383/soft.tissue.Stephan.mrk.json)
+
+
 ![image](https://github.com/user-attachments/assets/70bd5961-1d59-40e7-a95b-2a9b68236c1a)
+
 
 
 These also are split based on the choice of angle measurement into options 1, 2 and 3 - please make sure you use the correct one. 
@@ -1940,7 +1971,7 @@ line_node.AddControlPoint(soft_tissue_point)
 # Set the color to orange
 line_node.GetDisplayNode().SetSelectedColor(1.0, 0.65, 0.0)  # RGB values for orange
 
-````
+```
 
 ![image](https://github.com/user-attachments/assets/7dbb1dbf-b317-476f-847b-0b7d3281dcdf)
 
@@ -2139,7 +2170,7 @@ line_node.AddControlPoint(soft_tissue_point)
 # Set the color to orange
 line_node.GetDisplayNode().SetSelectedColor(1.0, 0.65, 0.0)  # RGB values for orange
 
-````
+```
 ![image](https://github.com/user-attachments/assets/db4493b9-145b-47a9-85dd-6f39250e1871)
 
 </details>
