@@ -94,7 +94,8 @@ To help with the side profile, we will establish the “INB” plane as defined 
 by downloading the [markups file](https://github.com/user-attachments/files/20001090/lmrks.Stephan.mrk.json) for this method and allocating all landmarks on the Bone model or volume. 
 This is a pre-emptive measure to facilitate the later steps: by having the INB and FHP as planes and the following codes containing restrictions in the establisment of later reference planes, the "planes" which would correspond to lines in the original study can indeed remain lines. 
 
-The code employs the first three landmarks as follows: 
+<details>
+<summary>Code for INB</summary>
 
 ```python
 #INB plane#
@@ -124,6 +125,8 @@ newPlaneNode.SetOrigin(point1)
 newPlaneNode.SetNormal(planeNormal)
 
 ```
+</details>
+
 
 ![image](https://github.com/user-attachments/assets/88247495-a178-4e97-8faf-69e60165738d)
 View after landmarks were placed, the code above employed and INB extended via the toggles (dots)
@@ -135,6 +138,10 @@ The code creates an x axis in green, defined as a line bisecting the nasion land
 The code creates a y axis in navy, defined as a line bisecting the nasion landmark and perpendicular to the FHP, while being on the INB plane. 
 
 Make sure you have a plane based on the 4 landmarks of the Frankfurt Horizontal Plane and is named "FHP", then employ this snippet: 
+
+<details>
+<summary>Code for x and y axes</summary>
+	
 ``` python
 import slicer
 import numpy as np
@@ -198,6 +205,8 @@ yAxisNode.GetDisplayNode().SetSelectedColor(0.0, 0.0, 1.0)
 yAxisNode.GetDisplayNode().SetColor(0.0, 0.0, 1.0)
 
 ```
+</details>
+
 Depicted are the INB plane and the two new axes
 ![image](https://github.com/user-attachments/assets/044df3d4-75d2-4d77-9cf9-bc20acf5254a)
 
@@ -207,6 +216,9 @@ Depicted are the INB plane and the two new axes
 The code creates a line called "AA FHP" in turquoise along the INB which is parallel to the FHP and bisects point AA - this is later needeed to establish point X. 
 The next part of the same code snippet creates a new "point X" node defined as the point that falls on nasion-point A plane (aka perpendicular to y axis, parallel to AA FHP ) at height of point AA (bisects it)
 
+<details>
+<summary>Code for Point X</summary>
+	
 ``` python
 ####Making AA FHP####
 import slicer
@@ -310,6 +322,7 @@ pointXNode.AddControlPoint(intersectionPoint)
 print("New node 'Point X' created successfully at the intersection of 'AA FHP' and 'n-point A)'.")
 
 ```
+</details>
 
 ![image](https://github.com/user-attachments/assets/b32dfaef-65af-451d-b264-98ff0d62aaf5)
 
@@ -318,6 +331,9 @@ Depicted are the new point X node at the intersection of the AA FHP and the nasi
 ### Measuring the nasal bone angle
 This angle is described as the **a)** variable in the original study as measured from nasion to rhinion, from Frankfurt horizontal. Based on our previously created lines, this means that the apex of the angle is at the nasion, and the angle is between the anterior end of the x axis (which already bisects the nasion and is parallelll to the FHP) and the rhinion.
 
+<details>
+<summary>Code for nasal bone angle</summary>
+	
 ``` python
 ####Nasal bone angle a) ####
 import slicer
@@ -340,6 +356,8 @@ angleNode.AddControlPoint(thirdControlPoint)  # Third control point
 
 print("New angle 'a) nasal bone angle' created successfully.")
 ```
+</details>
+
 ![image](https://github.com/user-attachments/assets/326ec4de-8381-49ce-be96-31f6d4ad71b8)
 
 
@@ -347,7 +365,8 @@ print("New angle 'a) nasal bone angle' created successfully.")
 The following steps prepare to execute  measurement C) in the original study, defined as _distance from rhinion to most posterior point on nasal aperture border, measured perpendicular to nasion/prosthion plane_
 The LL and LR axes also help with the "line-instead-plane" process lines by bisecting the most posterior part of the nasal aperture from lateral view on the left and right, perpendicular to AA FHP line and projected on the INB plane – these are for measurement c) later on (both axes are defines as_The shortest (perpendicular) distance between the rhinion and the most posterior point of the nasal aperture from side view_ (LL in the example)) and should be very similar, almost overlapping, therefore only one of them is followed through in the later codes. If the ones in your patient do not overlap, consider doing both sides individually. 
 
-
+<details>
+<summary>Code to create c)</summary>
 
 ``` python
 ###LL and RL axes#####
@@ -578,6 +597,8 @@ cLineNode.GetDisplayNode().SetSelectedColor(1.0, 0.0, 0.0)  # Red color
 cLineNode.GetDisplayNode().SetColor(1.0, 0.0, 0.0)
 
 ```
+</details>
+
 Depicted are the RL and LL landmarks, note the proximity of the orange (RL y axis) and neon green (LL y axis) lines
   ![image](https://github.com/user-attachments/assets/acfe63ee-d9dd-416f-8bae-1401dad05846)
 See how "rhi c)" bisects the rhinion and is parallell to the LL y  axis
@@ -589,7 +610,8 @@ Measurement C is shown in red
 ### Setting up lines "for b-ac" and "for b-LL" to create measurement B)
 Line “for b-ac” is a line perpendicular to AA FHP which bisects the acanthion; line “for b – LL” is a line perpendicular to AA FHP which bisects the LL point and is projected onto the “INB” plane. Line B should appear in magenta and represents the shortest distance between the lines.
 
-
+<details>
+<summary>Code to create b)</summary>
 ``` python
 
 import slicer
@@ -782,7 +804,10 @@ bLineNode.GetDisplayNode().SetSelectedColor(1.0, 0.0, 1.0)
 bLineNode.GetDisplayNode().SetColor(1.0, 0.0, 1.0)
 
 ```
+</details>
+
 ![image](https://github.com/user-attachments/assets/b70cd603-050c-423f-b31f-364063a410f9)
+
 
 ### Apex for angle D) and the angle
 The exact position of the e) angle apex is quite quite difficult to distinguish from the figure provided in the study (Figure 5 in the original) and there is no further explanation as to the definition of the exact position of the apex of the angle. I am providing codes for both instances; therefore consider which one you choose when running the entire code all at once!
@@ -813,14 +838,14 @@ angleNode.AddControlPoint(firstControlPoint)  # First control point
 angleNode.AddControlPoint(apexPoint)          # Apex point
 angleNode.AddControlPoint(thirdControlPoint)  # Third control point as the ant end of FHP AA
 ```
+
 Zoomed in image showing the three points of the nasal spine angle for option 1. Note that the model's opacity was reduced to 0.3 for visibility.
 ![image](https://github.com/user-attachments/assets/8ee8c877-4c5c-455c-92f3-a664006e78e1)
-
-
 </details>
 
 <details>
 <summary>Option 2</summary> 
+
 the "base" of the angle is a new line - bisecting point A and is also parallell to the FHP AND the apex is where the most posterior point of the nasal aperture (in our case, this is the "LL y axis") meets this line
 
 ```python
@@ -928,17 +953,15 @@ Zoomed in image showing the three points of the nasal spine angle for option 2. 
 
 There is a third option  based on the graphic s provided by Mala et al. 2016[^8] : 
 
-<details>
-<summary>Mala et al. 2016 - option 3</summary> 
-
 **IN PROGRESS - Waiting for author's reply**
 
 The script creates 2 parallel lines along the A FHP (line parallel to the FHP at the level of point A) and the aca FHP (line parallel to the FHP at the level of the acanthion), each beginning where the "for b - ac" line intersects them, with the length of the B) measurement doubled. the second arm of the angle is then defined by the anterior endpoint of the new "Mala 2B A FHP" line. The angle will be named "D) nasal spine angle - opt 3"
 
 FYI: you may already have an A FHP line and/or LL A FHP intersection point when creating the angle using the 1st option, but it is integrated into this script in case you do not.
 
-Creating the aca FHP line and the D) nasal spine angle - opt 3
-
+<details>
+<summary>Code to create Mala's nasal spine angle - option 3</summary>
+	
 ```python
 import slicer
 import numpy as np
@@ -1189,12 +1212,13 @@ Creating the two lines with the length of 2 B)
 Defining the angle arm as the diagonal of the "rectangle"
 ![image](https://github.com/user-attachments/assets/a33c84d7-4e73-4b32-9958-0804bf1c5de9)
 
-
 </details>
 
 ### Measurement E)
 This measurement is independent from your choice of angle measurements - the distance between nasion and Point X
 
+<details>
+<summary>Code to create e)</summary>
 ```python
 import slicer
 import numpy as np
@@ -1216,7 +1240,7 @@ lineNode.AddControlPoint(endPoint)    # End point
 lineNode.GetDisplayNode().SetSelectedColor(0.5, 0.0, 0.13)  # RGB values for burgundy
 
 ```
-
+</details>
 
 ### Prediction point - pronasale
 Stephan et al. 2003 divides the prediction equations by biological sex to predict distances along axes x and y; then find the intersection as the pronasale (soft nose tip). In this section, we apply their original equations for each biological sex to the acquired measurements to predict dimensions (lengths) along the x and y axes predicting the pronasale (soft tissue nose tip) positions. 
@@ -1303,6 +1327,7 @@ slicer.app.processEvents()
 
 </details>
 
+
 <details>
 <summary>If female & used option 2 for nasal spine angle</summary>
 F(x) = -0.41 * nasal_bone_angle + 0.37 * line_B_value + 49.87
@@ -1381,9 +1406,10 @@ y_pred_node.GetDisplayNode().SetSelectedColor(0.5, 0, 0.5)  # Set color to purpl
 # Update the scene
 slicer.app.processEvents()
 ```
+</details>
 ![image](https://github.com/user-attachments/assets/d5e039c1-688c-4f43-aef3-4b15681f8662)
 
-</details>
+
 
 
 <details>
