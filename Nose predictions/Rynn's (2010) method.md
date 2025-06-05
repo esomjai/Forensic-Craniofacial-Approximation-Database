@@ -4811,7 +4811,7 @@ create_shortest_distance_line_between_MNW_and_MAW()
 
 
 ## Outputs
-Depending on which landmarks you allocated, there are multiple versions of outputs. 
+Depending on which landmarks you allocated, there are multiple versions of outputs. [Guide to copy measurements to clipboard](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/004_Copy%20measurements%20to%20clipboard.md#content-summary)
 
 #### Rynn/Sarilita/Bulut regression predictions
 <details>
