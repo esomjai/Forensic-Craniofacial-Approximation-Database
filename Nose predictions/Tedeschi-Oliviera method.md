@@ -49,7 +49,8 @@ The main goal for this guide is the easy reproducibility of the Tedeschi-Olivier
 Expected view from the right after placing landmarks
 
 
-<img src="https://github.com/user-attachments/assets/bef20cc9-8822-471a-a9d0-d252ea05339a" width="500">
+
+<img src="https://github.com/user-attachments/assets/fdf97e6c-b58c-4ea1-92c8-b6d59f4e049f" width="500">
 
 
 
