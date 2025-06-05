@@ -8,7 +8,16 @@ Tedeschi-Oliveira (2016)[^2] proposed their method on lateral cephalograms and a
 The main goal for this guide is the easy reproducibility of the Tedeschi-Oliviera method in order to investigate its applicability to other (non-Brazilian) subjects. The predicted pronasale point will be placed onto the midsagittal plane and the actual angle will also be measured as well as the distance between the real and predicted pronasale. 
 
 
-### This document contains instructions for: 
+### This document contains: 
+
+- [Landmarks in this guide](#landmarks-in-this-guide)
+- [Illustration of the method](#illustration-of-the-method)
+- [Establishing the MSP (midsagittal plane)](#establishing-the-msp-midsagittal-plane)
+- [Finding the pronasale prediction point geometrically](#finding-the-pronasale-prediction-point-geometrically)
+- [Creating measurements for comparison](#creating-measurements-for-comparison)
+- [Full code](#full-code)
+- [Output](#output)
+- [Bibliography](#bibliography)
 
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
@@ -45,7 +54,7 @@ Expected view from the right after placing landmarks
 
 
 > [!NOTE]
-> The following steps of codes can be run practically as one snippet. The steps are broken down to  explain the reason behind each one. If you are familiar, just jump to the LINK full code section
+> The following steps of codes can be run practically as one snippet. The steps are broken down to  explain the reason behind each one. If you are familiar, just jump to the [Full code](#full-code) section
 
 ### Establishing the MSP (midsagittal plane)
 
