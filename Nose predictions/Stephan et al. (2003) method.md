@@ -1,4 +1,4 @@
-# The Stephan et al. (2003) method
+# The Stephan et al. (2003)[^2] method
 
 
 ## Table of Contents
@@ -27,7 +27,7 @@
 ---
 
 
- [Stephan et al. 2003](https://doi.org/10.1002/ajpa.10300) compared three methods on lateral cephalogram tracings: method 1 by Gerasimov[^3] (1971); method 2 by Krogman[^4] (1962); method 3 by Prokopec and Ubelaker [^5] (2002); method 4 by George [^6] (1978) and came up with his compound method uniting his findings from the aforementioned studies. 
+ [Stephan et al. 2003](https://doi.org/10.1002/ajpa.10300)[^2] compared three methods on lateral cephalogram tracings: method 1 by Gerasimov[^3] (1971); method 2 by Krogman[^4] (1962); method 3 by Prokopec and Ubelaker [^5] (2002); method 4 by George [^6] (1978) and came up with his compound method uniting his findings from the aforementioned studies. 
 
 
 > [!NOTE]
