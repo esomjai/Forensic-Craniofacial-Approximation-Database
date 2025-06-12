@@ -1,3 +1,6 @@
+# Code for when first opening the .OBJ file
+
+As soon as the 3D Slicer loaded, copy and paste the script below. The model should load as yellow first, then change into the one texture. 
 ```python
 import os
 import slicer
@@ -97,3 +100,11 @@ except:
 loadWidget = LoadTexturedModelWidget()
 loadWidget.show()
 ```
+Then run: 
+```python
+# Get your modelNode and textureVolNode (the texture, as a volume node)
+modelDisplayNode = modelNode.GetDisplayNode()
+modelDisplayNode.SetAndObserveTextureImageDataNodeID(textureVolNode.GetID())
+```
+
+Then save as .mrb
