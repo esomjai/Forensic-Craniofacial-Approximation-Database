@@ -102,9 +102,29 @@ loadWidget.show()
 ```
 Then run: 
 ```python
-# Get your modelNode and textureVolNode (the texture, as a volume node)
-modelDisplayNode = modelNode.GetDisplayNode()
-modelDisplayNode.SetAndObserveTextureImageDataNodeID(textureVolNode.GetID())
+import slicer
+
+# Find the first model node in the scene
+modelNodes = slicer.util.getNodesByClass('vtkMRMLModelNode')
+if len(modelNodes) == 0:
+    print("No model found in the scene!")
+else:
+    modelNode = modelNodes[0]
+    print(f"Using model: {modelNode.GetName()}")
+
+    # Find the first scalar volume node (usually your texture image)
+    textureNodes = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')
+    if len(textureNodes) == 0:
+        print("No texture image found in the scene!")
+    else:
+        textureNode = textureNodes[0]
+        print(f"Using texture: {textureNode.GetName()}")
+
+        # Apply the texture using Slicer's persistent method
+        modelDisplayNode = modelNode.GetDisplayNode()
+        modelDisplayNode.SetBackfaceCulling(0)
+        modelDisplayNode.SetAndObserveTextureImageDataNodeID(textureNode.GetID())
+        print("Texture applied to model!")
 ```
 
 Then save as .mrb
