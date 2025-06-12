@@ -1,6 +1,8 @@
-# Code for when first opening the .OBJ file
+# Code for opening the .OBJ file
 
 As soon as the 3D Slicer loaded, copy and paste the script below. The model should load as yellow first, then change into the one texture. 
+Sadly, even if we save the scene, it does not automatically re-applies it, so this is the most efficient way of showing participants the bones. No point in saving the scene, but no data is lost. 
+
 ```python
 import os
 import slicer
@@ -100,31 +102,3 @@ except:
 loadWidget = LoadTexturedModelWidget()
 loadWidget.show()
 ```
-Then run: 
-```python
-import slicer
-
-# Find the first model node in the scene
-modelNodes = slicer.util.getNodesByClass('vtkMRMLModelNode')
-if len(modelNodes) == 0:
-    print("No model found in the scene!")
-else:
-    modelNode = modelNodes[0]
-    print(f"Using model: {modelNode.GetName()}")
-
-    # Find the first scalar volume node (usually your texture image)
-    textureNodes = slicer.util.getNodesByClass('vtkMRMLScalarVolumeNode')
-    if len(textureNodes) == 0:
-        print("No texture image found in the scene!")
-    else:
-        textureNode = textureNodes[0]
-        print(f"Using texture: {textureNode.GetName()}")
-
-        # Apply the texture using Slicer's persistent method
-        modelDisplayNode = modelNode.GetDisplayNode()
-        modelDisplayNode.SetBackfaceCulling(0)
-        modelDisplayNode.SetAndObserveTextureImageDataNodeID(textureNode.GetID())
-        print("Texture applied to model!")
-```
-
-Then save as .mrb
