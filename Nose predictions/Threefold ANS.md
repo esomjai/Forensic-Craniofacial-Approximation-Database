@@ -1,7 +1,9 @@
-# The Threefold ANS Method by Krogman & Iscan, 1986[^2]
+# The Threefold ANS Method by Krogman & Iscan, 1986[^2], as interpreted by Rynn et al. (2010)[^7]
 
 
-The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010)[^7]. They describe it as follows:
+The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010)[^7]. We also added optional recalibration methods to the regression equation by Matsuda et al. 2023
+
+They describe it as follows:
 
 > “A line is projected, following the direction of the ANS, and the average soft tissue depth at mid-philtrum is vertically transposed up to it. The length of the ANS, from the vomer-maxillary junction (VMJ) to the acanthion (at the tip on the ANS) is tripled and added to the transferred average of soft tissue depth” (Krogman 1968[^2], Taylor, 2001[^3])
 
@@ -72,9 +74,10 @@ To help with the side profile, we will establish the “INB” plane as defined 
 
 by downloading the hard tissue markups file for this method: [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json)
  allocating the first three landmarks (nasion, inion, bregma) and copying and pasting the following code: 
-
+ 
+<details>
+<summary>INB plane</summary>
 ```python
-#INB plane#
 
 import numpy as np
 import slicer
@@ -101,6 +104,8 @@ newPlaneNode.SetOrigin(point1)
 newPlaneNode.SetNormal(planeNormal)
 
 ```
+
+</details>
 <img src="https://github.com/user-attachments/assets/536f67fe-0479-43ce-a871-b70eb6f0abf6" width="500">
 
 
@@ -171,8 +176,10 @@ To establish the tangent described as in the general direction of the acanthion,
 
 Now, execute the **aca vector to INB** code  that projects the lines to the INB, ensures that it bisects the acanthion and elongates the line in both directions. 
 
+
+<details>
+<summary>aca vector to INB</summary>
 ```python
-#aca vector to INB#
 
 import numpy as np
 import slicer
@@ -216,6 +223,7 @@ projected_line.AddControlPoint(projected_point1.tolist())
 projected_line.AddControlPoint(projected_point2.tolist())
 projected_line.SetName('aca vector projected onto INB plane')
 ```
+</details>
 
 <img src="https://github.com/user-attachments/assets/f792e15c-1def-482d-ac0c-8ff577017d9c" width="500">
 
@@ -224,9 +232,9 @@ projected_line.SetName('aca vector projected onto INB plane')
 ### Mid-philtrum and reference to mp
 The hard tissue mid-philtrum is defined as the _Median point midway between subspinale and prosthion_ – therefore a line connecting the subspinale and prosthion can be established and the midline found programmatically, which is a visual guide to allocate the **mp** landmark via the script 003_lines.txt, that also creates the VMJ-acanthion distance. An issue I found is that the average soft tissue thickness measurements often do not meet the acanthion vector - to combat this, an elongated soft tissue depth line called  "soft tissue projection line" with an arbitrary length of 50 mm is established. 
 
-
+<details>
+<summary>Mid-philtrum landmark & VMJ-aca line</summary>
 ```python
-###Mid-philtrum landmark & VMJ-aca line###
 
 F=getNode('KrogmanIscan_hard_tissue')  
 #opens up the collection of point you stored in the markup file#
@@ -272,6 +280,10 @@ midpoint = [(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2, (point1[2]
 midpointIndex = hardTissueNode.AddControlPoint(midpoint)
 hardTissueNode.SetNthControlPointLabel(midpointIndex, "mp")
 ```
+
+</details>
+
+
 If this “mp” does not meet the model, you may have to manually allocate it onto the surface of the maxilla. The script saves “mp” in the “hard tissue” node, in case you’d have to re-allocate or find it.
 
 <img src="https://github.com/user-attachments/assets/58f738d2-d20f-4610-b039-472f26cf9bf4" width="500">
@@ -315,76 +327,75 @@ The reason the actual length is doubled in the code is due to the setup of a cyl
 FSTT - facial soft tissue thickness
 **Line Soft Tissue Marker** will try to establish the line from the endpoint of the tissue marker a line perpendicular to the “aca projected to  INB” and find their intersection point to then measure the aca-VMJ distance 3 times from there, establishing the predicted pronasale. 
 
+<details>
+<summary>Line Soft tissue Marker</summary>
 ```python
-
-###Line Soft tissue Marker###
 
 import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the Markups node for 'KrogmanIscan_hard_tissue'
+#Get the Markups node for 'KrogmanIscan_hard_tissue'
 hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
-# Get the coordinates of the point 'mp' at position 7
+#Get the coordinates of the point 'mp' at position 7
 mp = np.array(hardTissueNode.GetNthControlPointPositionVector(7))
 
-# Get the 'reference for mp' line node
+#Get the 'reference for mp' line node
 referenceLineNode = getNode('reference for mp')
 
-# Get the coordinates of the reference line's endpoints
+#Get the coordinates of the reference line's endpoints
 referencePoint1 = np.array(referenceLineNode.GetNthControlPointPositionVector(0))
 referencePoint2 = np.array(referenceLineNode.GetNthControlPointPositionVector(1))
 
-# Calculate the direction vector of the reference line
+#Calculate the direction vector of the reference line
 referenceDirection = referencePoint2 - referencePoint1
 referenceDirection /= np.linalg.norm(referenceDirection)  # Normalize the vector
 
-# Calculate the length of the reference line
+#Calculate the length of the reference line
 lineLength = np.linalg.norm(referencePoint2 - referencePoint1)
 
-# Calculate the new endpoints so that 'mp' is at the midpoint
+#Calculate the new endpoints so that 'mp' is at the midpoint
 adjustedPoint1 = mp - (referenceDirection * (lineLength / 2))
 adjustedPoint2 = mp + (referenceDirection * (lineLength / 2))
 
-# Update the 'reference for mp' line node with the new endpoints
+#Update the 'reference for mp' line node with the new endpoints
 referenceLineNode.SetNthControlPointPosition(0, *adjustedPoint1)
 referenceLineNode.SetNthControlPointPosition(1, *adjustedPoint2)
 
 
-
 import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the Markups node for 'KrogmanIscan_hard_tissue'
+#Get the Markups node for 'KrogmanIscan_hard_tissue'
 hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
-# Get the coordinates of the point 'mp' at position 7
+#Get the coordinates of the point 'mp' at position 7
 mp = np.array(hardTissueNode.GetNthControlPointPositionVector(7))
 
-# Get the coordinates of the reference point (assuming it's at position 6)
+#Get the coordinates of the reference point (assuming it's at position 6)
 referencePoint = np.array(hardTissueNode.GetNthControlPointPositionVector(6))
 
-# Calculate the direction vector of the "reference to mp" line
+#Calculate the direction vector of the "reference to mp" line
 referenceDirection = mp - referencePoint
 referenceDirection /= np.linalg.norm(referenceDirection)  # Normalize the vector
 
-# Define a vector that is not parallel to the referenceDirection (e.g., [1, 0, 0])
+#Define a vector that is not parallel to the referenceDirection (e.g., [1, 0, 0])
 arbitraryVector = np.array([1, 0, 0])
 
-# Calculate the perpendicular direction using the cross product
+#Calculate the perpendicular direction using the cross product
 direction = np.cross(referenceDirection, arbitraryVector)
 direction /= np.linalg.norm(direction)  # Normalize the vector
 
-# Set the length of the perpendicular line
+#Set the length of the perpendicular line
 length = 12  # mm
 
-# Calculate the endpoints of the perpendicular line
+#Calculate the endpoints of the perpendicular line
 point1 = mp - (length / 2) * direction
 point2 = mp + (length / 2) * direction
 
-# Create a new line node for the perpendicular line
+#Create a new line node for the perpendicular line
 perpendicularLine = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 perpendicularLine.AddControlPoint(point1.tolist())
 perpendicularLine.AddControlPoint(point2.tolist())
@@ -394,7 +405,7 @@ import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Function to calculate the intersection point of two lines in 3D space
+#Function to calculate the intersection point of two lines in 3D space
 def line_intersection(p1, d1, p2, d2):
     # Create the matrix A and vector b for the system of equations
     A = np.array([d1, -d2]).T
@@ -408,67 +419,67 @@ def line_intersection(p1, d1, p2, d2):
 import slicer
 import numpy as np
 
-# Get the original line node
+#Get the original line node
 original_line = slicer.util.getNode("mp soft tissue depth")
 
-# Get the start and end points of the original line
+#Get the start and end points of the original line
 start_point = np.array(original_line.GetNthControlPointPosition(0))
 end_point = np.array(original_line.GetNthControlPointPosition(1))
 
-# Calculate the direction vector of the original line
+#Calculate the direction vector of the original line
 direction_vector = end_point - start_point
 direction_vector /= np.linalg.norm(direction_vector)
 
-# Define the new length (50 mm)
+#Define the new length (50 mm)
 new_length = 50.0
 
-# Get the start point from "KrogmanIscan_hard_tissue" at position 7
+#Get the start point from "KrogmanIscan_hard_tissue" at position 7
 krogman_iscan_node = slicer.util.getNode("KrogmanIscan_hard_tissue")
 new_start_point = np.array(krogman_iscan_node.GetNthControlPointPosition(7))
 
-# Calculate the new end point based on the new start point
+#Calculate the new end point based on the new start point
 new_end_point = new_start_point + direction_vector * new_length
 
-# Create a new line node for the elongated line
+#Create a new line node for the elongated line
 elongated_line = slicer.vtkMRMLMarkupsLineNode()
 elongated_line.SetName("elongated mp soft tissue depth")
 slicer.mrmlScene.AddNode(elongated_line)
 
-# Set the control points for the new line
+#Set the control points for the new line
 elongated_line.AddControlPoint(new_start_point)
 elongated_line.AddControlPoint(new_end_point)
 
 print("Elongated line created successfully.")	
 
-# Get the 'elongated mp soft tissue depth' line node
+#Get the 'elongated mp soft tissue depth' line node
 softTissueProjectionLine = getNode('elongated mp soft tissue depth')
 
-# Get the coordinates of the 'elongated mp soft tissue depth' line's endpoints
+#Get the coordinates of the 'elongated mp soft tissue depth' line's endpoints
 softTissuePoint1 = np.array(softTissueProjectionLine.GetNthControlPointPositionVector(0))
 softTissuePoint2 = np.array(softTissueProjectionLine.GetNthControlPointPositionVector(1))
 
-# Calculate the direction vector of the 'elongated mp soft tissue depth' line
+#Calculate the direction vector of the 'elongated mp soft tissue depth' line
 softTissueDirection = softTissuePoint2 - softTissuePoint1
 softTissueDirection /= np.linalg.norm(softTissueDirection)  # Normalize the vector
 
-# Get the 'aca vector projected onto INB plane' line node
+#Get the 'aca vector projected onto INB plane' line node
 acaVectorLine = getNode('aca vector projected onto INB plane')
 
-# Get the coordinates of the aca vector's endpoints
+#Get the coordinates of the aca vector's endpoints
 acaPoint1 = np.array(acaVectorLine.GetNthControlPointPositionVector(0))
 acaPoint2 = np.array(acaVectorLine.GetNthControlPointPositionVector(1))
 
-# Calculate the direction vector of the aca vector
+#Calculate the direction vector of the aca vector
 acaDirection = acaPoint2 - acaPoint1
 acaDirection /= np.linalg.norm(acaDirection)  # Normalize the vector
 
-# Calculate the intersection point
+#Calculate the intersection point
 intersectionPoint = line_intersection(softTissuePoint1, softTissueDirection, acaPoint1, acaDirection)
 
-# Get the 'KrogmanIscan_hard_tissue' Markups node
+#Get the 'KrogmanIscan_hard_tissue' Markups node
 hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
-# Add the intersection point as a new control point
+#Add the intersection point as a new control point
 hardTissueNode.AddControlPoint(intersectionPoint.tolist())
 hardTissueNode.SetNthControlPointLabel(hardTissueNode.GetNumberOfControlPoints() - 1, 'intersection')
 
@@ -476,59 +487,63 @@ import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the 'KrogmanIscan_hard_tissue' Markups node
+#Get the 'KrogmanIscan_hard_tissue' Markups node
 hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
-# Get the coordinates of the point at position 8
+#Get the coordinates of the point at position 8
 startPoint = np.array(hardTissueNode.GetNthControlPointPositionVector(8))
 
-# Get the 'aca vector projected onto INB plane' line node
+#Get the 'aca vector projected onto INB plane' line node
 acaVectorLine = getNode('aca vector projected onto INB plane')
 
-# Get the coordinates of the aca vector's endpoints
+#Get the coordinates of the aca vector's endpoints
 acaPoint1 = np.array(acaVectorLine.GetNthControlPointPositionVector(0))
 acaPoint2 = np.array(acaVectorLine.GetNthControlPointPositionVector(1))
 
-# Calculate the direction vector of the aca vector
+#Calculate the direction vector of the aca vector
 acaDirection = acaPoint2 - acaPoint1
 acaDirection /= np.linalg.norm(acaDirection)  # Normalize the vector
 
-# Get the 'VMJ-aca' line node
+#Get the 'VMJ-aca' line node
 vmjAcaLine = getNode('VMJ-aca')
 
-# Get the coordinates of the VMJ-aca line's endpoints
+#Get the coordinates of the VMJ-aca line's endpoints
 vmjAcaPoint1 = np.array(vmjAcaLine.GetNthControlPointPositionVector(0))
 vmjAcaPoint2 = np.array(vmjAcaLine.GetNthControlPointPositionVector(1))
 
-# Calculate the length of the VMJ-aca line
+#Calculate the length of the VMJ-aca line
 vmjAcaLength = np.linalg.norm(vmjAcaPoint2 - vmjAcaPoint1)
 
-# Set the length of the new line to be three times the length of the VMJ-aca line
+#Set the length of the new line to be three times the length of the VMJ-aca line
 newLineLength = 3 * vmjAcaLength
 
-# Calculate the endpoints of the new line
+#Calculate the endpoints of the new line
 endPoint = startPoint + acaDirection * newLineLength
 
-# Create a new line node for the 'prn pred' line
+#Create a new line node for the 'prn pred' line
 prnPredLine = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 prnPredLine.AddControlPoint(startPoint.tolist())
 prnPredLine.AddControlPoint(endPoint.tolist())
 prnPredLine.SetName('prn pred')
 
-# Set the color of the new line to magenta (RGB: 255, 0, 255)
+#Set the color of the new line to magenta (RGB: 255, 0, 255)
 displayNode = prnPredLine.GetDisplayNode()
 displayNode.SetSelectedColor(255/255, 0/255, 255/255)
 displayNode.SetColor(255/255, 0/255, 255/255)
 
 ```
+</details>
+
 
 Here, the anterior endpoint of the prn pred line will serve as the predicted pronasale (see image under the error section).
 
 ### Line Error of estimate
 As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan_soft_tissue.lmrk.json_ ) and check the error rate (copy and paste the code "prn error"). 
 
+<details>
+<summary>Line prn error</summary>
+
 ```python
-###line prn error####
 
 import numpy as np
 import slicer
@@ -558,6 +573,9 @@ displayNode.SetSelectedColor(0/255, 0/255, 255/255)
 displayNode.SetColor(0/255, 0/255, 255/255)
 
 ```
+
+</details>
+
 <img src="https://github.com/user-attachments/assets/5d29afaf-6b5a-485a-bdd6-1f126bd0a826" width="500">
 
 To copy the error measurement, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). 
@@ -583,45 +601,47 @@ The output will look like this:
 FSTT - facial soft tissue thickness
 In Taylor (2001)[^3], the method is described with the vinyl cylinders as the soft tissue markers which “are approximately 6 mm in diameter” – we can recreate this via script “” . The cylinder will be found in the “Model” area, called “Cylinder". 
 
+<details>
+<summary>Cylinder Soft tissue Marker</summary>
+	
 ```python
 
-###Cylinder Soft tissue Marker###
 import numpy as np
 import vtk
 import slicer
 
-# Get nodes
+#Get nodes
 referenceLine = slicer.util.getNode('reference for mp')
 hardTissue = slicer.util.getNode('KrogmanIscan_hard_tissue')
 
-# Calculate center point and direction
+#Calculate center point and direction
 centerPoint = np.array(hardTissue.GetNthControlPointPosition(7))
 p1 = np.array(referenceLine.GetNthControlPointPosition(0))
 p2 = np.array(referenceLine.GetNthControlPointPosition(1))
 direction = p2 - p1
 direction /= np.linalg.norm(direction)  # Normalize the direction vector
 
-# Calculate perpendicular direction
+#Calculate perpendicular direction
 arbitrary_vector = np.array([1, 0, 0]) if direction[0] == 0 else np.array([0, 1, 0])
 perpendicular_direction = np.cross(direction, arbitrary_vector)
 perpendicular_direction /= np.linalg.norm(perpendicular_direction)  # Normalize
 
-# Create cylinder node
+#Create cylinder node
 cylinder = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLModelNode', 'Cylinder')
 cylinder.CreateDefaultDisplayNodes()
 
-# Define cylinder parameters
+#Define cylinder parameters
 radius = 3.0  # 6mm diameter
 height = 24.0
 
-# Create cylinder source
+#Create cylinder source
 cylinderSource = vtk.vtkCylinderSource()
 cylinderSource.SetRadius(radius)
 cylinderSource.SetHeight(height)
 cylinderSource.SetResolution(50)
 cylinderSource.Update()
 
-# Apply transformation to align with the perpendicular direction and center point
+#Apply transformation to align with the perpendicular direction and center point
 transform = vtk.vtkTransform()
 transform.Translate(centerPoint)
 transform.RotateWXYZ(90, direction)  # Rotate to align with the reference line direction
@@ -632,7 +652,7 @@ transformFilter.SetInputConnection(cylinderSource.GetOutputPort())
 transformFilter.SetTransform(transform)
 transformFilter.Update()
 
-# Set and observe mesh
+#Set and observe mesh
 cylinder.SetAndObserveMesh(transformFilter.GetOutput())
 
 
@@ -722,59 +742,64 @@ import numpy as np
 import slicer
 from slicer.util import getNode
 
-# Get the 'KrogmanIscan_hard_tissue' Markups node
+#Get the 'KrogmanIscan_hard_tissue' Markups node
 hardTissueNode = getNode('KrogmanIscan_hard_tissue')
 
-# Get the coordinates of the point at position 8
+#Get the coordinates of the point at position 8
 startPoint = np.array(hardTissueNode.GetNthControlPointPositionVector(8))
 
-# Get the 'aca vector projected onto INB plane' line node
+#Get the 'aca vector projected onto INB plane' line node
 acaVectorLine = getNode('aca vector projected onto INB plane')
 
-# Get the coordinates of the aca vector's endpoints
+#Get the coordinates of the aca vector's endpoints
 acaPoint1 = np.array(acaVectorLine.GetNthControlPointPositionVector(0))
 acaPoint2 = np.array(acaVectorLine.GetNthControlPointPositionVector(1))
 
-# Calculate the direction vector of the aca vector
+#Calculate the direction vector of the aca vector
 acaDirection = acaPoint2 - acaPoint1
 acaDirection /= np.linalg.norm(acaDirection)  # Normalize the vector
 
-# Get the 'VMJ-aca' line node
+#Get the 'VMJ-aca' line node
 vmjAcaLine = getNode('VMJ-aca')
 
-# Get the coordinates of the VMJ-aca line's endpoints
+#Get the coordinates of the VMJ-aca line's endpoints
 vmjAcaPoint1 = np.array(vmjAcaLine.GetNthControlPointPositionVector(0))
 vmjAcaPoint2 = np.array(vmjAcaLine.GetNthControlPointPositionVector(1))
 
-# Calculate the length of the VMJ-aca line
+#Calculate the length of the VMJ-aca line
 vmjAcaLength = np.linalg.norm(vmjAcaPoint2 - vmjAcaPoint1)
 
-# Set the length of the new line to be three times the length of the VMJ-aca line
+#Set the length of the new line to be three times the length of the VMJ-aca line
 newLineLength = 3 * vmjAcaLength
 
-# Calculate the endpoints of the new line
+#Calculate the endpoints of the new line
 endPoint = startPoint + acaDirection * newLineLength
 
-# Create a new line node for the 'prn pred - cyl' line
+#Create a new line node for the 'prn pred - cyl' line
 prnPredLine = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
 prnPredLine.AddControlPoint(startPoint.tolist())
 prnPredLine.AddControlPoint(endPoint.tolist())
 prnPredLine.SetName('prn pred - cyl')
 
-# Set the color of the new line to magenta (RGB: 255, 0, 255)
+#Set the color of the new line to magenta (RGB: 255, 0, 255)
 displayNode = prnPredLine.GetDisplayNode()
 displayNode.SetSelectedColor(255/255, 0/255, 255/255)
 displayNode.SetColor(255/255, 0/255, 255/255)
 
 ```
+
+</details>
+
 <img src="https://github.com/user-attachments/assets/8cb7cd0d-9938-43be-ae59-4f54a96968e4" width="500">
 
 
 ### Cylinder Error of estimate
 As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan_soft_tissue.lmrk.json_ ) and check the error rate (copy and paste the code "cylinder prn error"). 
 
+<details>
+<summary>Cylinder prn error</summary>
+	
 ```python
-###cylinder prn error###
 
 import numpy as np
 import slicer
@@ -803,6 +828,9 @@ displayNode = newLine.GetDisplayNode()
 displayNode.SetSelectedColor(0/255, 0/255, 255/255)
 displayNode.SetColor(0/255, 0/255, 255/255)
 ```
+
+</details>
+
 ![image](https://github.com/user-attachments/assets/e58fa837-9be8-45eb-9d23-0f741a0068df)
 
 To copy the error measurement, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). 
@@ -842,6 +870,29 @@ You can also just carry out both methods (line/cylinder) one after the other - t
 | (unknown) | prn error - cyl | 7.2860215755338915 |
 
 
+UNDER CONSTRUCTION1!!!!!
+## Matsuda et al. (2023)[^11] ' s formula for the elderly Japanese
+
+They convert the original formula from Krogman  & Iscan 
+	(1) TNP = 1.9 × ANSP + MPD
+ 	(2) TNP = ENP + MPD = 3 × ANSP + MPD
+  to 	(3) TNP = ENP (1.9 × ANSP) + MPD
+where: TNP is total nasal projection, ANSP is anterior nasal spine projection, MPD is mid-philtrum depth and ENP is exposed nasal projection
+
+> [!NOTE]
+> This equation was calibrated on a population of 146 elderly Japanese individuals with the age range of 58-105 years; imaged via postmortem CTs . Please consider the applicability of the method to your data.
+
+
+Total nose projection (TNP): nose projection from anterior nasal spine base to pronasale.
+Exposed nose projection (ENP): nose projection from subnasale to pronasale.
+Anterior nasal spine projection (ANSP): anterior nasal spine length from base to tip.
+Mid-philtrum depth (MPD): depth of vertical line connecting anterior nasal spine base and
+alveolar region, which corresponds to marker 5 for 3D facial reconstruction.
+Mid-philtrum groove depth (MPG): maximum depth of mid-philtrum groove.
+Total nasal width (TNW): maximum width between the most lateral points on the nasal ala.
+Anterior nasal aperture width (ANAW): maximum width of the anterior nasal aperture.
+
+
 ## Bibliography: 
 
 [^1]: [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
@@ -854,4 +905,7 @@ You can also just carry out both methods (line/cylinder) one after the other - t
 [^8]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
 [^9]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.	
 [^10]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
+[^11]: Matsuda, H., et al. (2023). "Simplified Formula for Estimating Nasal Dimensions for 3-Dimensional Facial Reconstruction
+among Japanese Adults." Forensic Sciences 3: 381–393.
+	
 	
