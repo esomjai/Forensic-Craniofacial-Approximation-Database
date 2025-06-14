@@ -76,7 +76,9 @@ by downloading the hard tissue markups file for this method: [KrogmanIscan_hard_
  allocating the first three landmarks (nasion, inion, bregma) and copying and pasting the following code: 
  
 <details>
+	
 <summary>INB plane</summary>
+
 ```python
 
 import numpy as np
@@ -106,6 +108,7 @@ newPlaneNode.SetNormal(planeNormal)
 ```
 
 </details>
+
 <img src="https://github.com/user-attachments/assets/536f67fe-0479-43ce-a871-b70eb6f0abf6" width="500">
 
 
@@ -178,7 +181,9 @@ Now, execute the **aca vector to INB** code  that projects the lines to the INB,
 
 
 <details>
+	
 <summary>aca vector to INB</summary>
+
 ```python
 
 import numpy as np
@@ -233,7 +238,9 @@ projected_line.SetName('aca vector projected onto INB plane')
 The hard tissue mid-philtrum is defined as the _Median point midway between subspinale and prosthion_ – therefore a line connecting the subspinale and prosthion can be established and the midline found programmatically, which is a visual guide to allocate the **mp** landmark via the script 003_lines.txt, that also creates the VMJ-acanthion distance. An issue I found is that the average soft tissue thickness measurements often do not meet the acanthion vector - to combat this, an elongated soft tissue depth line called  "soft tissue projection line" with an arbitrary length of 50 mm is established. 
 
 <details>
+	
 <summary>Mid-philtrum landmark & VMJ-aca line</summary>
+
 ```python
 
 F=getNode('KrogmanIscan_hard_tissue')  
@@ -328,7 +335,9 @@ FSTT - facial soft tissue thickness
 **Line Soft Tissue Marker** will try to establish the line from the endpoint of the tissue marker a line perpendicular to the “aca projected to  INB” and find their intersection point to then measure the aca-VMJ distance 3 times from there, establishing the predicted pronasale. 
 
 <details>
+	
 <summary>Line Soft tissue Marker</summary>
+
 ```python
 
 import numpy as np
@@ -541,6 +550,7 @@ Here, the anterior endpoint of the prn pred line will serve as the predicted pro
 As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan_soft_tissue.lmrk.json_ ) and check the error rate (copy and paste the code "prn error"). 
 
 <details>
+	
 <summary>Line prn error</summary>
 
 ```python
@@ -602,6 +612,7 @@ FSTT - facial soft tissue thickness
 In Taylor (2001)[^3], the method is described with the vinyl cylinders as the soft tissue markers which “are approximately 6 mm in diameter” – we can recreate this via script “” . The cylinder will be found in the “Model” area, called “Cylinder". 
 
 <details>
+	
 <summary>Cylinder Soft tissue Marker</summary>
 	
 ```python
@@ -797,6 +808,7 @@ displayNode.SetColor(255/255, 0/255, 255/255)
 As a research question, you can also allocate the original pronasale (included in the _KrogmanIscan_soft_tissue.lmrk.json_ ) and check the error rate (copy and paste the code "cylinder prn error"). 
 
 <details>
+	
 <summary>Cylinder prn error</summary>
 	
 ```python
