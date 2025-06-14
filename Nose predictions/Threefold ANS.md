@@ -1,6 +1,12 @@
 # The Threefold ANS Method by Krogman & Iscan, 1986[^2], as interpreted by Rynn et al. (2010)[^7]
 
 
+Summary: 
+
+Krogman and Iscan's original equation as interpreted by Taylor, 2001[^3] and Rynn et al. (2010)[^7]
+Revised equation for elderly Japanese individuals
+Revised equation for Caucasian/White subadults
+
 The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010)[^7]. We also added optional recalibration methods to the regression equation by Matsuda et al. 2023
 
 They describe it as follows:
@@ -13,8 +19,9 @@ Stephan et al. 2003[^5] trialled _“substituting original nasal spine length fo
 
 
 
+## The Rynn et al. (2010) and Taylor (2001)[^3] interpretation
 
-To achieve this, we will 
+To repeat this interpretation by Rynn et al. (2010)[^7], we will:
 
 - [Establish an INB plane](#inb-plane)
 - [Make a profile view](#profile-view-model)
@@ -29,7 +36,8 @@ To achieve this, we will
 - [Cylinder method output](#cylinder-method-output)
 - [Combined method output](#combining-methods-output)
 
-Landmarks in this  guide: 
+
+Landmarks in this  guide for the Rynn interpretation: 
 [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json)
 
 [KrogmanIscan_soft_tissue.mrk.json](https://github.com/user-attachments/files/20234679/KrogmanIscan_soft_tissue.mrk.json)
@@ -885,24 +893,31 @@ You can also just carry out both methods (line/cylinder) one after the other - t
 UNDER CONSTRUCTION1!!!!!
 ## Matsuda et al. (2023)[^11] ' s formula for the elderly Japanese
 
-They convert the original formula from Krogman  & Iscan 
+They convert the original formula from Krogman  & Iscan (1) AND (2)
+
 	(1) TNP = 1.9 × ANSP + MPD
+ 
  	(2) TNP = ENP + MPD = 3 × ANSP + MPD
+
+  
   to 	(3) TNP = ENP (1.9 × ANSP) + MPD
+  
 where: TNP is total nasal projection, ANSP is anterior nasal spine projection, MPD is mid-philtrum depth and ENP is exposed nasal projection
 
 > [!NOTE]
 > This equation was calibrated on a population of 146 elderly Japanese individuals with the age range of 58-105 years; imaged via postmortem CTs . Please consider the applicability of the method to your data.
 
+The landmarks for this method will include the points needed to replicate ALL measurements in the study, but the ones included in the equation (to estimate TNP) are noted with 🔵 in the table.
 
-Total nose projection (TNP): nose projection from anterior nasal spine base to pronasale.
-Exposed nose projection (ENP): nose projection from subnasale to pronasale.
-Anterior nasal spine projection (ANSP): anterior nasal spine length from base to tip.
-Mid-philtrum depth (MPD): depth of vertical line connecting anterior nasal spine base and
-alveolar region, which corresponds to marker 5 for 3D facial reconstruction.
-Mid-philtrum groove depth (MPG): maximum depth of mid-philtrum groove.
-Total nasal width (TNW): maximum width between the most lateral points on the nasal ala.
-Anterior nasal aperture width (ANAW): maximum width of the anterior nasal aperture.
+### Landmarks for Matsuda et al. 2023 
+
+
+
+### All measurements
+
+
+
+
 
 
 ## Bibliography: 
