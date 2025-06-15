@@ -85,6 +85,8 @@ by downloading the hard tissue markups file for this method: [KrogmanIscan_hard_
 
 import numpy as np
 import slicer
+from slicer.util import getNode
+from qt import QMessageBox 
 
 # Get the points from the "KrogmanIscan_hard_tissue" node
 hardTissueNode = slicer.util.getNode('KrogmanIscan_hard_tissue')
