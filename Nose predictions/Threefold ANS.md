@@ -285,8 +285,10 @@ L.AddControlPoint(secondPoint)
 L.SetName('ss-pr')     
 #name of your measurements#
 
+import numpy as np
 import slicer
 from slicer.util import getNode
+from qt import QMessageBox 
 
 # Get the Markups node for the line 'ss-pr'
 lineNode = getNode('ss-pr')
