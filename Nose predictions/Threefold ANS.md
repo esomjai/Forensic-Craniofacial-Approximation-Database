@@ -927,45 +927,112 @@ To create the mid-sagittal plane (essential to locate the ANS base/VMJ landmark!
 <summary>MSP creation</summary>
 
 ```python
-###midline plane###
 import slicer
 import numpy as np
+from qt import QMessageBox
 
-#Get your landmark node (update the name if needed)
+# Get your landmark node (update the name if needed)
 lmrks = slicer.util.getNode('Matsuda_hard_tissue')
 
-#Indices you want to use for the best fit plane
+# Indices you want to use for the best fit plane
 indices = [0, 1, 2]
 
-#Get the coordinates of those points (in world coordinates)
+# Get the coordinates of those points (in world coordinates)
 points = []
 for i in indices:
     pos = np.array(lmrks.GetNthControlPointPositionWorld(i))
     points.append(pos)
 points = np.array(points)
 
-#Compute the centroid
+# Compute the centroid
 centroid = np.mean(points, axis=0)
 
-#Subtract centroid from points
+# Subtract centroid from points
 pts_centered = points - centroid
 
-#Singular Value Decomposition (SVD) for best-fit plane
+# Singular Value Decomposition (SVD) for best-fit plane
 U, S, Vt = np.linalg.svd(pts_centered)
 normal = Vt[2, :]  # The normal of the best-fit plane is the last singular vector
 
-#Create the MSP plane
+# Create the MSP plane
 mspPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'MSP')
 mspPlaneNode.SetOriginWorld(centroid)
 mspPlaneNode.SetNormalWorld(normal)
 
 print("Best-fit 'MSP' plane created through selected landmarks.")
+
+# Show a popup message to confirm and remind next steps
+msg = QMessageBox()
+msg.setIcon(QMessageBox.Information)
+msg.setWindowTitle("MSP Plane Created!")
+msg.setText(
+    "Best-fit 'MSP' plane was created through selected landmarks.\n\n"
+    "Next steps:\n"
+    "1) Create a side profile model cut using the Dynamic Modeler module and the 'MSP' plane.\n"
+    "2) Place the VMJ/anterior nasal spine base landmark."
+)
+msg.addButton("OK", QMessageBox.AcceptRole)
+msg.exec_()
 ```
 
 </details>
 
-Follow thr stepd detailed in [Make a profile view](#profile-view-model), BUT **use this new plane (MSP) instead if the INB** to slice the skull along and reveal the anterior nasal spine. 
-Allocate the base of the ANS/VMJ. 
+A message box will pop up as a reminder for the next steps. 
+(1) Follow the steps detailed in [Make a profile view](#profile-view-model), BUT **use this new plane (MSP) instead if the INB** to slice the skull along and reveal the anterior nasal spine. 
+
+(2) Allocate the base of the ANS/VMJ. 
+
+(3) Copy and paste the snippet below to instrumentally place the mp. Make sure you manually adjust it so that it is on the bone surface - a reminder will pop up!
+
+<details>
+	
+<summary>Mid-philtrum landmark for Matsuda</summary>
+
+```python
+
+import slicer
+from slicer.util import getNode
+from qt import QMessageBox
+
+# Get the Markups node for 'Matsuda_hard_tissue'
+hardTissueNode = getNode('Matsuda_hard_tissue')
+
+# Get the coordinates of the endpoints at positions 1 (ss) and 2 (pr)
+point1 = [0, 0, 0]
+point2 = [0, 0, 0]
+hardTissueNode.GetNthControlPointPosition(1, point1)  # ss
+hardTissueNode.GetNthControlPointPosition(2, point2)  # pr
+
+# Calculate the midpoint
+midpoint = [
+    (point1[0] + point2[0]) / 2,
+    (point1[1] + point2[1]) / 2,
+    (point1[2] + point2[2]) / 2
+]
+
+# Add the midpoint to 'Matsuda_hard_tissue', label it "mp" and add a description
+midpointIndex = hardTissueNode.AddControlPoint(midpoint)
+hardTissueNode.SetNthControlPointLabel(midpointIndex, "mp")
+hardTissueNode.SetNthControlPointDescription(
+    midpointIndex, 
+    "Median point midway between ss and pr on bone surface"
+)
+
+# Show a popup message to remind the user
+msg = QMessageBox()
+msg.setIcon(QMessageBox.Information)
+msg.setWindowTitle("Reminder: Adjust Midpoint")
+msg.setText(
+    "Please move the new 'mp' point so it sits on the surface of the maxilla.\n\n"
+    "You can use the Markups control point editing tool to adjust its position as needed."
+)
+msg.addButton("Noted!", QMessageBox.AcceptRole)
+msg.exec_()
+```
+
+</details>
+
+
 
 
 ## Bibliography: 
