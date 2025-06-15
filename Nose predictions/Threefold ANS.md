@@ -1,13 +1,7 @@
 # The Threefold ANS Method by Krogman & Iscan, 1986[^2], as interpreted by Rynn et al. (2010)[^7]
 
 
-Summary: 
-
-Krogman and Iscan's original equation as interpreted by Taylor, 2001[^3] and Rynn et al. (2010)[^7]
-Revised equation for elderly Japanese individuals
-Revised equation for Caucasian/White subadults
-
-The method interpretation for the threefold ANS in this guide is based on Rynn et al. (2010)[^7]. We also added optional recalibration methods to the regression equation by Matsuda et al. 2023
+The method interpretation for the threefold ANS by Krogman & Iscan, 1986[^2] in this guide is based on Rynn et al. (2010)[^7] and Taylor, 2001[^3]
 
 They describe it as follows:
 
@@ -112,6 +106,22 @@ newPlaneNode.SetOrigin(point1)
 
 # Set the normal of the new plane
 newPlaneNode.SetNormal(planeNormal)
+
+print("INB plane created through selected landmarks.")
+
+# Show a popup message to confirm and remind next steps
+msg = QMessageBox()
+msg.setIcon(QMessageBox.Information)
+msg.setWindowTitle("INB plane created!")
+msg.setText(
+    "INB plane created through selected landmarks.\n\n"
+    "Next steps:\n"
+    "1) Create a side profile model cut using the Dynamic Modeler module and the 'INB' plane.\n"
+    "2) Place the VMJ/anterior nasal spine base landmark."
+)
+msg.addButton("OK", QMessageBox.AcceptRole)
+msg.exec_()
+
 
 ```
 
@@ -294,6 +304,17 @@ midpoint = [(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2, (point1[2]
 # Add the midpoint to the 'KrogmanIscan_hard_tissue' node using AddControlPoint and set its label to "mp"
 midpointIndex = hardTissueNode.AddControlPoint(midpoint)
 hardTissueNode.SetNthControlPointLabel(midpointIndex, "mp")
+
+# Show a popup message to remind the user
+msg = QMessageBox()
+msg.setIcon(QMessageBox.Information)
+msg.setWindowTitle("Reminder: Adjust Midpoint")
+msg.setText(
+    "Please move the new 'mp' point so it sits on the surface of the maxilla.\n\n"
+    "You can use the Markups control point editing tool to adjust its position as needed."
+)
+msg.addButton("Noted!", QMessageBox.AcceptRole)
+msg.exec_()
 ```
 
 </details>
@@ -890,168 +911,7 @@ You can also just carry out both methods (line/cylinder) one after the other - t
 | (unknown) | prn error - cyl | 7.2860215755338915 |
 
 
-UNDER CONSTRUCTION1!!!!!
-## Matsuda et al. (2023)[^11] ' s formula for the elderly Japanese
 
-They convert the original formula from Krogman  & Iscan (1) AND (2)
-
-	(1) TNP = 1.9 × ANSP + MPD
- 
- 	(2) TNP = ENP + MPD = 3 × ANSP + MPD
-
-  
-  to 	
-  
-  	(3) TNP = ENP (1.9 × ANSP) + MPD
-   
-  
-where: TNP is total nasal projection, ANSP is anterior nasal spine projection, MPD is mid-philtrum depth and ENP is exposed nasal projection
-
-> [!NOTE]
-> This equation was calibrated on a population of 146 elderly Japanese individuals with the age range of 58-105 years; imaged via postmortem CTs . Please consider the applicability of the method to your data.
-
-The landmarks for this method will include the points needed to replicate ALL measurements in the study, but the ones included in the equation (to estimate TNP) are noted with 🔵 in the table. The Rynn method used the INB plane as the midsagittal plane, but this midline plane is not defined by the same landmarks in Matsuda et al. 2023 - therefore this plane will be defined best fitting the hard tissue landmarks that are described as midline & can be allocated on the skull surface (a, ss, pr).
-
-Make sure you have a [4-point FHP](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/002_Realign%20CT%20in%20the%20standard%20FHP.md#fhp-options) established before creating the midline plane via the code. 
-
-### Landmarks for Matsuda et al. 2023 
-
-
-
-### All measurements/lines
-
-| Abbreviation      | Measurement Name              | Definition                                                                 | Also Known As                | Landmark 1  | Landmark 2 |
-|-------------------|------------------------------|----------------------------------------------------------------------------|------------------------------|-------------|------------|
-| TNP               | Total nose projection        | nose projection from anterior nasal spine base to pronasale                |                              | ANSbase     | pn         |
-| ENP 🔵               | Exposed nose projection      | nose projection from subnasale to pronasale                                |                              | sn          | pn         |
-| ANSP   🔵           | Anterior nasal spine projection | anterior nasal spine length from base to tip                               | ANS                          | ANS_base    | ANS_tip    |
-| ht_guide for MPD  |                              | vertical line connecting anterior nasal spine base and alveolar region      |                              | ANS_base    | mp         |
-| st_guide for MPD  |                              | soft tissue equivalent                                                     |                              | mp'         | ls         |
-| MPD 🔵              | Mid-philtrum depth           | depth of vertical line connecting anterior nasal spine base and alveolar region, which corresponds to marker 5 for 3D facial reconstruction | arbitrary number, based on population data |    
-| st guide for MPG  |                              | line running along the deepest part of the philtrum                        |                              |             |            |
-| MPG               | Mid-philtrum groove depth    | maximum depth of mid-philtrum groove (distance between the st guide for NDP and st guide for MPG) |                              |             |            |
-| TNW               | Total nasal width            | maximum width between the most lateral points on the nasal ala              | MNW: maximum nasal width     | al'L        | al'R       |
-| ANAW              | Anterior nasal aperture width| maximum width of the anterior nasal aperture                                | MAW: maximum aperture width  | alL         | alR        |
-
-
-
-### the MSP (midsagittal/midline) plane & profile view (Matsuda method)
-
-To create the mid-sagittal plane (essential to locate the ANS base/VMJ landmark!), ensure you allocated the **acanthion/ANS tip, subspinale and prosthion** landmarks from _Matsuda_hard_tissue.mrk.json_; then copy and paste the code below. 
-
-<details>
-	
-<summary>MSP creation</summary>
-
-```python
-import slicer
-import numpy as np
-from qt import QMessageBox
-
-# Get your landmark node (update the name if needed)
-lmrks = slicer.util.getNode('Matsuda_hard_tissue')
-
-# Indices you want to use for the best fit plane
-indices = [0, 1, 2]
-
-# Get the coordinates of those points (in world coordinates)
-points = []
-for i in indices:
-    pos = np.array(lmrks.GetNthControlPointPositionWorld(i))
-    points.append(pos)
-points = np.array(points)
-
-# Compute the centroid
-centroid = np.mean(points, axis=0)
-
-# Subtract centroid from points
-pts_centered = points - centroid
-
-# Singular Value Decomposition (SVD) for best-fit plane
-U, S, Vt = np.linalg.svd(pts_centered)
-normal = Vt[2, :]  # The normal of the best-fit plane is the last singular vector
-
-# Create the MSP plane
-mspPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'MSP')
-mspPlaneNode.SetOriginWorld(centroid)
-mspPlaneNode.SetNormalWorld(normal)
-
-print("Best-fit 'MSP' plane created through selected landmarks.")
-
-# Show a popup message to confirm and remind next steps
-msg = QMessageBox()
-msg.setIcon(QMessageBox.Information)
-msg.setWindowTitle("MSP Plane Created!")
-msg.setText(
-    "Best-fit 'MSP' plane was created through selected landmarks.\n\n"
-    "Next steps:\n"
-    "1) Create a side profile model cut using the Dynamic Modeler module and the 'MSP' plane.\n"
-    "2) Place the VMJ/anterior nasal spine base landmark."
-)
-msg.addButton("OK", QMessageBox.AcceptRole)
-msg.exec_()
-```
-
-</details>
-
-A message box will pop up as a reminder for the next steps. 
-(1) Follow the steps detailed in [Make a profile view](#profile-view-model), BUT **use this new plane (MSP) instead if the INB** to slice the skull along and reveal the anterior nasal spine. 
-
-(2) Allocate the base of the ANS/VMJ. 
-
-(3) Copy and paste the snippet below to instrumentally place the mp. Make sure you manually adjust it so that it is on the bone surface - a reminder will pop up!
-
-<details>
-	
-<summary>Mid-philtrum landmark for Matsuda</summary>
-
-```python
-
-import slicer
-from slicer.util import getNode
-from qt import QMessageBox
-
-# Get the Markups node for 'Matsuda_hard_tissue'
-hardTissueNode = getNode('Matsuda_hard_tissue')
-
-# Get the coordinates of the endpoints at positions 1 (ss) and 2 (pr)
-point1 = [0, 0, 0]
-point2 = [0, 0, 0]
-hardTissueNode.GetNthControlPointPosition(1, point1)  # ss
-hardTissueNode.GetNthControlPointPosition(2, point2)  # pr
-
-# Calculate the midpoint
-midpoint = [
-    (point1[0] + point2[0]) / 2,
-    (point1[1] + point2[1]) / 2,
-    (point1[2] + point2[2]) / 2
-]
-
-# Add the midpoint to 'Matsuda_hard_tissue', label it "mp" and add a description
-midpointIndex = hardTissueNode.AddControlPoint(midpoint)
-hardTissueNode.SetNthControlPointLabel(midpointIndex, "mp")
-hardTissueNode.SetNthControlPointDescription(
-    midpointIndex, 
-    "Median point midway between ss and pr on bone surface"
-)
-
-# Show a popup message to remind the user
-msg = QMessageBox()
-msg.setIcon(QMessageBox.Information)
-msg.setWindowTitle("Reminder: Adjust Midpoint")
-msg.setText(
-    "Please move the new 'mp' point so it sits on the surface of the maxilla.\n\n"
-    "You can use the Markups control point editing tool to adjust its position as needed."
-)
-msg.addButton("Noted!", QMessageBox.AcceptRole)
-msg.exec_()
-```
-
-</details>
-
-### Predicting the TNP (MNW) (Matsuda method)
-
-The measurements ENP, ANSP and MPD need to be established to estimate the total napal projection according to Matsuda's method. 
 
 
 
@@ -1067,7 +927,5 @@ The measurements ENP, ANSP and MPD need to be established to estimate the total 
 [^8]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
 [^9]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.	
 [^10]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
-[^11]: Matsuda, H., et al. (2023). "Simplified Formula for Estimating Nasal Dimensions for 3-Dimensional Facial Reconstruction
-among Japanese Adults." Forensic Sciences 3: 381–393.
-	
+
 	
