@@ -900,7 +900,10 @@ They convert the original formula from Krogman  & Iscan (1) AND (2)
  	(2) TNP = ENP + MPD = 3 × ANSP + MPD
 
   
-  to 	(3) TNP = ENP (1.9 × ANSP) + MPD
+  to 	
+  
+  	(3) TNP = ENP (1.9 × ANSP) + MPD
+   
   
 where: TNP is total nasal projection, ANSP is anterior nasal spine projection, MPD is mid-philtrum depth and ENP is exposed nasal projection
 
@@ -915,7 +918,20 @@ Make sure you have a [4-point FHP](https://github.com/esomjai/Forensic-Craniofac
 
 
 
-### All measurements
+### All measurements/lines
+
+| Abbreviation      | Measurement Name              | Definition                                                                 | Also Known As                | Landmark 1  | Landmark 2 |
+|-------------------|------------------------------|----------------------------------------------------------------------------|------------------------------|-------------|------------|
+| TNP               | Total nose projection        | nose projection from anterior nasal spine base to pronasale                |                              | ANSbase     | pn         |
+| ENP 🔵               | Exposed nose projection      | nose projection from subnasale to pronasale                                |                              | sn          | pn         |
+| ANSP   🔵           | Anterior nasal spine projection | anterior nasal spine length from base to tip                               | ANS                          | ANS_base    | ANS_tip    |
+| ht_guide for MPD 🔵 |                              | vertical line connecting anterior nasal spine base and alveolar region      |                              | ANS_base    | mp         |
+| st_guide for MPD 🔵 |                              | soft tissue equivalent                                                     |                              | mp'         | ls         |
+| MPD 🔵              | Mid-philtrum depth           | depth of vertical line connecting anterior nasal spine base and alveolar region, which corresponds to marker 5 for 3D facial reconstruction | arbitrary number, based on population data |             |            |
+| st guide for MPG  |                              | line running along the deepest part of the philtrum                        |                              |             |            |
+| MPG               | Mid-philtrum groove depth    | maximum depth of mid-philtrum groove (distance between the st guide for NDP and st guide for MPG) |                              |             |            |
+| TNW               | Total nasal width            | maximum width between the most lateral points on the nasal ala              | MNW: maximum nasal width     | al'L        | al'R       |
+| ANAW              | Anterior nasal aperture width| maximum width of the anterior nasal aperture                                | MAW: maximum aperture width  | alL         | alR        |
 
 
 ### the MSP (midsagittal/midline) plane & profile view (Matsuda method)
@@ -1032,6 +1048,9 @@ msg.exec_()
 
 </details>
 
+### Predicting the TNP (MNW) (Matsuda method)
+
+The measurements ENP, ANSP and MPD need to be established to estimate the total napal projection according to Matsuda's method. 
 
 
 
