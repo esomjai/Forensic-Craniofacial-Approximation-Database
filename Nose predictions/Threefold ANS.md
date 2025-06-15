@@ -907,7 +907,9 @@ where: TNP is total nasal projection, ANSP is anterior nasal spine projection, M
 > [!NOTE]
 > This equation was calibrated on a population of 146 elderly Japanese individuals with the age range of 58-105 years; imaged via postmortem CTs . Please consider the applicability of the method to your data.
 
-The landmarks for this method will include the points needed to replicate ALL measurements in the study, but the ones included in the equation (to estimate TNP) are noted with 🔵 in the table.
+The landmarks for this method will include the points needed to replicate ALL measurements in the study, but the ones included in the equation (to estimate TNP) are noted with 🔵 in the table. The Rynn method used the INB plane as the midsagittal plane, but this midline plane is not defined by the same landmarks in Matsuda et al. 2023 - therefore this plane will be defined best fitting the hard tissue landmarks that are described as midline & can be allocated on the skull surface (a, ss, pr).
+
+Make sure you have a [4-point FHP](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/002_Realign%20CT%20in%20the%20standard%20FHP.md#fhp-options) established before creating the midline plane via the code. 
 
 ### Landmarks for Matsuda et al. 2023 
 
@@ -916,8 +918,54 @@ The landmarks for this method will include the points needed to replicate ALL me
 ### All measurements
 
 
+### the MSP (midsagittal/midline) plane & profile view (Matsuda method)
 
+To create the mid-sagittal plane (essential to locate the ANS base/VMJ landmark!), ensure you allocated the **acanthion/ANS tip, subspinale and prosthion** landmarks from _Matsuda_hard_tissue.mrk.json_; then copy and paste the code below. 
 
+<details>
+	
+<summary>MSP creation</summary>
+
+```python
+###midline plane###
+import slicer
+import numpy as np
+
+#Get your landmark node (update the name if needed)
+lmrks = slicer.util.getNode('Matsuda_hard_tissue')
+
+#Indices you want to use for the best fit plane
+indices = [0, 1, 2]
+
+#Get the coordinates of those points (in world coordinates)
+points = []
+for i in indices:
+    pos = np.array(lmrks.GetNthControlPointPositionWorld(i))
+    points.append(pos)
+points = np.array(points)
+
+#Compute the centroid
+centroid = np.mean(points, axis=0)
+
+#Subtract centroid from points
+pts_centered = points - centroid
+
+#Singular Value Decomposition (SVD) for best-fit plane
+U, S, Vt = np.linalg.svd(pts_centered)
+normal = Vt[2, :]  # The normal of the best-fit plane is the last singular vector
+
+#Create the MSP plane
+mspPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'MSP')
+mspPlaneNode.SetOriginWorld(centroid)
+mspPlaneNode.SetNormalWorld(normal)
+
+print("Best-fit 'MSP' plane created through selected landmarks.")
+```
+
+</details>
+
+Follow thr stepd detailed in [Make a profile view](#profile-view-model), BUT **use this new plane (MSP) instead if the INB** to slice the skull along and reveal the anterior nasal spine. 
+Allocate the base of the ANS/VMJ. 
 
 
 ## Bibliography: 
