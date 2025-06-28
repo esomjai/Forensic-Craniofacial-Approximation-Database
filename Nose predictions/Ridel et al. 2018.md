@@ -11,6 +11,17 @@ Lee et al. (2014)[^3] report higher precision with measurements using the natura
 
 ### This document contains instructions for: 
 
+ - [Landmarks in this guide (for prediction of soft tissues)](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#landmarks-in-this-guide-for-prediction-of-soft-tissues)
+ - [Creating reference planes for replicating the hard tissue planes in the study](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#reference-planes-for-replicating-the-hard-tissue-planes-in-the-study)
+ - [Creating the 7 hard tissue planes](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#create-the-hard-tissue-planes)
+ - [Taking hard tissue measurements](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#hard-tissue-measurements)
+ - [Using the prediction regressions estimating the Sn, Pn and Al](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#prediction-regressions-estimating-the-sn-pn-and-al)
+ - [Creating the predicted soft tissue points](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#create-the-predicted-soft-tissue-points)
+ - [Measuring the prediction errors](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#measuring-the-prediction-errors)
+ - [What to expect for an output](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#output)
+ - [An additional research idea](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md#research-idea)
+
+
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guidewas taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
 
