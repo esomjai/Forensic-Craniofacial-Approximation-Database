@@ -1092,6 +1092,14 @@ predictionDialog = runPredictionTool()
 For the following code to work, please place the soft tissue landmarks on the model. These are stored in
 [Ridel_soft_tissue.mrk.json](https://github.com/user-attachments/files/20868874/Ridel_soft_tissue.mrk.json). The script below connects all the prediction set landmarks with the true landmark, measuring the distance between them and creates these green lines calling the "error_{predicted lmrk name}". 
 
+|Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
+|---|-----|--------|--------------|---------------------------------------------------------------------------------------------------------|------------|
+| 1 | 2   | pn'    | pronasale          | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen. |   Buikstra (1994)[^12]; Farkas (1994) [^11]; Caple & Stephan (2016)[^5]         |
+| 2 | 14  | sn'    | subnasale          | Median point at the junction between the lower border of the nasal septum and the philtrum area.         |   Buikstra (1994)[^12]; Kolar (1997)[^10]; Caple & Stephan (2016)[^5]   |
+| 3 | 12  | al'L   | left alare         | The most lateral point on the left nasal ala.                                                            |   Buikstra (1994)[^12]; Kolar (1997)[^10]; Caple & Stephan (2016)[^5]         |
+| 4 | 13  | al'R   | right alare        | The most lateral point on the right nasal ala.                                                           |    Buikstra (1994)[^12]; Kolar (1997)[^10]; Caple & Stephan (2016)[^5]        |
+
+
 
 <details>
 <summary> Create the error between predicted and true soft tissue points </summary>
