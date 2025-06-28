@@ -67,13 +67,6 @@ The following table provides a summary of the hard tissue planes used to predict
 | rhiCor                           | rhinion coronal plane           | Bisects the rhinion, is parallel to FRP                                                                          |
 
 
-
-
-make 4 point FHP
-Nasal height
-nasal length 
-nasal bone projection
-
 <details>
 <summary> Create the blueprint planes (FHP, MSP and FRP) </summary>
 
@@ -1239,8 +1232,6 @@ It may be worth implementing the coordinate system mentioned by Thitiorul et al.
 [^2]: Ridel et al. (2018). "Skeletal dimensions as predictors for the shape of the nose in a South African sample: A cone-beam computed tomography (CBCT) study." Forensic Science International 289: 18-26.
 [^3]: Lee, K.-M., et al. (2014). "Three-dimensional prediction of the nose for facial reconstruction using cone-beam computed tomography." Forensic Science International 236: 194.e191-194.e195.
 [^4]: Hwang, H.-S., et al. (2013). "Use of Reference Ear Plug to improve accuracy of lateral cephalograms generated from cone-beam computed tomography scans." Korean Journal of Orthodontics 43(2): 54-61.
-
-
 [^5]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." International Journal of Legal Medicine 130(3): 863-879.
 [^6]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.
 [^7]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
