@@ -1,4 +1,4 @@
-[Ridel_hard_tissue.mrk.json](https://github.com/user-attachments/files/20970622/Ridel_hard_tissue.mrk.json)# The Ridel et al. 2018 [^2] method (inspired by Lee et al. 2014)[^3]
+# The Ridel et al. 2018 [^2] method (inspired by Lee et al. 2014)[^3]
 
 For reference code snippets and insight for how 3D Slicer works, please refer to the official 3D Slicer webpage [^1]. 
 
