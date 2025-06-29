@@ -625,12 +625,17 @@ def createPredictionNode(nodeName):
         displayNode.SetGlyphScale(1.5)
     return predNode
 
+# UPDATED FUNCTION: Fixed directions - removed negative signs to make points go in correct directions
 def placeLandmark(predNode, landmarkName, nTrDistance, nCorDistance=None, equationCode=""):
+    # Add equation code to landmark name if provided
     if equationCode:
         trackedName = f"{landmarkName}_{equationCode}"
     else:
         trackedName = f"{landmarkName}"
+        
     print(f"Creating landmark: {trackedName}")
+    
+    # Get reference lines
     try:
         nTrLine = slicer.util.getNode("nTr_line")
         if nCorDistance is not None:
@@ -640,59 +645,89 @@ def placeLandmark(predNode, landmarkName, nTrDistance, nCorDistance=None, equati
     except Exception as e:
         print(f"✗ Could not find reference line(s): {str(e)}")
         return None
+        
+    # Get Nasion point (intersection of the two planes)
     nasionPoint = getNasionPoint()
     if nasionPoint is None:
         return None
+    
+    # Calculate vectors along each line
     p1 = np.zeros(3)
     p2 = np.zeros(3)
     nTrLine.GetNthControlPointPosition(0, p1)
     nTrLine.GetNthControlPointPosition(1, p2)
     nTrVector = p2 - p1
     nTrUnitVector = nTrVector / np.linalg.norm(nTrVector)
-    nTrUnitVector = -nTrUnitVector
+    # FIXED: Remove negative sign to get correct direction (forward)
+    nTrUnitVector = nTrUnitVector  # Forwards direction
+    
+    # Create a point by moving DIRECTLY along nTr line by nCor distance
+    predSetName = predNode.GetName().split("_")[-1]  # Get the timestamp part
+    
     if nCorDistance is not None:
-        print(f"➡️ Placing nCor value ({nCorDistance:.2f} mm) on nTr line")
+        print(f"➡️ Moving {nCorDistance:.2f} mm along nTr line from Nasion")
         nTrPoint = nasionPoint + nCorDistance * nTrUnitVector
+        
+        # Create measurement line showing nCor on nTr line
+        try:
+            measurementName = f"{predSetName}_{landmarkName}_nTr_measurement"
+            slicer.mrmlScene.RemoveNode(slicer.util.getNode(measurementName))
+        except:
+            pass
+            
+        nTrMeasurementLine = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", measurementName)
+        nTrMeasurementLine.AddControlPoint(nasionPoint)
+        nTrMeasurementLine.AddControlPoint(nTrPoint)
+        
+        # Set color 
+        displayNode = nTrMeasurementLine.GetDisplayNode()
+        if displayNode:
+            displayNode.SetColor(1, 0.5, 0)  # Orange
     else:
-        print(f"➡️ Using nTr value on nTr line for {landmarkName}")
-        nTrPoint = nasionPoint + nTrDistance * nTrUnitVector
-    predSetName = predNode.GetName().split("_")[-1]
-    try:
-        measurementName = f"{predSetName}_{landmarkName}_nTr_measurement"
-        slicer.mrmlScene.RemoveNode(slicer.util.getNode(measurementName))
-    except:
-        pass
-    nTrMeasurementLine = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", measurementName)
-    nTrMeasurementLine.AddControlPoint(nasionPoint)
-    nTrMeasurementLine.AddControlPoint(nTrPoint)
-    displayNode = nTrMeasurementLine.GetDisplayNode()
-    if displayNode:
-        displayNode.SetColor(1, 0.5, 0)  # Orange
+        # For Al which doesn't have nCor, just use nTr directly
+        print(f"➡️ Using nTr value directly for {landmarkName} (no nCor value)")
+        nTrPoint = nasionPoint
+    
+    # Final point starts at nTr point for true bi-planar placement
     finalPoint = nTrPoint
-    if nCorDistance is not None and nCorLine is not None:
+    
+    # If we have nCor line, create point by moving DIRECTLY along nCor line by nTr distance
+    if nTrDistance is not None and nCorLine is not None:
         nCorP1 = np.zeros(3)
         nCorP2 = np.zeros(3)
         nCorLine.GetNthControlPointPosition(0, nCorP1)
         nCorLine.GetNthControlPointPosition(1, nCorP2)
+        
         nCorVector = nCorP2 - nCorP1
         nCorUnitVector = nCorVector / np.linalg.norm(nCorVector)
-        nCorUnitVector = -nCorUnitVector
-        print(f"➡️ Placing nTr value ({nTrDistance:.2f} mm) on nCor line")
+        # FIXED: Remove negative sign to get correct direction (downwards)
+        nCorUnitVector = nCorUnitVector  # Downwards direction
+        
+        # Calculate the final point by moving from nTr point along nCor 
+        print(f"➡️ Moving {nTrDistance:.2f} mm along nCor line from the nTr point")
         finalPoint = nTrPoint + nTrDistance * nCorUnitVector
+        
+        # Create measurement line along nCor
         try:
             nCorName = f"{predSetName}_{landmarkName}_nCor_measurement"
             slicer.mrmlScene.RemoveNode(slicer.util.getNode(nCorName))
         except:
             pass
+            
         nCorMeasurementLine = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", nCorName)
-        nCorMeasurementLine.AddControlPoint(nTrPoint)
+        nCorMeasurementLine.AddControlPoint(nTrPoint)  # Start from nTr point
         nCorMeasurementLine.AddControlPoint(finalPoint)
+        
+        # Set color
         displayNode = nCorMeasurementLine.GetDisplayNode()
         if displayNode:
             displayNode.SetColor(0.5, 0, 1)  # Purple
+            
+    # Add landmark to prediction node
     idx = predNode.AddControlPoint(finalPoint)
     predNode.SetNthControlPointLabel(idx, trackedName)
     print(f"✓ Added landmark '{trackedName}' to prediction set")
+        
     return finalPoint
 
 def findMeasurements():
@@ -761,12 +796,11 @@ class PredictionManagerDialog(qt.QWidget):
         self.table.setSelectionBehavior(qt.QTableWidget.SelectRows)
         layout.addWidget(self.table)
 
-        # --- Add cleanup button here ---
+        # --- Cleanup button ---
         cleanupBtn = qt.QPushButton("Remove Helper Lines")
         cleanupBtn.setStyleSheet("background-color: #FFF8DC; font-weight: bold;")
         cleanupBtn.clicked.connect(removeHelperMeasurementLines)
         layout.addWidget(cleanupBtn)
-        # --- End of cleanup button addition ---
 
         refreshBtn = qt.QPushButton("Refresh List")
         refreshBtn.setStyleSheet("background-color: #CCFFFF")
@@ -922,12 +956,11 @@ class EquationSelectionDialog(qt.QWidget):
         buttonsLayout.addWidget(closeBtn)
         layout.addLayout(buttonsLayout)
 
-        # --- Add cleanup button here as well (optional) ---
+        # --- Cleanup button ---
         cleanupBtn2 = qt.QPushButton("Remove Helper Lines")
         cleanupBtn2.setStyleSheet("background-color: #FFF8DC; font-weight: bold;")
         cleanupBtn2.clicked.connect(removeHelperMeasurementLines)
         layout.addWidget(cleanupBtn2)
-        # --- End of cleanup button addition ---
 
         self.updateEquations()
     def createPredictionManager(self):
