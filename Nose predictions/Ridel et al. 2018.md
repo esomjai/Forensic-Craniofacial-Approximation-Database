@@ -442,6 +442,68 @@ def create_measurements():
 
 # Run the function
 create_measurements()
+
+# Script to create nCor_line and nTr_line in 3D Slicer
+
+import slicer
+from slicer.util import getNode
+import numpy as np
+
+# Function to create a line at the intersection of two planes, passing through a point
+def createIntersectionLine(planeNode1, planeNode2, pointNode, pointIndex, lineName, lineLength=200):
+    # Get the planes
+    plane1 = getNode(planeNode1)
+    plane2 = getNode(planeNode2)
+    
+    if not plane1 or not plane2:
+        print(f"Error: Could not find planes {planeNode1} or {planeNode2}")
+        return None
+    
+    # Get the nasion point
+    points = getNode(pointNode)
+    if not points:
+        print(f"Error: Could not find points node {pointNode}")
+        return None
+        
+    # Get the coordinates of the nasion (at the specified index)
+    pointsArray = slicer.util.arrayFromMarkupsControlPoints(points)
+    if pointIndex >= len(pointsArray):
+        print(f"Error: Point index {pointIndex} is out of range")
+        return None
+        
+    nasion = pointsArray[pointIndex]
+    
+    # Get the normal vectors of the planes
+    normal1 = np.array(plane1.GetNormal())
+    normal2 = np.array(plane2.GetNormal())
+    
+    # Calculate the direction of the intersection line (cross product of the normals)
+    lineDirection = np.cross(normal1, normal2)
+    lineDirection = lineDirection / np.linalg.norm(lineDirection)  # Normalize
+    
+    # Create a line node
+    lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", lineName)
+    
+    # Define two points along the line
+    point1 = nasion + lineDirection * (lineLength/2)
+    point2 = nasion - lineDirection * (lineLength/2)
+    
+    # Add the points to the line
+    lineNode.AddControlPoint(point1)
+    lineNode.AddControlPoint(point2)
+    
+    print(f"Created {lineName} successfully")
+    return lineNode
+
+# Create the two required lines
+nasionIndex = 0  # The index of nasion in "Ridel_hard_tissue"
+
+# Create nCor_line
+nCor_line = createIntersectionLine("MSP", "nCor", "Ridel_hard_tissue", nasionIndex, "nCor_line")
+
+# Create nTr_line
+nTr_line = createIntersectionLine("MSP", "nTr", "Ridel_hard_tissue", nasionIndex, "nTr_line")
+#
 ```
 
 
@@ -454,7 +516,7 @@ A [follow-up study](https://www.sciencedirect.com/science/article/pii/S134462232
 
 The code works on the presumption that all the predicted measurements for a plane are to be implemented on the other plane ( e.g. Sn-nTr distance measured onto the nCor_line, etc.) and start at the intersection of the two lines, the nasion. 
 As Ridel et al. 2018 warns about the incompleteness of their prediction with the left and right alare, the estimated dimension can be visualised, but the predicted points are NOT to be compared to the true soft tissue landmarks for error!
-Two widdows will popu upo when running the script: 1)  **Facial landmark prediction** where you can choose which population-specific landmark estimation regression to use and 2) **Prediction Set manager** where all the predicted landmark sets are documented.
+Two windows will pop up when running the script: 1)  **Facial landmark prediction** where you can choose which population-specific landmark estimation regression to use and 2) **Prediction Set manager** where all the predicted landmark sets are documented.
 
 When you are happy with every soft tissue landmark you wish to predict, their population-specific and type of regression, click the button **Create New Prediction Set** and see how this appears in the environment as well as the manager window. 
 To reduce clutter, the **Remove helper lines** button deleted all the reference lines used in the predictions. 
