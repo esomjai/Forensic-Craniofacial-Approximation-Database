@@ -1,4 +1,4 @@
-# The Ridel et al. 2018 [^2] method (inspired by Lee et al. 2014)[^3]
+[Ridel_hard_tissue.mrk.json](https://github.com/user-attachments/files/20970622/Ridel_hard_tissue.mrk.json)# The Ridel et al. 2018 [^2] method (inspired by Lee et al. 2014)[^3]
 
 For reference code snippets and insight for how 3D Slicer works, please refer to the official 3D Slicer webpage [^1]. 
 
@@ -28,7 +28,7 @@ Lee et al. (2014)[^3] report higher precision with measurements using the natura
 
 ### Landmarks in this guide (for prediction of soft tissues)
 
-[Ridel_hard_tissue.mrk.json](https://github.com/user-attachments/files/20793012/Ridel_hard_tissue.mrk.json)
+[Ridel_hard_tissue.mrk.json](https://github.com/user-attachments/files/20970624/Ridel_hard_tissue.mrk.json)
 
 
 | Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
@@ -1184,8 +1184,9 @@ predictionDialog = runPredictionTool()
 </details>
 
 ### Measuring the prediction errors
-For the following code to work, please place the soft tissue landmarks on the model. These are stored in
-[Ridel_soft_tissue.mrk.json](https://github.com/user-attachments/files/20868874/Ridel_soft_tissue.mrk.json). The script below connects all the prediction set landmarks with the true landmark, measuring the distance between them and creates these green lines calling the "error_{predicted lmrk name}". 
+For the following code to work, please place the soft tissue landmarks on the model. These are stored in [Ridel_soft_tissue.mrk.json](https://github.com/user-attachments/files/20970625/Ridel_soft_tissue.mrk.json)
+
+ The script below connects all the prediction set landmarks with the true landmark, measuring the distance between them and creates these green lines calling the "error_{predicted lmrk name}". 
 
 |Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
 |---|-----|--------|--------------|---------------------------------------------------------------------------------------------------------|------------|
