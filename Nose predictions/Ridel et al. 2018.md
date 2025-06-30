@@ -131,6 +131,7 @@ def create_orthogonal_planes():
 # Run the function
 create_orthogonal_planes()
 ```
+![1](https://github.com/user-attachments/assets/3dc16e0c-2fdc-41d1-bd0f-e714a98bb729)
 
 
 </details>
@@ -252,6 +253,7 @@ def create_anatomical_planes():
 # Run the function
 create_anatomical_planes()
 ```
+![Picture2](https://github.com/user-attachments/assets/698b1605-b7f7-4f04-8027-dcf1e4cec651)
 
 
 </details>
@@ -268,6 +270,9 @@ To apply the original regression equations by Ridel et al (2018), only 4 hard ti
 | 🔵 Nasal bone length     | nTr    | rhiTr   |
 | 🔵 Nasal bone projection | nCor   | rhiCor  |
 | Nasal bone angle (°) |   apex -n; rhi-n elongated, nTr |   |  |
+
+![4](https://github.com/user-attachments/assets/2c718449-8413-456e-9c0a-d23de7291c86)
+
 
 <details>
 <summary> Create the hard tissue measurements </summary>
@@ -506,6 +511,17 @@ nTr_line = createIntersectionLine("MSP", "nTr", "Ridel_hard_tissue", nasionIndex
 #
 ```
 
+Nasal bone length
+<img src="https://github.com/user-attachments/assets/e57cf57e-4392-44d5-b577-834343ade37c" width="500">
+
+Nasal bone projection
+<img src="https://github.com/user-attachments/assets/a0618722-524e-4f47-8cef-9697091fbb2e" width="500">
+
+Nasal height
+<img src="https://github.com/user-attachments/assets/7cfac638-8a5d-4009-9656-4f40a5b6fbb5" width="500">
+
+Nasal width
+<img src="https://github.com/user-attachments/assets/c8167f46-a390-4c7b-8aeb-8e866738fd1a" width="500">
 
 </details>
 
@@ -520,6 +536,12 @@ Two windows will pop up when running the script: 1)  **Facial landmark predictio
 
 When you are happy with every soft tissue landmark you wish to predict, their population-specific and type of regression, click the button **Create New Prediction Set** and see how this appears in the environment as well as the manager window. 
 To reduce clutter, the **Remove helper lines** button deleted all the reference lines used in the predictions. 
+
+
+What to expect when running the GUI:
+
+https://github.com/user-attachments/assets/dcb003b2-4986-47e3-80d1-a8bc08637034
+
 
 
 <details>
@@ -1183,6 +1205,19 @@ predictionDialog = runPredictionTool()
 
 </details>
 
+To explain the naming convention of the predicted soft tissue points, take 
+**Pn_WSA_nh_WSA_nbp** 
+
+as the example: 
+
+ - Pn {pronasale}
+
+ - WSA {equation for the White South African population}
+
+ - nh {equation featuring _nasal height_  **only** was used for calculating distance to nTr  & applied to nCor}
+
+ - nbp {equation featuring _nasal bone projection_ **only** was used for calculating distance to nCor was used & applied to nTr}
+
 ### Measuring the prediction errors
 For the following code to work, please place the soft tissue landmarks on the model. These are stored in [Ridel_soft_tissue.mrk.json](https://github.com/user-attachments/files/20970625/Ridel_soft_tissue.mrk.json)
 
@@ -1195,6 +1230,7 @@ For the following code to work, please place the soft tissue landmarks on the mo
 | 3 | 4  | al'L   | left alare         | The most lateral point on the left nasal ala.                                                            |   Buikstra (1994)[^12]; Kolar (1997)[^10]; Caple & Stephan (2016)[^5]         |
 | 4 | 5  | al'R   | right alare        | The most lateral point on the right nasal ala.                                                           |    Buikstra (1994)[^12]; Kolar (1997)[^10]; Caple & Stephan (2016)[^5]        |
 
+![error](https://github.com/user-attachments/assets/67fe1868-4a2c-4d91-8491-0a07bb325d82)
 
 
 <details>
@@ -1280,20 +1316,8 @@ for orig_label, pred_list in paired_landmarks.items():
 print("\nAll green, thin error lines are created and named as error_{predicted_point_name}!")
 ```
 
+
 </details>
-
-To explain the naming convention of the predicted soft tissue points, take 
-**Pn_WSA_nh_WSA_nbp** 
-
-as the example: 
-
-Pn {pronasale}
-
-WSA {equation for the White South African population}
-
-nh {equation featuring _nasal height_  **only** was used for calculating distance to nTr  & applied to nCor}
-
-nbp {equation featuring _nasal bone projection_ **only** was used for calculating distance to nCor was used & applied to nTr}
 
 
 
