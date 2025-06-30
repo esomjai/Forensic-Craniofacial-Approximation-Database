@@ -1352,7 +1352,7 @@ What can you expect as the outputs from the previous codes? We deleted a few ext
 
 #### Research idea
 
-It may be worth implementing the coordinate system mentioned by Thitiorul et al. 2020 to this method as the nasion is the central landmark in this method, and run analysis on the individual coordinates to see it these landmarks have significant correlations and/or predictive power to estimate soft tissue landmarks. 
+It may be worth implementing the coordinate system mentioned by Thitiorul et al. 2020[^14] to this method as the nasion is the central landmark in this method, and run analysis on the individual coordinates to see it these landmarks have significant correlations and/or predictive power to estimate soft tissue landmarks. You can check out the tutorial for the original method [here](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul2020.md)
 
 # Bibliography
 
@@ -1369,6 +1369,9 @@ It may be worth implementing the coordinate system mentioned by Thitiorul et al.
 [^11]: Farkas, L. G. (1994). Anthropometry of the Head and Face, Lippincott Williams & Wilkins.	
 [^12]: Buikstra, J. E. and D. H. Ubelaker (1994). Standards for data collection from human skeletal remains. Fayetteville: Arkansas.
 [^13]: Kim, D.-H., et al. (2021). "Application of nasal profile estimation methods for Korean population." Legal Medicine 48: 101823.
+[^14]: Thitiorul, S., et al. (2020). "Three-Dimensional Prediction of the Nose for Facial Approximation in a Thai Population." J Forensic Sci 65(3): 707-714.
+
+
 
 
 
