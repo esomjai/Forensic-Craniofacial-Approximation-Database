@@ -46,49 +46,53 @@ The measurements in italics are examples of pseudo/secondary measurements where 
 ### Code to copy linear measurements
 
 ```python
-def createMeasurements():
-  for nodeName in []:
-    lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", nodeName)
-    lineNode.CreateDefaultDisplayNodes()
-    dn = lineNode.GetDisplayNode()
-    # Use crosshair glyph to allow more accurate point placement
-    dn.SetGlyphTypeFromString("CrossDot2D")
-    # Hide measurement result while markup up
-    lineNode.GetMeasurement('length').SetEnabled(False)
-
-shortcut1 = qt.QShortcut(slicer.util.mainWindow())
-shortcut1.setKey(qt.QKeySequence("Ctrl+n"))
-shortcut1.connect('activated()', createMeasurements)
-
 def copyLineMeasurementsToClipboard():
   measurements = []
   # Collect all line measurements from the scene
-  lineNodes = getNodesByClass('vtkMRMLMarkupsLineNode')
+  lineNodes = slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode')
+  print(f"Found {len(lineNodes)} line nodes")
+  
   for lineNode in lineNodes:
-    if lineNode.GetNumberOfDefinedControlPoints() < 2:
-      # incomplete line, skip it
-      continue
-    # Get node filename that the length was measured on
-    try:
-      volumeNode = slicer.mrmlScene.GetNodeByID(lineNode.GetNthControlPointAssociatedNodeID(0))
-      imagePath = volumeNode.GetStorageNode().GetFileName()
-    except:
-      imagePath = '(unknown)'
-    # Get line node n
+    # Get line node name
     measurementName = lineNode.GetName()
-    # Get length measurement
-    lineNode.GetMeasurement('length').SetEnabled(True)
-    length = str(lineNode.GetMeasurement('length').GetValue())
+    
+    # Skip incomplete lines
+    if lineNode.GetNumberOfControlPoints() < 2:
+      print(f"Skipping incomplete line: {measurementName}")
+      continue
+      
+    # Calculate length manually (works on ANY line)
+    p1 = [0, 0, 0]
+    p2 = [0, 0, 0]
+    lineNode.GetNthControlPointPosition(0, p1)
+    lineNode.GetNthControlPointPosition(1, p2)
+    import numpy as np
+    length = np.sqrt((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2 + (p2[2]-p1[2])**2)
+    
+    # Get node filename that the length was measured on (if exists)
+    imageName = "(none)"
+    try:
+      associatedNodeID = lineNode.GetNthControlPointAssociatedNodeID(0)
+      if associatedNodeID:
+        volumeNode = slicer.mrmlScene.GetNodeByID(associatedNodeID)
+        if volumeNode and volumeNode.GetStorageNode():
+          imageName = volumeNode.GetName()
+    except:
+      pass
+    
     # Add fields to results
-    measurements.append('\t'.join([imagePath, measurementName, length]))
+    measurements.append('\t'.join([imageName, measurementName, f"{length:.2f}"]))
+  
   # Copy all measurements to clipboard (to be pasted into Excel)
   outputText = "\n".join(measurements) + "\n"
   slicer.app.clipboard().setText(outputText)
   slicer.util.delayDisplay(f"Copied {len(measurements)} length measurements to the clipboard.")
 
-shortcut2 = qt.QShortcut(slicer.util.mainWindow())
-shortcut2.setKey(qt.QKeySequence("Ctrl+m"))
-shortcut2.connect('activated()', copyLineMeasurementsToClipboard)
+# Set up the shortcut
+shortcut = qt.QShortcut(slicer.util.mainWindow())
+shortcut.setKey(qt.QKeySequence("Ctrl+m"))
+shortcut.connect('activated()', copyLineMeasurementsToClipboard)
+print("Shortcut Ctrl+M configured for copying measurements to clipboard")
 ```
 
 ###  Code to copy angle measurements
@@ -99,31 +103,70 @@ After copy+pasting this into the python console in Slicer and pressing Enter, th
 ```python
 def copyAngleMeasurementsToClipboard():
   measurements = []
-  # Collect all line measurements from the scene
-  angleNodes = getNodesByClass('vtkMRMLMarkupsAngleNode')
+  # Collect all angle measurements from the scene
+  angleNodes = slicer.util.getNodesByClass('vtkMRMLMarkupsAngleNode')
+  print(f"Found {len(angleNodes)} angle nodes")
+  
   for angleNode in angleNodes:
-    if angleNode.GetNumberOfDefinedControlPoints() < 3:
-      # incomplete line, skip it
-      continue
-    # Get node filename that the length was measured on
-    try:
-      volumeNode = slicer.mrmlScene.GetNodeByID(angleNode.GetNthControlPointAssociatedNodeID(0))
-      imagePath = volumeNode.GetStorageNode().GetFileName()
-    except:
-      imagePath = '(unknown)'
-    # Get angle node n
+    # Get angle node name
     measurementName = angleNode.GetName()
-    # Get angle measurement
-    angleNode.GetMeasurement('angle').SetEnabled(True)
-    angle = str(angleNode.GetMeasurement('angle').GetValue())
+    
+    # Skip incomplete angles
+    if angleNode.GetNumberOfControlPoints() < 3:
+      print(f"Skipping incomplete angle: {measurementName}")
+      continue
+      
+    # Calculate angle manually (works on ANY angle node)
+    p1 = [0, 0, 0]
+    p2 = [0, 0, 0]
+    p3 = [0, 0, 0]
+    angleNode.GetNthControlPointPosition(0, p1)
+    angleNode.GetNthControlPointPosition(1, p2)
+    angleNode.GetNthControlPointPosition(2, p3)
+    
+    import numpy as np
+    # Create vectors from middle point to endpoints
+    v1 = np.array([p1[0]-p2[0], p1[1]-p2[1], p1[2]-p2[2]])
+    v2 = np.array([p3[0]-p2[0], p3[1]-p2[1], p3[2]-p2[2]])
+    
+    # Normalize vectors
+    v1_norm = np.linalg.norm(v1)
+    v2_norm = np.linalg.norm(v2)
+    
+    if v1_norm > 0 and v2_norm > 0:
+      v1 = v1 / v1_norm
+      v2 = v2 / v2_norm
+      
+      # Calculate angle in degrees
+      dot_product = np.clip(np.dot(v1, v2), -1.0, 1.0)
+      angle_radians = np.arccos(dot_product)
+      angle_degrees = np.degrees(angle_radians)
+    else:
+      angle_degrees = 0
+      print(f"Warning: Zero-length vector in angle {measurementName}")
+    
+    # Get node filename that the angle was measured on (if exists)
+    imageName = "(none)"
+    try:
+      associatedNodeID = angleNode.GetNthControlPointAssociatedNodeID(0)
+      if associatedNodeID:
+        volumeNode = slicer.mrmlScene.GetNodeByID(associatedNodeID)
+        if volumeNode and volumeNode.GetStorageNode():
+          imageName = volumeNode.GetName()
+    except:
+      pass
+    
     # Add fields to results
-    measurements.append('\t'.join([imagePath, measurementName, angle]))
+    measurements.append('\t'.join([imageName, measurementName, f"{angle_degrees:.2f}"]))
+  
   # Copy all measurements to clipboard (to be pasted into Excel)
   outputText = "\n".join(measurements) + "\n"
   slicer.app.clipboard().setText(outputText)
   slicer.util.delayDisplay(f"Copied {len(measurements)} angle measurements to the clipboard.")
 
+# Set up the shortcut
 shortcut2 = qt.QShortcut(slicer.util.mainWindow())
 shortcut2.setKey(qt.QKeySequence("Ctrl+t"))
-shortcut2.connect( 'activated()', copyAngleMeasurementsToClipboard)
+shortcut2.connect('activated()', copyAngleMeasurementsToClipboard)
+print("Shortcut Ctrl+T configured for copying angle measurements to clipboard")
 ```
