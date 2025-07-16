@@ -2,6 +2,18 @@
 
 ### This document contains instructions for: 
 
+
+- [Hard tissue landmarks (for prediction of soft tissues)](#landmarks-in-this-guide-for-prediction-of-soft-tissues)
+- [Additional soft tissue landmarks (for replicating the full method)](#additional-soft-tissue-landmarks-in-this-guide-for-replicating-the-full-method-not-necessary-for-only-estimation)
+- [Illustration of the method](#illustration-of-the-method)
+-  [Creating the midsagittal plane (MSP)](#creating-the-midsagittal-plane-msp)
+- [Hard tissue measurements and guides](#hard-tissue-measurements-and-guides)
+- [Graphic User Interface predicting the soft tissue landmarks](#predicting-the-soft-tissue-landmarks)
+- [Measuring the prediction errors](#measuring-the-prediction-errors)
+- [Output](#output)
+- [Research idea](#research-idea)
+- [Bibliography](#bibliography)
+
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide was taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
 
