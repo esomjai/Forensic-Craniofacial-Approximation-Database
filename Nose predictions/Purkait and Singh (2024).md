@@ -1,4 +1,4 @@
-#The Purkait and Singh (2024) method
+# The Purkait and Singh (2024) method
 
 ### This document contains instructions for: 
 
