@@ -24,8 +24,8 @@
 > [!IMPORTANT]  
 The original paper uses a "backward" projected hard sn described as: 
 _"(...) measured from the soft ‘sn’ point to the maxillary bone (bony sn) parallel to the FH plane"_
-This in not feasible to use if only hard tissue is available to reconstruct - therefore the closest hard tissue landmark **subspinale or ss** defined by  Howells (1937)[^4]; Howells (1974)[^5]; Caple & Stephan (2016)[^5]Caple & Stephan (2016)[^3] was implemented.
-The instructions and codes for the full recreation of the study will revert back to the original placement of this landmark, as described by Purkait and Singh (2024)[^1] via a guiding line. 
+This in not feasible to use if only hard tissue is available to reconstruct - therefore the closest hard tissue landmark **subspinale or ss** defined by  Howells (1937)[^4]; Howells (1974)[^5]; Caple & Stephan (2016)[^5]Caple & Stephan (2016)[^3] was implemented. The prediction of this landmark will be excluded from this guide and only the **pronasale** will be described.
+
 
 
 | Position in code | Position in file | Name in file   | Landmark name | Definition                                                                                                     | Defined by     |
@@ -474,27 +474,22 @@ We will consider distances defined by the statistically significant equations in
 
 | Predicted Distance | Regression Equation | Biological Sex | Note
 |--------------------|---------------------|----------------|---------|
-| bony n-sn | 4.385 + 0.988 × (baseline) | male |
+| bony n-ss | 4.385 + 0.988 × (baseline) | male | excluded (see in summary)
 | soft n-nt | 31.76 + 1.009 × (n to rhi) | male | excluded (see above)
 | prn baseline | 19.544 + 0.299 × (rhi to baseline) | male | 
 | alL-alR | 25.256 + 0.55 × (AB) | male | not relevant for prediction from hard tissue |
 | nbL-nbR | 33.433 + 0.362 × (CD) | male |  not relevant for prediction from hard tissue |
-| bony n-sn | 7.673 + 0.909 × (baseline) | female |
+| bony n-ss | 7.673 + 0.909 × (baseline) | female | excluded (see in summary)
 | soft n-nt | 33.23 + 0.768 × (n to rhi) | female | excluded (see above) |
 | prn baseline | 15.056 + 0.622 × (rhi to baseline) | female |  
 
-Left with two equations for each biological sex and the distances they provide, we will draw two circles each (with an imaginary pair of compassess). 
-
-- One arm of the compass is placed at the hard tissue **nasion**, opened to the distance given by the equation for **bony n- sn** and a circle is drawn (_pred_sn_circle_{sex}_). In theory, it can have two intersection points with the line **st sn guide**, but only the more anterior makes sense anatomically, so that one is chosen by the script. We now created the predicted sn as defined by the regression (as opposed to the previous method with a manual distance of a soft tissue thickness measurement regardless of sex, stored in _pred_FSTT_sn_!)
-
-
+Left with an equation for each biological sex and the distances they provide, the next step is : 
 - The equations featuring the baseline calculate the perpendicular distance between the **baseline** and the **pronasale**. Because Fig. 1 in Purkait & Singh, 2024[^2] shows a line starting from the ANS, perpendicular to the baseline connecting to the pronasale, we create the ANS perpendicular line. The "origin" from where we can apply the distance estimated by the equation will be where the baseline intersects the ANS perpendicular line, anteriorly. This is how we get the **pred_prn**. 
 
 <details>
 <summary> GUI for prediction </summary>
 
 ``` python
-
 import numpy as np
 import slicer
 import math
@@ -505,14 +500,12 @@ class NasalPredictionWidget(qt.QWidget):
         super().__init__()
         self.setup_ui()
         self.connect_signals()
-        # Store the regression coefficients for easy access
+        # Store only the pronasale regression coefficients
         self.regression_coefficients = {
             'male': {
-                'bony_n_sn': (4.385, 0.988),  # (intercept, coefficient)
                 'prn_baseline': (19.544, 0.299)
             },
             'female': {
-                'bony_n_sn': (7.673, 0.909),
                 'prn_baseline': (15.056, 0.622)
             }
         }
@@ -522,7 +515,7 @@ class NasalPredictionWidget(qt.QWidget):
         layout = qt.QVBoxLayout(self)
         
         # Add title
-        title_label = qt.QLabel("<h2>Nasal Prediction Tool</h2>")
+        title_label = qt.QLabel("<h2>Pronasale Prediction Tool</h2>")
         title_label.alignment = qt.Qt.AlignCenter
         layout.addWidget(title_label)
         
@@ -533,11 +526,6 @@ class NasalPredictionWidget(qt.QWidget):
         self.sex_combo = qt.QComboBox()
         self.sex_combo.addItems(["Female", "Male"])
         form_layout.addRow("Biological Sex:", self.sex_combo)
-        
-        # Create checkbox for showing circles
-        self.show_circles_checkbox = qt.QCheckBox()
-        self.show_circles_checkbox.checked = True
-        form_layout.addRow("Show Circle Visualization:", self.show_circles_checkbox)
         
         # Create checkbox for showing lines
         self.show_lines_checkbox = qt.QCheckBox()
@@ -554,13 +542,11 @@ class NasalPredictionWidget(qt.QWidget):
           <li>PS_hard_tissue</li>
           <li>baseline</li>
           <li>rhi to baseline</li>
-          <li>st sn guide</li>
           <li>MSP</li>
         </ul>
         <br>
         <b>Points that will be created:</b>
         <ul>
-          <li>pred_sn_[sex] - Predicted subnasale point</li>
           <li>pred_prn_[sex] - Predicted pronasale point</li>
         </ul>
         <br>
@@ -581,8 +567,8 @@ class NasalPredictionWidget(qt.QWidget):
         layout.addWidget(self.status_label)
         
         # Set the window properties
-        self.setWindowTitle("Nasal Prediction Tool")
-        self.resize(400, 420)
+        self.setWindowTitle("Pronasale Prediction Tool")
+        self.resize(400, 400)
     
     def connect_signals(self):
         self.run_button.clicked.connect(self.run_prediction)
@@ -595,13 +581,11 @@ class NasalPredictionWidget(qt.QWidget):
         try:
             # Get the selected sex
             selected_sex = "male" if self.sex_combo.currentText == "Male" else "female"
-            show_circles = self.show_circles_checkbox.checked
             show_lines = self.show_lines_checkbox.checked
             
             # Run the prediction with the selected options
             self.create_nasal_prediction(
                 selected_sex, 
-                show_circles, 
                 show_lines
             )
             
@@ -620,20 +604,17 @@ class NasalPredictionWidget(qt.QWidget):
                                      "- PS_hard_tissue\n" +
                                      "- baseline\n" +
                                      "- rhi to baseline\n" +
-                                     "- st sn guide\n" +
                                      "- MSP")
             error_box.setWindowTitle("Prediction Error")
             error_box.exec_()
     
-    # Main function to create the nasal prediction points
-    def create_nasal_prediction(self, sex, show_circles, show_lines):
+    # Main function to create the pronasale prediction point
+    def create_nasal_prediction(self, sex, show_lines):
         # Get the regression coefficients for the selected sex
         coeffs = self.regression_coefficients[sex]
         
         # Output what we're doing
-        print(f"Creating nasal prediction points for {sex}...")
-        if show_circles:
-            print("Circle visualization is enabled")
+        print(f"Creating pronasale prediction point for {sex}...")
         if show_lines:
             print("Line visualization is enabled")
         
@@ -643,7 +624,6 @@ class NasalPredictionWidget(qt.QWidget):
             hardTissueNode = slicer.util.getNode('PS_hard_tissue')
             baselineNode = slicer.util.getNode('baseline')
             rhiToBaselineNode = slicer.util.getNode('rhi to baseline')
-            stSnGuideNode = slicer.util.getNode('st sn guide')
             mspNode = slicer.util.getNode('MSP')
             
             # Use sex-specific node name
@@ -681,16 +661,6 @@ class NasalPredictionWidget(qt.QWidget):
                 msp_normal = msp_normal / np.linalg.norm(msp_normal)
             else:
                 raise ValueError("MSP doesn't have enough points")
-
-        # MSP basis vectors
-        if abs(np.dot(msp_normal, [0, 1, 0])) < 0.9:
-            temp_vec = np.array([0, 1, 0])
-        else:
-            temp_vec = np.array([0, 0, 1])
-        msp_basis1 = np.cross(msp_normal, temp_vec)
-        msp_basis1 = msp_basis1 / np.linalg.norm(msp_basis1)
-        msp_basis2 = np.cross(msp_normal, msp_basis1)
-        msp_basis2 = msp_basis2 / np.linalg.norm(msp_basis2)
 
         # Find ANS point
         ans_found = False
@@ -731,56 +701,6 @@ class NasalPredictionWidget(qt.QWidget):
                 [0.0, 1.0, 1.0]
             )
 
-        # pred_sn
-        baseline_length = self.get_line_length(baselineNode)
-        n_point = self.get_point(hardTissueNode, 0)
-        
-        # Get the appropriate coefficients and calculate the distance
-        intercept, coeff = coeffs['bony_n_sn']
-        pred_sn_distance = intercept + coeff * baseline_length
-        print(f"Using {sex} equation for pred_sn: {intercept} + {coeff} * {baseline_length} = {pred_sn_distance}")
-        
-        sn_guide_start = [0, 0, 0]
-        sn_guide_end = [0, 0, 0]
-        stSnGuideNode.GetNthControlPointPosition(0, sn_guide_start)
-        stSnGuideNode.GetNthControlPointPosition(1, sn_guide_end)
-        sn_guide_start = np.array(sn_guide_start)
-        sn_guide_end = np.array(sn_guide_end)
-        
-        # Draw pred_sn circle if enabled with sex-specific name
-        if show_circles:
-            self.draw_circle(
-                n_point, 
-                pred_sn_distance, 
-                msp_basis1, 
-                msp_basis2, 
-                f"pred_sn_circle_{sex}"
-            )
-            
-        pred_sn_point, error = self.find_circle_line_intersection_in_msp(
-            n_point, 
-            pred_sn_distance, 
-            sn_guide_start, 
-            sn_guide_end,
-            f"pred_sn_{sex}"
-        )
-        if error:
-            raise ValueError(f"pred_sn calculation failed with error: {error}")
-            
-        # Use sex-specific line name
-        if show_lines:
-            self.create_line(
-                n_point, 
-                pred_sn_point, 
-                f"n to pred_sn_{sex}", 
-                [0.8, 0.8, 0.0], 
-                [1.0, 0.7, 0.0]
-            )
-            
-        # Add point with sex-specific label
-        pred_soft_tissue_node.AddControlPoint(pred_sn_point.tolist(), f"pred_sn_{sex}")
-        pred_soft_tissue_node.SetNthControlPointDescription(0, f"Predicted subnasale point ({sex})")
-
         # pred_prn
         rhi_to_baseline_length = self.get_line_length(rhiToBaselineNode)
         
@@ -803,17 +723,7 @@ class NasalPredictionWidget(qt.QWidget):
             
         # Add point with sex-specific label
         pred_soft_tissue_node.AddControlPoint(pred_prn_point.tolist(), f"pred_prn_{sex}")
-        pred_soft_tissue_node.SetNthControlPointDescription(1, f"Predicted pronasale point ({sex})")
-
-        # Create a line connecting the two prediction points with sex-specific name
-        if show_lines:
-            self.create_line(
-                pred_prn_point, 
-                pred_sn_point, 
-                f"pred_prn to pred_sn_{sex}", 
-                [0.8, 0.0, 0.8], 
-                [1.0, 0.0, 1.0]
-            )
+        pred_soft_tissue_node.SetNthControlPointDescription(0, f"Predicted pronasale point ({sex})")
 
         # Set different colors based on sex
         displayNode = pred_soft_tissue_node.GetDisplayNode()
@@ -832,7 +742,7 @@ class NasalPredictionWidget(qt.QWidget):
             displayNode.SetGlyphType(1)
             displayNode.SetSliceProjection(True)
 
-        print(f"\n✅ DONE! Created nasal prediction points for {sex}.")
+        print(f"\n✅ DONE! Created pronasale prediction point for {sex}.")
 
     # Helper functions
     def get_point(self, node, index):
@@ -846,31 +756,6 @@ class NasalPredictionWidget(qt.QWidget):
         node.GetNthControlPointPosition(0, start)
         node.GetNthControlPointPosition(1, end)
         return np.linalg.norm(np.array(end) - np.array(start))
-
-    def find_circle_line_intersection_in_msp(self, center, radius, line_pt1, line_pt2, debug_name=""):
-        center_to_start = line_pt1 - center
-        line_vec = line_pt2 - line_pt1
-        line_length = np.linalg.norm(line_vec)
-        line_unit = line_vec / line_length
-        a = np.dot(line_unit, line_unit)
-        b = 2 * np.dot(line_unit, center_to_start)
-        c = np.dot(center_to_start, center_to_start) - radius**2
-        discriminant = b**2 - 4*a*c
-        if discriminant < 0:
-            return None, "NO_INTERSECTION"
-        t1 = (-b + math.sqrt(discriminant)) / (2*a)
-        t2 = (-b - math.sqrt(discriminant)) / (2*a)
-        intersect1 = line_pt1 + t1 * line_unit
-        intersect2 = line_pt1 + t2 * line_unit
-        in_segment1 = (0 <= t1 <= line_length)
-        in_segment2 = (0 <= t2 <= line_length)
-        if not in_segment1 and not in_segment2:
-            return None, "OUT_OF_SEGMENT"
-        if in_segment1 and in_segment2:
-            chosen_point = intersect1 if t1 > t2 else intersect2
-        else:
-            chosen_point = intersect1 if in_segment1 else intersect2
-        return chosen_point, None
 
     def create_line(self, p1, p2, name, color=[1.0, 1.0, 1.0], selected_color=[1.0, 0.5, 0.0], thickness=0.25):
         # Check if line already exists and remove it
@@ -887,27 +772,6 @@ class NasalPredictionWidget(qt.QWidget):
             display_node.SetSelectedColor(*selected_color)
             display_node.SetLineThickness(thickness)
         return line_node
-
-    def draw_circle(self, center, radius, basis1, basis2, name):
-        """Draw a thin forest green circle for visualisation in Slicer."""
-        # Check if circle already exists and remove it
-        existing_node = slicer.util.getFirstNodeByName(name)
-        if existing_node:
-            slicer.mrmlScene.RemoveNode(existing_node)
-            
-        curve = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsClosedCurveNode', name)
-        n_points = 60
-        for i in range(n_points):
-            angle = 2 * math.pi * i / n_points
-            pt = center + radius * (math.cos(angle) * basis1 + math.sin(angle) * basis2)
-            curve.AddControlPoint(pt)
-        disp = curve.GetDisplayNode()
-        if disp:
-            disp.SetColor(0.13, 0.55, 0.13)        # Forest green (unselected)
-            disp.SetSelectedColor(0.13, 0.55, 0.13) # Forest green (selected)
-            disp.SetLineThickness(0.2)             # Thin line
-            disp.SetOpacity(0.7)
-        return curve
 
 # Create and show the dialog
 widget = NasalPredictionWidget()
@@ -962,7 +826,7 @@ def create_red_line(p1, p2, name):
         disp.SetLineThickness(0.2)
     return node
 
-print("Creating error lines for all predictions...")
+print("Creating error lines for pronasale predictions...")
 
 # Try to get all the required nodes
 try:
@@ -975,29 +839,18 @@ try:
     # Get the female prediction node
     pred_soft_tissue_female = slicer.util.getNode('pred_soft_tissue_female')
     
-    # Get the FSTT prediction node
-    pred_fstt_sn = slicer.util.getNode('pred_FSTT_sn')
-    
-    missing_nodes = []
-    if not ps_soft_tissue:
-        missing_nodes.append("PS_soft_tissue")
-    
-    # Only warn about other nodes if they're missing, don't stop execution
-    nodes_to_check = {
-        'pred_soft_tissue_male': pred_soft_tissue_male,
-        'pred_soft_tissue_female': pred_soft_tissue_female,
-        'pred_FSTT_sn': pred_fstt_sn
-    }
-    
-    for name, node in nodes_to_check.items():
-        if not node:
-            missing_nodes.append(name)
-            print(f"⚠️ Warning: {name} not found. Error lines using this node will be skipped.")
-    
+    # Check for ground truth node
     if not ps_soft_tissue:
         print("❌ Error: PS_soft_tissue node is missing. This node contains the ground truth landmarks.")
         raise ValueError("Missing PS_soft_tissue node")
         
+    # Only warn about prediction nodes if they're missing
+    if not pred_soft_tissue_male:
+        print("⚠️ Warning: 'pred_soft_tissue_male' not found. Male error lines will be skipped.")
+    
+    if not pred_soft_tissue_female:
+        print("⚠️ Warning: 'pred_soft_tissue_female' not found. Female error lines will be skipped.")
+    
 except Exception as e:
     print(f"❌ Error finding nodes: {e}")
     raise
@@ -1005,44 +858,17 @@ except Exception as e:
 # Define all the connections we want to make
 connections = []
 
-# MALE PREDICTIONS TO GROUND TRUTH
+# MALE PREDICTION TO GROUND TRUTH (only pronasale)
 if pred_soft_tissue_male:
-    connections.extend([
-        # Male sn prediction to ground truth
-        (pred_soft_tissue_male, "pred_sn_male", ps_soft_tissue, "sn'", "error_sn_male"),
-        # Male prn prediction to ground truth
-        (pred_soft_tissue_male, "pred_prn_male", ps_soft_tissue, "prn", "error_prn_male"),
-    ])
+    connections.append(
+        (pred_soft_tissue_male, "pred_prn_male", ps_soft_tissue, "prn", "error_prn_male")
+    )
 
-# FEMALE PREDICTIONS TO GROUND TRUTH
+# FEMALE PREDICTION TO GROUND TRUTH (only pronasale)
 if pred_soft_tissue_female:
-    connections.extend([
-        # Female sn prediction to ground truth
-        (pred_soft_tissue_female, "pred_sn_female", ps_soft_tissue, "sn'", "error_sn_female"),
-        # Female prn prediction to ground truth
-        (pred_soft_tissue_female, "pred_prn_female", ps_soft_tissue, "prn", "error_prn_female"),
-    ])
-
-# FSTT PREDICTIONS TO GROUND TRUTH
-if pred_fstt_sn:
-    connections.extend([
-        # FSTT sn prediction to ground truth
-        (pred_fstt_sn, "sn'_FSTT", ps_soft_tissue, "sn'", "error_FSTT_sn"),
-    ])
-
-# MALE PREDICTIONS TO FSTT
-if pred_soft_tissue_male and pred_fstt_sn:
-    connections.extend([
-        # Male sn prediction to FSTT sn
-        (pred_soft_tissue_male, "pred_sn_male", pred_fstt_sn, "sn'_FSTT", "error_sn_male_to_FSTT"),
-    ])
-
-# FEMALE PREDICTIONS TO FSTT
-if pred_soft_tissue_female and pred_fstt_sn:
-    connections.extend([
-        # Female sn prediction to FSTT sn
-        (pred_soft_tissue_female, "pred_sn_female", pred_fstt_sn, "sn'_FSTT", "error_sn_female_to_FSTT"),
-    ])
+    connections.append(
+        (pred_soft_tissue_female, "pred_prn_female", ps_soft_tissue, "prn", "error_prn_female")
+    )
 
 # Create all the connection lines
 created_lines = 0
@@ -1052,8 +878,11 @@ for source_node, source_label, target_node, target_label, line_name in connectio
     
     if source_point is not None and target_point is not None:
         create_red_line(source_point, target_point, line_name)
+        
+        # Calculate and print the error distance
+        error_distance = np.linalg.norm(source_point - target_point)
+        print(f"✅ Created red line: {line_name} (Error = {error_distance:.2f} mm)")
         created_lines += 1
-        print(f"✅ Created red line: {line_name}")
     else:
         print(f"❌ Could not create line {line_name} - one or both points missing")
 
