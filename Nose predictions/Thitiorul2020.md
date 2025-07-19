@@ -377,6 +377,75 @@ As a research question, you can compare the predictive power of each of these im
 
 Original prediction regressions by Thitiorul et al. (2020)[^2]
 
+**Midline**
+
+<table>
+  <tr>
+    <th>Landmark</th>
+    <th>Axis</th>
+    <th>Equation</th>
+  </tr>
+  <tr>
+    <td rowspan="2">se'</td>
+    <td>y</td>
+    <td>-0.869 + 0.212 ss_y + 0.139 zy_z - 0.073 ecm_y</td>
+  </tr>
+  <tr>
+    <td>z</td>
+    <td>-1.198 - 1.159 nr_y + 0.691 nr_z - 0.208 iof_y</td>
+  </tr>
+  <tr>
+    <td rowspan="2">npp'</td>
+    <td>y</td>
+    <td>3.182 + 0.271 ss_y + 0.423 nr_y - 0.098 ecm_y</td>
+  </tr>
+  <tr>
+    <td>z</td>
+    <td>5.345 - 0.607 nr_y + 0.840 nr_z</td>
+  </tr>
+  <tr>
+    <td rowspan="2">npa'</td>
+    <td>y</td>
+    <td>0.587 + 0.739 ss_y + 0.109 pr_z + 0.242 zy_x</td>
+  </tr>
+  <tr>
+    <td>z</td>
+    <td>4.315 - 0.371 ss_y + 0.573 ss_z + 0.285 nr_z</td>
+  </tr>
+  <tr>
+    <td rowspan="2">pn'</td>
+    <td>y</td>
+    <td>-2.091 + 0.818 ss_y + 0.152 pr_z + 0.251 zy_x</td>
+  </tr>
+  <tr>
+    <td>z</td>
+    <td>2.095 - 0.288 ss_y + 0.456 ss_z + 0.250 pr_z</td>
+  </tr>
+  <tr>
+    <td rowspan="2">nd'</td>
+    <td>y</td>
+    <td>-2.040 + 0.865 ss_y + 0.120 pr_z + 0.241 zy_x</td>
+  </tr>
+  <tr>
+    <td>z</td>
+    <td>3.626 - 0.392 ss_y + 0.842 ss_z</td>
+  </tr>
+  <tr>
+    <td rowspan="2">sn'</td>
+    <td>y</td>
+    <td>-1.902 + 0.676 ss_y + 0.260 pr_y + 0.198 zy_x</td>
+  </tr>
+  <tr>
+    <td>z</td>
+    <td>6.455 - 0.269 ss_y + 0.551 ss_z + 0.277 pr_z</td>
+  </tr>
+</table>
+
+
+
+**Bilateral**
+
+
 <table>
   <tr>
     <th>Side</th>
