@@ -52,7 +52,18 @@ Landmarks in this guide (for both methods):
 > [!WARNING]
 > Please note that the tutorial shown the "PreDentalSurgery" CT for demonstration purposes only - in research, CTs with all visible features and without any facial operation would be included. 
 
-Illustration of the method: 
+Illustration of the landmarks by Tinotenda Chiyangwa©[^] 
+Credit to 
+
+**Hard tissue**
+
+![Gerasimow1-01-01](https://github.com/user-attachments/assets/37444698-4f4a-46b7-ad47-521142abb4d0)
+
+
+**Soft tissue**
+
+![Gerasimow1-02](https://github.com/user-attachments/assets/1d2cdc7a-00e0-47ec-8943-00a207505d1a)
+
 
 > [!WARNING]
 > Before you proceed, please make sure you completed the following steps: 
@@ -663,3 +674,4 @@ The error measure is featured in the code for the Maltais-Lapointe section, so t
 [^12]: Rynn, C. and C. M. Wilkinson (2006). "Appraisal of traditional and recently proposed relationships between the hard and soft dimensions of the nose in profile." American Journal of Physical Anthropology: The Official Publication of the American Association of Physical Anthropologists 130(3): 364-373.
 [^13]: Rynn, C., et al. (2012). "Relationships between the skull and face." Craniofacial identification. C. W. C. Rynn. Cambridge, Cambridge University Press: 193-202.
 [^14]:Lapointe, G. M., et al. (2016). "Validation of the New Interpretation of Gerasimov's Nasal Projection Method for Forensic Facial Approximation Using CT Data." Journal of Forensic Sciences 61: S193-S200.
+[^15]: Tinotenda Chiyangwa. [LinkedIn](https://www.linkedin.com/in/tinotenda-chiyangwa-9263121a3/), [Instagram](https://www.instagram.com/tino_tenda_arty/?igsh=YnNoMjM2ODRoNG1q#), [Portfolio](https://tinotendachiyangwa.wixsite.com/tino)
