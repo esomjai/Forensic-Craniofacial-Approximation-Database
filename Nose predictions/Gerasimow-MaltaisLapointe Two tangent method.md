@@ -3,6 +3,7 @@
 
 1. - [Literature context](#literature-context)
    - [Summary](#summary)
+   - [Landmarks](#landmark-in-this-guide-for-both-methods))
 2. [INB plane](#inb-plane)
 3. [Gerasimow's method](#gerasimows-method)
    - [Segmentation](#segmentation)
@@ -34,7 +35,7 @@ The method followed here will split into two: the first will be called  **Gerasi
 4. Optionally, connect the predicted nose tip (pronasale) and the actual nose tip to calculate the [error rate](#error-rate). Alternatively, compare the coordinate positions of the two points.
 
 
-Landmarks in this guide (for both methods): 
+### Landmarks in this guide (for both methods): 
 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
@@ -52,7 +53,8 @@ Landmarks in this guide (for both methods):
 > [!WARNING]
 > Please note that the tutorial shown the "PreDentalSurgery" CT for demonstration purposes only - in research, CTs with all visible features and without any facial operation would be included. 
 
-Illustration of the landmarks 
+### Illustration of the landmarks 
+
 Credit to Tinotenda Chiyangwa©[^15] 
 
 **Hard tissue**
