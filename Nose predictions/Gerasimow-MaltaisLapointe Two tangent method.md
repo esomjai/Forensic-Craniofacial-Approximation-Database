@@ -3,7 +3,7 @@
 
 1. - [Literature context](#literature-context)
    - [Summary](#summary)
-   - [Landmarks](#landmark-in-this-guide-for-both-methods))
+   - [Landmarks](#landmark-in-this-guide-for-both-methods)
 2. [INB plane](#inb-plane)
 3. [Gerasimow's method](#gerasimows-method)
    - [Segmentation](#segmentation)
