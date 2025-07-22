@@ -52,12 +52,12 @@ Landmarks in this guide (for both methods):
 > [!WARNING]
 > Please note that the tutorial shown the "PreDentalSurgery" CT for demonstration purposes only - in research, CTs with all visible features and without any facial operation would be included. 
 
-Illustration of the landmarks by Tinotenda Chiyangwa©[^] 
-Credit to 
+Illustration of the landmarks 
+Credit to Tinotenda Chiyangwa©[^15] 
 
 **Hard tissue**
 
-![Gerasimow1-01-01](https://github.com/user-attachments/assets/37444698-4f4a-46b7-ad47-521142abb4d0)
+<img src="https://github.com/user-attachments/assets/37444698-4f4a-46b7-ad47-521142abb4d0" width="800">
 
 
 **Soft tissue**
