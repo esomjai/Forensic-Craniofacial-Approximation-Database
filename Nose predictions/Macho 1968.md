@@ -1,5 +1,8 @@
 # The Compound Method by Macho, 1968[^2]
 
+> [!WARNING]
+> > The method does NOT provide regressions that are applicable in the forensic context as all equations contain age in years. Please only use for data collection a nd further analysis, NOT prediction!
+
 The guide of this method represents Rynn’s (2010)[^8] interpretation of the original method  which was based on Goldhamer’s (1926)[^3] hypothesis by Macho et al. (1986)[^2]. 
 
 The prerequisite to implement this study is to be able to see the sella turcica on the scan you're collecting data on - then allocate the sellion landmarks. Refer to discussion on this specific landmark ([Sellion or Sella points](#sellion-or-sella-points))
@@ -9,7 +12,8 @@ The prerequisite to implement this study is to be able to see the sella turcica 
 
 
 > [!WARNING]
-> This method also follows first two steps mentioned in the “Start here” section – after loading the DICOM file, please re-orient the scan in the Frankfort horizontal plane. Please note that the reference plane in this method (SN plane) will NOT be reoriented to act as the transverse plane as its significance is in the measurements, not landmarking. 
+> This method also follows first two steps mentioned in the “Start here” section – after loading the DICOM file, please re-orient the scan in the Frankfort horizontal plane. Please note that the reference plane in this method (SN plane) will NOT be reoriented to act as the transverse plane as its significance is in the measurements, not landmarking.
+
 
 Steps in this guide 
 - [Background & framework for Sellion](#sellion-or-sella-points)
