@@ -1,7 +1,7 @@
 # The Compound Method by Macho, 1968[^2]
 
 > [!WARNING]
-> > The method does NOT provide regressions that are applicable in the forensic context as all equations contain age in years. Please only use for data collection a nd further analysis, NOT prediction!
+> The method does NOT provide regressions that are applicable in the forensic context as all equations contain age in years. Please only use for data collection a nd further analysis, NOT prediction!
 
 The guide of this method represents Rynn’s (2010)[^8] interpretation of the original method  which was based on Goldhamer’s (1926)[^3] hypothesis by Macho et al. (1986)[^2]. 
 
