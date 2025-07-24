@@ -1,4 +1,4 @@
-[maximum_aperture_width_MAW.mrk.json](https://github.com/user-attachments/files/21412542/maximum_aperture_width_MAW.mrk.json)# Prokopec and Ubelaker, 2002[^2] - The Aesthetic Method
+# Prokopec and Ubelaker, 2002[^2] - The Aesthetic Method
 
 The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2010)[^3].
 The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2010)[^3] also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
@@ -208,10 +208,14 @@ Expected view with all three planes established and extended. Landmarks hidden f
 Rynn et al. (2012) refined the original description from Prokopec and Ubelaker (2002) "4 to 6 equidistant planes" to be constrained to in-between the level of the maximum aperture width and rhinion.  
 
 You will need to switch to the "Bone" model or use the toggle to reveal the hard tissue on the scan for this step. 
-[Download maximum_aperture_width_MAW.mrk.json](https://github.com/user-attachments/files/21412561/maximum_aperture_width_MAW.mrk.json)
+
+[Download maximum_aperture_width_MAW.mrk.json](https://github.com/user-attachments/files/21412671/maximum_aperture_width_MAW.mrk.json)
+
 
 , and drag-and-drop it into the "Markups" environment (click OK on this pop-up - see screenshot below).
-<img src="https://github.com/user-attachments/assets/9962ad54-f710-4e19-86a2-71f10450b18d" width="500">
+<img width="753" height="470" alt="Screenshot 2025-07-24 145513" src="https://github.com/user-attachments/assets/9e9a24e2-9ca7-4966-a632-9c8c795bf969" />
+
+<img src="https://github.com/user-attachments/assets/9e9a24e2-9ca7-4966-a632-9c8c795bf969" width="500">
 
 
 This item will appear on your markups list with "empty endpoints" - that's completely fine, find the 
