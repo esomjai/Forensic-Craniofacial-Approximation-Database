@@ -52,9 +52,18 @@ Landmarks in this guide:
 
 
 
+### Illustration of the landmarks 
 
-**Illustration of the method:** 
+Credit to Tinotenda Chiyangwa©[^9] 
 
+**Hard tissue**
+
+<img src="https://github.com/user-attachments/assets/fe908c4a-904a-4c6c-a195-9f45fc618e82" width="500">
+
+
+**Soft tissue**
+
+<img src="https://github.com/user-attachments/assets/fe908c4a-904a-4c6c-a195-9f45fc618e82" width="500">
 
 
 > [!WARNING]
@@ -85,6 +94,17 @@ And proceed with the allocation of the Pittayapat_plane landmarks first.
 | 1                | 2                | ACP-L       | anterior clinoid process on the left       | The tip of the anterior clinoid process on the left side                                                                   | Pittayapat et al. 2014      |
 | 2                | 3                | APT-R       | apex of petrous temporal on right        | The apex of the petrous part of the temporal bone on the right side | Pittayapat et al. 2014    |
 | 3                | 4                | APT-L       | apex of petrous temporal on left        | The apex of the petrous part of the temporal bone on the left side | Pittayapat et al. 2014    |
+
+
+**Sellion allocation landmarks illustration**
+
+Credit to Tinotenda Chiyangwa©[^9] 
+
+<img src="https://github.com/user-attachments/assets/d82ca5be-3166-4d8a-9603-3ca173fd9530" width="500">
+
+<img src="https://github.com/user-attachments/assets/e8faf6dd-13f3-485c-ba3c-fb482496bd37" width="500">
+
+
 
 The code in the next section will achive the following: 
 1) Calculates the midpoints between ACP-R and ACP-L (mid-ACP); between APT-R and APT-L (mid-APT) and adds these into the "Pittayapat  plane" markup list.
@@ -1654,3 +1674,4 @@ These hard tissue only measurements can be a basis of comparing other hard tissu
 [^6]:  Pittayapat P, Limchaichana-Bolstad N, Willems G, Jacobs R. Three-dimensional cephalometric analysis in orthodontics: a systematic review. Orthod Craniofac Res 2014;17:69–91.
 [^7]:  Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
 [^8]:  Rynn, C., Wilkinson, C.M. & Peters, H.L. Prediction of nasal morphology from the skull. Forensic Sci Med Pathol 6, 20–34 (2010). https://doi.org/10.1007/s12024-009-9124-6
+[^9]: Tinotenda Chiyangwa. [LinkedIn](https://www.linkedin.com/in/tinotenda-chiyangwa-9263121a3/), [Instagram](https://www.instagram.com/tino_tenda_arty/?igsh=YnNoMjM2ODRoNG1q#), [Portfolio](https://tinotendachiyangwa.wixsite.com/tino)
