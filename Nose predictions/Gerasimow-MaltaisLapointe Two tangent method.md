@@ -59,12 +59,12 @@ Credit to Tinotenda Chiyangwa©[^15]
 
 **Hard tissue**
 
-<img src="https://github.com/user-attachments/assets/37444698-4f4a-46b7-ad47-521142abb4d0" width="500">
+<img src="https://github.com/user-attachments/assets/4c362d65-6be0-49b9-b268-0ed03cff575e" width="500">
 
 
 **Soft tissue**
 
-<img src="https://github.com/user-attachments/assets/1d2cdc7a-00e0-47ec-8943-00a207505d1a" width="500">
+<img src="https://github.com/user-attachments/assets/b2d06592-d461-469c-b206-92e52b8d4850" width="500">
 
 
 
