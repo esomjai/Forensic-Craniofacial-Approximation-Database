@@ -1,4 +1,4 @@
-# Prokopec and Ubelaker, 2002[^2] - The Aesthetic Method
+[maximum_aperture_width_MAW.mrk.json](https://github.com/user-attachments/files/21412542/maximum_aperture_width_MAW.mrk.json)# Prokopec and Ubelaker, 2002[^2] - The Aesthetic Method
 
 The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2010)[^3].
 The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2010)[^3] also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
@@ -203,12 +203,13 @@ print("New plane 'PTP' created successfully.")
 
 Expected view with all three planes established and extended. Landmarks hidden for representative purposes. 
 
-### Maximum nasal width
+### Maximum aperture width
 
-Rynn et al. (2012) refined the original description from Prokopec and Ubelaker (2002) "4 to 6 equidistant planes" to be constrained to in-between the level of the maximum nasal width and rhinion.  
+Rynn et al. (2012) refined the original description from Prokopec and Ubelaker (2002) "4 to 6 equidistant planes" to be constrained to in-between the level of the maximum aperture width and rhinion.  
 
-You will need to switch to the "Skin" model or use the toggle to reveal the soft tissue on the scan for this step. 
-[Download maximum_nasal_width_MAW.mrk.json](https://github.com/user-attachments/files/20212751/maximum_nasal_width_MAW.mrk.json)
+You will need to switch to the "Bone" model or use the toggle to reveal the hard tissue on the scan for this step. 
+[Download maximum_aperture_width_MAW.mrk.json](https://github.com/user-attachments/files/21412561/maximum_aperture_width_MAW.mrk.json)
+
 , and drag-and-drop it into the "Markups" environment (click OK on this pop-up - see screenshot below).
 <img src="https://github.com/user-attachments/assets/9962ad54-f710-4e19-86a2-71f10450b18d" width="500">
 
@@ -219,7 +220,7 @@ icon in the second line of menu to start placing the points.
 <img src="https://github.com/user-attachments/assets/80709e15-2a69-4007-a77f-54af1ee57b7f" width="500">
 
 
-The goal here is to have a linear measurement from the anterior view at the maximum width of the soft nose. 
+The goal here is to have a linear measurement from the anterior view at the maximum width of the hard tissue nose. 
 
 <img src="https://github.com/user-attachments/assets/768511bf-3b65-4015-91a3-7f3a7a5c1ed5" width="500">
 
@@ -227,7 +228,6 @@ Now, your "Control Points">"Coordinates" menu should be populated by the two end
 
 ![image](https://github.com/user-attachments/assets/65bfd3e0-fa64-44f7-897e-ca8e63718bf1)
 
-((((DIAGRAM)))))
 
 
 
