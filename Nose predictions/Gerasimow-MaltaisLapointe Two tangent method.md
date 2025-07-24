@@ -390,6 +390,9 @@ https://github.com/user-attachments/assets/9d0c3401-cbd3-4846-9670-b5050c024b84
 
 To place the second point of reference in addition to the pronasale, make "tangent2" visible in the "Markups" module, then change into the Skin segmentation to place these landmarks found in "Gerasimow_landmarks" on both sides. In the original study, this is looked at in 2D, so is one point, but in 3D Slicer and 3D view we will take the line connecting them and where it "pierces" the INB plane. This new point will be added to the end of the pre-existing node list. Then, the created intersection points will be connected to the soft tissue pronasale and R" to measure errors; the ones in relation to the pronasale with a deep red, while the R2 ones with a bright coral.
 
+<details>
+<summary>Code for tangents</summary>
+
 ```python
 
 ####Re-creating the R2 point#####
@@ -624,7 +627,9 @@ create_line_between_points(8, 2, 'R2 T3-T2 pred error', (255/255, 69/255, 0/255)
 create_line_between_points(8, 3, 'R2 T3-T4 pred error', (255/255, 69/255, 0/255), node1_name='Gerasimow_landmarks', node2_name='prediction points')
 
 ```
-EXPLAIN
+
+
+</details>
 
 
 
