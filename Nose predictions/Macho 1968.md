@@ -68,8 +68,13 @@ Landmarks in this guide:
 By definition, the sella point is a floating landmark. It is used in lateral cephalograms, mainly in dentistry then got adapted for craniofacial measurements in 2D as well.  With the wider use of CBCTs, the allocation of this significant landmark in 3D was debated as some defined it from the profile view (like the original lateral cephalogram and some called for a revised definition of allocating it in 3D. Pittayapat et al. (2014)[^5] found no consensus is defining the sellion in 3D, so they initiated one in their later research (Pittayapat et al. 2015)[^6]. By their definition, the sellion is located within a "coordinate system" comprising of 4 landmarks and vertical plane defined by the mid-APT and mid-ACP points. They also establish Sella 1 and Sella 2 (so not one sellion point) citing "the choice of using Sella 1 or Sella 2 made no significant difference" in reproducibility which with the nasion landmark will be sufficient orientations to fit the SN plane of orientation (sellion1-sellion 2-nasion). 
 
 For the allocation of all landmarks, please download both: 
+
 [Pittayapat_plane.mrk.json](https://github.com/user-attachments/files/20212666/Pittayapat_plane.mrk.json)
+
+
 [hard_tissue_Macho.mrk.json](https://github.com/user-attachments/files/20212665/hard_tissue_Macho.mrk.json)
+
+
 
 
 And proceed with the allocation of the Pittayapat_plane landmarks first. 
@@ -88,6 +93,12 @@ The code in the next section will achive the following:
 4) Creates two separate node lists (sellion1_node; sellion2_node) with sellion1 and sellion2 as their only points respectively and places these nodes in the environment onto their respective axis - it may not actually look like they are on the axis, but that is accounted for in the next step! It also adds restrictions on how you can toggle these points (explained in the next step). 
 
 ### Code for sellions to appear on their axes in the scene
+
+
+<details>
+<summary> Code for Sellions </summary>
+
+
 ```python
 #######SN plane###########
 
@@ -345,6 +356,13 @@ print("sellion1 and sellion2 have been added to separate node lists with axis co
 print(f"sellion1 initial position: {sellion1_position}")
 print(f"sellion2 initial position: {sellion2_position}")
 ```
+
+
+
+</details>
+
+
+
 ![image](https://github.com/user-attachments/assets/7a4a46a8-df78-41f4-9ceb-3d2d5904c4db)
 What to expect after running the script immediately
 
