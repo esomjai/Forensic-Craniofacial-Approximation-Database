@@ -24,7 +24,10 @@ These filetypes will appear throughout the tutorials as they provide a transferr
 > if you make any changes to the landmarks, the codes provided may not work. Make sure to add only to the end or do not alter them.
 
 Please download the json file for this part of the process by double-clicking: 
-[FHP_landmarks.json](https://github.com/user-attachments/files/19097642/FHP_landmarks.json)
+
+
+[FHP_landmarks.mrk.json](https://github.com/user-attachments/files/21429663/FHP_landmarks.mrk.json)
+
 
 This file contains the following landmarks: 
 
