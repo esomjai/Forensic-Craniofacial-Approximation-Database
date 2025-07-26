@@ -2318,8 +2318,1814 @@ create_distance_measurement("pred error6", noseprofiletoB6.GetNthControlPointPos
 
 </details>
 
+## GUI module (work in progress!!!!)
+``` python
+# ProkopecUbelakerGUI.py
+# A beginner-friendly GUI for the Prokopec-Ubelaker nasal prediction method
+# Just copy-paste this entire script into 3D Slicer's Python console!
 
+import os
+import numpy as np
+import qt
+import slicer
 
+class ProkopecUbelakerGUI:
+    def __init__(self):
+        # Check if prerequisites are done first
+        self.checkPrerequisites()
+        
+        # Create a new window
+        self.window = qt.QWidget()
+        self.window.setWindowTitle("Prokopec-Ubelaker Nasal Prediction")
+        self.window.setMinimumSize(600, 700)
+        layout = qt.QVBoxLayout(self.window)
+        
+        # Create a tab widget
+        tabWidget = qt.QTabWidget()
+        layout.addWidget(tabWidget)
+        
+        # Create the main tab
+        mainTab = qt.QWidget()
+        mainLayout = qt.QVBoxLayout(mainTab)
+        tabWidget.addTab(mainTab, "Prokopec-Ubelaker Method")
+        
+        # Add a description
+        descriptionLabel = qt.QLabel("This tool implements the Prokopec-Ubelaker aesthetic method for nasal prediction.")
+        descriptionLabel.setWordWrap(True)
+        mainLayout.addWidget(descriptionLabel)
+        
+        # Add progress indicator
+        self.progressFrame = qt.QFrame()
+        progressLayout = qt.QHBoxLayout(self.progressFrame)
+        progressLayout.setContentsMargins(0, 0, 0, 0)
+        self.progressLabel = qt.QLabel("Step 1/9")
+        self.progressBar = qt.QProgressBar()
+        self.progressBar.setMinimum(0)
+        self.progressBar.setMaximum(8)  # 9 steps (0-8)
+        self.progressBar.setValue(0)
+        progressLayout.addWidget(self.progressLabel)
+        progressLayout.addWidget(self.progressBar)
+        mainLayout.addWidget(self.progressFrame)
+        
+        # Create step navigation
+        self.stepStack = qt.QStackedWidget()
+        mainLayout.addWidget(self.stepStack)
+        
+        # Create step navigation buttons
+        navigationLayout = qt.QHBoxLayout()
+        self.helpButton = qt.QPushButton("Help")
+        # Fix: Use QApplication's style instead of trying to access style() directly
+        self.helpButton.setIcon(qt.QApplication.style().standardIcon(qt.QStyle.SP_MessageBoxQuestion))
+        self.backButton = qt.QPushButton("Back")
+        self.backButton.enabled = False
+        self.nextButton = qt.QPushButton("Next")
+        navigationLayout.addWidget(self.helpButton)
+        navigationLayout.addStretch()
+        navigationLayout.addWidget(self.backButton)
+        navigationLayout.addWidget(self.nextButton)
+        mainLayout.addLayout(navigationLayout)
+        
+        # Connect navigation buttons
+        self.helpButton.connect('clicked(bool)', self.onHelpClicked)
+        self.backButton.connect('clicked(bool)', self.onBackClicked)
+        self.nextButton.connect('clicked(bool)', self.onNextClicked)
+        
+        # Create step widgets
+        self.createStepWidgets()
+        
+        # Show the window
+        self.window.show()
+        
+        # Track current step
+        self.currentStep = 0
+        self.updateStepUI()
+        
+    def checkPrerequisites(self):
+        """Check if prerequisites are completed"""
+        # Create a message box for the FHP alignment check
+        messageBox = qt.QMessageBox()
+        messageBox.setIcon(qt.QMessageBox.Question)
+        messageBox.setWindowTitle("Prerequisite Check")
+        messageBox.setText("Before proceeding, please confirm that your skull model is properly aligned in the Frankfurt Horizontal Plane (FHP).")
+        messageBox.setInformativeText("Has the skull model been aligned in the FHP?")
+        messageBox.setStandardButtons(qt.QMessageBox.Yes | qt.QMessageBox.No)
+        messageBox.setDefaultButton(qt.QMessageBox.No)
+        
+        # Show the message box
+        choice = messageBox.exec_()
+        
+        # If the user hasn't aligned the skull, show instructions
+        if choice == qt.QMessageBox.No:
+            helpMessageBox = qt.QMessageBox()
+            helpMessageBox.setIcon(qt.QMessageBox.Information)
+            helpMessageBox.setWindowTitle("FHP Alignment Instructions")
+            helpMessageBox.setText("Please align your skull in the FHP before using this tool.")
+            helpMessageBox.setInformativeText(
+                "Quick steps for FHP alignment:\n\n"
+                "1. In 3D Slicer, load your skull model\n"
+                "2. Use the 'Transforms' module to rotate your skull\n"
+                "3. Align it so the Frankfurt Horizontal Plane is parallel to the axial plane\n"
+                "4. Click 'Harden Transform' when finished\n\n"
+                "After completing alignment, restart this tool."
+            )
+            helpMessageBox.setStandardButtons(qt.QMessageBox.Ok)
+            helpMessageBox.exec_()
+            
+            # Close the dialog and don't continue if they haven't aligned
+            slicer.util.infoDisplay("Please reopen this tool after aligning your skull.")
+            raise Exception("Prerequisite not met. Please align skull first.")
+        
+    def createStepWidgets(self):
+        """Create all step widgets"""
+        # Step 1: Input Selection
+        step1Widget = qt.QWidget()
+        step1Layout = qt.QVBoxLayout(step1Widget)
+        
+        step1Label = qt.QLabel("<b>Step 1: Hard tissue landmarks input Selection</b>")
+        step1Layout.addWidget(step1Label)
+        
+        step1Description = qt.QLabel("Find the hard tissue landmarks file in the environment - this was provided as "hard_tissue_PU" on GitHub")
+        step1Description.setWordWrap(True)
+        step1Layout.addWidget(step1Description)
+        
+        # Add landmark selector
+        landmarkLayout = qt.QHBoxLayout()
+        landmarkLabel = qt.QLabel("Landmarks:")
+        self.landmarksSelector = slicer.qMRMLNodeComboBox()
+        self.landmarksSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
+        self.landmarksSelector.setMRMLScene(slicer.mrmlScene)
+        self.landmarksSelector.addEnabled = True
+        landmarkLayout.addWidget(landmarkLabel)
+        landmarkLayout.addWidget(self.landmarksSelector)
+        step1Layout.addLayout(landmarkLayout)
+        
+        # Add load landmarks button
+        self.loadLandmarksButton = qt.QPushButton("Load Landmarks File")
+        step1Layout.addWidget(self.loadLandmarksButton)
+        
+        self.landmarksStatusLabel = qt.QLabel("No landmarks loaded")
+        step1Layout.addWidget(self.landmarksStatusLabel)
+        
+        step1Layout.addStretch()
+        self.stepStack.addWidget(step1Widget)
+        
+        # Connect load landmarks button
+        self.loadLandmarksButton.connect('clicked(bool)', self.onLoadLandmarksClicked)
+        
+        # Step 2: Reference Plane Creation
+        step2Widget = qt.QWidget()
+        step2Layout = qt.QVBoxLayout(step2Widget)
+        
+        step2Label = qt.QLabel("<b>Step 2: Reference Plane Creation</b>")
+        step2Layout.addWidget(step2Label)
+        
+        step2Description = qt.QLabel("Create the INB, NP, and PT planes based on the landmarks.")
+        step2Description.setWordWrap(True)
+        step2Layout.addWidget(step2Description)
+        
+        self.createPlanesButton = qt.QPushButton("Create Reference Planes")
+        step2Layout.addWidget(self.createPlanesButton)
+        
+        self.planesStatusLabel = qt.QLabel("Ready to create planes")
+        step2Layout.addWidget(self.planesStatusLabel)
+        
+        step2Layout.addStretch()
+        self.stepStack.addWidget(step2Widget)
+        
+        # Connect create planes button
+        self.createPlanesButton.connect('clicked(bool)', self.onCreatePlanesClicked)
+        
+        # Step 3: Mirror Plane Configuration
+        step3Widget = qt.QWidget()
+        step3Layout = qt.QVBoxLayout(step3Widget)
+        
+        step3Label = qt.QLabel("<b>Step 3: Mirror Plane Configuration</b>")
+        step3Layout.addWidget(step3Label)
+        
+        step3Description = qt.QLabel("Choose number of mirror planes (4-6) and create them between maximum nasal width and rhinion.")
+        step3Description.setWordWrap(True)
+        step3Layout.addWidget(step3Description)
+        
+        # Add plane count slider
+        planeCountLayout = qt.QHBoxLayout()
+        planeCountLabel = qt.QLabel("Number of Planes:")
+        self.planeCountSlider = qt.QSlider(qt.Qt.Horizontal)
+        self.planeCountSlider.setMinimum(4)
+        self.planeCountSlider.setMaximum(6)
+        self.planeCountSlider.setValue(5)
+        self.planeCountSlider.setTickPosition(qt.QSlider.TicksBelow)
+        self.planeCountSlider.setTickInterval(1)
+        self.planeCountValueLabel = qt.QLabel("5 planes")
+        planeCountLayout.addWidget(planeCountLabel)
+        planeCountLayout.addWidget(self.planeCountSlider)
+        planeCountLayout.addWidget(self.planeCountValueLabel)
+        step3Layout.addLayout(planeCountLayout)
+        
+        # Add MAW selector
+        mawLayout = qt.QHBoxLayout()
+        mawLabel = qt.QLabel("Maximum Nasal Width:")
+        self.mawSelector = slicer.qMRMLNodeComboBox()
+        self.mawSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode", "vtkMRMLMarkupsLineNode"]
+        self.mawSelector.setMRMLScene(slicer.mrmlScene)
+        self.mawSelector.addEnabled = True
+        mawLayout.addWidget(mawLabel)
+        mawLayout.addWidget(self.mawSelector)
+        step3Layout.addLayout(mawLayout)
+        
+        self.createMirrorPlanesButton = qt.QPushButton("Create Mirror Planes")
+        step3Layout.addWidget(self.createMirrorPlanesButton)
+        
+        self.mirrorPlanesStatusLabel = qt.QLabel("Ready to create mirror planes")
+        step3Layout.addWidget(self.mirrorPlanesStatusLabel)
+        
+        step3Layout.addStretch()
+        self.stepStack.addWidget(step3Widget)
+        
+        # Connect plane count slider and create mirror planes button
+        self.planeCountSlider.connect('valueChanged(int)', self.onPlaneCountChanged)
+        self.createMirrorPlanesButton.connect('clicked(bool)', self.onCreateMirrorPlanesClicked)
+        
+        # Step 4: Intersection Creation
+        step4Widget = qt.QWidget()
+        step4Layout = qt.QVBoxLayout(step4Widget)
+        
+        step4Label = qt.QLabel("<b>Step 4: Intersection Creation</b>")
+        step4Layout.addWidget(step4Label)
+        
+        step4Description = qt.QLabel("Create intersection lines and reference lines A and B.")
+        step4Description.setWordWrap(True)
+        step4Layout.addWidget(step4Description)
+        
+        self.createIntersectionsButton = qt.QPushButton("Create Intersections")
+        step4Layout.addWidget(self.createIntersectionsButton)
+        
+        self.intersectionsStatusLabel = qt.QLabel("Ready to create intersections")
+        step4Layout.addWidget(self.intersectionsStatusLabel)
+        
+        step4Layout.addStretch()
+        self.stepStack.addWidget(step4Widget)
+        
+        # Connect create intersections button
+        self.createIntersectionsButton.connect('clicked(bool)', self.onCreateIntersectionsClicked)
+        
+        # Step 5: Bone Point Setup
+        boneSetupWidget = qt.QWidget()
+        boneSetupLayout = qt.QVBoxLayout(boneSetupWidget)
+        
+        boneSetupLabel = qt.QLabel("<b>Step 5: Bone Point Setup</b>")
+        boneSetupLayout.addWidget(boneSetupLabel)
+        
+        boneSetupDescription = qt.QLabel("This step will help you set up the bone landmarks needed for measurement.")
+        boneSetupDescription.setWordWrap(True)
+        boneSetupLayout.addWidget(boneSetupDescription)
+        
+        # Add auto-setup button
+        self.autoBoneSetupButton = qt.QPushButton("Auto-Setup Bone Points")
+        boneSetupLayout.addWidget(self.autoBoneSetupButton)
+        
+        # Show what's currently in the scene
+        self.bonePointsStatusLabel = qt.QLabel("No bone points set up yet")
+        boneSetupLayout.addWidget(self.bonePointsStatusLabel)
+        
+        # Add a bone outline selector for users who want to manually set it
+        boneOutlineLayout = qt.QHBoxLayout()
+        boneOutlineLabel = qt.QLabel("Bone Outline Points:")
+        self.boneOutlineSelector = slicer.qMRMLNodeComboBox()
+        self.boneOutlineSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
+        self.boneOutlineSelector.setMRMLScene(slicer.mrmlScene)
+        self.boneOutlineSelector.addEnabled = True
+        boneOutlineLayout.addWidget(boneOutlineLabel)
+        boneOutlineLayout.addWidget(self.boneOutlineSelector)
+        boneSetupLayout.addLayout(boneOutlineLayout)
+        
+        boneSetupLayout.addStretch()
+        self.stepStack.addWidget(boneSetupWidget)
+        
+        # Connect the auto-setup button
+        self.autoBoneSetupButton.connect('clicked(bool)', self.onAutoBoneSetupClicked)
+        
+        # Step 6: Bone Profile Results
+        boneResultsWidget = qt.QWidget()
+        boneResultsLayout = qt.QVBoxLayout(boneResultsWidget)
+        
+        boneResultsLabel = qt.QLabel("<b>Step 6: Bone Profile Results</b>")
+        boneResultsLayout.addWidget(boneResultsLabel)
+        
+        boneResultsDescription = qt.QLabel("View the bone profile measurements and proceed to soft tissue options.")
+        boneResultsDescription.setWordWrap(True)
+        boneResultsLayout.addWidget(boneResultsDescription)
+        
+        # Add bone measurements table
+        self.boneMeasurementsTable = qt.QTableWidget()
+        self.boneMeasurementsTable.setColumnCount(2)
+        self.boneMeasurementsTable.setHorizontalHeaderLabels(["Measurement", "Value (mm)"])
+        self.boneMeasurementsTable.horizontalHeader().setSectionResizeMode(0, qt.QHeaderView.Stretch)
+        self.boneMeasurementsTable.horizontalHeader().setSectionResizeMode(1, qt.QHeaderView.ResizeToContents)
+        boneResultsLayout.addWidget(self.boneMeasurementsTable)
+        
+        # Create bone measurements button
+        self.createBoneMeasurementsButton = qt.QPushButton("Create Bone Measurements")
+        boneResultsLayout.addWidget(self.createBoneMeasurementsButton)
+        
+        # Add export button for bone measurements
+        self.exportBoneResultsButton = qt.QPushButton("Export Bone Measurements")
+        self.exportBoneResultsButton.enabled = False  # Disabled until measurements are created
+        boneResultsLayout.addWidget(self.exportBoneResultsButton)
+        
+        # Status label
+        self.boneMeasurementsStatusLabel = qt.QLabel("Ready to create bone measurements")
+        boneResultsLayout.addWidget(self.boneMeasurementsStatusLabel)
+        
+        boneResultsLayout.addStretch()
+        self.stepStack.addWidget(boneResultsWidget)
+        
+        # Connect the buttons
+        self.createBoneMeasurementsButton.connect('clicked(bool)', self.onCreateBoneMeasurementsClicked)
+        self.exportBoneResultsButton.connect('clicked(bool)', self.onExportBoneResultsClicked)
+        
+        # Step 7: Soft Tissue Options
+        softTissueOptionsWidget = qt.QWidget()
+        softTissueOptionsLayout = qt.QVBoxLayout(softTissueOptionsWidget)
+        
+        softTissueOptionsLabel = qt.QLabel("<b>Step 7: Soft Tissue Options</b>")
+        softTissueOptionsLayout.addWidget(softTissueOptionsLabel)
+        
+        softTissueOptionsDescription = qt.QLabel("Choose how to generate soft tissue predictions:")
+        softTissueOptionsDescription.setWordWrap(True)
+        softTissueOptionsLayout.addWidget(softTissueOptionsDescription)
+        
+        # Add soft tissue method selection
+        self.softTissueMethodGroup = qt.QButtonGroup()
+        self.noneRadioButton = qt.QRadioButton("No soft tissue (bone only)")
+        self.standardRadioButton = qt.QRadioButton("Standard Prokopec-Ubelaker (+2mm anteriorly)")
+        self.customRadioButton = qt.QRadioButton("Custom values")
+        self.softTissueMethodGroup.addButton(self.noneRadioButton, 0)
+        self.softTissueMethodGroup.addButton(self.standardRadioButton, 1)
+        self.softTissueMethodGroup.addButton(self.customRadioButton, 2)
+        self.noneRadioButton.setChecked(True)  # Default to no soft tissue
+        
+        # Add warning label for custom values
+        self.customWarningLabel = qt.QLabel("WARNING: Custom values are NOT the official FACIA soft tissue thicknesses as the plane placement is based on the MAW, not the standard landmarks!")
+        self.customWarningLabel.setWordWrap(True)
+        self.customWarningLabel.setStyleSheet("color: red;")
+        self.customWarningLabel.setVisible(False)  # Hide until custom is selected
+        
+        # Connect custom radio button to show/hide warning
+        self.customRadioButton.connect('toggled(bool)', lambda checked: self.customWarningLabel.setVisible(checked))
+        
+        # Add all radio buttons to layout
+        radioButtonsLayout = qt.QVBoxLayout()
+        radioButtonsLayout.addWidget(self.noneRadioButton)
+        radioButtonsLayout.addWidget(self.standardRadioButton)
+        radioButtonsLayout.addWidget(self.customRadioButton)
+        radioButtonsLayout.addWidget(self.customWarningLabel)
+        softTissueOptionsLayout.addLayout(radioButtonsLayout)
+        
+        # Custom values input (only shown when custom is selected)
+        self.customValuesWidget = qt.QWidget()
+        customValuesLayout = qt.QFormLayout(self.customValuesWidget)
+        self.customValuesWidget.setVisible(False)  # Hide by default
+        
+        # Add some example fields for custom values
+        self.bottomThicknessSpinBox = qt.QDoubleSpinBox()
+        self.bottomThicknessSpinBox.setRange(0.5, 10.0)
+        self.bottomThicknessSpinBox.setValue(2.5)
+        self.bottomThicknessSpinBox.setSingleStep(0.1)
+        customValuesLayout.addRow("Bottom Region Thickness Factor:", self.bottomThicknessSpinBox)
+        
+        self.middleThicknessSpinBox = qt.QDoubleSpinBox()
+        self.middleThicknessSpinBox.setRange(0.5, 10.0)
+        self.middleThicknessSpinBox.setValue(2.0)
+        self.middleThicknessSpinBox.setSingleStep(0.1)
+        customValuesLayout.addRow("Middle Region Thickness Factor:", self.middleThicknessSpinBox)
+        
+        self.topThicknessSpinBox = qt.QDoubleSpinBox()
+        self.topThicknessSpinBox.setRange(0.5, 10.0)
+        self.topThicknessSpinBox.setValue(1.5)
+        self.topThicknessSpinBox.setSingleStep(0.1)
+        customValuesLayout.addRow("Top Region Thickness Factor:", self.topThicknessSpinBox)
+        
+        softTissueOptionsLayout.addWidget(self.customValuesWidget)
+        
+        # Connect custom radio button to show/hide custom values
+        self.customRadioButton.connect('toggled(bool)', self.customValuesWidget.setVisible)
+        
+        # Add generate button
+        self.generateSoftTissueButton = qt.QPushButton("Generate Soft Tissue Predictions")
+        softTissueOptionsLayout.addWidget(self.generateSoftTissueButton)
+        
+        # Status label
+        self.softTissueStatusLabel = qt.QLabel("Ready to generate soft tissue predictions")
+        softTissueOptionsLayout.addWidget(self.softTissueStatusLabel)
+        
+        softTissueOptionsLayout.addStretch()
+        self.stepStack.addWidget(softTissueOptionsWidget)
+        
+        # Connect the generate button
+        self.generateSoftTissueButton.connect('clicked(bool)', self.onGenerateSoftTissueClicked)
+        
+        # Step 8: Optional Real Soft Tissue
+        optionalComparisonWidget = qt.QWidget()
+        optionalComparisonLayout = qt.QVBoxLayout(optionalComparisonWidget)
+        
+        optionalComparisonLabel = qt.QLabel("<b>Step 8: OPTIONAL - Compare with Real Soft Tissue</b>")
+        optionalComparisonLayout.addWidget(optionalComparisonLabel)
+        
+        # Add big notice at the top
+        optionalNotice = qt.QLabel("This step is completely OPTIONAL and only needed if you want to measure prediction error.")
+        optionalNotice.setStyleSheet("font-weight: bold; color: blue;")
+        optionalNotice.setWordWrap(True)
+        optionalComparisonLayout.addWidget(optionalNotice)
+        
+        optionalDescription = qt.QLabel("If you have a soft tissue model, you can compare predictions with actual measurements.")
+        optionalDescription.setWordWrap(True)
+        optionalComparisonLayout.addWidget(optionalDescription)
+        
+        # Add profile outline selector
+        profileOutlineLayout = qt.QHBoxLayout()
+        profileOutlineLabel = qt.QLabel("Real Profile Outline Points:")
+        self.profileOutlineSelector = slicer.qMRMLNodeComboBox()
+        self.profileOutlineSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
+        self.profileOutlineSelector.setMRMLScene(slicer.mrmlScene)
+        self.profileOutlineSelector.addEnabled = True
+        profileOutlineLayout.addWidget(profileOutlineLabel)
+        profileOutlineLayout.addWidget(self.profileOutlineSelector)
+        optionalComparisonLayout.addLayout(profileOutlineLayout)
+        
+        # Add buttons side by side
+        buttonLayout = qt.QHBoxLayout()
+        self.compareWithRealButton = qt.QPushButton("Compare with Real Soft Tissue")
+        self.skipComparisonButton = qt.QPushButton("Skip This Step (No Real Soft Tissue)")
+        buttonLayout.addWidget(self.compareWithRealButton)
+        buttonLayout.addWidget(self.skipComparisonButton)
+        optionalComparisonLayout.addLayout(buttonLayout)
+        
+        self.comparisonStatusLabel = qt.QLabel("No comparison made yet")
+        optionalComparisonLayout.addWidget(self.comparisonStatusLabel)
+        
+        optionalComparisonLayout.addStretch()
+        self.stepStack.addWidget(optionalComparisonWidget)
+        
+        # Connect compare and skip buttons
+        self.compareWithRealButton.connect('clicked(bool)', self.onCompareWithRealClicked)
+        self.skipComparisonButton.connect('clicked(bool)', self.onNextClicked)  # Just go to next step
+        
+        # Step 9: Final Results
+        resultsWidget = qt.QWidget()
+        resultsLayout = qt.QVBoxLayout(resultsWidget)
+        
+        resultsLabel = qt.QLabel("<b>Step 9: Results Analysis</b>")
+        resultsLayout.addWidget(resultsLabel)
+        
+        resultsDescription = qt.QLabel("View measurements and export results for analysis.")
+        resultsDescription.setWordWrap(True)
+        resultsLayout.addWidget(resultsDescription)
+        
+        # Add measurements table
+        self.measurementsTable = qt.QTableWidget()
+        self.measurementsTable.setColumnCount(3)
+        self.measurementsTable.setHorizontalHeaderLabels(["Measurement", "Predicted (mm)", "Actual (mm)"])
+        self.measurementsTable.horizontalHeader().setSectionResizeMode(0, qt.QHeaderView.Stretch)
+        self.measurementsTable.horizontalHeader().setSectionResizeMode(1, qt.QHeaderView.ResizeToContents)
+        self.measurementsTable.horizontalHeader().setSectionResizeMode(2, qt.QHeaderView.ResizeToContents)
+        resultsLayout.addWidget(self.measurementsTable)
+        
+        # Add export and clipboard buttons side by side
+        buttonsLayout = qt.QHBoxLayout()
+        self.exportResultsButton = qt.QPushButton("Export to CSV")
+        self.copyToClipboardButton = qt.QPushButton("Copy to Clipboard")
+        buttonsLayout.addWidget(self.exportResultsButton)
+        buttonsLayout.addWidget(self.copyToClipboardButton)
+        resultsLayout.addLayout(buttonsLayout)
+        
+        self.exportStatusLabel = qt.QLabel("Ready to export")
+        resultsLayout.addWidget(self.exportStatusLabel)
+        
+        resultsLayout.addStretch()
+        self.stepStack.addWidget(resultsWidget)
+        
+        # Connect export results and clipboard buttons
+        self.exportResultsButton.connect('clicked(bool)', self.onExportResultsClicked)
+        self.copyToClipboardButton.connect('clicked(bool)', self.onCopyToClipboardClicked)
+    
+    def updateStepUI(self):
+        """Update the UI based on the current step"""
+        # Update the stacked widget to show the current step
+        self.stepStack.setCurrentIndex(self.currentStep)
+        
+        # Update the navigation buttons
+        self.backButton.enabled = (self.currentStep > 0)
+        self.nextButton.enabled = (self.currentStep < self.stepStack.count - 1)
+        
+        # Update the progress indicator
+        self.progressBar.setValue(self.currentStep)
+        self.progressLabel.text = f"Step {self.currentStep + 1}/{self.stepStack.count}"
+        
+    def onHelpClicked(self):
+        """Show help information for the current step"""
+        helpMessages = [
+            {
+                "title": "Step 1: Input Selection",
+                "text": "In this step, you need to load or select your landmarks file.",
+                "details": (
+                    "Required landmarks are:\n"
+                    "• nasion - intersection of nasofrontal sutures\n"
+                    "• inion - median point at base of external occipital protuberance\n"
+                    "• bregma - where sagittal and coronal sutures meet\n"
+                    "• prosthion - median point between central incisors\n"
+                    "• subspinale - deepest point below anterior nasal spine\n"
+                    "• rhinion - most rostral point on internasal suture\n"
+                    "• acanthion - most anterior tip of anterior nasal spine"
+                )
+            },
+            {
+                "title": "Step 2: Reference Plane Creation",
+                "text": "Create the reference planes needed for the Prokopec-Ubelaker method.",
+                "details": (
+                    "This step creates three reference planes:\n"
+                    "• INB plane: defined by inion, nasion, and bregma\n"
+                    "• NP plane: perpendicular to INB, through nasion and prosthion\n"
+                    "• PT plane: perpendicular to both INB and NP planes"
+                )
+            },
+            {
+                "title": "Step 3: Mirror Plane Configuration",
+                "text": "Set up the mirror planes for the nasal prediction.",
+                "details": (
+                    "Choose between 4, 5, or 6 mirror planes:\n"
+                    "• More planes can give higher accuracy but requires more landmarks\n"
+                    "• The planes will be placed equidistant between rhinion and maximum nasal width\n"
+                    "• You need to select or create a Maximum Nasal Width measurement"
+                )
+            },
+            {
+                "title": "Step 4: Intersection Creation",
+                "text": "Create intersection lines between reference planes.",
+                "details": (
+                    "This step creates:\n"
+                    "• Intersection lines between the INB plane and each mirror plane\n"
+                    "• Reference Line A: through nasion and prosthion\n"
+                    "• Reference Line B: parallel to Line A through rhinion\n"
+                    "• Intersection points between Line B and all mirror planes"
+                )
+            },
+            {
+                "title": "Step 5: Bone Point Setup",
+                "text": "Place the bone points needed for measurement.",
+                "details": (
+                    "This step automatically:\n"
+                    "• Finds existing bone points in your scene\n"
+                    "• Loads missing bone points from your repository if available\n"
+                    "• Creates new bone points if needed\n\n"
+                    "Click 'Auto-Setup Bone Points' to have the tool download the number of points you need with the correct names"
+                )
+            },
+            {
+                "title": "Step 6: Bone Profile Results",
+                "text": "Create and view bone measurements before adding soft tissue.",
+                "details": (
+                    "This step creates measurements for the nasal bone only (pred_no_soft):\n"
+                    "• Click 'Create Bone Measurements' to generate measurements\n"
+                    "• View the measurements in the table\n"
+                    "• Export the bone measurements if needed\n\n"
+                    "After this step, you'll decide how to add soft tissue."
+                )
+            },
+            {
+                "title": "Step 7: Soft Tissue Options",
+                "text": "Choose how to add soft tissue to your prediction.",
+                "details": (
+                    "Choose from three options:\n"
+                    "• No soft tissue: continue with bone measurements only (pred_no_soft)\n"
+                    "• Standard Prokopec-Ubelaker: adds 2mm to each predicted point (pred_PU_soft)\n"
+                    "• Custom values: set your own thickness factors (but be warned - these aren't official FACIA measurements!)\n\n"
+                    "Click 'Generate Soft Tissue Predictions' after making your choice."
+                )
+            },
+            {
+                "title": "Step 8: Optional - Compare with Real Soft Tissue",
+                "text": "Compare predictions with actual soft tissue (OPTIONAL).",
+                "details": (
+                    "This step is completely OPTIONAL and only needed if you want to measure prediction error.\n\n"
+                    "If you have a real soft tissue model:\n"
+                    "• Select it in the dropdown\n"
+                    "• Click 'Compare with Real Soft Tissue' to see the difference\n\n"
+                    "If you don't have a soft tissue model, just click 'Skip This Step'."
+                )
+            },
+            {
+                "title": "Step 9: Results Analysis",
+                "text": "Review the measurements and export the results.",
+                "details": (
+                    "The measurements table shows:\n"
+                    "• noseprofiletoB# - distances from mirror points to soft tissue\n"
+                    "• nasalbonetoB# - distances from mirror points to nasal bone\n"
+                    "• Comparison between predicted and actual values (if available)\n\n"
+                    "You can export these measurements to CSV or copy them to clipboard."
+                )
+            }
+        ]
+        
+        # Show help for current step
+        if 0 <= self.currentStep < len(helpMessages):
+            helpInfo = helpMessages[self.currentStep]
+            
+            messageBox = qt.QMessageBox()
+            messageBox.setIcon(qt.QMessageBox.Information)
+            messageBox.setWindowTitle(helpInfo["title"])
+            messageBox.setText(helpInfo["text"])
+            messageBox.setInformativeText(helpInfo["details"])
+            messageBox.setStandardButtons(qt.QMessageBox.Ok)
+            messageBox.exec_()
+    
+    def onBackClicked(self):
+        """Handle back button click"""
+        if self.currentStep > 0:
+            self.currentStep -= 1
+            self.updateStepUI()
+    
+    def onNextClicked(self):
+        """Handle next button click"""
+        if self.currentStep < self.stepStack.count - 1:
+            self.currentStep += 1
+            self.updateStepUI()
+    
+    def onLoadLandmarksClicked(self):
+        """Smarter landmark loading that checks existing landmarks first"""
+        try:
+            # First check if we already have suitable landmarks in the scene
+            requiredLandmarks = ["nasion", "inion", "bregma", "prosthion", "subspinale", "rhinion", "acanthion"]
+            
+            # Look through existing landmark nodes
+            for nodeIndex in range(slicer.mrmlScene.GetNumberOfNodesByClass("vtkMRMLMarkupsFiducialNode")):
+                node = slicer.mrmlScene.GetNthNodeByClass(nodeIndex, "vtkMRMLMarkupsFiducialNode")
+                
+                # Check if this node has enough control points
+                if node.GetNumberOfControlPoints() >= 7:
+                    # Let's see if it has the landmarks we need
+                    hasAllLandmarks = True
+                    for i, landmark in enumerate(requiredLandmarks[:min(7, node.GetNumberOfControlPoints())]):
+                        # Check the label of each control point
+                        if landmark.lower() not in node.GetNthControlPointLabel(i).lower():
+                            hasAllLandmarks = False
+                            break
+                    
+                    if hasAllLandmarks:
+                        # We found a suitable node!
+                        self.landmarksSelector.setCurrentNode(node)
+                        self.landmarksStatusLabel.text = f"Using existing landmarks: {node.GetName()}"
+                        return
+            
+            # If we get here, we need to load landmarks from a file
+            
+            # Ask if the user wants to load from GitHub or from disk
+            messageBox = qt.QMessageBox()
+            messageBox.setIcon(qt.QMessageBox.Question)
+            messageBox.setWindowTitle("Load Landmarks")
+            messageBox.setText("No suitable landmarks found in the scene.")
+            messageBox.setInformativeText("Would you like to load landmarks from GitHub or select your own file?")
+            messageBox.addButton("Load from GitHub", qt.QMessageBox.AcceptRole)
+            messageBox.addButton("Select File", qt.QMessageBox.ActionRole)
+            messageBox.addButton("Cancel", qt.QMessageBox.RejectRole)
+            
+            choice = messageBox.exec_()
+            
+            if choice == 0:  # Load from GitHub
+                # URL for the hard tissue landmarks
+                url = "https://github.com/user-attachments/files/20212741/hard_tissue_PU.mrk.json"
+                
+                # Create a temporary file to download to
+                import tempfile
+                import urllib.request
+                
+                with tempfile.NamedTemporaryFile(suffix='.mrk.json', delete=False) as temp_file:
+                    temp_path = temp_file.name
+                
+                try:
+                    slicer.util.delayDisplay("Downloading landmarks from GitHub...", 1000)
+                    urllib.request.urlretrieve(url, temp_path)
+                    
+                    # Load the downloaded file
+                    success = self.loadLandmarkFile(temp_path)
+                    
+                    # Clean up the temporary file
+                    import os
+                    if os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                    
+                    return success
+                except Exception as e:
+                    slicer.util.errorDisplay(f"Failed to download landmarks: {str(e)}")
+                    self.landmarksStatusLabel.text = "Error downloading landmarks"
+                    return False
+            
+            elif choice == 1:  # Select File
+                fileName = qt.QFileDialog.getOpenFileName(None, "Load Landmarks File", "", 
+                                                        "Landmark Files (*.mrk.json *.json);;All Files (*.*)")
+                if fileName:
+                    success = self.loadLandmarkFile(fileName)
+                    return
+                    
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to load landmarks: {str(e)}")
+            self.landmarksStatusLabel.text = "Error loading landmarks"
+    
+    def loadLandmarkFile(self, fileName):
+        """Helper method to load landmark file and avoid duplicates"""
+        try:
+            # First check if a node with this name already exists
+            baseName = os.path.splitext(os.path.splitext(os.path.basename(fileName))[0])[0]
+            existingNode = slicer.util.getFirstNodeByName(baseName)
+            
+            if existingNode and existingNode.IsA("vtkMRMLMarkupsFiducialNode"):
+                # Node already exists, just use it
+                self.landmarksSelector.setCurrentNode(existingNode)
+                self.landmarksStatusLabel.text = f"Using existing landmarks: {baseName}"
+                return True
+                
+            # Load the landmarks file, but don't create duplicates
+            loadedNode = slicer.util.loadMarkups(fileName)
+            
+            if loadedNode:
+                # Find the node that was just loaded
+                for nodeIndex in range(slicer.mrmlScene.GetNumberOfNodesByClass("vtkMRMLMarkupsFiducialNode")):
+                    node = slicer.mrmlScene.GetNthNodeByClass(nodeIndex, "vtkMRMLMarkupsFiducialNode")
+                    # The loaded node is likely the one with the newest ID
+                    if node.GetID().endswith(str(slicer.mrmlScene.GetNumberOfNodes()-1)):
+                        # Rename to avoid confusion
+                        node.SetName(baseName)
+                        # Select the node in our selector
+                        self.landmarksSelector.setCurrentNode(node)
+                        self.landmarksStatusLabel.text = f"Loaded: {baseName} (Valid landmarks found)"
+                        return True
+                        
+            self.landmarksStatusLabel.text = "Invalid landmarks file. Expected 7 control points."
+            return False
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to load landmarks: {str(e)}")
+            self.landmarksStatusLabel.text = "Error loading landmarks"
+            return False
+    
+    def onAutoBoneSetupClicked(self):
+        """Automatically set up bone points based on what's in the scene or repository"""
+        try:
+            # First determine how many planes we have
+            planeCount = 0
+            for node in slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsPlaneNode'):
+                if node.GetName().startswith('Plane_'):
+                    planeCount += 1
+            
+            if planeCount == 0:
+                slicer.util.errorDisplay("Please create mirror planes first")
+                return False
+            
+            # Look for bone points in the scene with various naming patterns
+            possiblePrefixes = ["bone", "BonePoint_", "Bone_", "nasal_bone_", "nb_"]
+            foundPoints = [None] * planeCount
+            
+            # Search through all fiducial nodes
+            for nodeIndex in range(slicer.mrmlScene.GetNumberOfNodesByClass("vtkMRMLMarkupsFiducialNode")):
+                node = slicer.mrmlScene.GetNthNodeByClass(nodeIndex, "vtkMRMLMarkupsFiducialNode")
+                nodeName = node.GetName()
+                
+                # Try to find bone points with different naming patterns
+                for i in range(planeCount):
+                    for prefix in possiblePrefixes:
+                        if nodeName == f"{prefix}{i+1}" or nodeName.startswith(f"{prefix}{i+1}_"):
+                            foundPoints[i] = node
+                            break
+            
+            # If we didn't find all bone points, load them from GitHub
+            missingCount = foundPoints.count(None)
+            if missingCount > 0:
+                # Check if we have a bone outline node selected
+                boneOutlineNode = self.boneOutlineSelector.currentNode()
+                
+                if boneOutlineNode and boneOutlineNode.GetNumberOfControlPoints() >= planeCount:
+                    # We can use the bone outline node points
+                    for i in range(planeCount):
+                        if foundPoints[i] is None:
+                            # Create a new node for this bone point
+                            boneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'bone{i+1}')
+                            # Get the position from the outline
+                            point = [0, 0, 0]
+                            boneOutlineNode.GetNthControlPointPosition(i, point)
+                            # Add the point to the new node
+                            boneNode.AddControlPoint(point)
+                            foundPoints[i] = boneNode
+                else:
+                    # If no bone outline, use GitHub files
+                    # Define GitHub URLs for the nasal bone outlines
+                    githubUrls = {
+                        4: "https://github.com/user-attachments/files/19318005/nasal.bone.outline.4.mrk.json",
+                        5: "https://github.com/user-attachments/files/19318009/nasal.bone.outline.5.mrk.json", 
+                        6: "https://github.com/user-attachments/files/19318010/nasal.bone.outline.6.mrk.json"
+                    }
+                    
+                    # If we have a URL for the current plane count
+                    if planeCount in githubUrls:
+                        url = githubUrls[planeCount]
+                        
+                        # Create a temporary file to download to
+                        import tempfile
+                        import urllib.request
+                        
+                        with tempfile.NamedTemporaryFile(suffix='.mrk.json', delete=False) as temp_file:
+                            temp_path = temp_file.name
+                            
+                        # Download the file
+                        try:
+                            slicer.util.delayDisplay(f"Downloading nasal bone outline for {planeCount} planes...", 1000)
+                            urllib.request.urlretrieve(url, temp_path)
+                            
+                            # Load the downloaded file
+                            loadedNode = slicer.util.loadMarkups(temp_path)
+                            
+                            # Check if it loaded successfully
+                            if loadedNode:
+                                # Create individual bone points from the outline
+                                for i in range(planeCount):
+                                    if foundPoints[i] is None and i < loadedNode.GetNumberOfControlPoints():
+                                        # Create a new node for this bone point
+                                        boneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'bone{i+1}')
+                                        # Get the position from the loaded outline
+                                        point = [0, 0, 0]
+                                        loadedNode.GetNthControlPointPosition(i, point)
+                                        # Add the point to the new node
+                                        boneNode.AddControlPoint(point)
+                                        foundPoints[i] = boneNode
+                                
+                                # Clean up - remove the downloaded outline node
+                                slicer.mrmlScene.RemoveNode(loadedNode)
+                            
+                        except Exception as e:
+                            slicer.util.errorDisplay(f"Failed to download or load nasal bone outline: {str(e)}")
+                            # Don't return here - we might still have found some points
+                        
+                        # Clean up the temporary file
+                        import os
+                        if os.path.exists(temp_path):
+                            os.unlink(temp_path)
+                            
+            # Count how many we found and how many are still missing
+            foundCount = planeCount - foundPoints.count(None)
+            
+            # Update the status label
+            if foundCount == planeCount:
+                self.bonePointsStatusLabel.text = f"All {planeCount} bone points are set up!"
+                # Auto-advance to next step
+                self.onNextClicked()
+                return True
+            else:
+                self.bonePointsStatusLabel.text = f"Found {foundCount} of {planeCount} bone points. Please create missing ones."
+                return False
+                
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to set up bone points: {str(e)}")
+            self.bonePointsStatusLabel.text = f"Error setting up bone points: {str(e)}"
+            return False
+    
+    def onCreateBoneMeasurementsClicked(self):
+        """Create bone measurements only (pred_no_soft)"""
+        try:
+            # Determine the number of planes
+            planeCount = 0
+            for node in slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsPlaneNode'):
+                if node.GetName().startswith('Plane_'):
+                    planeCount += 1
+            
+            if planeCount == 0:
+                slicer.util.errorDisplay("Please create mirror planes first")
+                return False
+            
+            # Get the mirror points
+            mirrorPoints = []
+            for node in slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsFiducialNode'):
+                if node.GetName().startswith('mirrorB_'):
+                    mirrorPoints.append(node)
+            
+            if len(mirrorPoints) != planeCount:
+                slicer.util.errorDisplay(f"Expected {planeCount} mirror points, but found {len(mirrorPoints)}")
+                return False
+            
+            # Get bone points
+            bonePoints = []
+            for i in range(planeCount):
+                try:
+                    boneFid = slicer.util.getNode(f'bone{i+1}')
+                    if boneFid:
+                        point = [0, 0, 0]
+                        boneFid.GetNthControlPointPosition(0, point)
+                        bonePoints.append(point)
+                    else:
+                        slicer.util.errorDisplay(f"Bone point {i+1} not found")
+                        return False
+                except:
+                    slicer.util.errorDisplay(f"Error getting bone point {i+1}")
+                    return False
+            
+            # Create bone measurements
+            measurements = self.createBoneMeasurements(planeCount, mirrorPoints, bonePoints)
+            
+            # Update the bone measurements table
+            self.updateBoneMeasurementsTable(measurements)
+            
+            # Enable the export button
+            self.exportBoneResultsButton.enabled = True
+            
+            self.boneMeasurementsStatusLabel.text = "Bone measurements created successfully"
+            return True
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to create bone measurements: {str(e)}")
+            self.boneMeasurementsStatusLabel.text = f"Error creating bone measurements: {str(e)}"
+            return False
+    
+    def createBoneMeasurements(self, planeCount, mirrorPoints, bonePoints):
+        """Create measurements between mirror points and bone points (pred_no_soft)"""
+        # Define color for bone measurements
+        lilac = [0.78, 0.64, 0.78]
+        
+        measurements = []
+        
+        # Create measurements between mirror points and bone points
+        for i in range(planeCount):
+            name = f"nasalbonetoB{i+1}"
+            line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+            line.AddControlPoint(mirrorPoints[i].GetNthControlPointPosition(0))
+            line.AddControlPoint(bonePoints[i])
+            displayNode = line.GetDisplayNode()
+            displayNode.SetSelectedColor(*lilac)
+            displayNode.SetColor(*lilac)
+            
+            # Calculate length
+            length = line.GetLineLengthWorld()
+            measurements.append((name, length))
+        
+        return measurements
+    
+    def updateBoneMeasurementsTable(self, measurements):
+        """Update the bone measurements table"""
+        # Clear the table
+        self.boneMeasurementsTable.setRowCount(0)
+        
+        # Sort measurements by name
+        measurements.sort(key=lambda x: x[0])
+        
+        # Add rows to the table
+        self.boneMeasurementsTable.setRowCount(len(measurements))
+        for i, (name, value) in enumerate(measurements):
+            self.boneMeasurementsTable.setItem(i, 0, qt.QTableWidgetItem(name))
+            self.boneMeasurementsTable.setItem(i, 1, qt.QTableWidgetItem(f"{value:.3f}"))
+    
+    def onExportBoneResultsClicked(self):
+        """Handle exporting bone measurements results"""
+        try:
+            fileName = qt.QFileDialog.getSaveFileName(None, "Save Bone Measurements", "", "CSV Files (*.csv)")
+            if fileName:
+                # Get all measurement line nodes
+                lineNodes = slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode')
+                
+                # Filter for bone measurement lines and collect data
+                boneMeasurements = []
+                for line in lineNodes:
+                    name = line.GetName()
+                    if name.startswith('nasalboneto'):
+                        length = line.GetLineLengthWorld()
+                        boneMeasurements.append((name, length))
+                
+                # Sort by name
+                boneMeasurements.sort(key=lambda x: x[0])
+                
+                # Create CSV content
+                csvContent = "Measurement,Value (mm)\n"
+                for name, value in boneMeasurements:
+                    csvContent += f"{name},{value:.3f}\n"
+                
+                # Save to file
+                try:
+                    with open(fileName, 'w') as f:
+                        f.write(csvContent)
+                    
+                    self.boneMeasurementsStatusLabel.text = f"Bone measurements exported to {fileName}"
+                    return True
+                except Exception as e:
+                    slicer.util.errorDisplay(f"Failed to write to file: {str(e)}")
+                    self.boneMeasurementsStatusLabel.text = "Error exporting bone measurements"
+                    return False
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to export bone measurements: {str(e)}")
+            self.boneMeasurementsStatusLabel.text = "Error exporting bone measurements"
+            return False
+    
+    def onGenerateSoftTissueClicked(self):
+        """Generate soft tissue predictions based on selected method"""
+        try:
+            # Get the selected method
+            method = self.softTissueMethodGroup.checkedId()
+            
+            # Determine the number of planes
+            planeCount = 0
+            for node in slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsPlaneNode'):
+                if node.GetName().startswith('Plane_'):
+                    planeCount += 1
+            
+            if planeCount == 0:
+                slicer.util.errorDisplay("Please create mirror planes first")
+                return False
+            
+            # Get bone points
+            bonePoints = []
+            for i in range(planeCount):
+                try:
+                    boneFid = slicer.util.getNode(f'bone{i+1}')
+                    if boneFid:
+                        point = [0, 0, 0]
+                        boneFid.GetNthControlPointPosition(0, point)
+                        bonePoints.append(point)
+                    else:
+                        slicer.util.errorDisplay(f"Bone point {i+1} not found")
+                        return False
+                except:
+                    slicer.util.errorDisplay(f"Error getting bone point {i+1}")
+                    return False
+            
+            # Get mirror points
+            mirrorPoints = []
+            for node in slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsFiducialNode'):
+                if node.GetName().startswith('mirrorB_'):
+                    mirrorPoints.append(node)
+            
+            # Skip if "No soft tissue" is selected
+            if method == 0:
+                slicer.util.infoDisplay("Proceeding with bone measurements only (pred_no_soft)")
+                self.softTissueStatusLabel.text = "Using bone measurements only (pred_no_soft)"
+                # Auto-advance to next step
+                self.onNextClicked()
+                return True
+            
+            # Remove any existing predicted profile node
+            existingNode = slicer.util.getFirstNodeByName('PredictedProfile')
+            if existingNode:
+                slicer.mrmlScene.RemoveNode(existingNode)
+            
+            # Create predicted soft tissue points
+            predictedPoints = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', 'PredictedProfile')
+            
+            import numpy as np
+            
+            # Apply the selected method
+            for i in range(planeCount):
+                # Get bone point and mirror point
+                bonePoint = bonePoints[i]
+                mirrorPoint = [0, 0, 0]
+                mirrorPoints[i].GetNthControlPointPosition(0, mirrorPoint)
+                
+                # Calculate vector from mirror point to bone point
+                boneVector = np.array(bonePoint) - np.array(mirrorPoint)
+                boneDistance = np.linalg.norm(boneVector)
+                boneDirection = boneVector / boneDistance if boneDistance > 0 else np.array([0, 0, 0])
+                
+                # Apply prediction method
+                if method == 1:  # Standard P-U method (+2mm anteriorly)
+                    # Standard adds 2mm to each point
+                    tissueDepth = boneDistance + 2.0
+                    
+                elif method == 2:  # Custom values
+                    # Use custom factors based on position
+                    position = i / (planeCount - 1)  # 0 to 1 from bottom to top
+                    
+                    if position < 0.33:  # Bottom third
+                        factor = self.bottomThicknessSpinBox.value
+                    elif position < 0.66:  # Middle third
+                        factor = self.middleThicknessSpinBox.value
+                    else:  # Top third
+                        factor = self.topThicknessSpinBox.value
+                        
+                    tissueDepth = boneDistance * factor
+                
+                # Calculate predicted soft tissue position
+                predictedPosition = np.array(mirrorPoint) + boneDirection * tissueDepth
+                
+                # Add as control point
+                predictedPoints.AddControlPoint(predictedPosition)
+                predictedPoints.SetNthControlPointLabel(i, f"profile{i+1}")
+            
+            # Set display properties for predicted points
+            displayNode = predictedPoints.GetDisplayNode()
+            displayNode.SetSelectedColor(0.0, 0.8, 0.2)  # Green for predicted
+            displayNode.SetPointLabelsVisibility(True)
+            
+            # Create measurements for the soft tissue
+            measurements = self.createSoftTissueMeasurements(planeCount, mirrorPoints, predictedPoints)
+            
+            methodName = "Standard P-U (+2mm)" if method == 1 else "Custom"
+            self.softTissueStatusLabel.text = f"Created {planeCount} predicted soft tissue points using {methodName} method"
+            
+            # Auto-advance to next step
+            self.onNextClicked()
+            return True
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to generate soft tissue: {str(e)}")
+            self.softTissueStatusLabel.text = f"Error generating soft tissue: {str(e)}"
+            return False
+    
+    def createSoftTissueMeasurements(self, planeCount, mirrorPoints, predictedProfileNode):
+        """Create measurements between mirror points and predicted soft tissue points"""
+        # Define color for soft tissue measurements
+        orange = [1.0, 0.5, 0.0]
+        
+        measurements = []
+        
+        # Create measurements between mirror points and predicted soft tissue points
+        for i in range(planeCount):
+            name = f"noseprofiletoB{i+1}"
+            line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+            
+            # Get mirror point
+            mirrorPoint = [0, 0, 0]
+            mirrorPoints[i].GetNthControlPointPosition(0, mirrorPoint)
+            
+            # Get predicted profile point
+            predictedPoint = [0, 0, 0]
+            predictedProfileNode.GetNthControlPointPosition(i, predictedPoint)
+            
+            # Add the points to the line
+            line.AddControlPoint(mirrorPoint)
+            line.AddControlPoint(predictedPoint)
+            
+            # Set display properties
+            displayNode = line.GetDisplayNode()
+            displayNode.SetSelectedColor(*orange)
+            displayNode.SetColor(*orange)
+            
+            # Calculate length
+            length = line.GetLineLengthWorld()
+            measurements.append((name, length))
+        
+        return measurements
+    
+    def onCompareWithRealClicked(self):
+        """Compare predictions with real soft tissue data"""
+        try:
+            # Get predicted profile node
+            predictedProfileNode = slicer.util.getNode('PredictedProfile')
+            
+            # If no predicted profile exists (user chose "No soft tissue"), inform the user
+            if not predictedProfileNode:
+                slicer.util.errorDisplay("No soft tissue predictions found. Please go back to Step 7 and generate soft tissue predictions first.")
+                return False
+            
+            # Get actual profile node or download from GitHub
+            actualProfileNode = self.profileOutlineSelector.currentNode()
+            if not actualProfileNode:
+                # Get plane count to determine which file to download
+                planeCount = 0
+                for node in slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsPlaneNode'):
+                    if node.GetName().startswith('Plane_'):
+                        planeCount += 1
+                
+                # Define GitHub URLs for the soft tissue profiles
+                githubUrls = {
+                    4: "https://github.com/user-attachments/files/19327865/nose.profile.outline.4.mrk.json",
+                    5: "https://github.com/user-attachments/files/19327866/nose.profile.outline.5.mrk.json",
+                    6: "https://github.com/user-attachments/files/19327871/nose.profile.outline.6.mrk.json"
+                }
+                
+                # If we have a URL for the current plane count
+                if planeCount in githubUrls:
+                    url = githubUrls[planeCount]
+                    
+                    # Ask if user wants to download the profile
+                    messageBox = qt.QMessageBox()
+                    messageBox.setIcon(qt.QMessageBox.Question)
+                    messageBox.setWindowTitle("Download Soft Tissue Profile")
+                    messageBox.setText(f"Would you like to download a soft tissue profile for {planeCount} planes?")
+                    messageBox.setStandardButtons(qt.QMessageBox.Yes | qt.QMessageBox.No)
+                    
+                    if messageBox.exec_() == qt.QMessageBox.Yes:
+                        # Create a temporary file to download to
+                        import tempfile
+                        import urllib.request
+                        
+                        with tempfile.NamedTemporaryFile(suffix='.mrk.json', delete=False) as temp_file:
+                            temp_path = temp_file.name
+                        
+                        try:
+                            slicer.util.delayDisplay(f"Downloading soft tissue profile for {planeCount} planes...", 1000)
+                            urllib.request.urlretrieve(url, temp_path)
+                            
+                            # Load the downloaded file
+                            actualProfileNode = slicer.util.loadMarkups(temp_path)
+                            if actualProfileNode:
+                                self.profileOutlineSelector.setCurrentNode(actualProfileNode)
+                            else:
+                                slicer.util.errorDisplay("Failed to load soft tissue profile")
+                                return False
+                            
+                            # Clean up the temporary file
+                            import os
+                            if os.path.exists(temp_path):
+                                os.unlink(temp_path)
+                        except Exception as e:
+                            slicer.util.errorDisplay(f"Failed to download soft tissue profile: {str(e)}")
+                            return False
+                    else:
+                        slicer.util.errorDisplay("Please select an actual soft tissue profile node")
+                        return False
+                else:
+                    slicer.util.errorDisplay("Please select an actual soft tissue profile node")
+                    return False
+            
+            # Get number of planes/points
+            planeCount = predictedProfileNode.GetNumberOfControlPoints()
+            if actualProfileNode.GetNumberOfControlPoints() < planeCount:
+                slicer.util.errorDisplay(f"Actual profile needs at least {planeCount} control points")
+                return False
+            
+            # Create comparison measurements (actual vs predicted)
+            # Define color for comparison lines
+            comparisonColor = [0.6, 0.1, 0.9]  # Purple for comparison
+            
+            for i in range(planeCount):
+                # Get predicted point
+                predictedPoint = [0, 0, 0]
+                predictedProfileNode.GetNthControlPointPosition(i, predictedPoint)
+                
+                # Get actual point
+                actualPoint = [0, 0, 0]
+                actualProfileNode.GetNthControlPointPosition(i, actualPoint)
+                
+                # Create line between predicted and actual
+                comparisonLine = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f"comparison{i+1}")
+                comparisonLine.AddControlPoint(predictedPoint)
+                comparisonLine.AddControlPoint(actualPoint)
+                
+                # Set display properties
+                displayNode = comparisonLine.GetDisplayNode()
+                displayNode.SetSelectedColor(*comparisonColor)
+                displayNode.SetColor(*comparisonColor)
+            
+            # Update the measurements table with comparison data
+            self.updateComparisonMeasurementsTable(actualProfileNode)
+            
+            self.comparisonStatusLabel.text = "Comparison with real data complete"
+            # Auto-advance to next step
+            self.onNextClicked()
+            return True
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to compare with real data: {str(e)}")
+            self.comparisonStatusLabel.text = f"Error comparing with real data: {str(e)}"
+            return False
+            
+    def onPlaneCountChanged(self, value):
+        """Handle plane count slider changes"""
+        self.planeCountValueLabel.text = f"{value} planes"
+    
+    def onCreatePlanesClicked(self):
+        """Handle creating reference planes"""
+        try:
+            # Get the hard tissue landmarks node
+            landmarksNode = self.landmarksSelector.currentNode()
+            if not landmarksNode:
+                slicer.util.errorDisplay("Please select a landmarks node")
+                return
+                    
+            # Create the reference planes
+            inbPlane = self.createINBPlane(landmarksNode)
+            npPlane = self.createNPPlane(inbPlane, landmarksNode)
+            ptPlane = self.createPTPlane(inbPlane, npPlane)
+            
+            if inbPlane and npPlane and ptPlane:
+                self.planesStatusLabel.text = "Reference planes created successfully"
+                # Auto-advance to next step
+                self.onNextClicked()
+                return True
+            else:
+                self.planesStatusLabel.text = "Error creating planes"
+                return False
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to create planes: {str(e)}")
+            self.planesStatusLabel.text = "Error creating planes"
+            return False    
+            
+    def onCreateMirrorPlanesClicked(self):
+        """Handle creating mirror planes"""
+        try:
+            # Get required nodes
+            ptpPlane = slicer.util.getNode('PTP')
+            mawNode = self.mawSelector.currentNode()
+            hardTissueNode = self.landmarksSelector.currentNode()
+            
+            if not ptpPlane:
+                slicer.util.errorDisplay("Please create reference planes first")
+                return False
+            
+            if not mawNode:
+                # Ask if user wants to load MAW from GitHub
+                messageBox = qt.QMessageBox()
+                messageBox.setIcon(qt.QMessageBox.Question)
+                messageBox.setWindowTitle("MAW Not Found")
+                messageBox.setText("Maximum Nasal Width (MAW) not selected.")
+                messageBox.setInformativeText("Would you like to download MAW from GitHub?")
+                messageBox.setStandardButtons(qt.QMessageBox.Yes | qt.QMessageBox.No)
+                
+                if messageBox.exec_() == qt.QMessageBox.Yes:
+                    # URL for the MAW
+                    url = "https://github.com/user-attachments/files/21412671/maximum_aperture_width_MAW.mrk.json"
+                    
+                    # Create a temporary file to download to
+                    import tempfile
+                    import urllib.request
+                    
+                    with tempfile.NamedTemporaryFile(suffix='.mrk.json', delete=False) as temp_file:
+                        temp_path = temp_file.name
+                    
+                    try:
+                        slicer.util.delayDisplay("Downloading MAW from GitHub...", 1000)
+                        urllib.request.urlretrieve(url, temp_path)
+                        
+                        # Load the downloaded file
+                        mawNode = slicer.util.loadMarkups(temp_path)
+                        if mawNode:
+                            self.mawSelector.setCurrentNode(mawNode)
+                        else:
+                            slicer.util.errorDisplay("Failed to load MAW file")
+                            return False
+                        
+                        # Clean up the temporary file
+                        import os
+                        if os.path.exists(temp_path):
+                            os.unlink(temp_path)
+                    except Exception as e:
+                        slicer.util.errorDisplay(f"Failed to download MAW: {str(e)}")
+                        return False
+                else:
+                    slicer.util.errorDisplay("Please select a Maximum Nasal Width node")
+                    return False
+            
+            if not hardTissueNode:
+                slicer.util.errorDisplay("Please select landmarks")
+                return False
+            
+            # Get the number of planes from the slider
+            planeCount = self.planeCountSlider.value
+            
+            # Create the mirror planes
+            planes = self.createMirrorPlanes(planeCount, ptpPlane, mawNode, hardTissueNode)
+            
+            if planes:
+                self.mirrorPlanesStatusLabel.text = f"{planeCount} mirror planes created successfully"
+                # Auto-advance to next step
+                self.onNextClicked()
+                return True
+            else:
+                self.mirrorPlanesStatusLabel.text = "Error creating mirror planes"
+                return False
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to create mirror planes: {str(e)}")
+            self.mirrorPlanesStatusLabel.text = "Error creating mirror planes"
+            return False    
+            
+    def onCreateIntersectionsClicked(self):
+        """Handle creating intersections"""
+        try:
+            # Get the INB plane
+            inbPlane = slicer.util.getNode('INB')
+            if not inbPlane:
+                slicer.util.errorDisplay("Please create reference planes first")
+                return False
+            
+            # Find all mirror planes
+            mirrorPlanes = []
+            for i in range(slicer.mrmlScene.GetNumberOfNodesByClass("vtkMRMLMarkupsPlaneNode")):
+                node = slicer.mrmlScene.GetNthNodeByClass(i, "vtkMRMLMarkupsPlaneNode")
+                if node.GetName().startswith("Plane_"):
+                    mirrorPlanes.append(node)
+            
+            if not mirrorPlanes:
+                slicer.util.errorDisplay("Please create mirror planes first")
+                return False
+                    
+            # Create intersection lines
+            intersectionLines = self.createIntersectionLines(inbPlane, mirrorPlanes)
+            
+            # Create reference lines A and B
+            hardTissueNode = self.landmarksSelector.currentNode()
+            lineA, lineB = self.createReferenceLines(hardTissueNode)
+            
+            # Create intersection points
+            mirrorPoints = self.createLineIntersections(lineB, intersectionLines)
+            
+            self.intersectionsStatusLabel.text = "Intersections created successfully"
+            # Auto-advance to next step
+            self.onNextClicked()
+            return True
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to create intersections: {str(e)}")
+            self.intersectionsStatusLabel.text = "Error creating intersections"
+            return False    
+            
+    def createINBPlane(self, hardTissueNode):
+        """Create INB plane based on nasion, inion, and bregma"""
+        import numpy as np
+        
+        # Get landmark positions
+        point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))  # nasion
+        point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))  # inion
+        point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))  # bregma
+        
+        # Calculate the normal of the plane defined by the three points
+        v1 = point2 - point1
+        v2 = point3 - point1
+        planeNormal = np.cross(v1, v2)
+        planeNormal = planeNormal / np.linalg.norm(planeNormal)  # Normalize the normal vector
+        
+        # Create a new plane node
+        inbPlane = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'INB')
+        
+        # Set the origin of the new plane to the first point
+        inbPlane.SetOrigin(point1)
+        
+        # Set the normal of the new plane
+        inbPlane.SetNormal(planeNormal)
+        
+        return inbPlane
+    
+    def createNPPlane(self, inbPlane, hardTissueNode):
+        """Create NP (nasion-prosthion) plane"""
+        import numpy as np
+        
+        # Get landmark positions
+        prosthion = np.array(hardTissueNode.GetNthControlPointPositionWorld(3))
+        nasion = np.array(hardTissueNode.GetNthControlPointPositionWorld(0))
+        
+        # Calculate the normal of the 'INB' plane
+        inbNormal = np.array(inbPlane.GetNormalWorld())
+        
+        # Calculate the vector between 'prosthion' and 'nasion'
+        vectorPN = nasion - prosthion
+        
+        # Calculate the normal of the new plane (perpendicular to 'INB' and fitting 'prosthion' and 'nasion')
+        newPlaneNormal = np.cross(inbNormal, vectorPN)
+        newPlaneNormal /= np.linalg.norm(newPlaneNormal)  # Normalize the vector
+        
+        # Create a new plane node and name it 'NPP'
+        nppPlane = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'NPP')
+        
+        # Set the origin of the new plane to 'prosthion'
+        nppPlane.SetOriginWorld(prosthion)
+        
+        # Set the normal of the new plane
+        nppPlane.SetNormalWorld(newPlaneNormal)
+        
+        return nppPlane
+    
+    def createPTPlane(self, inbPlane, nppPlane):
+        """Create PT (Prokopec Transverse) plane"""
+        import numpy as np
+        
+        # Calculate the normals of the 'INB' and 'NPP' planes
+        inbNormal = np.array(inbPlane.GetNormalWorld())
+        nppNormal = np.array(nppPlane.GetNormalWorld())
+        
+        # Calculate the normal of the new plane 'PTP' (perpendicular to both 'INB' and 'NPP')
+        ptpNormal = np.cross(inbNormal, nppNormal)
+        ptpNormal /= np.linalg.norm(ptpNormal)  # Normalize the vector
+        
+        # Create a new plane node and name it 'PTP'
+        ptpPlane = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'PTP')
+        
+        # Set the origin of the new plane to the origin of 'INB'
+        ptpPlane.SetOriginWorld(inbPlane.GetOriginWorld())
+        
+        # Set the normal of the new plane
+        ptpPlane.SetNormalWorld(ptpNormal)
+        
+        return ptpPlane    
+        
+    def createMirrorPlanes(self, planeCount, ptpPlane, mawNode, hardTissueNode):
+        """Create mirror planes between maximum nasal width and rhinion"""
+        import numpy as np
+        
+        # Get positions
+        mawPosition = np.array(mawNode.GetNthControlPointPositionWorld(0))
+        rhinionPosition = np.array(hardTissueNode.GetNthControlPointPositionWorld(5))  # rhinion is at index 5
+        
+        # Get the PTP plane normal
+        ptpPlaneNormal = np.array(ptpPlane.GetNormal())
+        
+        # Create the new plane "A" at the MAW level
+        planeA = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'Plane_A')
+        planeA.SetOrigin(mawPosition)
+        planeA.SetNormal(ptpPlaneNormal)
+        
+        # Calculate the distance between Plane_A and the rhinion
+        distance = np.dot(mawPosition - rhinionPosition, ptpPlaneNormal)
+        
+        # Calculate the positions for the new planes B, C, D, (E, F)
+        numPlanes = planeCount - 1
+        planeNames = ['B', 'C', 'D', 'E', 'F'][:numPlanes]
+        planePositions = [rhinionPosition + (i + 1) * distance / (numPlanes + 1) * ptpPlaneNormal for i in range(numPlanes)]
+        
+        planes = [planeA]
+        
+        # Create new planes with names B, C, D, (E, F)
+        for i, pos in enumerate(planePositions):
+            planeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', f'Plane_{planeNames[i]}')
+            planeNode.SetOrigin(pos)
+            planeNode.SetNormal(ptpPlaneNormal)
+            planes.append(planeNode)
+        
+        return planes
+    
+    def createIntersectionLines(self, inbPlane, mirrorPlanes):
+        """Create intersection lines between INB plane and mirror planes"""
+        import numpy as np
+        
+        intersectionLines = []
+        
+        for i, mirrorPlane in enumerate(mirrorPlanes):
+            planeName = mirrorPlane.GetName().split('_')[1]  # Extract 'A', 'B', etc.
+            lineNodeName = f'INB_{planeName}'
+            
+            # Create a new line node for the intersection line
+            intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
+            
+            # Get the normal vectors and points on the planes
+            normal1 = np.array(inbPlane.GetNormalWorld())
+            point1 = np.array(inbPlane.GetOriginWorld())
+            normal2 = np.array(mirrorPlane.GetNormalWorld())
+            point2 = np.array(mirrorPlane.GetOriginWorld())
+            
+            # Calculate the direction vector of the intersection line
+            direction = np.cross(normal1, normal2)
+            
+            # Check if the planes are parallel
+            if np.linalg.norm(direction) == 0:
+                print(f"The planes {inbPlane.GetName()} and {mirrorPlane.GetName()} are parallel and do not intersect.")
+                continue
+            
+            # Calculate a point on the intersection line
+            A = np.array([normal1, normal2, direction])
+            b = np.array([np.dot(normal1, point1), np.dot(normal2, point2), 0])
+            intersection_point = np.linalg.solve(A, b)
+            
+            # Define the start and end points of the line, extending further
+            extension_factor = 1000  # Adjust this factor as needed
+            start_point = intersection_point - extension_factor * direction
+            end_point = intersection_point + extension_factor * direction
+            
+            # Set the points in the line node
+            intersectionLineNode.AddControlPointWorld(start_point)
+            intersectionLineNode.AddControlPointWorld(end_point)
+            
+            intersectionLines.append(intersectionLineNode)
+        
+        return intersectionLines    
+        
+    def createReferenceLines(self, hardTissueNode):
+        """Create reference lines A and B"""
+        import vtk
+        
+        # Create the first line node (Line_A)
+        L_A = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'Line_A')
+        
+        # Retrieve and add nasion (first point)
+        firstPoint = hardTissueNode.GetNthControlPointPositionVector(0)
+        L_A.AddControlPoint(firstPoint)
+        
+        # Retrieve and add prosthion (second point)
+        secondPoint = hardTissueNode.GetNthControlPointPositionVector(3)
+        L_A.AddControlPoint(secondPoint)
+        
+        # Retrieve rhinion point
+        thirdPoint = hardTissueNode.GetNthControlPointPositionVector(5)
+        
+        # Calculate the direction vector of the first line
+        directionVector = vtk.vtkVector3d()
+        directionVector.SetX(secondPoint.GetX() - firstPoint.GetX())
+        directionVector.SetY(secondPoint.GetY() - firstPoint.GetY())
+        directionVector.SetZ(secondPoint.GetZ() - firstPoint.GetZ())
+        
+        # Create the second line node (Line_B)
+        L_B = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'Line_B')
+        
+        # Add rhinion point
+        L_B.AddControlPoint(thirdPoint)
+        
+        # Extend the direction vector
+        factor = 2
+        extendedDirectionVector = vtk.vtkVector3d()
+        extendedDirectionVector.SetX(directionVector.GetX() * factor)
+        extendedDirectionVector.SetY(directionVector.GetY() * factor)
+        extendedDirectionVector.SetZ(directionVector.GetZ() * factor)
+        
+        # Calculate and add the extended point
+        fourthPoint = vtk.vtkVector3d()
+        fourthPoint.SetX(thirdPoint.GetX() + extendedDirectionVector.GetX())
+        fourthPoint.SetY(thirdPoint.GetY() + extendedDirectionVector.GetY())
+        fourthPoint.SetZ(thirdPoint.GetZ() + extendedDirectionVector.GetZ())
+        L_B.AddControlPoint(fourthPoint)
+        
+        return L_A, L_B
+    
+    def createLineIntersections(self, lineNode_B, intersectionLines):
+        """Create intersection points between Line_B and intersection lines"""
+        import numpy as np
+        
+        mirrorPoints = []
+        
+        for i, lineNode in enumerate(intersectionLines):
+            planeName = lineNode.GetName().split('_')[1]  # Extract 'A', 'B', etc.
+            
+            # Get points and directions of the lines
+            p1 = np.array(lineNode_B.GetLineStartPositionWorld())
+            p2 = np.array(lineNode_B.GetLineEndPositionWorld())
+            d1 = p2 - p1
+            d1 /= np.linalg.norm(d1)
+            
+            q1 = np.array(lineNode.GetLineStartPositionWorld())
+            q2 = np.array(lineNode.GetLineEndPositionWorld())
+            d2 = q2 - q1
+            d2 /= np.linalg.norm(d2)
+            
+            # Calculate intersection
+            cross_d1_d2 = np.cross(d1, d2)
+            if np.linalg.norm(cross_d1_d2) == 0:
+                print(f"Lines {lineNode_B.GetName()} and {lineNode.GetName()} are parallel.")
+                continue
+            
+            t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / np.linalg.norm(cross_d1_d2)**2
+            intersection_point = p1 + t * d1
+            
+            # Create a fiducial node for the intersection point
+            fiducialNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'mirrorB_{planeName}')
+            fiducialNode.AddControlPointWorld(intersection_point)
+            
+            # Set the color to hot pink
+            displayNode = fiducialNode.GetDisplayNode()
+            displayNode.SetSelectedColor(255/255, 105/255, 180/255)
+            
+            mirrorPoints.append(fiducialNode)
+        
+        return mirrorPoints
+        
+    def updateComparisonMeasurementsTable(self, actualProfileNode):
+        """Update the measurements table with comparison to real values"""
+        try:
+            # Get predicted profile node
+            predictedProfileNode = slicer.util.getNode('PredictedProfile')
+            
+            # Get all measurement line nodes
+            lineNodes = slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode')
+            
+            # Get the predicted measurements
+            predictedMeasurements = {}
+            for line in lineNodes:
+                name = line.GetName()
+                if name.startswith('noseprofileto'):
+                    predictedMeasurements[name] = line.GetLineLengthWorld()
+            
+            # Get actual profile measurements (from mirror to actual profile)
+            mirrorPoints = []
+            for node in slicer.mrmlScene.GetNodesByClass('vtkMRMLMarkupsFiducialNode'):
+                if node.GetName().startswith('mirrorB_'):
+                    mirrorPoints.append(node)
+            
+            planeCount = min(len(mirrorPoints), actualProfileNode.GetNumberOfControlPoints())
+            
+            actualMeasurements = {}
+            for i in range(planeCount):
+                # Get mirror point
+                mirrorPoint = [0, 0, 0]
+                mirrorPoints[i].GetNthControlPointPosition(0, mirrorPoint)
+                
+                # Get actual profile point
+                actualPoint = [0, 0, 0]
+                actualProfileNode.GetNthControlPointPosition(i, actualPoint)
+                
+                # Calculate distance
+                import numpy as np
+                distance = np.linalg.norm(np.array(actualPoint) - np.array(mirrorPoint))
+                
+                # Store measurement
+                name = f"noseprofiletoB{i+1}"
+                actualMeasurements[name] = distance
+            
+            # Clear and set up measurements table
+            self.measurementsTable.setRowCount(0)
+            
+            # Combine all measurements
+            allMeasurements = []
+            
+            # First add bone measurements
+            for line in lineNodes:
+                name = line.GetName()
+                if name.startswith('nasalboneto'):
+                    allMeasurements.append((name, line.GetLineLengthWorld(), None))
+            
+            # Then add soft tissue measurements with comparisons
+            for name, predicted in predictedMeasurements.items():
+                actual = actualMeasurements.get(name, None)
+                allMeasurements.append((name, predicted, actual))
+            
+            # Sort by name
+            allMeasurements.sort(key=lambda x: x[0])
+            
+            # Add rows to the table
+            self.measurementsTable.setRowCount(len(allMeasurements))
+            for i, (name, predicted, actual) in enumerate(allMeasurements):
+                self.measurementsTable.setItem(i, 0, qt.QTableWidgetItem(name))
+                self.measurementsTable.setItem(i, 1, qt.QTableWidgetItem(f"{predicted:.3f}"))
+                
+                if actual is not None:
+                    difference = ((predicted - actual) / actual) * 100
+                    self.measurementsTable.setItem(i, 2, qt.QTableWidgetItem(f"{actual:.3f} ({difference:.1f}%)"))
+                else:
+                    self.measurementsTable.setItem(i, 2, qt.QTableWidgetItem("Not available"))
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to update measurements table: {str(e)}")
+    
+    def onCopyToClipboardClicked(self):
+        """Copy measurements to clipboard in a table format"""
+        try:
+            # Get table data
+            rowCount = self.measurementsTable.rowCount
+            columnCount = self.measurementsTable.columnCount
+            
+            # Format as tab-separated text for pasting into spreadsheets
+            headers = ["Measurement", "Predicted (mm)", "Actual (mm)"]
+            clipboardText = "\t".join(headers) + "\n"
+            
+            for row in range(rowCount):
+                rowData = []
+                for col in range(columnCount):
+                    item = self.measurementsTable.item(row, col)
+                    if item:
+                        rowData.append(item.text())
+                    else:
+                        rowData.append("")
+                clipboardText += "\t".join(rowData) + "\n"
+            
+            # Copy to clipboard
+            clipboard = qt.QApplication.clipboard()
+            clipboard.setText(clipboardText)
+            
+            self.exportStatusLabel.text = "Measurements copied to clipboard"
+            slicer.util.infoDisplay("Measurements copied to clipboard. You can paste them into Excel or other applications.")
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to copy to clipboard: {str(e)}")
+            self.exportStatusLabel.text = "Error copying to clipboard"
+    
+    def onExportResultsClicked(self):
+        """Handle exporting results"""
+        try:
+            fileName = qt.QFileDialog.getSaveFileName(None, "Save Results", "", "CSV Files (*.csv)")
+            if fileName:
+                # Get table data
+                rowCount = self.measurementsTable.rowCount
+                columnCount = self.measurementsTable.columnCount
+                
+                # Create CSV content
+                headers = ["Measurement", "Predicted (mm)", "Actual (mm)"]
+                csvContent = ",".join(headers) + "\n"
+                
+                for row in range(rowCount):
+                    rowData = []
+                    for col in range(columnCount):
+                        item = self.measurementsTable.item(row, col)
+                        if item:
+                            # Quote the cell if it contains commas
+                            cell = item.text()
+                            if "," in cell:
+                                cell = f'"{cell}"'
+                            rowData.append(cell)
+                        else:
+                            rowData.append("")
+                    csvContent += ",".join(rowData) + "\n"
+                
+                # Save to file
+                try:
+                    with open(fileName, 'w') as f:
+                        f.write(csvContent)
+                    
+                    self.exportStatusLabel.text = f"Results exported to {fileName}"
+                    return True
+                except Exception as e:
+                    slicer.util.errorDisplay(f"Failed to write to file: {str(e)}")
+                    self.exportStatusLabel.text = "Error exporting results"
+                    return False
+        except Exception as e:
+            slicer.util.errorDisplay(f"Failed to export results: {str(e)}")
+            self.exportStatusLabel.text = "Error exporting results"
+            return False 
+
+# Create an instance of the GUI to start it
+nasal_gui = ProkopecUbelakerGUI()
+```
 
 ## Bibliography
 
