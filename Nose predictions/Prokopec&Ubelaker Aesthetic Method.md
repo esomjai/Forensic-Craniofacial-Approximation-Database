@@ -1237,6 +1237,69 @@ for index, pair in enumerate(pointPairs):
 
 ``` python
 ###  4 planes - nasal outline and Line B
+import slicer
+import numpy as np
+
+def get_line_points(line_node):
+    points = []
+    for i in range(line_node.GetNumberOfControlPoints()):
+        point = [0.0, 0.0, 0.0]
+        line_node.GetNthControlPointPosition(i, point)
+        points.append(point)
+    return points
+
+def find_intersection(line1_points, line2_points):
+    p1, p2 = np.array(line1_points[0]), np.array(line1_points[1])
+    p3, p4 = np.array(line2_points[0]), np.array(line2_points[1])
+    
+    d1 = p2 - p1
+    d2 = p4 - p3
+    
+    A = np.array([d1, -d2]).T
+    b = p3 - p1
+    t, s = np.linalg.lstsq(A, b, rcond=None)[0]
+    
+    intersection = p1 + t * d1
+    return intersection
+
+def create_node(name, position):
+    node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', name)
+    node.AddControlPoint(position)
+    # Set the color to magenta (RGB: 255, 0, 255)
+    displayNode = node.GetDisplayNode()
+    displayNode.SetSelectedColor(255/255, 0/255, 255/255)
+
+# Get the line nodes from the scene
+nasal_outline1 = slicer.util.getNode('nasal outline1')
+INB_B = slicer.util.getNode('INB_B')
+nasal_outline2 = slicer.util.getNode('nasal outline2')
+INB_C = slicer.util.getNode('INB_C')
+nasal_outline3 = slicer.util.getNode('nasal outline3')
+INB_D = slicer.util.getNode('INB_D')
+nasal_outline4 = slicer.util.getNode('nasal outline4')
+INB_A = slicer.util.getNode('INB_A')
+
+# Get the points of the lines
+nasal_outline1_points = get_line_points(nasal_outline1)
+INB_B_points = get_line_points(INB_B)
+nasal_outline2_points = get_line_points(nasal_outline2)
+INB_C_points = get_line_points(INB_C)
+nasal_outline3_points = get_line_points(nasal_outline3)
+INB_D_points = get_line_points(INB_D)
+nasal_outline4_points = get_line_points(nasal_outline4)
+INB_A_points = get_line_points(INB_A)
+
+# Find intersections
+bone1 = find_intersection(nasal_outline1_points, INB_B_points)
+bone2 = find_intersection(nasal_outline2_points, INB_C_points)
+bone3 = find_intersection(nasal_outline3_points, INB_D_points)
+bone4 = find_intersection(nasal_outline4_points, INB_A_points)
+
+# Create new nodes
+create_node("bone1", bone1)
+create_node("bone2", bone2)
+create_node("bone3", bone3)
+create_node("bone4", bone4)
 
 ```
 
