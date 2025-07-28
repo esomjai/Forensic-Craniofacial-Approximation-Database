@@ -1,3 +1,5 @@
+
+```python
 # ProkopecUbelakerGUI.py
 # A beginner-friendly GUI for the Prokopec-Ubelaker nasal prediction method
 # Just copy-paste this entire script into 3D Slicer's Python console!
@@ -669,51 +671,103 @@ class ProkopecUbelakerGUI(qt.QWidget):
         self.stepStack.addWidget(step6Widget)
 
     def createStep7Widget(self):
-        """Create widget for Step 7: Bone Profile Results"""
+        """Create widget for Step 7: Nasal Prediction"""
         step7Widget = qt.QWidget()
         layout = qt.QVBoxLayout(step7Widget)
         
         # Title
-        titleLabel = qt.QLabel("Step 7: Bone Profile Results")
+        titleLabel = qt.QLabel("Step 7: Nasal Prediction")
         titleLabel.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(titleLabel)
         
-        # Instructions
-        detailLabel = qt.QLabel(
-            "Create and view bone measurements before adding soft tissue:\n\n"
-            "• Click 'Create Bone Measurements' to generate measurements\n"
-            "• View the measurements in the table\n"
-            "• Export the bone measurements if needed"
-        )
-        detailLabel.setWordWrap(True)
-        layout.addWidget(detailLabel)
+        # Section 1: Connect Outlines
+        sectionLabel1 = qt.QLabel("Section 1: Nasal Bone Outline")
+        sectionLabel1.setStyleSheet("font-weight: bold;")
+        layout.addWidget(sectionLabel1)
         
-        # Create buttons
-        self.createBoneMeasurementsButton = qt.QPushButton("Create Bone Measurements")
-        layout.addWidget(self.createBoneMeasurementsButton)
+        # Button to connect outlines
+        self.connectOutlinesButton = qt.QPushButton("Connect Outlines")
+        self.connectOutlinesButton.toolTip = "Creates lines between nasal bone outline points R1-L1, etc."
+        layout.addWidget(self.connectOutlinesButton)
         
-        # Add measurements table
-        self.boneMeasurementsTable = qt.QTableWidget()
-        self.boneMeasurementsTable.setColumnCount(2)
-        self.boneMeasurementsTable.setHorizontalHeaderLabels(["Measurement", "Value (mm)"])
-        self.boneMeasurementsTable.horizontalHeader().setSectionResizeMode(0, qt.QHeaderView.Stretch)
-        self.boneMeasurementsTable.horizontalHeader().setSectionResizeMode(1, qt.QHeaderView.ResizeToContents)
-        self.boneMeasurementsTable.verticalHeader().setVisible(False)
-        layout.addWidget(self.boneMeasurementsTable)
+        # Description
+        descLabel1 = qt.QLabel("This step creates the lines between the nasal bone outline points R1-L1, etc. and names them \"nasal outline1\" etc.")
+        descLabel1.setWordWrap(True)
+        layout.addWidget(descLabel1)
         
-        # Export button
-        self.exportBoneResultsButton = qt.QPushButton("Export Bone Measurements")
-        self.exportBoneResultsButton.enabled = False  # Initially disabled
-        layout.addWidget(self.exportBoneResultsButton)
+        # Section 2: Find Intersections
+        sectionLabel2 = qt.QLabel("Section 2: Find Bone-Mirror Intersections")
+        sectionLabel2.setStyleSheet("font-weight: bold;")
+        layout.addWidget(sectionLabel2)
         
-        # Add status label
-        self.boneMeasurementsStatusLabel = qt.QLabel("Ready to create bone measurements")
-        self.boneMeasurementsStatusLabel.setWordWrap(True)
-        layout.addWidget(self.boneMeasurementsStatusLabel)
+        # Button to find intersections
+        self.findBoneIntersectionsButton = qt.QPushButton("Find intersection between the nasal outline lines and Line B (mirror)")
+        layout.addWidget(self.findBoneIntersectionsButton)
+        
+        # Description
+        descLabel2 = qt.QLabel("This step finds the intersection points of these R-L nasal aperture lines and Line B in magenta, and names them \"bone1\" etc.")
+        descLabel2.setWordWrap(True)
+        layout.addWidget(descLabel2)
+        
+        # Add button to adjust bone points
+        self.adjustBonePointsButton = qt.QPushButton("Adjust bone points to mirror planes")
+        self.adjustBonePointsButton.toolTip = "Projects bone intersection points onto their respective mirror plane lines"
+        layout.addWidget(self.adjustBonePointsButton)
+            
+        # Description
+        descLabel3 = qt.QLabel("This step ensures bone points lie exactly on their mirror plane lines for accurate measurements.")
+        descLabel3.setWordWrap(True)
+        layout.addWidget(descLabel3)
+
+        # Connect the button
+        self.adjustBonePointsButton.connect('clicked(bool)', self.onAdjustBonePointsClicked)
+        
+        # Section 3: Run Prediction
+        sectionLabel3 = qt.QLabel("Section 3: Run Nasal Prediction")
+        sectionLabel3.setStyleSheet("font-weight: bold;")
+        layout.addWidget(sectionLabel3)
+        
+        # Button for mirrored predictions
+        self.createMirrorPredictionButton = qt.QPushButton("Create only mirrored predictions")
+        layout.addWidget(self.createMirrorPredictionButton)
+        
+        # Button for 2mm FSTT
+        self.create2mmPredictionButton = qt.QPushButton("Create prediction with 2mm added as FSTT")
+        layout.addWidget(self.create2mmPredictionButton)
+        
+        # Button for custom FSTT
+        self.createCustomPredictionButton = qt.QPushButton("Create prediction with custom FSTT")
+        layout.addWidget(self.createCustomPredictionButton)
+        
+        # Warning about FSTT
+        warningLabel = qt.QLabel("⚠️ Warning: These are not the typical locations of facial soft tissue thicknesses. Treat results accordingly.")
+        warningLabel.setStyleSheet("color: orange;")
+        warningLabel.setWordWrap(True)
+        layout.addWidget(warningLabel)
+        
+        # Custom FSTT input
+        customFSTTLayout = qt.QHBoxLayout()
+        customFSTTLabel = qt.QLabel("Custom FSTT (mm):")
+        self.customFSTTSpinBox = qt.QDoubleSpinBox()
+        self.customFSTTSpinBox.minimum = 0.0
+        self.customFSTTSpinBox.maximum = 20.0
+        self.customFSTTSpinBox.value = 2.0
+        self.customFSTTSpinBox.singleStep = 0.5
+        customFSTTLayout.addWidget(customFSTTLabel)
+        customFSTTLayout.addWidget(self.customFSTTSpinBox)
+        layout.addLayout(customFSTTLayout)
+        
+        # Status label
+        self.predictionStatusLabel = qt.QLabel("Ready to create nasal predictions")
+        self.predictionStatusLabel.setWordWrap(True)
+        layout.addWidget(self.predictionStatusLabel)
         
         # Connect buttons
-        self.createBoneMeasurementsButton.connect('clicked(bool)', self.onCreateBoneMeasurementsClicked)
-        self.exportBoneResultsButton.connect('clicked(bool)', self.onExportBoneResultsClicked)
+        self.connectOutlinesButton.connect('clicked(bool)', self.onConnectOutlinesClicked)
+        self.findBoneIntersectionsButton.connect('clicked(bool)', self.onFindBoneIntersectionsClicked)
+        self.createMirrorPredictionButton.connect('clicked(bool)', self.onCreateMirrorPredictionClicked)
+        self.create2mmPredictionButton.connect('clicked(bool)', self.onCreate2mmPredictionClicked)
+        self.createCustomPredictionButton.connect('clicked(bool)', self.onCreateCustomPredictionClicked)
         
         # Add to step stack
         self.stepStack.addWidget(step7Widget)
@@ -2094,6 +2148,620 @@ class ProkopecUbelakerGUI(qt.QWidget):
             import traceback
             traceback.print_exc()
         
+    def onConnectOutlinesClicked(self):
+        """Connect nasal bone outline points with lines"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Connecting nasal bone outlines..."
+            slicer.app.processEvents()
+            
+            # Check if bone outline exists
+            try:
+                boneOutlineNode = slicer.util.getNode("nasal_bone_outline")
+                if not boneOutlineNode:
+                    self.predictionStatusLabel.text = "Error: Nasal bone outline not found! Please download it in Step 6."
+                    return
+            except:
+                self.predictionStatusLabel.text = "Error: Nasal bone outline not found! Please download it in Step 6."
+                return
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Remove any existing nasal outline lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('nasal outline'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to create a line between two points
+            def create_line(name, point1, point2):
+                line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+                line_node.AddControlPoint(point1)
+                line_node.AddControlPoint(point2)
+                # Set line color to green
+                display_node = line_node.GetDisplayNode()
+                display_node.SetSelectedColor(0.0, 1.0, 0.0)  # Green
+                display_node.SetColor(0.0, 1.0, 0.0)
+                return line_node
+            
+            # Get control points from the bone outline
+            control_points = []
+            for i in range(boneOutlineNode.GetNumberOfControlPoints()):
+                point = [0, 0, 0]
+                boneOutlineNode.GetNthControlPointPosition(i, point)
+                control_points.append(point)
+            
+            # Create the connecting lines based on number of planes
+            created_lines = []
+            
+            if planeCount == 4:
+                # For 4 planes: Connect points as pairs
+                if len(control_points) >= 8:
+                    line1 = create_line("nasal outline1", control_points[0], control_points[4])
+                    line2 = create_line("nasal outline2", control_points[1], control_points[5])
+                    line3 = create_line("nasal outline3", control_points[2], control_points[6])
+                    line4 = create_line("nasal outline4", control_points[3], control_points[7])
+                    created_lines.extend([line1, line2, line3, line4])
+                else:
+                    self.predictionStatusLabel.text = f"Error: Not enough control points ({len(control_points)}) for 4 planes"
+                    return
+                    
+            elif planeCount == 5:
+                # For 5 planes: Connect points as pairs
+                if len(control_points) >= 10:
+                    line1 = create_line("nasal outline1", control_points[0], control_points[5])
+                    line2 = create_line("nasal outline2", control_points[1], control_points[6])
+                    line3 = create_line("nasal outline3", control_points[2], control_points[7])
+                    line4 = create_line("nasal outline4", control_points[3], control_points[8])
+                    line5 = create_line("nasal outline5", control_points[4], control_points[9])
+                    created_lines.extend([line1, line2, line3, line4, line5])
+                else:
+                    self.predictionStatusLabel.text = f"Error: Not enough control points ({len(control_points)}) for 5 planes"
+                    return
+                    
+            elif planeCount == 6:
+                # For 6 planes: Connect points as pairs
+                if len(control_points) >= 12:
+                    line1 = create_line("nasal outline1", control_points[0], control_points[6])
+                    line2 = create_line("nasal outline2", control_points[1], control_points[7])
+                    line3 = create_line("nasal outline3", control_points[2], control_points[8])
+                    line4 = create_line("nasal outline4", control_points[3], control_points[9])
+                    line5 = create_line("nasal outline5", control_points[4], control_points[10])
+                    line6 = create_line("nasal outline6", control_points[5], control_points[11])
+                    created_lines.extend([line1, line2, line3, line4, line5, line6])
+                else:
+                    self.predictionStatusLabel.text = f"Error: Not enough control points ({len(control_points)}) for 6 planes"
+                    return
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(created_lines)} nasal outline lines!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error connecting outlines: {str(e)}"
+            import traceback
+            traceback.print_exc()
+            
+    def onFindBoneIntersectionsClicked(self):
+        """Find intersections between nasal outline lines and Line B"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Finding bone intersection points..."
+            slicer.app.processEvents()
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Check if Line B exists
+            try:
+                lineBNode = slicer.util.getNode('Line_B')
+                if not lineBNode:
+                    self.predictionStatusLabel.text = "Error: Line_B not found! Please create it first."
+                    return
+            except:
+                self.predictionStatusLabel.text = "Error: Line_B not found! Please create it first."
+                return
+            
+            # Check if nasal outline lines exist
+            nasal_outline_lines = []
+            for i in range(1, planeCount + 1):
+                try:
+                    line = slicer.util.getNode(f'nasal outline{i}')
+                    nasal_outline_lines.append(line)
+                except:
+                    self.predictionStatusLabel.text = f"Error: 'nasal outline{i}' not found! Please connect outlines first."
+                    return
+            
+            # Remove any existing bone intersection points
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsFiducialNode'):
+                if node.GetName().startswith('bone'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to find intersection between two lines
+            def find_line_intersection(line1, line2):
+                import numpy as np
+                
+                # Get points from the first line
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                line1.GetNthControlPointPositionWorld(0, p1)
+                line1.GetNthControlPointPositionWorld(1, p2)
+                
+                # Get points from the second line
+                q1 = np.array([0.0, 0.0, 0.0])
+                q2 = np.array([0.0, 0.0, 0.0])
+                line2.GetNthControlPointPositionWorld(0, q1)
+                line2.GetNthControlPointPositionWorld(1, q2)
+                
+                # Calculate direction vectors
+                d1 = p2 - p1
+                d2 = q2 - q1
+                
+                # Normalize directions
+                if np.linalg.norm(d1) == 0 or np.linalg.norm(d2) == 0:
+                    return None  # Avoid division by zero
+                d1 = d1 / np.linalg.norm(d1)
+                d2 = d2 / np.linalg.norm(d2)
+                
+                # Calculate cross product
+                cross_d1_d2 = np.cross(d1, d2)
+                if np.linalg.norm(cross_d1_d2) < 1e-10:  # Lines are nearly parallel
+                    return None
+                
+                # Calculate intersection parameter
+                t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / np.linalg.norm(cross_d1_d2)**2
+                
+                # Calculate intersection point
+                intersection = p1 + t * d1
+                return intersection
+            
+            # Find intersections
+            intersection_points = []
+            for i, line in enumerate(nasal_outline_lines):
+                intersection = find_line_intersection(line, lineBNode)
+                if intersection is not None:
+                    # Create fiducial point for intersection
+                    fiducial = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'bone{i+1}')
+                    fiducial.AddControlPointWorld(intersection)
+                    
+                    # Set the color to magenta
+                    displayNode = fiducial.GetDisplayNode()
+                    displayNode.SetSelectedColor(1.0, 0.0, 1.0)  # Magenta
+                    
+                    intersection_points.append(fiducial)
+            
+            # Store the intersection points for later use
+            self.bone_intersection_points = intersection_points
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Found {len(intersection_points)} bone intersection points!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error finding intersections: {str(e)}"
+            import traceback
+            traceback.print_exc()
+    
+    def onAdjustBonePointsClicked(self):
+        """Adjust bone intersection points to lie exactly on their mirror plane lines"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Adjusting bone points to mirror planes..."
+            slicer.app.processEvents()
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Check if required nodes exist
+            try:
+                # Check for intersection lines
+                inb_lines = []
+                for i in range(planeCount):
+                    letter = chr(65 + i)  # A, B, C, D, etc.
+                    inb_line = slicer.util.getNode(f'INB_{letter}')
+                    if not inb_line:
+                        self.predictionStatusLabel.text = f"Error: Line 'INB_{letter}' not found! Run Step 4 first."
+                        return
+                    inb_lines.append(inb_line)
+                    
+                # Check for bone intersection points
+                bone_points = []
+                for i in range(1, planeCount + 1):
+                    try:
+                        bone_point = slicer.util.getNode(f'bone{i}')
+                        if not bone_point:
+                            self.predictionStatusLabel.text = f"Error: Bone point 'bone{i}' not found! Run previous step first."
+                            return
+                        bone_points.append(bone_point)
+                    except:
+                        self.predictionStatusLabel.text = f"Error: Bone point 'bone{i}' not found! Run previous step first."
+                        return
+                    
+            except Exception as e:
+                self.predictionStatusLabel.text = f"Error finding required nodes: {str(e)}"
+                return
+                
+            # Import numpy
+            import numpy as np
+            
+            # Functions to check if point is on line and adjust if needed
+            def is_point_on_line(line_points, point):
+                p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+                point = np.array(point)
+                line_vec = p2 - p1
+                point_vec = point - p1
+                cross_product = np.cross(line_vec, point_vec)
+                return np.allclose(cross_product, 0, atol=1e-3)
+            
+            def adjust_point_to_line(line_points, point):
+                p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+                point = np.array(point)
+                line_vec = p2 - p1
+                line_vec_normalized = line_vec / np.linalg.norm(line_vec)
+                point_vec = point - p1
+                projection_length = np.dot(point_vec, line_vec_normalized)
+                adjusted_point = p1 + projection_length * line_vec_normalized
+                return adjusted_point.tolist()
+            
+            # Count adjustments made
+            adjustments_made = 0
+            
+            # Process each bone point with its corresponding INB line
+            for i, (bone_point, inb_line) in enumerate(zip(bone_points, inb_lines)):
+                # Get line points
+                line_points = []
+                for j in range(2):
+                    point = [0, 0, 0]
+                    inb_line.GetNthControlPointPosition(j, point)
+                    line_points.append(point)
+                
+                # Get bone point position
+                bone_pos = [0, 0, 0]
+                bone_point.GetNthControlPointPosition(0, bone_pos)
+                
+                # Check if point is already on line
+                if not is_point_on_line(line_points, bone_pos):
+                    # Adjust point to lie on line
+                    adjusted_pos = adjust_point_to_line(line_points, bone_pos)
+                    bone_point.SetNthControlPointPosition(0, adjusted_pos[0], adjusted_pos[1], adjusted_pos[2])
+                    adjustments_made += 1
+                    
+            # Update status
+            if adjustments_made > 0:
+                self.predictionStatusLabel.text = f"✅ Adjusted {adjustments_made} bone points to lie on mirror planes!"
+            else:
+                self.predictionStatusLabel.text = "✅ All bone points were already on their mirror planes!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error adjusting bone points: {str(e)}"
+            import traceback
+            traceback.print_exc()
+
+    def onCreateMirrorPredictionClicked(self):
+        """Create nasal prediction using mirror method"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Creating mirrored predictions..."
+            slicer.app.processEvents()
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Check for required nodes
+            try:
+                # Check for mirror intersection points (B_B maps to first plane, B_C to second, etc)
+                mirror_points = []
+                for i in range(planeCount):
+                    letter = chr(66 + i)  # B, C, D, etc. (offset by 1)
+                    if letter > 'Z':  # Handle case of more than 26 planes (unlikely)
+                        letter = chr(65 + (i % 26))
+                    mirror_point = slicer.util.getNode(f'mirrorB_{letter}')
+                    if not mirror_point:
+                        self.predictionStatusLabel.text = f"Error: Mirror point 'mirrorB_{letter}' not found! Run Step 5 first."
+                        return
+                    mirror_points.append(mirror_point)
+                
+                # Check for bone intersection points
+                bone_points = []
+                for i in range(1, planeCount + 1):
+                    bone_point = slicer.util.getNode(f'bone{i}')
+                    if not bone_point:
+                        self.predictionStatusLabel.text = f"Error: Bone point 'bone{i}' not found! Run previous step first."
+                        return
+                    bone_points.append(bone_point)
+                    
+                # Check for intersection lines
+                inb_lines = []
+                for i in range(planeCount):
+                    letter = chr(65 + i)  # A, B, C, D, etc.
+                    inb_line = slicer.util.getNode(f'INB_{letter}')
+                    if not inb_line:
+                        self.predictionStatusLabel.text = f"Error: Line 'INB_{letter}' not found! Run Step 4 first."
+                        return
+                    inb_lines.append(inb_line)
+                    
+            except Exception as e:
+                self.predictionStatusLabel.text = f"Error finding required nodes: {str(e)}"
+                return
+                
+            # Remove any existing prediction lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('pred soft nose outline'):
+                    slicer.mrmlScene.RemoveNode(node)
+                    
+            # Remove any existing measurement lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('nasalboneto'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Create measurement lines between mirror and bone points (lilac color)
+            lilac = [0.78, 0.64, 0.78]
+            nasal_bone_to_b_lines = []
+            
+            # Get actual positions as arrays
+            mirror_positions = []
+            bone_positions = []
+            
+            for i in range(planeCount):
+                # Get mirror point position
+                mirror_pos = [0, 0, 0]
+                mirror_points[i].GetNthControlPointPosition(0, mirror_pos)
+                mirror_positions.append(mirror_pos)
+                
+                # Get bone point position
+                bone_pos = [0, 0, 0]
+                bone_points[i].GetNthControlPointPosition(0, bone_pos)
+                bone_positions.append(bone_pos)
+                
+                # Now create the line using the positions (not the nodes)
+                line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f'nasalbonetoB{i+1}')
+                line_node.AddControlPoint(mirror_pos)
+                line_node.AddControlPoint(bone_pos)
+                
+                # Set line color
+                display_node = line_node.GetDisplayNode()
+                display_node.SetSelectedColor(*lilac)
+                display_node.SetColor(*lilac)
+                
+                nasal_bone_to_b_lines.append(line_node)
+            
+            # Function to calculate length of a line
+            def calculate_length(line_node):
+                import numpy as np
+                
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                line_node.GetNthControlPointPosition(0, p1)
+                line_node.GetNthControlPointPosition(1, p2)
+                
+                return np.linalg.norm(p2 - p1)
+            
+            # Function to create a parallel line with given length
+            def create_parallel_line(name, start_point, length, reference_line, color):
+                import numpy as np
+                
+                # Get direction from reference line
+                ref_p1 = np.array([0.0, 0.0, 0.0])
+                ref_p2 = np.array([0.0, 0.0, 0.0])
+                reference_line.GetNthControlPointPosition(0, ref_p1)
+                reference_line.GetNthControlPointPosition(1, ref_p2)
+                
+                # Calculate unit direction vector
+                direction = ref_p2 - ref_p1
+                unit_direction = direction / np.linalg.norm(direction)
+                
+                # Calculate end point
+                end_point = np.array(start_point) + unit_direction * length
+                
+                # Create the line
+                line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+                line_node.AddControlPoint(start_point)
+                line_node.AddControlPoint(end_point.tolist())
+                
+                # Set the color
+                display_node = line_node.GetDisplayNode()
+                display_node.SetSelectedColor(*color)
+                display_node.SetColor(*color)
+                
+                return line_node
+            
+            # Create prediction lines (deep purple)
+            deep_purple = [0.29, 0.0, 0.51]
+            prediction_lines = []
+            
+            for i in range(planeCount):
+                # Use the already fetched positions
+                mirror_point_pos = mirror_positions[i]
+                
+                # Calculate length of measurement line
+                length = calculate_length(nasal_bone_to_b_lines[i])
+                
+                # Create prediction line with parallel direction to INB line
+                prediction_line = create_parallel_line(
+                    f"pred soft nose outline{i+1}",
+                    mirror_point_pos,
+                    length,
+                    inb_lines[i],
+                    deep_purple
+                )
+                
+                prediction_lines.append(prediction_line)
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(prediction_lines)} mirror prediction lines!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error creating predictions: {str(e)}"
+            import traceback
+            traceback.print_exc()
+            
+    def onCreate2mmPredictionClicked(self):
+        """Create nasal prediction with 2mm added as FSTT"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Creating predictions with 2mm FSTT..."
+            slicer.app.processEvents()
+            
+            # Run the mirror prediction first (to ensure we have all the base measurements)
+            self.onCreateMirrorPredictionClicked()
+            
+            # Check if mirror predictions were created successfully
+            if not self.predictionStatusLabel.text.startswith("✅"):
+                return  # Error already shown by the mirror prediction method
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Remove any existing 2mm prediction lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('pred soft nose outline+2mm'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to extend a line by a specific length
+            def extend_line(source_line, extra_length, new_name, color=[0.5, 0.0, 0.5]):
+                import numpy as np
+                
+                # Get line points
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                source_line.GetNthControlPointPosition(0, p1)
+                source_line.GetNthControlPointPosition(1, p2)
+                
+                # Calculate direction vector
+                direction = p2 - p1
+                unit_direction = direction / np.linalg.norm(direction)
+                
+                # Calculate extended end point (p2 + 2mm in same direction)
+                extended_end = p2 + unit_direction * extra_length
+                
+                # Create new line
+                new_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', new_name)
+                new_line.AddControlPoint(p1.tolist())
+                new_line.AddControlPoint(extended_end.tolist())
+                
+                # Set color
+                display_node = new_line.GetDisplayNode()
+                display_node.SetSelectedColor(*color)
+                display_node.SetColor(*color)
+                
+                return new_line
+            
+            # Extend each prediction line by 2mm
+            prediction_lines_2mm = []
+            for i in range(1, planeCount + 1):
+                # Get original prediction line
+                try:
+                    pred_line = slicer.util.getNode(f'pred soft nose outline{i}')
+                    if not pred_line:
+                        self.predictionStatusLabel.text = f"Error: Prediction line {i} not found!"
+                        return
+                        
+                    # Extend by 2mm and create new line
+                    extended_line = extend_line(
+                        pred_line, 
+                        2.0,  # 2mm additional
+                        f'pred soft nose outline+2mm {i}', 
+                        [0.85, 0.0, 0.85]  # Bright purple
+                    )
+                    
+                    prediction_lines_2mm.append(extended_line)
+                    
+                except Exception as e:
+                    self.predictionStatusLabel.text = f"Error extending line {i}: {str(e)}"
+                    return
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(prediction_lines_2mm)} prediction lines with 2mm FSTT!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error creating 2mm predictions: {str(e)}"
+            import traceback
+            traceback.print_exc()
+            
+    def onCreateCustomPredictionClicked(self):
+        """Create nasal prediction with custom FSTT value"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Creating predictions with custom FSTT..."
+            slicer.app.processEvents()
+            
+            # Get custom FSTT value
+            custom_fstt = self.customFSTTSpinBox.value
+            
+            # Run the mirror prediction first (to ensure we have all the base measurements)
+            self.onCreateMirrorPredictionClicked()
+            
+            # Check if mirror predictions were created successfully
+            if not self.predictionStatusLabel.text.startswith("✅"):
+                return  # Error already shown by the mirror prediction method
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Remove any existing custom prediction lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith(f'pred soft nose outline+{custom_fstt}mm'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to extend a line by a specific length
+            def extend_line(source_line, extra_length, new_name, color=[0.0, 0.5, 1.0]):
+                import numpy as np
+                
+                # Get line points
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                source_line.GetNthControlPointPosition(0, p1)
+                source_line.GetNthControlPointPosition(1, p2)
+                
+                # Calculate direction vector
+                direction = p2 - p1
+                unit_direction = direction / np.linalg.norm(direction)
+                
+                # Calculate extended end point (p2 + custom_fstt in same direction)
+                extended_end = p2 + unit_direction * extra_length
+                
+                # Create new line
+                new_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', new_name)
+                new_line.AddControlPoint(p1.tolist())
+                new_line.AddControlPoint(extended_end.tolist())
+                
+                # Set color
+                display_node = new_line.GetDisplayNode()
+                display_node.SetSelectedColor(*color)
+                display_node.SetColor(*color)
+                
+                return new_line
+            
+            # Extend each prediction line by custom FSTT
+            prediction_lines_custom = []
+            for i in range(1, planeCount + 1):
+                # Get original prediction line
+                try:
+                    pred_line = slicer.util.getNode(f'pred soft nose outline{i}')
+                    if not pred_line:
+                        self.predictionStatusLabel.text = f"Error: Prediction line {i} not found!"
+                        return
+                        
+                    # Extend by custom FSTT and create new line
+                    extended_line = extend_line(
+                        pred_line, 
+                        custom_fstt,  # Custom FSTT value
+                        f'pred soft nose outline+{custom_fstt}mm {i}', 
+                        [0.0, 0.7, 0.9]  # Blue-cyan
+                    )
+                    
+                    prediction_lines_custom.append(extended_line)
+                    
+                except Exception as e:
+                    self.predictionStatusLabel.text = f"Error extending line {i}: {str(e)}"
+                    return
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(prediction_lines_custom)} prediction lines with {custom_fstt}mm FSTT!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error creating custom predictions: {str(e)}"
+            import traceback
+            traceback.print_exc()
+    
     def onCreateBoneMeasurementsClicked(self):
         """Create bone measurements"""
         self.boneMeasurementsStatusLabel.text = "Creating bone measurements... (not implemented yet)"
@@ -3262,51 +3930,103 @@ class ProkopecUbelakerGUI(qt.QWidget):
         self.stepStack.addWidget(step6Widget)
 
     def createStep7Widget(self):
-        """Create widget for Step 7: Bone Profile Results"""
+        """Create widget for Step 7: Nasal Prediction"""
         step7Widget = qt.QWidget()
         layout = qt.QVBoxLayout(step7Widget)
         
         # Title
-        titleLabel = qt.QLabel("Step 7: Bone Profile Results")
+        titleLabel = qt.QLabel("Step 7: Nasal Prediction")
         titleLabel.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(titleLabel)
         
-        # Instructions
-        detailLabel = qt.QLabel(
-            "Create and view bone measurements before adding soft tissue:\n\n"
-            "• Click 'Create Bone Measurements' to generate measurements\n"
-            "• View the measurements in the table\n"
-            "• Export the bone measurements if needed"
-        )
-        detailLabel.setWordWrap(True)
-        layout.addWidget(detailLabel)
+        # Section 1: Connect Outlines
+        sectionLabel1 = qt.QLabel("Section 1: Nasal Bone Outline")
+        sectionLabel1.setStyleSheet("font-weight: bold;")
+        layout.addWidget(sectionLabel1)
         
-        # Create buttons
-        self.createBoneMeasurementsButton = qt.QPushButton("Create Bone Measurements")
-        layout.addWidget(self.createBoneMeasurementsButton)
+        # Button to connect outlines
+        self.connectOutlinesButton = qt.QPushButton("Connect Outlines")
+        self.connectOutlinesButton.toolTip = "Creates lines between nasal bone outline points R1-L1, etc."
+        layout.addWidget(self.connectOutlinesButton)
         
-        # Add measurements table
-        self.boneMeasurementsTable = qt.QTableWidget()
-        self.boneMeasurementsTable.setColumnCount(2)
-        self.boneMeasurementsTable.setHorizontalHeaderLabels(["Measurement", "Value (mm)"])
-        self.boneMeasurementsTable.horizontalHeader().setSectionResizeMode(0, qt.QHeaderView.Stretch)
-        self.boneMeasurementsTable.horizontalHeader().setSectionResizeMode(1, qt.QHeaderView.ResizeToContents)
-        self.boneMeasurementsTable.verticalHeader().setVisible(False)
-        layout.addWidget(self.boneMeasurementsTable)
+        # Description
+        descLabel1 = qt.QLabel("This step creates the lines between the nasal bone outline points R1-L1, etc. and names them \"nasal outline1\" etc.")
+        descLabel1.setWordWrap(True)
+        layout.addWidget(descLabel1)
         
-        # Export button
-        self.exportBoneResultsButton = qt.QPushButton("Export Bone Measurements")
-        self.exportBoneResultsButton.enabled = False  # Initially disabled
-        layout.addWidget(self.exportBoneResultsButton)
+        # Section 2: Find Intersections
+        sectionLabel2 = qt.QLabel("Section 2: Find Bone-Mirror Intersections")
+        sectionLabel2.setStyleSheet("font-weight: bold;")
+        layout.addWidget(sectionLabel2)
         
-        # Add status label
-        self.boneMeasurementsStatusLabel = qt.QLabel("Ready to create bone measurements")
-        self.boneMeasurementsStatusLabel.setWordWrap(True)
-        layout.addWidget(self.boneMeasurementsStatusLabel)
+        # Button to find intersections
+        self.findBoneIntersectionsButton = qt.QPushButton("Find intersection between the nasal outline lines and Line B (mirror)")
+        layout.addWidget(self.findBoneIntersectionsButton)
+        
+        # Description
+        descLabel2 = qt.QLabel("This step finds the intersection points of these R-L nasal aperture lines and Line B in magenta, and names them \"bone1\" etc.")
+        descLabel2.setWordWrap(True)
+        layout.addWidget(descLabel2)
+        
+        # Add button to adjust bone points
+        self.adjustBonePointsButton = qt.QPushButton("Adjust bone points to mirror planes")
+        self.adjustBonePointsButton.toolTip = "Projects bone intersection points onto their respective mirror plane lines"
+        layout.addWidget(self.adjustBonePointsButton)
+            
+        # Description
+        descLabel3 = qt.QLabel("This step ensures bone points lie exactly on their mirror plane lines for accurate measurements.")
+        descLabel3.setWordWrap(True)
+        layout.addWidget(descLabel3)
+
+        # Connect the button
+        self.adjustBonePointsButton.connect('clicked(bool)', self.onAdjustBonePointsClicked)
+        
+        # Section 3: Run Prediction
+        sectionLabel3 = qt.QLabel("Section 3: Run Nasal Prediction")
+        sectionLabel3.setStyleSheet("font-weight: bold;")
+        layout.addWidget(sectionLabel3)
+        
+        # Button for mirrored predictions
+        self.createMirrorPredictionButton = qt.QPushButton("Create only mirrored predictions")
+        layout.addWidget(self.createMirrorPredictionButton)
+        
+        # Button for 2mm FSTT
+        self.create2mmPredictionButton = qt.QPushButton("Create prediction with 2mm added as FSTT")
+        layout.addWidget(self.create2mmPredictionButton)
+        
+        # Button for custom FSTT
+        self.createCustomPredictionButton = qt.QPushButton("Create prediction with custom FSTT")
+        layout.addWidget(self.createCustomPredictionButton)
+        
+        # Warning about FSTT
+        warningLabel = qt.QLabel("⚠️ Warning: These are not the typical locations of facial soft tissue thicknesses. Treat results accordingly.")
+        warningLabel.setStyleSheet("color: orange;")
+        warningLabel.setWordWrap(True)
+        layout.addWidget(warningLabel)
+        
+        # Custom FSTT input
+        customFSTTLayout = qt.QHBoxLayout()
+        customFSTTLabel = qt.QLabel("Custom FSTT (mm):")
+        self.customFSTTSpinBox = qt.QDoubleSpinBox()
+        self.customFSTTSpinBox.minimum = 0.0
+        self.customFSTTSpinBox.maximum = 20.0
+        self.customFSTTSpinBox.value = 2.0
+        self.customFSTTSpinBox.singleStep = 0.5
+        customFSTTLayout.addWidget(customFSTTLabel)
+        customFSTTLayout.addWidget(self.customFSTTSpinBox)
+        layout.addLayout(customFSTTLayout)
+        
+        # Status label
+        self.predictionStatusLabel = qt.QLabel("Ready to create nasal predictions")
+        self.predictionStatusLabel.setWordWrap(True)
+        layout.addWidget(self.predictionStatusLabel)
         
         # Connect buttons
-        self.createBoneMeasurementsButton.connect('clicked(bool)', self.onCreateBoneMeasurementsClicked)
-        self.exportBoneResultsButton.connect('clicked(bool)', self.onExportBoneResultsClicked)
+        self.connectOutlinesButton.connect('clicked(bool)', self.onConnectOutlinesClicked)
+        self.findBoneIntersectionsButton.connect('clicked(bool)', self.onFindBoneIntersectionsClicked)
+        self.createMirrorPredictionButton.connect('clicked(bool)', self.onCreateMirrorPredictionClicked)
+        self.create2mmPredictionButton.connect('clicked(bool)', self.onCreate2mmPredictionClicked)
+        self.createCustomPredictionButton.connect('clicked(bool)', self.onCreateCustomPredictionClicked)
         
         # Add to step stack
         self.stepStack.addWidget(step7Widget)
@@ -3651,6 +4371,56 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 
         except Exception as e:
             self.landmarksStatusLabel.text = f"Error: {str(e)}"
+            
+    def onCheckLandmarksClicked(self):
+        """Check if all required landmarks are detected correctly"""
+        try:
+            # Get selected landmarks node
+            landmarksNode = self.landmarksSelector.currentNode()
+            if not landmarksNode:
+                self.planesStatusLabel.text = "Error: Please select landmarks first!"
+                return
+            
+            # List all landmarks in the node
+            all_labels = []
+            for i in range(landmarksNode.GetNumberOfControlPoints()):
+                label = landmarksNode.GetNthControlPointLabel(i)
+                all_labels.append(f"{i}: {label}")
+            
+            # Check for the required landmarks
+            required_landmarks = ["nasion", "inion", "bregma", "prosthion", "subspinale", "rhinion", "acanthion"]
+            found_landmarks = {}
+            
+            for i in range(landmarksNode.GetNumberOfControlPoints()):
+                label = landmarksNode.GetNthControlPointLabel(i).lower().strip()
+                
+                # Try exact match first
+                if label in [l.lower() for l in required_landmarks]:
+                    for req in required_landmarks:
+                        if label == req.lower():
+                            found_landmarks[req] = i
+                            break
+                # Then try partial match
+                else:
+                    for req in required_landmarks:
+                        if req.lower() in label or label in req.lower():
+                            found_landmarks[req] = i
+                            break
+            
+            # Generate summary
+            found_msg = [f"{req}: {'✓ Found' if req in found_landmarks else '❌ Missing'}" for req in required_landmarks]
+            
+            # Display results in a dialog
+            message = qt.QMessageBox()
+            message.setWindowTitle("Landmark Check Results")
+            message.setText("Required landmark status:")
+            message.setInformativeText("\n".join(found_msg))
+            message.setDetailedText("All landmarks in the node:\n" + "\n".join(all_labels))
+            message.setStandardButtons(qt.QMessageBox.Ok)
+            message.exec_()
+            
+        except Exception as e:
+            self.planesStatusLabel.text = f"Error checking landmarks: {str(e)}"
 
     def onPlaneCountChanged(self, value):
         """Update the plane count label when slider changes"""
@@ -4680,126 +5450,620 @@ class ProkopecUbelakerGUI(qt.QWidget):
             import traceback
             traceback.print_exc()
         
-    def onCreateReferencePlanesClicked(self):
-            """Create reference planes using the EXACT code provided by the user"""
+    def onConnectOutlinesClicked(self):
+        """Connect nasal bone outline points with lines"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Connecting nasal bone outlines..."
+            slicer.app.processEvents()
+            
+            # Check if bone outline exists
             try:
-                # Update status
-                self.planesStatusLabel.text.text = "Creating reference planes..."
-                slicer.app.processEvents()
-                
-                import numpy as np
-                
-                # === COPY OF YOUR EXACT CODE FOR INB PLANE ===
-                # Get the points from the landmarks node (your "hard_tissue_PU")
-                hardTissueNode = self.landmarksSelector.currentNode()
-                if not hardTissueNode:
-                    self.planesStatusLabel.text.text = "Error: Please select landmarks first!"
+                boneOutlineNode = slicer.util.getNode("nasal_bone_outline")
+                if not boneOutlineNode:
+                    self.predictionStatusLabel.text = "Error: Nasal bone outline not found! Please download it in Step 6."
+                    return
+            except:
+                self.predictionStatusLabel.text = "Error: Nasal bone outline not found! Please download it in Step 6."
+                return
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Remove any existing nasal outline lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('nasal outline'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to create a line between two points
+            def create_line(name, point1, point2):
+                line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+                line_node.AddControlPoint(point1)
+                line_node.AddControlPoint(point2)
+                # Set line color to green
+                display_node = line_node.GetDisplayNode()
+                display_node.SetSelectedColor(0.0, 1.0, 0.0)  # Green
+                display_node.SetColor(0.0, 1.0, 0.0)
+                return line_node
+            
+            # Get control points from the bone outline
+            control_points = []
+            for i in range(boneOutlineNode.GetNumberOfControlPoints()):
+                point = [0, 0, 0]
+                boneOutlineNode.GetNthControlPointPosition(i, point)
+                control_points.append(point)
+            
+            # Create the connecting lines based on number of planes
+            created_lines = []
+            
+            if planeCount == 4:
+                # For 4 planes: Connect points as pairs
+                if len(control_points) >= 8:
+                    line1 = create_line("nasal outline1", control_points[0], control_points[4])
+                    line2 = create_line("nasal outline2", control_points[1], control_points[5])
+                    line3 = create_line("nasal outline3", control_points[2], control_points[6])
+                    line4 = create_line("nasal outline4", control_points[3], control_points[7])
+                    created_lines.extend([line1, line2, line3, line4])
+                else:
+                    self.predictionStatusLabel.text = f"Error: Not enough control points ({len(control_points)}) for 4 planes"
                     return
                     
-                # Get the first three points EXACTLY as in your code
-                point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
-                point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
-                point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
-
-                # Calculate the normal of the plane defined by the three points - EXACTLY as in your code
-                v1 = point2 - point1
-                v2 = point3 - point1
-                planeNormal = np.cross(v1, v2)
-                planeNormal = planeNormal / np.linalg.norm(planeNormal)  # Normalize the normal vector
-
-                # Create a new plane node - EXACTLY as in your code
-                self.inbPlane = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'INB')
-
-                # Set the origin of the new plane to the first point - EXACTLY as in your code
-                self.inbPlane.SetOrigin(point1)
-
-                # Set the normal of the new plane - EXACTLY as in your code
-                self.inbPlane.SetNormal(planeNormal)
+            elif planeCount == 5:
+                # For 5 planes: Connect points as pairs
+                if len(control_points) >= 10:
+                    line1 = create_line("nasal outline1", control_points[0], control_points[5])
+                    line2 = create_line("nasal outline2", control_points[1], control_points[6])
+                    line3 = create_line("nasal outline3", control_points[2], control_points[7])
+                    line4 = create_line("nasal outline4", control_points[3], control_points[8])
+                    line5 = create_line("nasal outline5", control_points[4], control_points[9])
+                    created_lines.extend([line1, line2, line3, line4, line5])
+                else:
+                    self.predictionStatusLabel.text = f"Error: Not enough control points ({len(control_points)}) for 5 planes"
+                    return
+                    
+            elif planeCount == 6:
+                # For 6 planes: Connect points as pairs
+                if len(control_points) >= 12:
+                    line1 = create_line("nasal outline1", control_points[0], control_points[6])
+                    line2 = create_line("nasal outline2", control_points[1], control_points[7])
+                    line3 = create_line("nasal outline3", control_points[2], control_points[8])
+                    line4 = create_line("nasal outline4", control_points[3], control_points[9])
+                    line5 = create_line("nasal outline5", control_points[4], control_points[10])
+                    line6 = create_line("nasal outline6", control_points[5], control_points[11])
+                    created_lines.extend([line1, line2, line3, line4, line5, line6])
+                else:
+                    self.predictionStatusLabel.text = f"Error: Not enough control points ({len(control_points)}) for 6 planes"
+                    return
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(created_lines)} nasal outline lines!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error connecting outlines: {str(e)}"
+            import traceback
+            traceback.print_exc()
+            
+    def onFindBoneIntersectionsClicked(self):
+        """Find intersections between nasal outline lines and Line B"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Finding bone intersection points..."
+            slicer.app.processEvents()
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Check if Line B exists
+            try:
+                lineBNode = slicer.util.getNode('Line_B')
+                if not lineBNode:
+                    self.predictionStatusLabel.text = "Error: Line_B not found! Please create it first."
+                    return
+            except:
+                self.predictionStatusLabel.text = "Error: Line_B not found! Please create it first."
+                return
+            
+            # Check if nasal outline lines exist
+            nasal_outline_lines = []
+            for i in range(1, planeCount + 1):
+                try:
+                    line = slicer.util.getNode(f'nasal outline{i}')
+                    nasal_outline_lines.append(line)
+                except:
+                    self.predictionStatusLabel.text = f"Error: 'nasal outline{i}' not found! Please connect outlines first."
+                    return
+            
+            # Remove any existing bone intersection points
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsFiducialNode'):
+                if node.GetName().startswith('bone'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to find intersection between two lines
+            def find_line_intersection(line1, line2):
+                import numpy as np
                 
-                # Add size and color (not in your original code, but helps visibility)
-                self.inbPlane.SetSize(200.0, 200.0)
-                self.inbPlane.GetDisplayNode().SetSelectedColor(1.0, 0.0, 0.0)  # Red
-                self.inbPlane.GetDisplayNode().SetOpacity(0.3)
-                self.inbPlane.GetDisplayNode().SetVisibility(True)
-                self.inbPlane.GetDisplayNode().SetSliceIntersectionVisibility(True)
-                self.inbPlane.GetDisplayNode().SetHandlesInteractive(True)
+                # Get points from the first line
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                line1.GetNthControlPointPositionWorld(0, p1)
+                line1.GetNthControlPointPositionWorld(1, p2)
                 
-                # === COPY OF YOUR EXACT CODE FOR NPP PLANE ===
-                # Get the 'INB' plane node - EXACTLY as in your code
-                inbPlaneNode = slicer.util.getNode('INB')
-
-                # Get the coordinates of 'prosthion' and 'nasion' - EXACTLY as in your code
-                # Assuming prosthion is point 0 and nasion is point 3 as in your code
-                prosthion = np.array(hardTissueNode.GetNthControlPointPositionWorld(0))
-                nasion = np.array(hardTissueNode.GetNthControlPointPositionWorld(3))
-
-                # Calculate the normal of the 'INB' plane - EXACTLY as in your code
-                inbNormal = np.array(inbPlaneNode.GetNormalWorld())
-
-                # Calculate the vector between 'prosthion' and 'nasion' - EXACTLY as in your code
-                vectorPN = nasion - prosthion
-
-                # Calculate the normal of the new plane - EXACTLY as in your code
-                newPlaneNormal = np.cross(inbNormal, vectorPN)
-                newPlaneNormal /= np.linalg.norm(newPlaneNormal)  # Normalize the vector
-
-                # Create a new plane node and name it 'NPP' - EXACTLY as in your code
-                self.nppPlane = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'NPP')
-
-                # Set the origin of the new plane to 'prosthion' - EXACTLY as in your code
-                self.nppPlane.SetOriginWorld(prosthion)
-
-                # Set the normal of the new plane - EXACTLY as in your code
-                self.nppPlane.SetNormalWorld(newPlaneNormal)
+                # Get points from the second line
+                q1 = np.array([0.0, 0.0, 0.0])
+                q2 = np.array([0.0, 0.0, 0.0])
+                line2.GetNthControlPointPositionWorld(0, q1)
+                line2.GetNthControlPointPositionWorld(1, q2)
                 
-                # Add size and color (not in your original code, but helps visibility)
-                self.nppPlane.SetSize(200.0, 200.0)
-                self.nppPlane.GetDisplayNode().SetSelectedColor(0.0, 1.0, 0.0)  # Green
-                self.nppPlane.GetDisplayNode().SetOpacity(1)
-                self.nppPlane.GetDisplayNode().SetVisibility(True)
-                self.nppPlane.GetDisplayNode().SetSliceIntersectionVisibility(True)
-                self.nppPlane.GetDisplayNode().SetHandlesInteractive(True)
+                # Calculate direction vectors
+                d1 = p2 - p1
+                d2 = q2 - q1
                 
-                # === COPY OF YOUR EXACT CODE FOR PTP PLANE ===
-                # Get the 'INB' and 'NPP' plane nodes - EXACTLY as in your code
-                inbPlaneNode = slicer.util.getNode('INB')
-                nppPlaneNode = slicer.util.getNode('NPP')
-
-                # Calculate the normals of the 'INB' and 'NPP' planes - EXACTLY as in your code
-                inbNormal = np.array(inbPlaneNode.GetNormalWorld())
-                nppNormal = np.array(nppPlaneNode.GetNormalWorld())
-
-                # Calculate the normal of the new plane 'PTP' - EXACTLY as in your code
-                ptpNormal = np.cross(inbNormal, nppNormal)
-                ptpNormal /= np.linalg.norm(ptpNormal)  # Normalize the vector
-
-                # Create a new plane node and name it 'PTP' - EXACTLY as in your code
-                self.ptPlane = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'PTP')
-
-                # Set the origin of the new plane to the origin of 'INB' - EXACTLY as in your code
-                self.ptPlane.SetOriginWorld(inbPlaneNode.GetOriginWorld())
-
-                # Set the normal of the new plane - EXACTLY as in your code
-                self.ptPlane.SetNormalWorld(ptpNormal)
+                # Normalize directions
+                if np.linalg.norm(d1) == 0 or np.linalg.norm(d2) == 0:
+                    return None  # Avoid division by zero
+                d1 = d1 / np.linalg.norm(d1)
+                d2 = d2 / np.linalg.norm(d2)
                 
-                # Add size and color (not in your original code, but helps visibility)
-                self.ptPlane.SetSize(200.0, 200.0)
-                self.ptPlane.GetDisplayNode().SetSelectedColor(0.0, 0.0, 1.0)  # Blue
-                self.ptPlane.GetDisplayNode().SetOpacity(0.3)
-                self.ptPlane.GetDisplayNode().SetVisibility(True)
-                self.ptPlane.GetDisplayNode().SetSliceIntersectionVisibility(True)
-                self.ptPlane.GetDisplayNode().SetHandlesInteractive(True)
+                # Calculate cross product
+                cross_d1_d2 = np.cross(d1, d2)
+                if np.linalg.norm(cross_d1_d2) < 1e-10:  # Lines are nearly parallel
+                    return None
                 
-                # Update status
-                self.planesStatusLabel.text.text = "✅ Created INB, NPP, and PTP planes successfully!"
+                # Calculate intersection parameter
+                t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / np.linalg.norm(cross_d1_d2)**2
                 
+                # Calculate intersection point
+                intersection = p1 + t * d1
+                return intersection
+            
+            # Find intersections
+            intersection_points = []
+            for i, line in enumerate(nasal_outline_lines):
+                intersection = find_line_intersection(line, lineBNode)
+                if intersection is not None:
+                    # Create fiducial point for intersection
+                    fiducial = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'bone{i+1}')
+                    fiducial.AddControlPointWorld(intersection)
+                    
+                    # Set the color to magenta
+                    displayNode = fiducial.GetDisplayNode()
+                    displayNode.SetSelectedColor(1.0, 0.0, 1.0)  # Magenta
+                    
+                    intersection_points.append(fiducial)
+            
+            # Store the intersection points for later use
+            self.bone_intersection_points = intersection_points
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Found {len(intersection_points)} bone intersection points!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error finding intersections: {str(e)}"
+            import traceback
+            traceback.print_exc()
+            
+    def onAdjustBonePointsClicked(self):
+        """Adjust bone intersection points to lie exactly on their mirror plane lines"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Adjusting bone points to mirror planes..."
+            slicer.app.processEvents()
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Check if required nodes exist
+            try:
+                # Check for intersection lines
+                inb_lines = []
+                for i in range(planeCount):
+                    letter = chr(65 + i)  # A, B, C, D, etc.
+                    inb_line = slicer.util.getNode(f'INB_{letter}')
+                    if not inb_line:
+                        self.predictionStatusLabel.text = f"Error: Line 'INB_{letter}' not found! Run Step 4 first."
+                        return
+                    inb_lines.append(inb_line)
+                    
+                # Check for bone intersection points
+                bone_points = []
+                for i in range(1, planeCount + 1):
+                    try:
+                        bone_point = slicer.util.getNode(f'bone{i}')
+                        if not bone_point:
+                            self.predictionStatusLabel.text = f"Error: Bone point 'bone{i}' not found! Run previous step first."
+                            return
+                        bone_points.append(bone_point)
+                    except:
+                        self.predictionStatusLabel.text = f"Error: Bone point 'bone{i}' not found! Run previous step first."
+                        return
+                    
             except Exception as e:
-                self.planesStatusLabel.text.text = f"❌ Error: {str(e)}"
-                import traceback
-                traceback.print_exc()
-            # Enable export button after measurements are created
-            self.exportBoneResultsButton.enabled = True
+                self.predictionStatusLabel.text = f"Error finding required nodes: {str(e)}"
+                return
+                
+            # Import numpy
+            import numpy as np
+            
+            # Functions to check if point is on line and adjust if needed
+            def is_point_on_line(line_points, point):
+                p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+                point = np.array(point)
+                line_vec = p2 - p1
+                point_vec = point - p1
+                cross_product = np.cross(line_vec, point_vec)
+                return np.allclose(cross_product, 0, atol=1e-3)
+            
+            def adjust_point_to_line(line_points, point):
+                p1, p2 = np.array(line_points[0]), np.array(line_points[1])
+                point = np.array(point)
+                line_vec = p2 - p1
+                line_vec_normalized = line_vec / np.linalg.norm(line_vec)
+                point_vec = point - p1
+                projection_length = np.dot(point_vec, line_vec_normalized)
+                adjusted_point = p1 + projection_length * line_vec_normalized
+                return adjusted_point.tolist()
+            
+            # Count adjustments made
+            adjustments_made = 0
+            
+            # Process each bone point with its corresponding INB line
+            for i, (bone_point, inb_line) in enumerate(zip(bone_points, inb_lines)):
+                # Get line points
+                line_points = []
+                for j in range(2):
+                    point = [0, 0, 0]
+                    inb_line.GetNthControlPointPosition(j, point)
+                    line_points.append(point)
+                
+                # Get bone point position
+                bone_pos = [0, 0, 0]
+                bone_point.GetNthControlPointPosition(0, bone_pos)
+                
+                # Check if point is already on line
+                if not is_point_on_line(line_points, bone_pos):
+                    # Adjust point to lie on line
+                    adjusted_pos = adjust_point_to_line(line_points, bone_pos)
+                    bone_point.SetNthControlPointPosition(0, adjusted_pos[0], adjusted_pos[1], adjusted_pos[2])
+                    adjustments_made += 1
+                    
+            # Update status
+            if adjustments_made > 0:
+                self.predictionStatusLabel.text = f"✅ Adjusted {adjustments_made} bone points to lie on mirror planes!"
+            else:
+                self.predictionStatusLabel.text = "✅ All bone points were already on their mirror planes!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error adjusting bone points: {str(e)}"
+            import traceback
+            traceback.print_exc()
+            
+    def onCreateMirrorPredictionClicked(self):
+        """Create nasal prediction using mirror method"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Creating mirrored predictions..."
+            slicer.app.processEvents()
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Check for required nodes
+            try:
+                # Check for mirror intersection points (B_B maps to first plane, B_C to second, etc)
+                mirror_points = []
+                for i in range(planeCount):
+                    letter = chr(66 + i)  # B, C, D, etc. (offset by 1)
+                    if letter > 'Z':  # Handle case of more than 26 planes (unlikely)
+                        letter = chr(65 + (i % 26))
+                    mirror_point = slicer.util.getNode(f'mirrorB_{letter}')
+                    if not mirror_point:
+                        self.predictionStatusLabel.text = f"Error: Mirror point 'mirrorB_{letter}' not found! Run Step 5 first."
+                        return
+                    mirror_points.append(mirror_point)
+                
+                # Check for bone intersection points
+                bone_points = []
+                for i in range(1, planeCount + 1):
+                    bone_point = slicer.util.getNode(f'bone{i}')
+                    if not bone_point:
+                        self.predictionStatusLabel.text = f"Error: Bone point 'bone{i}' not found! Run previous step first."
+                        return
+                    bone_points.append(bone_point)
+                    
+                # Check for intersection lines
+                inb_lines = []
+                for i in range(planeCount):
+                    letter = chr(65 + i)  # A, B, C, D, etc.
+                    inb_line = slicer.util.getNode(f'INB_{letter}')
+                    if not inb_line:
+                        self.predictionStatusLabel.text = f"Error: Line 'INB_{letter}' not found! Run Step 4 first."
+                        return
+                    inb_lines.append(inb_line)
+                    
+            except Exception as e:
+                self.predictionStatusLabel.text = f"Error finding required nodes: {str(e)}"
+                return
+                
+            # Remove any existing prediction lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('pred soft nose outline'):
+                    slicer.mrmlScene.RemoveNode(node)
+                    
+            # Remove any existing measurement lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('nasalboneto'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Create measurement lines between mirror and bone points (lilac color)
+            lilac = [0.78, 0.64, 0.78]
+            nasal_bone_to_b_lines = []
+            
+            # Get actual positions as arrays
+            mirror_positions = []
+            bone_positions = []
+            
+            for i in range(planeCount):
+                # Get mirror point position
+                mirror_pos = [0, 0, 0]
+                mirror_points[i].GetNthControlPointPosition(0, mirror_pos)
+                mirror_positions.append(mirror_pos)
+                
+                # Get bone point position
+                bone_pos = [0, 0, 0]
+                bone_points[i].GetNthControlPointPosition(0, bone_pos)
+                bone_positions.append(bone_pos)
+                
+                # Now create the line using the positions (not the nodes)
+                line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f'nasalbonetoB{i+1}')
+                line_node.AddControlPoint(mirror_pos)
+                line_node.AddControlPoint(bone_pos)
+                
+                # Set line color
+                display_node = line_node.GetDisplayNode()
+                display_node.SetSelectedColor(*lilac)
+                display_node.SetColor(*lilac)
+                
+                nasal_bone_to_b_lines.append(line_node)
+            
+            # Function to calculate length of a line
+            def calculate_length(line_node):
+                import numpy as np
+                
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                line_node.GetNthControlPointPosition(0, p1)
+                line_node.GetNthControlPointPosition(1, p2)
+                
+                return np.linalg.norm(p2 - p1)
+            
+            # Function to create a parallel line with given length
+            def create_parallel_line(name, start_point, length, reference_line, color):
+                import numpy as np
+                
+                # Get direction from reference line
+                ref_p1 = np.array([0.0, 0.0, 0.0])
+                ref_p2 = np.array([0.0, 0.0, 0.0])
+                reference_line.GetNthControlPointPosition(0, ref_p1)
+                reference_line.GetNthControlPointPosition(1, ref_p2)
+                
+                # Calculate unit direction vector
+                direction = ref_p2 - ref_p1
+                unit_direction = direction / np.linalg.norm(direction)
+                
+                # Calculate end point
+                end_point = np.array(start_point) + unit_direction * length
+                
+                # Create the line
+                line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+                line_node.AddControlPoint(start_point)
+                line_node.AddControlPoint(end_point.tolist())
+                
+                # Set the color
+                display_node = line_node.GetDisplayNode()
+                display_node.SetSelectedColor(*color)
+                display_node.SetColor(*color)
+                
+                return line_node
+            
+            # Create prediction lines (deep purple)
+            deep_purple = [0.29, 0.0, 0.51]
+            prediction_lines = []
+            
+            for i in range(planeCount):
+                # Use the already fetched positions
+                mirror_point_pos = mirror_positions[i]
+                
+                # Calculate length of measurement line
+                length = calculate_length(nasal_bone_to_b_lines[i])
+                
+                # Create prediction line with parallel direction to INB line
+                prediction_line = create_parallel_line(
+                    f"pred soft nose outline{i+1}",
+                    mirror_point_pos,
+                    length,
+                    inb_lines[i],
+                    deep_purple
+                )
+                
+                prediction_lines.append(prediction_line)
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(prediction_lines)} mirror prediction lines!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error creating predictions: {str(e)}"
+            import traceback
+            traceback.print_exc()
         
+    def onCreate2mmPredictionClicked(self):
+        """Create nasal prediction with 2mm added as FSTT"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Creating predictions with 2mm FSTT..."
+            slicer.app.processEvents()
+            
+            # Run the mirror prediction first (to ensure we have all the base measurements)
+            self.onCreateMirrorPredictionClicked()
+            
+            # Check if mirror predictions were created successfully
+            if not self.predictionStatusLabel.text.startswith("✅"):
+                return  # Error already shown by the mirror prediction method
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Remove any existing 2mm prediction lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith('pred soft nose outline+2mm'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to extend a line by a specific length
+            def extend_line(source_line, extra_length, new_name, color=[0.5, 0.0, 0.5]):
+                import numpy as np
+                
+                # Get line points
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                source_line.GetNthControlPointPosition(0, p1)
+                source_line.GetNthControlPointPosition(1, p2)
+                
+                # Calculate direction vector
+                direction = p2 - p1
+                unit_direction = direction / np.linalg.norm(direction)
+                
+                # Calculate extended end point (p2 + 2mm in same direction)
+                extended_end = p2 + unit_direction * extra_length
+                
+                # Create new line
+                new_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', new_name)
+                new_line.AddControlPoint(p1.tolist())
+                new_line.AddControlPoint(extended_end.tolist())
+                
+                # Set color
+                display_node = new_line.GetDisplayNode()
+                display_node.SetSelectedColor(*color)
+                display_node.SetColor(*color)
+                
+                return new_line
+            
+            # Extend each prediction line by 2mm
+            prediction_lines_2mm = []
+            for i in range(1, planeCount + 1):
+                # Get original prediction line
+                try:
+                    pred_line = slicer.util.getNode(f'pred soft nose outline{i}')
+                    if not pred_line:
+                        self.predictionStatusLabel.text = f"Error: Prediction line {i} not found!"
+                        return
+                        
+                    # Extend by 2mm and create new line
+                    extended_line = extend_line(
+                        pred_line, 
+                        2.0,  # 2mm additional
+                        f'pred soft nose outline+2mm {i}', 
+                        [0.85, 0.0, 0.85]  # Bright purple
+                    )
+                    
+                    prediction_lines_2mm.append(extended_line)
+                    
+                except Exception as e:
+                    self.predictionStatusLabel.text = f"Error extending line {i}: {str(e)}"
+                    return
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(prediction_lines_2mm)} prediction lines with 2mm FSTT!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error creating 2mm predictions: {str(e)}"
+            import traceback
+            traceback.print_exc()
+            
+    def onCreateCustomPredictionClicked(self):
+        """Create nasal prediction with custom FSTT value"""
+        try:
+            # Update status
+            self.predictionStatusLabel.text = "Creating predictions with custom FSTT..."
+            slicer.app.processEvents()
+            
+            # Get custom FSTT value
+            custom_fstt = self.customFSTTSpinBox.value
+            
+            # Run the mirror prediction first (to ensure we have all the base measurements)
+            self.onCreateMirrorPredictionClicked()
+            
+            # Check if mirror predictions were created successfully
+            if not self.predictionStatusLabel.text.startswith("✅"):
+                return  # Error already shown by the mirror prediction method
+            
+            # Get number of planes
+            planeCount = self.planeCountSlider.value
+            
+            # Remove any existing custom prediction lines
+            for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
+                if node.GetName().startswith(f'pred soft nose outline+{custom_fstt}mm'):
+                    slicer.mrmlScene.RemoveNode(node)
+            
+            # Function to extend a line by a specific length
+            def extend_line(source_line, extra_length, new_name, color=[0.0, 0.5, 1.0]):
+                import numpy as np
+                
+                # Get line points
+                p1 = np.array([0.0, 0.0, 0.0])
+                p2 = np.array([0.0, 0.0, 0.0])
+                source_line.GetNthControlPointPosition(0, p1)
+                source_line.GetNthControlPointPosition(1, p2)
+                
+                # Calculate direction vector
+                direction = p2 - p1
+                unit_direction = direction / np.linalg.norm(direction)
+                
+                # Calculate extended end point (p2 + custom_fstt in same direction)
+                extended_end = p2 + unit_direction * extra_length
+                
+                # Create new line
+                new_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', new_name)
+                new_line.AddControlPoint(p1.tolist())
+                new_line.AddControlPoint(extended_end.tolist())
+                
+                # Set color
+                display_node = new_line.GetDisplayNode()
+                display_node.SetSelectedColor(*color)
+                display_node.SetColor(*color)
+                
+                return new_line
+            
+            # Extend each prediction line by custom FSTT
+            prediction_lines_custom = []
+            for i in range(1, planeCount + 1):
+                # Get original prediction line
+                try:
+                    pred_line = slicer.util.getNode(f'pred soft nose outline{i}')
+                    if not pred_line:
+                        self.predictionStatusLabel.text = f"Error: Prediction line {i} not found!"
+                        return
+                        
+                    # Extend by custom FSTT and create new line
+                    extended_line = extend_line(
+                        pred_line, 
+                        custom_fstt,  # Custom FSTT value
+                        f'pred soft nose outline+{custom_fstt}mm {i}', 
+                        [0.0, 0.7, 0.9]  # Blue-cyan
+                    )
+                    
+                    prediction_lines_custom.append(extended_line)
+                    
+                except Exception as e:
+                    self.predictionStatusLabel.text = f"Error extending line {i}: {str(e)}"
+                    return
+            
+            # Update status
+            self.predictionStatusLabel.text = f"✅ Created {len(prediction_lines_custom)} prediction lines with {custom_fstt}mm FSTT!"
+            
+        except Exception as e:
+            self.predictionStatusLabel.text = f"❌ Error creating custom predictions: {str(e)}"
+            import traceback
+            traceback.print_exc()
+
     def onExportBoneResultsClicked(self):
         """Export bone results"""
         self.boneMeasurementsStatusLabel.text = "Exporting bone measurements... (not implemented yet)"
@@ -4817,441 +6081,11 @@ class ProkopecUbelakerGUI(qt.QWidget):
         self.exportStatusLabel.text = "Exporting results... (not implemented yet)"
         
         
-    def onCheckLandmarksClicked(self):
-        """Check if all required landmarks are detected correctly"""
-        try:
-            # Get selected landmarks node
-            landmarksNode = self.landmarksSelector.currentNode()
-            if not landmarksNode:
-                self.planesStatusLabel.text = "Error: Please select landmarks first!"
-                return
-            
-            # List all landmarks in the node
-            all_labels = []
-            for i in range(landmarksNode.GetNumberOfControlPoints()):
-                label = landmarksNode.GetNthControlPointLabel(i)
-                all_labels.append(f"{i}: {label}")
-            
-            # Check for the required landmarks
-            required_landmarks = ["nasion", "inion", "bregma", "prosthion", "subspinale", "rhinion", "acanthion"]
-            found_landmarks = {}
-            
-            for i in range(landmarksNode.GetNumberOfControlPoints()):
-                label = landmarksNode.GetNthControlPointLabel(i).lower().strip()
-                
-                # Try exact match first
-                if label in [l.lower() for l in required_landmarks]:
-                    for req in required_landmarks:
-                        if label == req.lower():
-                            found_landmarks[req] = i
-                            break
-                # Then try partial match
-                else:
-                    for req in required_landmarks:
-                        if req.lower() in label or label in req.lower():
-                            found_landmarks[req] = i
-                            break
-            
-            # Generate summary
-            found_msg = [f"{req}: {'✓ Found' if req in found_landmarks else '❌ Missing'}" for req in required_landmarks]
-            
-            # Display results in a dialog
-            message = qt.QMessageBox()
-            message.setWindowTitle("Landmark Check Results")
-            message.setText("Required landmark status:")
-            message.setInformativeText("\n".join(found_msg))
-            message.setDetailedText("All landmarks in the node:\n" + "\n".join(all_labels))
-            message.setStandardButtons(qt.QMessageBox.Ok)
-            message.exec_()
-            
-        except Exception as e:
-            self.planesStatusLabel.text = f"Error checking landmarks: {str(e)}"
 
-    def onCreateReferencePlanesClicked(self):
-        """Create reference planes the simple way"""
-        try:
-            # Update status
-            self.planesStatusLabel.text = "Creating reference planes..."
-            slicer.app.processEvents()
-            
-            import numpy as np
-            
-            # Get landmarks
-            landmarksNode = self.landmarksSelector.currentNode()
-            if not landmarksNode:
-                self.planesStatusLabel.text = "Error: Please select landmarks!"
-                return
-            
-            # Create brand new plane nodes (delete old ones first)
-            for name in ['INB', 'NPP', 'PTP']:
-                nodes = slicer.util.getNodes(name + '*')
-                for node in nodes:
-                    slicer.mrmlScene.RemoveNode(node)
-            
-            # === INB PLANE ===
-            # Just using SetOrigin and SetNormal directly without any control points
-            point1 = np.array(landmarksNode.GetNthControlPointPosition(0))
-            point2 = np.array(landmarksNode.GetNthControlPointPosition(1))
-            point3 = np.array(landmarksNode.GetNthControlPointPosition(2))
-            
-            v1 = point2 - point1
-            v2 = point3 - point1
-            inb_normal = np.cross(v1, v2)
-            inb_normal = inb_normal / np.linalg.norm(inb_normal)
-            
-            self.inbPlane = slicer.vtkMRMLMarkupsPlaneNode()
-            self.inbPlane.SetName('INB')
-            slicer.mrmlScene.AddNode(self.inbPlane)
-            self.inbPlane.SetOrigin(point1)
-            self.inbPlane.SetNormal(inb_normal)
-            
-            # Add display properties
-            displayNode = slicer.vtkMRMLMarkupsDisplayNode()
-            slicer.mrmlScene.AddNode(displayNode)
-            self.inbPlane.SetAndObserveDisplayNodeID(displayNode.GetID())
-            displayNode.SetSelectedColor(1.0, 0.0, 0.0)  # Red
-            displayNode.SetOpacity(1)
-            
-            # === NPP PLANE ===
-            prosthion = np.array(landmarksNode.GetNthControlPointPosition(0))
-            nasion = np.array(landmarksNode.GetNthControlPointPosition(3))
-            vectorPN = nasion - prosthion
-            
-            npp_normal = np.cross(inb_normal, vectorPN)
-            npp_normal = npp_normal / np.linalg.norm(npp_normal)
-            
-            self.nppPlane = slicer.vtkMRMLMarkupsPlaneNode()
-            self.nppPlane.SetName('NPP')
-            slicer.mrmlScene.AddNode(self.nppPlane)
-            self.nppPlane.SetOrigin(prosthion)
-            self.nppPlane.SetNormal(npp_normal)
-            
-            # Add display properties
-            displayNode = slicer.vtkMRMLMarkupsDisplayNode()
-            slicer.mrmlScene.AddNode(displayNode)
-            self.nppPlane.SetAndObserveDisplayNodeID(displayNode.GetID())
-            displayNode.SetSelectedColor(0.0, 1.0, 0.0)  # Green
-            displayNode.SetOpacity(1)
-            
-            # === PTP PLANE ===
-            ptp_normal = np.cross(inb_normal, npp_normal)
-            ptp_normal = ptp_normal / np.linalg.norm(ptp_normal)
-            
-            self.ptPlane = slicer.vtkMRMLMarkupsPlaneNode()
-            self.ptPlane.SetName('PTP')
-            slicer.mrmlScene.AddNode(self.ptPlane)
-            self.ptPlane.SetOrigin(point1)
-            self.ptPlane.SetNormal(ptp_normal)
-            
-            # Add display properties
-            displayNode = slicer.vtkMRMLMarkupsDisplayNode()
-            slicer.mrmlScene.AddNode(displayNode)
-            self.ptPlane.SetAndObserveDisplayNodeID(displayNode.GetID())
-            displayNode.SetSelectedColor(0.0, 0.0, 1.0)  # Blue
-            displayNode.SetOpacity(1)
-            
-            # Update status
-            self.planesStatusLabel.text = "✅ Created INB, NPP, and PTP planes!"
-            
-        except Exception as e:
-            self.planesStatusLabel.text = f"❌ Error: {str(e)}"
-            import traceback
-            traceback.print_exc()
-
-    def onCreateMirrorPlanesClicked(self):
-        """Create mirror planes using YOUR exact method"""
-        try:
-            # Update status
-            self.mirrorPlanesStatusLabel.text = "Creating mirror planes..."
-            slicer.app.processEvents()
-            
-            import numpy as np
-            
-            # Check if we have reference planes
-            if not hasattr(self, 'ptPlane') or not self.ptPlane:
-                self.mirrorPlanesStatusLabel.text = "Error: Please create reference planes first!"
-                return
-                
-            # === USING YOUR EXACT METHOD ===
-            
-            # Get the PTP plane node (exactly as in your code)
-            ptpPlaneNode = self.ptPlane
-            
-            # Get the MAW node (exactly as in your code)
-            mawNode = self.mawSelector.currentNode()
-            if not mawNode:
-                self.mirrorPlanesStatusLabel.text = "Error: Please select MAW line first!"
-                return
-            
-            # Get MAW position - using midpoint of MAW line
-            left_point = np.array(mawNode.GetNthControlPointPositionWorld(0))
-            right_point = np.array(mawNode.GetNthControlPointPositionWorld(1))
-            mawPosition = (left_point + right_point) / 2
-            
-            # Get the PTP plane position and normal (exactly as in your code)
-            ptpPlanePosition = np.array(ptpPlaneNode.GetOrigin())
-            ptpPlaneNormal = np.array(ptpPlaneNode.GetNormal())
-            
-            # Get landmarks node
-            landmarksNode = self.landmarksSelector.currentNode()
-            if not landmarksNode:
-                self.mirrorPlanesStatusLabel.text = "Error: Please select landmarks first!"
-                return
-                
-            # Get rhinion position (exactly as in your code)
-            rhinion_id = -1
-            for i in range(landmarksNode.GetNumberOfControlPoints()):
-                label = landmarksNode.GetNthControlPointLabel(i).lower().strip()
-                if "rhinion" in label:
-                    rhinion_id = i
-                    break
-                    
-            if rhinion_id == -1:
-                self.mirrorPlanesStatusLabel.text = "Error: Rhinion landmark not found!"
-                return
-                
-            rhinionPosition = np.array(landmarksNode.GetNthControlPointPositionWorld(rhinion_id))
-            
-            # Remove old planes
-            for node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsPlaneNode"):
-                if node.GetName().startswith("Plane_"):
-                    slicer.mrmlScene.RemoveNode(node)
-            
-            # Create the new plane "A" at the MAW level (exactly as in your code)
-            planeA = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'Plane_A')
-            planeA.SetOrigin(mawPosition)
-            planeA.SetNormal(ptpPlaneNormal)
-            planeA.SetSize(150.0, 150.0)
-            planeA.GetDisplayNode().SetSelectedColor(1.0, 0.0, 0.0)  # Red
-            planeA.GetDisplayNode().SetOpacity(0.7)
-            
-            # Store planes for later use
-            self.mirrorPlanes = [planeA]
-            
-            # Calculate the distance between Plane_A and the rhinion (exactly as in your code)
-            distance = np.dot(mawPosition - rhinionPosition, ptpPlaneNormal)
-            
-            # Get the number of mirror planes from the slider (minus 1 because we already created A)
-            numPlanes = self.planeCountSlider.value - 1
-            
-            # Generate plane names based on number of planes (exactly as in your code)
-            planeNames = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'][:numPlanes]
-            
-            # Calculate the positions for the new planes (exactly using your formula)
-            planePositions = [rhinionPosition + (i + 1) * distance / (numPlanes + 1) * ptpPlaneNormal for i in range(numPlanes)]
-            
-            # Create new planes with names (exactly as in your code)
-            for i, pos in enumerate(planePositions):
-                planeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', f'Plane_{planeNames[i]}')
-                planeNode.SetOrigin(pos)
-                planeNode.SetNormal(ptpPlaneNormal)
-                planeNode.SetSize(150.0, 150.0)
-                
-                # Add colors for better visibility
-                if i == 0:
-                    planeNode.GetDisplayNode().SetSelectedColor(0.0, 1.0, 0.0)  # Green
-                elif i == 1:
-                    planeNode.GetDisplayNode().SetSelectedColor(0.0, 0.0, 1.0)  # Blue
-                elif i == 2:
-                    planeNode.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)  # Yellow
-                else:
-                    planeNode.GetDisplayNode().SetSelectedColor(1.0, 0.5, 0.0)  # Orange
-                    
-                planeNode.GetDisplayNode().SetOpacity(0.7)
-                
-                # Add to our collection
-                self.mirrorPlanes.append(planeNode)
-            
-            # Display the MAW measurement in the node name
-            maw_distance = np.linalg.norm(right_point - left_point)
-            mawNode.SetName(f"maximum_nasal_width_MAW: {maw_distance:.2f}mm")
-            
-            # Update status
-            self.mirrorPlanesStatusLabel.text = f"✅ Created {numPlanes+1} planes (A-{planeNames[-1]}) successfully!"
-            
-        except Exception as e:
-            self.mirrorPlanesStatusLabel.text = f"❌ Error: {str(e)}"
-            import traceback
-            traceback.print_exc()
-            
-    def onCreateIntersectionLinesClicked(self):
-        """Create intersection lines between planes"""
-        try:
-            # Update status
-            self.intersectionLinesStatusLabel.text = "Creating intersection lines..."
-            slicer.app.processEvents()
-            
-            import numpy as np
-            
-            # Check for required planes
-            if not slicer.util.getNode('INB'):
-                self.intersectionLinesStatusLabel.text = "Error: INB plane not found! Create reference planes first."
-                return
-                
-            # Get number of mirror planes from UI to determine how many intersection lines to create
-            planeCount = self.planeCountSlider.value if hasattr(self, 'planeCountSlider') else 6
-            
-            # Clear any existing intersection lines
-            for lineName in ['INB_A', 'INB_B', 'INB_C', 'INB_D', 'INB_E', 'INB_F']:
-                try:
-                    node = slicer.util.getNode(lineName)
-                    if node:
-                        slicer.mrmlScene.RemoveNode(node)
-                except:
-                    pass
-            
-            # YOUR EXACT CODE FOR CREATING INTERSECTION LINES
-            # Function to create intersection line between two planes
-            def create_intersection_line(planeNode1, planeNode2, lineNodeName):
-                # Create a new line node for the intersection line
-                intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
-
-                # Get the normal vectors and points on the planes
-                normal1 = np.array(planeNode1.GetNormalWorld())
-                point1 = np.array(planeNode1.GetOriginWorld())
-                normal2 = np.array(planeNode2.GetNormalWorld())
-                point2 = np.array(planeNode2.GetOriginWorld())
-
-                # Calculate the direction vector of the intersection line
-                direction = np.cross(normal1, normal2)
-
-                # Check if the planes are parallel
-                if np.linalg.norm(direction) == 0:
-                    print(f"The planes {planeNode1.GetName()} and {planeNode2.GetName()} are parallel and do not intersect.")
-                    return False
-                else:
-                    # Calculate a point on the intersection line
-                    A = np.array([normal1, normal2, direction])
-                    b = np.array([np.dot(normal1, point1), np.dot(normal2, point2), 0])
-                    intersection_point = np.linalg.solve(A, b)
-
-                    # Define the start and end points of the line, extending further
-                    extension_factor = 1000  # Adjust this factor as needed
-                    start_point = intersection_point - extension_factor * direction
-                    end_point = intersection_point + extension_factor * direction
-
-                    # Set the points in the line node
-                    intersectionLineNode.AddControlPointWorld(start_point)
-                    intersectionLineNode.AddControlPointWorld(end_point)
-
-                    print(f"Extended intersection line {lineNodeName} created successfully.")
-                    return True
-
-            # List of plane pairs and corresponding line node names
-            plane_pairs = []
-            planeNames = ['A', 'B', 'C', 'D', 'E', 'F'][:planeCount]
-            for planeName in planeNames:
-                plane_pairs.append(('INB', f'Plane_{planeName}', f'INB_{planeName}'))
-                
-            # Counter for successful lines
-            successCount = 0
-
-            # Iterate over each pair and create the intersection lines
-            for plane1, plane2, lineName in plane_pairs:
-                try:
-                    planeNode1 = slicer.util.getNode(plane1)
-                    planeNode2 = slicer.util.getNode(plane2)
-                    if create_intersection_line(planeNode1, planeNode2, lineName):
-                        successCount += 1
-                        
-                        # Add color to the line
-                        lineNode = slicer.util.getNode(lineName)
-                        lineNode.GetDisplayNode().SetSelectedColor(1.0, 0.5, 0.0)  # Orange
-                        lineNode.GetDisplayNode().SetLineWidth(0.3)  
-                        
-                except Exception as e:
-                    print(f"Error creating line {lineName}: {str(e)}")
-            
-            # Update status
-            self.intersectionLinesStatusLabel.text = f"✅ Created {successCount} intersection lines successfully!"
-            
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            self.intersectionLinesStatusLabel.text = f"❌ Error: {str(e)}"
-
-    def onCreateLinesABClicked(self):
-        """Create reference lines A and B"""
-        try:
-            # Update status
-            self.linesABStatusLabel.text = "Creating lines A and B..."
-            slicer.app.processEvents()
-            
-            # Clear any existing lines A and B
-            for lineName in ['Line_A', 'Line_B']:
-                try:
-                    node = slicer.util.getNode(lineName)
-                    if node:
-                        slicer.mrmlScene.RemoveNode(node)
-                except:
-                    pass
-            
-            # YOUR EXACT CODE FOR CREATING LINES A AND B
-            import vtk
-            
-            # Get the "hard_tissue_PU" node (using your landmarks selector instead)
-            F = self.landmarksSelector.currentNode()
-            if not F:
-                self.linesABStatusLabel.text = "Error: Please select landmarks first!"
-                return
-                
-            # Create the first line node
-            L_A = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'Line_A')
-
-            # Retrieve and add the first point (position 0)
-            firstPoint = F.GetNthControlPointPositionVector(0)
-            L_A.AddControlPoint(firstPoint)
-
-            # Retrieve and add the second point (position 3)
-            secondPoint = F.GetNthControlPointPositionVector(3)
-            L_A.AddControlPoint(secondPoint)
-            
-            # Set display properties
-            L_A.GetDisplayNode().SetSelectedColor(0.0, 1.0, 1.0)  # Cyan
-            L_A.GetDisplayNode().SetLineWidth(0.3)  
-
-            # Retrieve the point at position 5
-            thirdPoint = F.GetNthControlPointPositionVector(5)
-
-            # Calculate the direction vector of the first line
-            directionVector = vtk.vtkVector3d()
-            directionVector.SetX(secondPoint.GetX() - firstPoint.GetX())
-            directionVector.SetY(secondPoint.GetY() - firstPoint.GetY())
-            directionVector.SetZ(secondPoint.GetZ() - firstPoint.GetZ())
-
-            # Create the second line node
-            L_B = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'Line_B')
-
-            # Add the third point (position 5)
-            L_B.AddControlPoint(thirdPoint)
-
-            # Extend the direction vector by a factor (e.g., 2 for doubling the length)
-            factor = 2
-            extendedDirectionVector = vtk.vtkVector3d()
-            extendedDirectionVector.SetX(directionVector.GetX() * factor)
-            extendedDirectionVector.SetY(directionVector.GetY() * factor)
-            extendedDirectionVector.SetZ(directionVector.GetZ() * factor)
-
-            # Calculate and add the fourth point (extended)
-            fourthPoint = vtk.vtkVector3d()
-            fourthPoint.SetX(thirdPoint.GetX() + extendedDirectionVector.GetX())
-            fourthPoint.SetY(thirdPoint.GetY() + extendedDirectionVector.GetY())
-            fourthPoint.SetZ(thirdPoint.GetZ() + extendedDirectionVector.GetZ())
-            L_B.AddControlPoint(fourthPoint)
-            
-            # Set display properties
-            L_B.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)  # Yellow
-            L_B.GetDisplayNode().SetLineWidth(0.3)  
-            
-            # Update status
-            self.linesABStatusLabel.text = "✅ Lines A and B created successfully!"
-            
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            self.linesABStatusLabel.text = f"❌ Error: {str(e)}"
 
 # Create an instance of the GUI
 nasal_gui = ProkopecUbelakerGUI()
 nasal_gui.setWindowTitle("Prokopec-Ubelaker Nasal Prediction")
 nasal_gui.show()
+
+```
