@@ -1,3 +1,4 @@
+```python
 # ProkopecUbelakerGUI.py
 # A beginner-friendly GUI for the Prokopec-Ubelaker nasal prediction method
 # Just copy-paste this entire script into 3D Slicer's Python console!
@@ -3536,3 +3537,4 @@ nasal_gui = ProkopecUbelakerGUI()
 nasal_gui.setWindowTitle("Prokopec-Ubelaker Nasal Prediction")
 nasal_gui.show()
 
+```
