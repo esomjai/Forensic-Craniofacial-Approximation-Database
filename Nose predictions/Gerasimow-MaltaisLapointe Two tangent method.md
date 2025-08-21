@@ -45,10 +45,11 @@ The method followed here will split into two: the first will be called  **Gerasi
 | 3                | 4                | rhinion      | rhinion       | Most rostral (end) point on the internasal suture.                                                                            |  Caple and Stephan 2016[^11]     |
 | 4                | 5                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 |  Caple and Stephan 2016[^11]      |
 | 5                | 6                | pronasale    | pronasale     | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen           | Caple and Stephan 2016[^11]|
-| 6                | 7                | Right Reference point 2    | RR2     | The point where the nasal spine line, which is the equivalent of the tangent following the anterior nasal spine (tangent2), crosses the surface of the nasal soft tissue on the right        | Maltais Lapointe 2016[^14]|
-| 7                | 8                | Left Reference point 2    | LR2     | The point where the nasal spine line, which is the equivalent of the tangent following the anterior nasal spine (tangent2), crosses the surface of the nasal soft tissue on the left        | Maltais Lapointe 2016[^14]|
+| 6                | 7                | Right Reference point 2    | RR2     | The point where the nasal spine line, T4R crosses the surface of the nasal soft tissue on the right        | Maltais Lapointe 2016[^14]|
+| 7                | 8                | Left Reference point 2    | LR2     | The point where the nasal spine line,  T4L crosses the surface of the nasal soft tissue on the left        | Maltais Lapointe 2016[^14]|
+| 8                | 9                | Reference point 2    | R2     |IF ONLY ONE SIDE WAS USED FOR T4! The point where the nasal spine line,  T4 crosses the surface of the nasal soft tissue on the midsagittal plane      | Maltais Lapointe 2016[^14]|
 
-[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/20196577/Gerasimow_landmarks.mrk.json)
+ADD GERASIMOW LANDMARK UPDATED
 
 > [!WARNING]
 > Please note that the tutorial shown the "PreDentalSurgery" CT for demonstration purposes only - in research, CTs with all visible features and without any facial operation would be included. 
