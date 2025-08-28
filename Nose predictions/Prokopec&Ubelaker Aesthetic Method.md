@@ -6,7 +6,7 @@ The original method seems to be done in 2 dimensions on the bony and soft tissue
 This will be achieved by:
 
 - Creating the [INB plane](#inb-plane), [NP plane](#np-plane) and [PT plane](#pt-plane) as defined by Rynn et al. (2010)
-- Using [Maximum nasal width](#maximum-nasal-width) and the rhinion as the reference for equidistant planes
+- Using Maximum aperture width and the rhinion as the reference for equidistant planes
 -  Choosing your [number of planes](#choose-a-number-of-planes) 
 - Creating [reference lines along the INB](#reference-lines-along-the-inb-and-456-mirror-planes) and 4/5/6 mirror planes
 - Establishing and adjusting [reference lines A and B](#reference-lines-a-and-b)
