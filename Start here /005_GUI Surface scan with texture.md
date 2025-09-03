@@ -129,29 +129,29 @@ Qt Imports: Different versions of Slicer may require different Qt import stateme
 import os
 import slicer
 import vtk
-from PythonQt import QtWidgets  # This is more reliable in Slicer
+from qt import QWidget, QVBoxLayout, QPushButton, QFileDialog, QLabel
 
-class LoadTexturedModelWidget(QtWidgets.QWidget):
+class LoadTexturedModelWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Load Textured Model")
         self.setMinimumWidth(400)
         
-        self.mainLayout = QtWidgets.QVBoxLayout()
+        self.mainLayout = QVBoxLayout()
         self.setLayout(self.mainLayout)
         
-        self.infoLabel = QtWidgets.QLabel("Pick a folder containing your OBJ, MTL, and texture image.")
+        self.infoLabel = QLabel("Pick a folder containing your OBJ, MTL, and texture image.")
         self.mainLayout.addWidget(self.infoLabel)
         
-        self.pickFolderButton = QtWidgets.QPushButton("Select Model Folder")
+        self.pickFolderButton = QPushButton("Select Model Folder")
         self.mainLayout.addWidget(self.pickFolderButton)
         self.pickFolderButton.clicked.connect(self.pickFolder)
         
-        self.statusLabel = QtWidgets.QLabel("")
+        self.statusLabel = QLabel("")
         self.mainLayout.addWidget(self.statusLabel)
         
     def pickFolder(self):
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select Folder")
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if not folder:
             self.statusLabel.setText("No folder selected.")
             return
@@ -178,14 +178,19 @@ class LoadTexturedModelWidget(QtWidgets.QWidget):
         
         # Parse texture filename from MTL
         texture_filename = None
-        with open(mtl_path, "r") as f:
-            for line in f:
-                if line.strip():
-                    if line.strip().startswith("map_Kd"):
-                        parts = line.strip().split(maxsplit=1)
-                        if len(parts) == 2:
-                            texture_filename = parts[1]
-                            break
+        try:
+            with open(mtl_path, "r") as f:
+                for line in f:
+                    if line.strip():
+                        if line.strip().startswith("map_Kd"):
+                            parts = line.strip().split(maxsplit=1)
+                            if len(parts) == 2:
+                                texture_filename = parts[1]
+                                break
+        except Exception as e:
+            self.statusLabel.setText(f"Error reading MTL file: {str(e)}")
+            return
+            
         if not texture_filename:
             self.statusLabel.setText("No texture file referenced in MTL file.")
             return
@@ -200,36 +205,50 @@ class LoadTexturedModelWidget(QtWidgets.QWidget):
             self.statusLabel.setText("Failed to load OBJ model.")
             return
             
-        # Try different methods to load texture
+        # Try different approaches to load texture
+        success = False
+        
+        # Try approach 1: Using loadNodeFromFile
         try:
-            # Method 1: Try to load as volume
-            vectorVolNode = slicer.util.loadVolume(texture_path, {"singleFile": True})
-            if vectorVolNode:
-                # Apply texture
+            texture_node = slicer.util.loadNodeFromFile(texture_path, "VolumeFile", {})
+            if texture_node:
                 modelDisplayNode = model_node.GetDisplayNode()
                 modelDisplayNode.SetBackfaceCulling(0)
                 textureImageFlipVert = vtk.vtkImageFlip()
                 textureImageFlipVert.SetFilteredAxis(1)
-                textureImageFlipVert.SetInputConnection(vectorVolNode.GetImageDataConnection())
+                textureImageFlipVert.SetInputConnection(texture_node.GetImageDataConnection())
                 modelDisplayNode.SetTextureImageDataConnection(textureImageFlipVert.GetOutputPort())
-                self.statusLabel.setText("Model and texture loaded!")
-            else:
-                self.statusLabel.setText("Could not load texture as volume. Try a different format.")
-        except Exception as e:
-            self.statusLabel.setText(f"Error loading texture: {str(e)}")
+                success = True
+        except:
+            pass
+            
+        # Try approach 2: If first approach failed
+        if not success:
+            try:
+                texture_node = slicer.util.loadVolume(texture_path, {"singleFile": True})
+                if texture_node:
+                    modelDisplayNode = model_node.GetDisplayNode()
+                    modelDisplayNode.SetBackfaceCulling(0)
+                    textureImageFlipVert = vtk.vtkImageFlip()
+                    textureImageFlipVert.SetFilteredAxis(1)
+                    textureImageFlipVert.SetInputConnection(texture_node.GetImageDataConnection())
+                    modelDisplayNode.SetTextureImageDataConnection(textureImageFlipVert.GetOutputPort())
+                    success = True
+            except:
+                pass
+                
+        if success:
+            self.statusLabel.setText("Model and texture loaded successfully!")
+        else:
+            self.statusLabel.setText("Model loaded, but could not apply texture.")
 
 # Create and show the widget in Slicer
-widget_name = "loadTexturedModelWidget"
+try:
+    if 'loadWidget' in locals():
+        loadWidget.close()
+except:
+    pass
 
-# Try to close existing widget if it exists
-if hasattr(slicer.modules, widget_name):
-    try:
-        getattr(slicer.modules, widget_name).close()
-    except:
-        pass
-
-# Create new widget and store reference
-widget = LoadTexturedModelWidget()
-setattr(slicer.modules, widget_name, widget)
-widget.show()
+loadWidget = LoadTexturedModelWidget()
+loadWidget.show()
 ```
