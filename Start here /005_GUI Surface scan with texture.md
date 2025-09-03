@@ -106,6 +106,21 @@ loadWidget.show()
 
 CAN YOU TRY THIS ONE?
 
+## How to Use This Script in 3D Slicer
+Open 3D Slicer
+Press Ctrl+3 to open the Python Interactor
+Copy and paste the script above
+Press Enter to execute
+
+# Common Issues for Beginners
+## File Format Compatibility: Not all texture formats work well with Slicer. JPG and PNG usually work best.
+
+## Path Issues: Make sure your OBJ, MTL, and texture files are all in the same folder.
+
+## Python Console Errors: If you get an error, look at the Python console (Ctrl+3) for more details about what went wrong.
+
+## Qt Imports: Different versions of Slicer may require different Qt import statements.
+
 ```python
 import os
 import slicer
