@@ -127,7 +127,23 @@ class GerasimowNosePredictor:
         tangentControlFrame = qt.QFrame()
         tangentLayout = qt.QVBoxLayout(tangentControlFrame)
         tangentLayout.setSpacing(10)  # More space between buttons
-        
+
+        # --- NEW BUTTON: Regenerate Default Tangents ---
+        self.regenTangentsButton = qt.QPushButton("Regenerate Default Tangents")
+        self.regenTangentsButton.setStyleSheet("background-color: #E0E0E0; font-weight: bold; padding: 8px;")
+        self.regenTangentsButton.setFixedWidth(buttonWidth)
+        self.regenTangentsButton.setToolTip("Recreate T1, T2, T3 using default positions on the current plane.")
+        self.regenTangentsButton.clicked.connect(self.onRegenerateTangentsClicked)
+        tangentLayout.addWidget(self.regenTangentsButton, 0, qt.Qt.AlignHCenter)
+
+        # Our new "message board" for instructions
+        self.tangentInstructionLabel = qt.QLabel("...")
+        self.tangentInstructionLabel.setStyleSheet("font-style: italic; color: #555555;")
+        self.tangentInstructionLabel.setWordWrap(True)
+        self.tangentInstructionLabel.setAlignment(qt.Qt.AlignCenter)
+        self.tangentInstructionLabel.setVisible(False) # Hide it until we need it
+        tangentLayout.addWidget(self.tangentInstructionLabel)
+
            
         # T4R Button - Purple
         self.t4rButton = qt.QPushButton("Place T4R (Purple)")
@@ -753,32 +769,32 @@ class GerasimowNosePredictor:
             except Exception as e:
                 self.log(f"Error extending {tangentName}: {str(e)}", 2)
 
-        
-    def updateTangentVisualization(self, tangentName):
-            """Update the visualization of a tangent after extension"""
-            if tangentName in self.tangents and tangentName in self.tangentNodes:
-                # Get the tangent
-                tangent = self.tangents[tangentName]
-                
-                # Get the node
-                node = self.tangentNodes[tangentName]
-                
-                # Update visualization based on node type
-                if isinstance(node, slicer.vtkMRMLMarkupsLineNode):
-                    # For markup lines
-                    if isinstance(tangent, dict):
-                        node.SetNthControlPointPosition(0, tangent['start'])
-                        node.SetNthControlPointPosition(1, tangent['end'])
-                    else:  # vtkLineSource
-                        node.SetNthControlPointPosition(0, tangent.GetPoint1())
-                        node.SetNthControlPointPosition(1, tangent.GetPoint2())
-                else:
-                    # For model nodes or other types
-                    if isinstance(tangent, vtk.vtkLineSource):
-                        node.SetPolyDataConnection(tangent.GetOutputPort())
-                    
-                self.log(f"Updated visualization for {tangentName} tangent")
 
+    def updateTangentVisualization(self, tangentName):
+        """Update the visualization of a tangent after extension, preventing warnings."""
+        if tangentName in self.tangents and tangentName in self.tangentNodes:
+            node = self.tangentNodes[tangentName]
+            tangent_data = self.tangents[tangentName]
+
+            if isinstance(node, slicer.vtkMRMLMarkupsLineNode):
+                try:
+                    # --- THE FIX ---
+                    # 1. Get the "tracking number" when we start.
+                    wasModified = node.StartModify()
+
+                    start_point = tangent_data.get('start')
+                    end_point = tangent_data.get('end')
+
+                    if start_point and end_point:
+                        node.SetNthControlPointPositionWorld(0, start_point)
+                        node.SetNthControlPointPositionWorld(1, end_point)
+
+                finally:
+                    # 2. Give the "tracking number" back when we finish.
+                    node.EndModify(wasModified)
+
+                self.log(f"Updated visualization for {tangentName} tangent")    
+    
 
     def showGuidanceDialog(self, message, nextAction=None):
             """Show a guidance dialog that doesn't block the application"""
@@ -1024,6 +1040,7 @@ class GerasimowNosePredictor:
                 # Make plane visible and adjust appearance
                 planeNode.GetDisplayNode().SetOpacity(0.7)
                 planeNode.GetDisplayNode().SetColor(0.7, 0.3, 0.3)  # Reddish color for visibility
+                planeNode.GetDisplayNode().SetVisibility(True) # This is the correct tool for the job!
                 
                 self.planeNode = planeNode
                 self.log(f"Created {planeName} plane from landmarks")
@@ -1143,37 +1160,75 @@ class GerasimowNosePredictor:
                 "• T3 (Lilac): Last 1-2 mm of the nasal bone\n\n"
                 "Click on the lines to select them, then drag the control points to adjust."
             )
+    def onRegenerateTangentsClicked(self):
+        """Regenerate T1, T2, T3 using default logic on the current plane."""
+        if not self.planeNode:
+            slicer.util.messageBox("Please create a plane first in Step 1.")
+            return
+
+        # Remove existing T1, T2, T3 tangent nodes if they exist
+        for tangent in ["T1", "T2", "T3"]:
+            if tangent in self.tangentNodes:
+                slicer.mrmlScene.RemoveNode(self.tangentNodes[tangent])
+                del self.tangentNodes[tangent]
+                if tangent in self.tangents:
+                    del self.tangents[tangent]
+                self.log(f"Removed {tangent} tangent for regeneration.")
+
+        # Recreate default tangents
+        self.createDefaultTangents(self.planeNode)
+        slicer.util.showStatusMessage("Default tangents regenerated!", 3000)
+    
 
     def createTangentLine(self, tangentName, startPoint, endPoint, color):
-            """Create a tangent line with specified start and end points"""
-            # Create a line node
-            lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", tangentName)
-            
-            # Add exactly 2 control points (start and end)
-            lineNode.AddControlPoint(startPoint)
-            lineNode.AddControlPoint(endPoint)
-            
-            # Set the color
-            lineNode.GetDisplayNode().SetSelectedColor(color)
-            lineNode.GetDisplayNode().SetColor(color)
-            
-            # Store the tangent info
-            self.tangents[tangentName] = {
-                'start': startPoint.tolist() if isinstance(startPoint, np.ndarray) else startPoint,
-                'end': endPoint.tolist() if isinstance(endPoint, np.ndarray) else endPoint,
-                'vector': (np.array(endPoint) - np.array(startPoint)).tolist()
-            }
-            
-            # Store the node
-            self.tangentNodes[tangentName] = lineNode
-            
-            # If T1, T2, T3, constrain to plane
-            if tangentName in ["T1", "T2", "T3"] and self.planeNode:
-                self.setPlaneConstraint(lineNode, self.planeNode)
-            
-            self.log(f"Created {tangentName} tangent line")
-            return lineNode    
+        """Create a tangent line with specified start and end points"""
+        # 1. Create the line node in the scene
+        lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", tangentName)
+        
+        # 2. Add the start and end points
+        lineNode.AddControlPoint(startPoint)
+        lineNode.AddControlPoint(endPoint)
+        
+        # 3. Set the color
+        lineNode.GetDisplayNode().SetSelectedColor(color)
+        lineNode.GetDisplayNode().SetColor(color)
+        
+        # 4. Store the node and its initial position data in our dictionaries
+        self.tangentNodes[tangentName] = lineNode
+        self.tangents[tangentName] = {
+            'start': startPoint.tolist() if isinstance(startPoint, np.ndarray) else startPoint,
+            'end': endPoint.tolist() if isinstance(endPoint, np.ndarray) else endPoint,
+            'vector': (np.array(endPoint) - np.array(startPoint)).tolist()
+        }
+        
+        # 5. Define a helper function that will run whenever the user moves the line
+        def update_tangent_data(caller, event):
+            """This function keeps our dictionary in sync with user edits in the GUI."""
+            if caller.GetNumberOfControlPoints() >= 2:
+                start = [0, 0, 0]
+                end = [0, 0, 0]
+                # Get the line's NEW position from the GUI
+                caller.GetNthControlPointPositionWorld(0, start)
+                caller.GetNthControlPointPositionWorld(1, end)
+                # Update our dictionary with the new position
+                self.tangents[tangentName] = {
+                    'start': start,
+                    'end': end,
+                    'vector': (np.array(end) - np.array(start)).tolist()
+                }
+                self.log(f"User manually updated {tangentName} position.")
 
+        # 6. Tell the line node to run our helper function every time it's moved
+        lineNode.AddObserver(lineNode.PointModifiedEvent, update_tangent_data)
+
+        # 7. Constrain to plane if needed
+        if tangentName in ["T1", "T2", "T3"] and self.planeNode:
+            self.setPlaneConstraint(lineNode, self.planeNode)
+        
+        self.log(f"Created {tangentName} tangent line")
+        return lineNode
+
+    
     def selectTangentForAdjustment(self, tangentName):
             """Select a tangent for the user to adjust"""
             if tangentName not in self.tangentNodes:
@@ -1216,72 +1271,62 @@ class GerasimowNosePredictor:
                 lineNode.AddObserver(lineNode.PointModifiedEvent, 
                                 lambda caller, event: self.constrainPointToPlane(
                                     caller, planeNormal, planeOrigin))
-        
+
     def onPlaceTangentClicked(self, tangentName):
-            """Handle placing a tangent with guidance"""
-            if tangentName in self.tangentNodes:
-                self.log(f"Tangent {tangentName} already exists.")
-                slicer.util.messageBox(f"The tangent '{tangentName}' already exists. If you want to re-place it, please delete it from the Data module first.")
-                return # Stop the function here
-            try:
-                # Create a line node
-                lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", tangentName)
-                
-                # Set color and instruction based on tangent name
-                if tangentName == "T1":
-                    color = [1.0, 1.0, 0.0]  # Yellow
-                    instruction = "Place T1 (Yellow): Draw a line following the last third of the nasal bone"
-                elif tangentName == "T2":
-                    color = [0.0, 1.0, 0.0]  # Green
-                    instruction = "Place T2 (Green): Draw a line following the direction of the anterior nasal spine"
-                elif tangentName == "T3":
-                    color = [0.8, 0.6, 1.0]  # Lilac
-                    instruction = "Place T3 (Lilac): Draw a line following the last 1-2 mm of the nasal bone"
-                elif tangentName == "T4R":
-                    color = [0.6, 0.4, 0.8]  # Purple
-                    instruction = "Place T4R (Purple): Draw a line following the direction of the nasal floor on the right side"
-                elif tangentName == "T4L":
-                    color = [0.6, 0.4, 0.8]  # Purple
-                    instruction = "Place T4L (Purple): Draw a line following the direction of the nasal floor on the left side"
-                else:
-                    color = [1.0, 1.0, 1.0]  # White
-                    instruction = f"Place {tangentName} tangent"
-                
-                lineNode.GetDisplayNode().SetSelectedColor(color)
-                lineNode.GetDisplayNode().SetColor(color)
-                
-                # Constrain T1, T2, and T3 to the plane
-                if tangentName in ["T1", "T2", "T3"]:
-                    if self.planeNode:
-                        self.setPlaneConstraint(lineNode, self.planeNode)
-                
-                # Show tangent-specific instruction with Next button
-                self.showGuidanceDialog(instruction)
-                
-                # Start placement mode
-                selectionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLSelectionNodeSingleton")
-                selectionNode.SetReferenceActivePlaceNodeID(lineNode.GetID())
-                selectionNode.SetActivePlaceNodeClassName("vtkMRMLMarkupsLineNode")
-                
-                interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
-                interactionNode.SetCurrentInteractionMode(interactionNode.Place)
-                
-                # Store the node
-                self.tangentNodes[tangentName] = lineNode
-                
-                # Set up observer for when the line is complete
-                lineNode.AddObserver(lineNode.PointPositionDefinedEvent, 
-                                    lambda caller, event: self.onTangentComplete(tangentName, caller))
-                
-                self.log(f"Starting placement of {tangentName} tangent")
-                
-                # Add observer to monitor when user exits placement mode
-                interactionNode.AddObserver(
-                    interactionNode.InteractionModeChangedEvent,
-                    lambda caller, event: self.onInteractionModeChanged(tangentName)
-                )
-            except Exception as e:
-                slicer.util.errorDisplay(f"Error placing tangent: {str(e)}")
+        """Handle placing a tangent with instructions inside the GUI."""
+        if tangentName in self.tangentNodes:
+            self.log(f"Tangent {tangentName} already exists.")
+            slicer.util.messageBox(f"The tangent '{tangentName}' already exists. If you want to re-place it, please delete it from the Data module first.")
+            return
+
+        try:
+            # Create a line node
+            lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", tangentName)
+
+            # --- This part is mostly the same ---
+            if tangentName == "T1":
+                color = [1.0, 1.0, 0.0] # Yellow
+                instruction = "Place T1 (Yellow): Draw a line following the last third of the nasal bone."
+            elif tangentName == "T2":
+                color = [0.0, 1.0, 0.0] # Green
+                instruction = "Place T2 (Green): Draw a line following the direction of the anterior nasal spine."
+            elif tangentName == "T3":
+                color = [0.8, 0.6, 1.0] # Lilac
+                instruction = "Place T3 (Lilac): Draw a line following the last 1-2 mm of the nasal bone."
+            elif tangentName == "T4R":
+                color = [0.6, 0.4, 0.8] # Purple
+                instruction = "Place T4R (Purple): Draw a line following the direction of the nasal floor on the right side."
+            elif tangentName == "T4L":
+                color = [0.6, 0.4, 0.8] # Purple
+                instruction = "Place T4L (Purple): Draw a line following the direction of the nasal floor on the left side."
+            else:
+                color = [1.0, 1.0, 1.0]
+                instruction = f"Place {tangentName} tangent."
+
+            lineNode.GetDisplayNode().SetSelectedColor(color)
+            lineNode.GetDisplayNode().SetColor(color)
+
+            # Instead of a pop-up, we show the message on our "message board"
+            self.tangentInstructionLabel.setText(instruction)
+            self.tangentInstructionLabel.setVisible(True)
+        
+            # Start placement mode
+            selectionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLSelectionNodeSingleton")
+            selectionNode.SetReferenceActivePlaceNodeID(lineNode.GetID())
+            selectionNode.SetActivePlaceNodeClassName("vtkMRMLMarkupsLineNode")
+
+            interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+            interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
+            # Store the node and set up observers
+            self.tangentNodes[tangentName] = lineNode
+            lineNode.AddObserver(lineNode.PointPositionDefinedEvent,
+                                lambda caller, event: self.onTangentComplete(tangentName, caller))
+            self.log(f"Starting placement of {tangentName} tangent")
+
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error placing tangent: {str(e)}")    
+        
 
     def onInteractionModeChanged(self, tangentName):
             """Monitor when user exits placement mode and offer to return"""
@@ -1380,50 +1425,49 @@ class GerasimowNosePredictor:
                 # Small delay to make sure everything is reset
                 qt.QTimer.singleShot(100, lambda: self.onPlaceTangentClicked(nextTangent))
 
+
     def onExtendTangentsClicked(self):
-            """Extend all tangents including T4 to ensure intersection"""
-            self.log("Extending tangents to ensure intersection")
+        """Extend all tangents including T4 to ensure intersection."""
+        self.log("Extending tangents to ensure intersection")
+
+        try:
             
-            try:
-                # Check which tangents exist
-                tangentNames = list(self.tangents.keys())
-                self.log(f"Found tangents: {', '.join(tangentNames)}")
-                
-                # Make sure we have the required tangents
-                requiredTangents = ["T1", "T2", "T3"]
-                for name in requiredTangents:
-                    if name not in self.tangents:
-                        slicer.util.messageBox(f"Missing tangent {name}! Create it first.")
-                        return
-                        
-                # Include T4 if it exists
-                if "T4" in self.tangents:
-                    requiredTangents.append("T4")
-                    self.log("Including T4 in tangent extension")
-                elif "T4R" in self.tangents:
-                    # Use T4R if T4 doesn't exist yet
-                    self.tangents["T4"] = self.tangents["T4R"]
-                    requiredTangents.append("T4")
-                    self.log("Using T4R as T4 for tangent extension")
-                
-                # Calculate bounding box to determine extension distance
-                bounds = self.calculateSceneBounds()
-                maxDimension = max(bounds[1]-bounds[0], bounds[3]-bounds[2], bounds[5]-bounds[4])
-                extensionLength = maxDimension * 2
-                
-                # Extend each tangent
-                for name in requiredTangents:
-                    self.extendTangent(name, extensionLength)
-                        
-                # Visualize the extended tangents
-                for name in requiredTangents:
-                    self.updateTangentVisualization(name)
-                        
-                self.log("Tangents extended successfully")
-                slicer.util.showStatusMessage("Tangents extended!", 2000)
+            # Start with the tangents that must always exist.
+            tangents_to_extend = ["T1", "T2", "T3"]
+
+            # Now, figure out which 'T4' to use.
+            if "T4" in self.tangents:
+                tangents_to_extend.append("T4")
+                self.log("Found final T4, will extend.")
+            elif "T4R" in self.tangents:
+                tangents_to_extend.append("T4R")
+                self.log("Final T4 not found, using T4R for extension.")
+            
+            # --- Safety Check ---
+            # Check if we have all the tangents we need in our dictionary.
+            for name in tangents_to_extend:
+                if name not in self.tangents:
+                    slicer.util.messageBox(f"Missing required tangent data for '{name}'. Please create it first.")
+                    return
+
+            # --- The rest of the function is the same ---
+            bounds = self.calculateSceneBounds()
+            maxDimension = max(bounds[1]-bounds[0], bounds[3]-bounds[2], bounds[5]-bounds[4])
+            extensionLength = maxDimension * 2
+            
+            # Extend each tangent in our final list
+            for name in tangents_to_extend:
+                self.extendTangent(name, extensionLength)
                     
-            except Exception as e:
-                slicer.util.errorDisplay(f"Error extending tangents: {str(e)}")
+            # Visualize the extended tangents
+            for name in tangents_to_extend:
+                self.updateTangentVisualization(name)
+                    
+            self.log("Tangents extended successfully")
+            slicer.util.showStatusMessage("Tangents extended!", 2000)
+                
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error extending tangents: {str(e)}")
         
     def onR2MethodChanged(self, button):
             """Handle R2 method selection"""
