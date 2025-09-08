@@ -1,3 +1,6 @@
+```python
+
+
 import os
 import qt
 import slicer
@@ -1926,4 +1929,5 @@ gerasimowPredictor = GerasimowNosePredictor()
 # Add this right after
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
-print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")    
+print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
+```
