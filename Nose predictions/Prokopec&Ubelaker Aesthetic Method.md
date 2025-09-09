@@ -224,23 +224,24 @@ You will need to switch to the "Bone" model or use the toggle to reveal the hard
 
 
 , and drag-and-drop it into the "Markups" environment (click OK on this pop-up - see screenshot below).
+
 <img width="753" height="470" alt="Screenshot 2025-07-24 145513" src="https://github.com/user-attachments/assets/9e9a24e2-9ca7-4966-a632-9c8c795bf969" />
 
 
 This item will appear on your markups list with "empty endpoints" - that's completely fine, find the 
-![image](https://github.com/user-attachments/assets/06ce0f82-0574-4901-a0ab-9e1f0638ec58)
-icon in the second line of menu to start placing the points.
-<img src="https://github.com/user-attachments/assets/bd4cd9c3-add2-4c58-b618-778f1524b05a" width="500">
 
+![image](https://github.com/user-attachments/assets/06ce0f82-0574-4901-a0ab-9e1f0638ec58)
+
+icon in the second line of menu to start placing the points.
+
+<img src="https://github.com/user-attachments/assets/890795f6-a08d-4a33-abac-0c512a715b84" width="500">
 
 The goal here is to have a linear measurement from the anterior view at the maximum width of the hard tissue nose. 
 
 
 Now, your "Control Points">"Coordinates" menu should be populated by the two endpoints and a measurement in mm should also show up in the "Node" table. 
 
-![image](https://github.com/user-attachments/assets/65bfd3e0-fa64-44f7-897e-ca8e63718bf1)
-
-
+<img src="https://github.com/user-attachments/assets/cce4b529-2c48-484f-b977-914804899e7c" width="500">
 
 
 ## Choose a number of Planes
