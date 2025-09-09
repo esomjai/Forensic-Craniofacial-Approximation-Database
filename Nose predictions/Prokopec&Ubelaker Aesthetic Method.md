@@ -55,7 +55,14 @@ Illustration of the method:
 
 
 
-### INB plane
+### Profile plane
+
+Based on landmark availability, the module will offer two options to establish a "middle" profile plane: 
+a) INB used by Rynn et al. 2010[^3]
+b) MSP (midsagittal plane) based on landmark definitions - any landmark already used by the cited literature that is defined as midline
+
+
+#### INB Plane
 
 To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010[^3]. 
 
@@ -100,6 +107,10 @@ View of the generated INB
 
 
 INB extended via the toggles (dots)
+
+#### MSP Plane
+
+
 
 ### NP plane
 May be referred to as NPP - nasion-prosthion plane; defined by Rynn as 
@@ -219,7 +230,7 @@ You will need to switch to the "Bone" model or use the toggle to reveal the hard
 This item will appear on your markups list with "empty endpoints" - that's completely fine, find the 
 ![image](https://github.com/user-attachments/assets/06ce0f82-0574-4901-a0ab-9e1f0638ec58)
 icon in the second line of menu to start placing the points.
-<img src="https://github.com/user-attachments/assets/80709e15-2a69-4007-a77f-54af1ee57b7f" width="500">
+<img src="https://github.com/user-attachments/assets/bd4cd9c3-add2-4c58-b618-778f1524b05a" width="500">
 
 
 The goal here is to have a linear measurement from the anterior view at the maximum width of the hard tissue nose. 
