@@ -1,4 +1,4 @@
-[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/22232832/Gerasimow_landmarks.mrk.json)[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/22078834/Gerasimow_landmarks.mrk.json)# The Two Tangent Method by Gerasimow, 1955[^2], its revision by Maltais-Lapointe (2016)[^14] based on Ullrich and Stephan (2011)[^7]
+# The Two Tangent Method by Gerasimow, 1955[^2], its revision by Maltais-Lapointe (2016)[^14] based on Ullrich and Stephan (2011)[^7]
 # Table of Contents
 
 1. - [Literature context](#literature-context)
@@ -49,7 +49,8 @@ The method followed here will split into two: the first will be called  **Gerasi
 | 7                | 8                | Left Reference point 2    | LR2     | The point where the nasal spine line,  T4L crosses the surface of the nasal soft tissue on the left        | Maltais Lapointe 2016[^14]|
 | 8                | 9                | Reference point 2    | R2     |IF ONLY ONE SIDE WAS USED FOR T4! The point where the nasal spine line,  T4 crosses the surface of the nasal soft tissue on the midsagittal plane      | Maltais Lapointe 2016[^14]|
 
-[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/22232847/Gerasimow_landmarks.mrk.json)
+
+[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/22232935/Gerasimow_landmarks.mrk.json)
 
 
 
