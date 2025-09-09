@@ -1,6 +1,4 @@
 ```python
-
-
 import os
 import qt
 import slicer
@@ -838,7 +836,7 @@ class GerasimowNosePredictor:
             """Download landmarks from GitHub"""
             try:
                 # Try primary URL first
-                primaryUrl = "https://github.com/user-attachments/files/22078845/Gerasimow_landmarks.mrk.json"
+                primaryUrl = "https://github.com/user-attachments/files/22232935/Gerasimow_landmarks.mrk.json"
                 
                 # Let user choose a URL if needed
                 urlToUse = primaryUrl
@@ -1429,12 +1427,40 @@ class GerasimowNosePredictor:
                 qt.QTimer.singleShot(100, lambda: self.onPlaceTangentClicked(nextTangent))
 
 
+    def extendTangent(self, tangentName, extensionLength):
+        """Extend a tangent line *forward* from its end point by a fixed amount."""
+        try:
+            # This function now correctly gets the LATEST tangent data from our dictionary,
+            # which is kept up-to-date by the observer we added.
+            tangent_data = self.tangents[tangentName]
+            
+            start = np.array(tangent_data['start'])
+            end = np.array(tangent_data['end'])
+            
+            # Calculate the forward direction
+            direction = end - start
+            if np.linalg.norm(direction) > 0:
+                direction = direction / np.linalg.norm(direction)
+            
+
+            # Calculate the new end point by moving it forward. The start point stays the same.
+            new_end = end + direction * extensionLength
+            
+            # Update our internal dictionary with the new end point
+            self.tangents[tangentName]['end'] = new_end.tolist()
+            self.tangents[tangentName]['vector'] = (new_end - start).tolist()
+            
+            self.log(f"Extended {tangentName} tangent forward by {extensionLength}mm.")
+
+        except Exception as e:
+            self.log(f"Error extending {tangentName}: {e}", 2)
+    
+
     def onExtendTangentsClicked(self):
         """Extend all tangents including T4 to ensure intersection."""
         self.log("Extending tangents to ensure intersection")
 
         try:
-            
             # Start with the tangents that must always exist.
             tangents_to_extend = ["T1", "T2", "T3"]
 
@@ -1443,35 +1469,35 @@ class GerasimowNosePredictor:
                 tangents_to_extend.append("T4")
                 self.log("Found final T4, will extend.")
             elif "T4R" in self.tangents:
+                # If the final T4 hasn't been created, use T4R as a stand-in
                 tangents_to_extend.append("T4R")
                 self.log("Final T4 not found, using T4R for extension.")
             
-            # --- Safety Check ---
             # Check if we have all the tangents we need in our dictionary.
             for name in tangents_to_extend:
                 if name not in self.tangents:
                     slicer.util.messageBox(f"Missing required tangent data for '{name}'. Please create it first.")
                     return
 
-            # --- The rest of the function is the same ---
-            bounds = self.calculateSceneBounds()
-            maxDimension = max(bounds[1]-bounds[0], bounds[3]-bounds[2], bounds[5]-bounds[4])
-            extensionLength = maxDimension * 2
+            # We now use a fixed extension length of 100mm, just as you suggested!
+            extensionLength = 100
             
             # Extend each tangent in our final list
             for name in tangents_to_extend:
                 self.extendTangent(name, extensionLength)
                     
-            # Visualize the extended tangents
+            # Update the visualization for each extended tangent
             for name in tangents_to_extend:
                 self.updateTangentVisualization(name)
                     
             self.log("Tangents extended successfully")
-            slicer.util.showStatusMessage("Tangents extended!", 2000)
+            slicer.util.showStatusMessage(f"Tangents extended by {extensionLength}mm!", 2000)
                 
         except Exception as e:
+            # Add the error message to our log for easier debugging
+            self.log(f"Error in onExtendTangentsClicked: {e}", level=2)
             slicer.util.errorDisplay(f"Error extending tangents: {str(e)}")
-        
+
     def onR2MethodChanged(self, button):
             """Handle R2 method selection"""
             isManual = button == self.manualR2RadioButton
@@ -1479,102 +1505,124 @@ class GerasimowNosePredictor:
             self.automaticR2Frame.setVisible(not isManual)
             self.log(f"Switched to {'manual' if isManual else 'automatic'} R2 placement")
         
+
+
     def onPlacePointClicked(self, pointName):
-            """Handle place point button click"""
-            self.log(f"Placing {pointName} point")
-            
-            # Create a fiducial node for the point
-            pointNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", pointName)
-            pointNode.SetMarkupLabelFormat(pointName)
-            
-            # Updated point descriptions with correct definitions
-            pointDescriptions = {
-                "R2": "Place at the point where the nasal spine line (T4) crosses the surface of the nasal soft tissue on the midsagittal plane (use if only one side was used for T4)",
-                "LR2": "Place at the point where the nasal spine line (T2) crosses the surface of the nasal soft tissue on the left",
-                "RR2": "Place at the point where the nasal spine line (T2) crosses the surface of the nasal soft tissue on the right"
-            }
-            
-            # Start placement mode
-            selectionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLSelectionNodeSingleton")
-            selectionNode.SetReferenceActivePlaceNodeID(pointNode.GetID())
-            selectionNode.SetActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
-            
-            interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
-            interactionNode.SetCurrentInteractionMode(interactionNode.Place)
-            
-            # Set up observer for when the point is placed
-            pointNode.AddObserver(pointNode.PointPositionDefinedEvent, 
-                            lambda caller, event: self.onPointPlaced(pointName, caller))
-            
-            # Show guidance with updated description
-            if pointName in pointDescriptions:
-                self.showGuidanceDialog(pointDescriptions[pointName])
+        """Handles placing a point *directly into the main landmarks file*."""
+        self.log(f"Starting placement for '{pointName}' point.")
+
+        # --- Safety Check: Make sure the main landmarks file exists ---
+        if not self.landmarksNode:
+            slicer.util.errorDisplay("Please load the 'Gerasimow_landmarks' file first in Step 1.")
+            return
+
+    
         
-    def onPointPlaced(self, pointName, node):
-            """Handle when a point is placed"""
-            if node.GetNumberOfControlPoints() > 0:
-                position = [0, 0, 0]
-                node.GetNthControlPointPosition(0, position)
-                
-                # Store the point
-                self.points[pointName] = position
-                
-                self.log(f"Placed {pointName} point at {position}")
-                
-                # Stop placement mode
-                interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
-                interactionNode.SetCurrentInteractionMode(interactionNode.ViewTransform)
-                
-                # If automatic R2 calculation, suggest next step
-                if pointName == "LR2" and "RR2" not in self.points:
-                    self.showGuidanceDialog("Now place the RR2 point where the nasal spine line (T2) crosses the surface on the right", 
-                                        lambda: self.onPlacePointClicked("RR2"))
-                elif pointName == "RR2" and "LR2" in self.points:
-                    self.showGuidanceDialog("Now you can calculate R2 from LR2 and RR2", 
-                                        lambda: self.onCalculateR2Clicked())
+        # We are putting the main landmarks node into "placement mode"
+        slicer.app.applicationLogic().GetInteractionNode().SetCurrentInteractionMode(slicer.vtkMRMLInteractionNode.Place)
+        slicer.app.applicationLogic().GetSelectionNode().SetActivePlaceNodeID(self.landmarksNode.GetID())
+
+        # Set up an observer to run a function ONCE the user has clicked to place the point.
+        # We will tell that function to name the new point correctly.
+        self.pointPlacementObserver = self.landmarksNode.AddObserver(slicer.vtkMRMLMarkupsNode.PointAddedEvent, 
+                                                                    lambda caller, event: self.onPointPlaced(pointName, caller))
         
+        # Show guidance to the user
+        pointDescriptions = {
+            "R2": "Place R2: Where the T4 line crosses the soft tissue on the midsagittal plane.",
+            "LR2": "Place LR2: Where the T4L line crosses the soft tissue on the left.",
+            "RR2": "Place RR2: Where the T4R line crosses the soft tissue on the right."
+        }
+        if pointName in pointDescriptions:
+            self.showGuidanceDialog(pointDescriptions[pointName])
+
+
+
+    def onPointPlaced(self, pointName, landmarksNode):
+        """This function runs right after the user places a new point."""
+        
+        # --- The new point is the LAST one in the list ---
+        numberOfPoints = landmarksNode.GetNumberOfControlPoints()
+        if numberOfPoints == 0:
+            return # Should not happen, but a good safety check
+        
+        # The point we just added is the last one.
+        newPointIndex = numberOfPoints - 1
+        
+        # --- Set the name of the point we just added ---
+        landmarksNode.SetNthControlPointLabel(newPointIndex, pointName)
+        
+        # Get its position and store it in our internal dictionary
+        position = [0, 0, 0]
+        landmarksNode.GetNthControlPointPositionWorld(newPointIndex, position)
+        self.points[pointName] = position
+        
+        self.log(f"Placed '{pointName}' point at index {newPointIndex} in the main landmarks file.")
+        
+    
+        # We must remove the observer so it doesn't run again accidentally.
+        landmarksNode.RemoveObserver(self.pointPlacementObserver)
+        self.pointPlacementObserver = None # Clear it
+        
+        slicer.app.applicationLogic().GetInteractionNode().SetCurrentInteractionMode(slicer.vtkMRMLInteractionNode.ViewTransform)
+        
+        slicer.util.showStatusMessage(f"'{pointName}' placed successfully!", 3000)
+        
+
     def onCalculateR2Clicked(self):
-            """Handle calculate R2 button click with options for intersection or geometric mean"""
-            if "LR2" not in self.points or "RR2" not in self.points:
-                slicer.util.errorDisplay("Please place both LR2 and RR2 points first.")
-                return
+        """Calculates R2 and moves the existing point in the main landmarks file."""
+        self.log("'Calculate R2' button clicked.")
+
+        # --- Safety Checks ---
+        if "LR2" not in self.points or "RR2" not in self.points:
+            slicer.util.errorDisplay("Please place both LR2 and RR2 points first.")
+            return
+
+        landmarksNode = self.landmarksNode
+        if not landmarksNode:
+            slicer.util.errorDisplay("Could not find the 'Gerasimow_landmarks' node. Please load it first.")
+            return
+
+        try:
+            lr2 = np.array(self.points["LR2"])
+            rr2 = np.array(self.points["RR2"])
+            r2_position = None
+            methodName = ""
+
+            # Calculation Logic 
+            if self.intersectionR2RadioButton.isChecked() and self.planeNode:
+                planeNormal, planeOrigin = np.zeros(3), np.zeros(3)
+                self.planeNode.GetNormalWorld(planeNormal)
+                self.planeNode.GetOriginWorld(planeOrigin)
+                r2_position = self.calculateIntersection(lr2, rr2, planeOrigin, planeNormal)
+                methodName = "intersection with plane"
+            else:
+                r2_position = (lr2 + rr2) / 2.0
+                methodName = "geometric mean"
             
-            try:
-                lr2 = np.array(self.points["LR2"])
-                rr2 = np.array(self.points["RR2"])
-                
-                # Check which method to use
-                useIntersection = self.intersectionR2RadioButton.isChecked()
-                
-                if useIntersection and self.planeNode:
-                    # Calculate R2 as the intersection of the LR2-RR2 line with the plane
-                    planeNormal = [0, 0, 0]
-                    self.planeNode.GetNormal(planeNormal)
-                    
-                    planeOrigin = [0, 0, 0]
-                    self.planeNode.GetOrigin(planeOrigin)
-                    
-                    r2 = self.calculateIntersection(lr2, rr2, planeOrigin, planeNormal)
-                    methodName = "intersection with plane"
-                else:
-                    # Calculate R2 as the geometric mean of LR2 and RR2
-                    r2 = (lr2 + rr2) / 2
-                    methodName = "geometric mean"
-                
-                # Store the R2 point
-                self.points["R2"] = r2.tolist()
-                
-                # Create a fiducial for R2
-                r2Node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "R2_Calculated")
-                r2Node.SetMarkupLabelFormat("R2")
-                r2Node.AddControlPoint(r2.tolist())
-                
-                self.log(f"Calculated R2 point using {methodName}")
-                self.showGuidanceDialog(f"R2 calculated using {methodName}")
-                
-            except Exception as e:
-                slicer.util.errorDisplay(f"Error calculating R2: {str(e)}")
-        
+    
+            # Find the R2 point in the main landmarks file
+            r2_index = self.findPointByName(landmarksNode, "R2")
+
+            if r2_index != -1:
+                # If we found it, move it to the new position
+                landmarksNode.SetNthControlPointPositionWorld(r2_index, r2_position)
+                self.log(f"Moved existing 'R2' point using {methodName}.")
+                slicer.util.showStatusMessage("Moved existing R2 point successfully!", 4000)
+            else:
+                # If it doesn't exist, add it to the main landmarks file
+                landmarksNode.AddControlPoint(r2_position, "R2")
+                self.log(f"Created new 'R2' point in landmarks file using {methodName}.")
+                slicer.util.showStatusMessage("Created new R2 point successfully!", 4000)
+
+            # Update our internal dictionary
+            self.points["R2"] = r2_position.tolist()
+
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error calculating R2: {e}")
+            import traceback
+            traceback.print_exc()
+
     def calculateIntersection(self, p1, p2, planePoint, planeNormal):
             """Calculate the intersection of a line with a plane"""
             # Line direction
@@ -1929,5 +1977,5 @@ gerasimowPredictor = GerasimowNosePredictor()
 # Add this right after
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
-print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
+print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")    
 ```
