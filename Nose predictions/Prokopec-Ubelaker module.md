@@ -1,6 +1,6 @@
 ```python
 # A beginner-friendly GUI for the Prokopec-Ubelaker nasal prediction method
-# This version is corrected for 3D Slicer 5.8.1 and includes the user-requested MSP plane feature and UI text improvements.
+# This version is corrected for 3D Slicer 5.8.1 and includes the user-requested MSP plane feature and all UI/logic fixes.
 # Just copy-paste this entire script into 3D Slicer's Python console!
 
 import os
@@ -176,7 +176,9 @@ class ProkopecUbelakerGUI(qt.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(title)
         
-        planeInfoLabel = qt.QLabel("The method for creating the profile plane determines which landmarks are required:\n•  INB plane:  nasion, inion, bregma\n• MSP (best fit):  nasion, prosthion, subspinale, rhinion, acanthion")
+        planeInfoLabel = qt.QLabel()
+        planeInfoLabel.setTextFormat(qt.Qt.RichText) # This is the fix for the bold tag
+        planeInfoLabel.setText("The method for creating the profile plane determines which landmarks are required:<br>• <b>INB plane:</b> nasion, inion, bregma<br>• <b>MSP (best fit):</b> nasion, prosthion, subspinale, rhinion, acanthion")
         planeInfoLabel.setWordWrap(True)
         layout.addWidget(planeInfoLabel)
         
@@ -980,6 +982,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
             
             self.softTissueStatusLabel.setText(f"Adjusted {adjust_count} points to lines correctly.")
 
+    # --- THIS IS THE CORRECTED FUNCTION ---
     def onCreateErrorsClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to create error measurements."):
             plane_count = self.planeCountSlider.value
@@ -998,33 +1001,34 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 return
 
             error_count = 0
-            pairings = {i: ((i % plane_count) + 1) for i in range(1, plane_count + 1)}
-
             for i in range(plane_count):
+                # True soft tissue points are 0, 1, 2... (top to bottom)
                 true_point_index = i
-                pred_node_num = pairings.get(i + 1)
+                
+                # Prediction lines are 1, 2, 3... (bottom to top)
+                # We need to pair true point 0 with prediction 'plane_count'
+                prediction_node_index = plane_count - i
 
-                true_point_pos = np.array(soft_tissue_node.GetNthControlPointPosition(true_point_index))
-                
-                pred_node_name_base = f"pred soft nose outline {pred_node_num}"
-                
                 try:
-                    pred_node = slicer.util.getNode(f"{pred_node_name_base}{suffix}")
-                    if not pred_node:
-                        print(f"Warning: Prediction node not found: {pred_node_name_base}{suffix}")
-                        continue
-                    
-                    pred_endpoint_pos = np.array(pred_node.GetNthControlPointPosition(1))
-                    
-                    error_line_name = f"pred error{true_point_index+1}{suffix}"
-                    
-                    error_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', error_line_name)
-                    error_line.AddControlPoint(pred_endpoint_pos)
-                    error_line.AddControlPoint(true_point_pos)
-                    error_line.GetDisplayNode().SetSelectedColor(0.8, 0.1, 0.1)
-                    error_line.SetLocked(True)
-                    error_count += 1
-                    self.helperNodes.append(error_line)
+                    true_point_pos = np.array(soft_tissue_node.GetNthControlPointPosition(true_point_index))
+
+                    # This will find all prediction types (mirror, 2mm, custom) for the correctly paired index
+                    pred_nodes = slicer.util.getNodes(f"pred soft nose outline *{prediction_node_index}{suffix}")
+
+                    for pred_node_name, pred_node in pred_nodes.items():
+                        pred_endpoint_pos = np.array(pred_node.GetNthControlPointPosition(1))
+                        
+                        # The error line corresponds to the true point number (i+1)
+                        error_line_name = f"pred error{true_point_index+1}{suffix}"
+                        
+                        error_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', error_line_name)
+                        error_line.AddControlPoint(pred_endpoint_pos)
+                        error_line.AddControlPoint(true_point_pos)
+                        error_line.GetDisplayNode().SetSelectedColor(0.8, 0.1, 0.1)
+                        error_line.SetLocked(True)
+                        error_count += 1
+                        self.helperNodes.append(error_line)
+
                 except Exception as e:
                     print(f"Could not create error line for true point {true_point_index+1}: {e}")
                         
@@ -1063,12 +1067,20 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 self.measurementsTable.setItem(row, 2, qt.QTableWidgetItem(f"{length:.2f}"))
                 
                 try:
-                    num = ''.join(filter(str.isdigit, base_name.split(" ")[-1]))
-                    error_node_name = f"pred error{num}{suffix}"
+                    num_str = ''.join(filter(str.isdigit, base_name.split(" ")[-1]))
+                    if not num_str: continue
+
+                    # Find the corresponding error line
+                    # The prediction number is the 'flipped' index, we need the 'true' index
+                    pred_num = int(num_str)
+                    true_num = plane_count - pred_num + 1
+
+                    error_node_name = f"pred error{true_num}{suffix}"
                     error_node = slicer.util.getNode(error_node_name)
                     error_length = np.linalg.norm(np.array(error_node.GetNthControlPointPosition(1)) - np.array(error_node.GetNthControlPointPosition(0)))
                     self.measurementsTable.setItem(row, 3, qt.QTableWidgetItem(f"{error_length:.2f}"))
                 except Exception as e:
+                    print(f"Could not find matching error for {name}: {e}")
                     pass
             else:
                 self.measurementsTable.setItem(row, 0, qt.QTableWidgetItem("measurement"))
@@ -1110,5 +1122,4 @@ if not hasattr(slicer, 'ProkopecUbelakerGUIWidget') or not slicer.ProkopecUbelak
 
 slicer.ProkopecUbelakerGUIWidget.show()
 slicer.ProkopecUbelakerGUIWidget.raise_()
-
 ```
