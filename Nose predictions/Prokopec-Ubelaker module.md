@@ -176,7 +176,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(title)
         
-        planeInfoLabel = qt.QLabel("The method for creating the profile plane determines which landmarks are required:\n• <b>INB plane:</b> nasion, inion, bregma\n• <b>MSP (best fit):</b> nasion, prosthion, subspinale, rhinion, acanthion")
+        planeInfoLabel = qt.QLabel("The method for creating the profile plane determines which landmarks are required:\n•  INB plane:  nasion, inion, bregma\n• MSP (best fit):  nasion, prosthion, subspinale, rhinion, acanthion")
         planeInfoLabel.setWordWrap(True)
         layout.addWidget(planeInfoLabel)
         
@@ -1110,4 +1110,5 @@ if not hasattr(slicer, 'ProkopecUbelakerGUIWidget') or not slicer.ProkopecUbelak
 
 slicer.ProkopecUbelakerGUIWidget.show()
 slicer.ProkopecUbelakerGUIWidget.raise_()
+
 ```
