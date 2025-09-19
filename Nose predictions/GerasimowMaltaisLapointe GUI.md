@@ -33,6 +33,9 @@ class GerasimowNosePredictor:
         mainLayout.setContentsMargins(10, 10, 10, 10)  # Less padding
         mainLayout.setSpacing(8)  # Reduced spacing between elements
         
+
+
+
         # Create decision log window - SIMPLIFIED
         self.logWidget = qt.QTextEdit()
         self.logWidget.setWindowTitle("Decision Log")
@@ -207,6 +210,12 @@ class GerasimowNosePredictor:
         self.extendTangentsButton.clicked.connect(self.onExtendTangentsClicked)
         t4lLayout.addWidget(self.extendTangentsButton, 0, qt.Qt.AlignHCenter)
 
+        self.resetExtensionsButton = qt.QPushButton("Reset All Extensions")
+        self.resetExtensionsButton.setStyleSheet("background-color: #f0ad4e; font-weight: bold; padding: 8px;") # Orange color
+        self.resetExtensionsButton.setFixedWidth(buttonWidth)
+        self.resetExtensionsButton.setToolTip("Restores tangents to their size before they were elongated.")
+        self.resetExtensionsButton.clicked.connect(self.onResetExtensionsClicked)
+        t4lLayout.addWidget(self.resetExtensionsButton, 0, qt.Qt.AlignHCenter)
 
         # Find Intersections Button
         self.findIntersectionsButton = qt.QPushButton("Find Intersections")
@@ -234,6 +243,12 @@ class GerasimowNosePredictor:
         adviceLabel.setWordWrap(True) # Make sure the text wraps nicely
         step3Layout.addWidget(adviceLabel) # Add it to the Step 3 layout
         
+        self.elongateNasalFloorButton = qt.QPushButton("Elongate Nasal Floor Tangents (T4R/L)")
+        self.elongateNasalFloorButton.setStyleSheet("background-color: #66CCBB; font-weight: bold; padding: 8px;") # A nice teal color
+        self.elongateNasalFloorButton.setFixedWidth(buttonWidth)
+        self.elongateNasalFloorButton.setToolTip("Extends T4R and T4L anteriorly to help find soft tissue points.")
+        self.elongateNasalFloorButton.clicked.connect(self.onElongateNasalFloorTangentsClicked)
+        step3Layout.addWidget(self.elongateNasalFloorButton, 0, qt.Qt.AlignHCenter)
         
         # Use existing points button - centered
         self.useExistingPointsButton = qt.QPushButton("Use Existing R2, LR2, RR2 Points")
@@ -340,6 +355,7 @@ class GerasimowNosePredictor:
         self.tangents = {}
         self.points = {}
         self.tangentNodes = {}
+        self.tangent_backups = {}
         self.planeNode = None
         self.landmarksNode = None
 
@@ -356,8 +372,6 @@ class GerasimowNosePredictor:
         # Show the widget
         self.mainWidget.show()
         
-        # Show the widget
-        self.mainWidget.show()
 
         
     def log(self, decision, level=1):
@@ -375,8 +389,9 @@ class GerasimowNosePredictor:
         self.logWidget.setHtml(logText)
 
 
+
     def onCreateT4Clicked(self):
-        """Creates the final T4 tangent line on the plane."""
+        """Creates the final T4 tangent line, making sure to remember it."""
         self.log("'Create T4 Line' button clicked.")
 
         # --- Safety Checks ---
@@ -388,9 +403,6 @@ class GerasimowNosePredictor:
             slicer.util.messageBox("Please place the T4R tangent first using Step 2.")
             return
 
-        # Check if we should use the bilateral method (T4L exists)
-        use_bilateral = "T4L" in self.tangents
-
         try:
             # --- Get Plane Information ---
             planeNormal = np.zeros(3)
@@ -398,27 +410,32 @@ class GerasimowNosePredictor:
             planeOrigin = np.zeros(3)
             self.planeNode.GetOriginWorld(planeOrigin)
 
-            # --- Calculate T4 ---
+            # --- Calculate T4 start and end points ---
             t4_start_point, t4_end_point = None, None
+            use_bilateral = "T4L" in self.tangents
 
             if use_bilateral:
                 self.log("Calculating T4 using bilateral method (T4R and T4L).")
-                # Project both T4R and T4L to the plane
                 t4r_start_proj = self.projectPointOntoPlane(self.tangents["T4R"]['start'], planeOrigin, planeNormal)
                 t4r_end_proj = self.projectPointOntoPlane(self.tangents["T4R"]['end'], planeOrigin, planeNormal)
                 t4l_start_proj = self.projectPointOntoPlane(self.tangents["T4L"]['start'], planeOrigin, planeNormal)
                 t4l_end_proj = self.projectPointOntoPlane(self.tangents["T4L"]['end'], planeOrigin, planeNormal)
 
-                # Average the start and end points to get the final T4
                 t4_start_point = (t4r_start_proj + t4l_start_proj) / 2.0
                 t4_end_point = (t4r_end_proj + t4l_end_proj) / 2.0
             else:
                 self.log("Calculating T4 using unilateral method (T4R only).")
-                # Just project T4R onto the plane
                 t4_start_point = self.projectPointOntoPlane(self.tangents["T4R"]['start'], planeOrigin, planeNormal)
                 t4_end_point = self.projectPointOntoPlane(self.tangents["T4R"]['end'], planeOrigin, planeNormal)
 
+            # --- THIS IS THE FIX ---
+            # We tell the "Store Manager" to write down the T4 line on its clipboard.
+            self.tangents["T4"] = {'start': t4_start_point, 'end': t4_end_point}
+            self.log("Stored final T4 line data in memory.")
+            # --- END OF FIX ---
+
             # --- Visualize the Final T4 Line ---
+            # This part just draws the line on the screen.
             self.createTangentLine("T4", t4_start_point, t4_end_point, [0.6, 0.4, 0.8]) # Purple
             slicer.util.showStatusMessage("Final T4 tangent created successfully!", 3000)
 
@@ -426,8 +443,45 @@ class GerasimowNosePredictor:
             slicer.util.errorDisplay(f"An error occurred while creating T4: {e}")
             import traceback
             traceback.print_exc()
+            
+    def checkAndUseExistingPoints(self):
+        """
+        Checks the loaded landmarks node for important points like R2, LR2, RR2, and pronasale,
+        and stores them in the script's memory.
+        """
+        if not self.landmarksNode:
+            self.log("Cannot check for existing points, no landmarks node is loaded.", 2)
+            return
+        
+        # These are the special points we are looking for.
+        points_to_find = ["pronasale", "R2", "LR2", "RR2"]
+        found_points = []
+        
+        self.log(f"Searching for {points_to_find} in '{self.landmarksNode.GetName()}'...")
+        
+        # Loop through all the points in the loaded landmark file.
+        for i in range(self.landmarksNode.GetNumberOfControlPoints()):
+            point_name = self.landmarksNode.GetNthControlPointLabel(i)
+            
+            # Check if the point's name is one of the ones we're looking for.
+            if point_name in points_to_find:
+                pos = [0, 0, 0]
+                self.landmarksNode.GetNthControlPointPositionWorld(i, pos)
+                
+                # Use "R1" as the internal name for "pronasale" for consistency.
+                internal_name = "R1" if point_name == "pronasale" else point_name
+                
+                # Store the point's position in our script's memory ("the clipboard").
+                self.points[internal_name] = pos
+                found_points.append(point_name)
+                self.log(f"Found and stored '{point_name}' at position {pos}.")
 
-
+        if found_points:
+            self.log(f"Finished search. Found existing points: {', '.join(found_points)}", 1)
+            # We can show a popup, but for now, the log is enough.
+            # slicer.util.showStatusMessage(f"Automatically used existing points: {', '.join(found_points)}", 4000)
+        else:
+            self.log("Finished search. No pre-existing soft tissue points found.")
 
     def syncWithScene(self):
         """
@@ -872,6 +926,9 @@ class GerasimowNosePredictor:
                     self.markupsSelector.setCurrentNode(landmarksNode)
                     self.log(f"Successfully loaded {landmarksNode.GetNumberOfControlPoints()} landmarks from GitHub")
                     
+                    # Automatically read the memo and find the important points.
+                    self.checkAndUseExistingPoints()
+
                     # Show landmarks in 3D view
                     landmarksNode.GetDisplayNode().SetSelectedColor(0.0, 1.0, 0.0)  # Green color
                     landmarksNode.GetDisplayNode().SetVisibility(True)
@@ -924,30 +981,58 @@ class GerasimowNosePredictor:
                         
             except Exception as e:
                 slicer.util.errorDisplay(f"Error loading landmarks: {str(e)}")
+
+    
+
+    def syncWithScene(self):
+        """
+        Checks the Slicer scene for existing nodes when the script starts
+        and updates the script's internal memory.
+        """
+        self.log("Syncing with scene to find pre-existing nodes...")
         
-    def checkAndUseExistingPoints(self):
-            """Check for and use existing pronasale, R2, LR2, RR2 points"""
-            if not self.landmarksNode:
-                return
+        # 1. Look for the main landmarks node by its specific name
+        try:
+            landmarksNode = slicer.util.getNode("Gerasimow_landmarks")
             
-            pointsToCheck = ["pronasale", "R2", "LR2", "RR2"]
-            foundPoints = []
+            # If we found it, let's process it!
+            self.landmarksNode = landmarksNode
+            self.markupsSelector.setCurrentNode(landmarksNode) # Update the dropdown in the GUI
+            self.log("Found pre-existing 'Gerasimow_landmarks' node.")
             
-            for name in pointsToCheck:
-                idx = self.findPointByName(self.landmarksNode, name)
-                if idx >= 0:
-                    pos = [0, 0, 0]
-                    self.landmarksNode.GetNthControlPointPosition(idx, pos)
-                    
-                    # Map pronasale to R1 in our internal dict
-                    internalName = "R1" if name == "pronasale" else name
-                    self.points[internalName] = pos
-                    foundPoints.append(name)
+            # --- THIS IS THE CRUCIAL PART ---
+            # Now, immediately read the points from this node.
+            self.checkAndUseExistingPoints()
             
-            if foundPoints:
-                self.log(f"Found existing points in landmarks: {', '.join(foundPoints)}")
-                self.showGuidanceDialog(f"Found existing points: {', '.join(foundPoints)}\nThese will be used automatically.")
+        except slicer.util.MRMLNodeNotFoundException:
+            # This is not an error, it just means the node wasn't there.
+            self.log("No pre-existing 'Gerasimow_landmarks' node found.")
+
+        # We could also add checks for T1, T2, etc. here later if we want.    
         
+        def checkAndUseExistingPoints(self):
+                """Check for and use existing pronasale, R2, LR2, RR2 points"""
+                if not self.landmarksNode:
+                    return
+                
+                pointsToCheck = ["pronasale", "R2", "LR2", "RR2"]
+                foundPoints = []
+                
+                for name in pointsToCheck:
+                    idx = self.findPointByName(self.landmarksNode, name)
+                    if idx >= 0:
+                        pos = [0, 0, 0]
+                        self.landmarksNode.GetNthControlPointPosition(idx, pos)
+                        
+                        # Map pronasale to R1 in our internal dict
+                        internalName = "R1" if name == "pronasale" else name
+                        self.points[internalName] = pos
+                        foundPoints.append(name)
+                
+                if foundPoints:
+                    self.log(f"Found existing points in landmarks: {', '.join(foundPoints)}")
+                    self.showGuidanceDialog(f"Found existing points: {', '.join(foundPoints)}\nThese will be used automatically.")
+            
     def onUseExistingPointsClicked(self):
             """Use existing R2, LR2, RR2 points from landmarks file"""
             if not self.landmarksNode:
@@ -1426,77 +1511,153 @@ class GerasimowNosePredictor:
                 # Small delay to make sure everything is reset
                 qt.QTimer.singleShot(100, lambda: self.onPlaceTangentClicked(nextTangent))
 
-
+   
     def extendTangent(self, tangentName, extensionLength):
-        """Extend a tangent line *forward* from its end point by a fixed amount."""
+        """
+        Extend a tangent line *intelligently* by 50mm in the anterior direction,
+        regardless of how the user has drawn the line.
+        """
         try:
-            # This function now correctly gets the LATEST tangent data from our dictionary,
-            # which is kept up-to-date by the observer we added.
             tangent_data = self.tangents[tangentName]
             
-            start = np.array(tangent_data['start'])
-            end = np.array(tangent_data['end'])
+            p1 = np.array(tangent_data['start'])
+            p2 = np.array(tangent_data['end'])
             
-            # Calculate the forward direction
-            direction = end - start
+            # --- THE CORRECTED LOGIC ---
+            # In 3D Slicer's standard RAS coordinate system:
+            # - The Y-axis runs from Posterior (-) to Anterior (+).
+            # - Therefore, the point with the LARGER Y-value is the more "anterior" point.
+            
+            # 1. Let's identify which point is anterior and which is posterior.
+            #    THIS IS THE ONE-CHARACTER FIX: We change '<' to '>'
+            if p1[1] > p2[1]:
+                anterior_point = p1
+                posterior_point = p2
+            else:
+                anterior_point = p2
+                posterior_point = p1
+                
+            # 2. Calculate the direction vector *always* pointing from posterior to anterior.
+            direction = anterior_point - posterior_point
+            # Normalize the vector to have a length of 1, so we can scale it accurately.
             if np.linalg.norm(direction) > 0:
                 direction = direction / np.linalg.norm(direction)
             
-
-            # Calculate the new end point by moving it forward. The start point stays the same.
-            new_end = end + direction * extensionLength
+            # 3. Calculate the new anterior point by extending it forward.
+            new_anterior_point = anterior_point + direction * extensionLength
             
-            # Update our internal dictionary with the new end point
-            self.tangents[tangentName]['end'] = new_end.tolist()
-            self.tangents[tangentName]['vector'] = (new_end - start).tolist()
+            # 4. Update our data with the new, correct points.
+            # The posterior point stays the same, and the anterior point is the new extended one.
+            self.tangents[tangentName]['start'] = posterior_point.tolist()
+            self.tangents[tangentName]['end'] = new_anterior_point.tolist()
+            self.tangents[tangentName]['vector'] = (new_anterior_point - posterior_point).tolist()
             
-            self.log(f"Extended {tangentName} tangent forward by {extensionLength}mm.")
+            self.log(f"Correctly extended {tangentName} anteriorly by {extensionLength}mm.")
 
         except Exception as e:
             self.log(f"Error extending {tangentName}: {e}", 2)
-    
+ 
 
     def onExtendTangentsClicked(self):
-        """Extend all tangents including T4 to ensure intersection."""
-        self.log("Extending tangents to ensure intersection")
+        """Extends tangents by a fixed amount and backs up their original state."""
+        self.log("'Elongate Tangents' button clicked.")
+        
+        extensionLength = 50
 
         try:
-            # Start with the tangents that must always exist.
             tangents_to_extend = ["T1", "T2", "T3"]
-
-            # Now, figure out which 'T4' to use.
             if "T4" in self.tangents:
                 tangents_to_extend.append("T4")
-                self.log("Found final T4, will extend.")
             elif "T4R" in self.tangents:
-                # If the final T4 hasn't been created, use T4R as a stand-in
                 tangents_to_extend.append("T4R")
-                self.log("Final T4 not found, using T4R for extension.")
-            
-            # Check if we have all the tangents we need in our dictionary.
-            for name in tangents_to_extend:
-                if name not in self.tangents:
-                    slicer.util.messageBox(f"Missing required tangent data for '{name}'. Please create it first.")
-                    return
 
-            # We now use a fixed extension length of 100mm, just as you suggested!
-            extensionLength = 100
+            for name in tangents_to_extend:
+                if name not in self.tangent_backups:
+                    self.tangent_backups[name] = self.tangents[name].copy()
+                    self.log(f"Backed up original position for {name}.")
+
+            # Extend each tangent
+            for name in tangents_to_extend:
+                if name in self.tangents:
+                    self.extendTangent(name, extensionLength)
+                    self.updateTangentVisualization(name)
+                else:
+                    self.log(f"Skipping extension for {name} as it does not exist.", 2)
+
+            self.log(f"Extended tangents by {extensionLength}mm.")
+            slicer.util.showStatusMessage(f"Tangents extended by {extensionLength}mm!", 3000)
+
+        except Exception as e:
+            self.log(f"Error in onExtendTangentsClicked: {e}", 2)
+            slicer.util.errorDisplay(f"Error extending tangents: {e}")
+
+    
+
+    def onResetExtensionsClicked(self):
+        """Restores all tangents to their state before elongation."""
+        self.log("'Reset Extensions' button clicked.")
+
+        if not self.tangent_backups:
+            slicer.util.showStatusMessage("Tangents have not been extended yet.", 3000)
+            return
+
+        try:
+            # Go through our backup dictionary
+            for name, backup_data in self.tangent_backups.items():
+                if name in self.tangents and name in self.tangentNodes:
+                    # Restore the data in our main dictionary from the backup
+                    self.tangents[name] = backup_data.copy()
+                    # Update the line in the 3D scene to match the backup
+                    self.updateTangentVisualization(name)
             
-            # Extend each tangent in our final list
+            self.log("Successfully reset all tangent extensions.")
+            slicer.util.showStatusMessage("All tangent extensions have been reset.", 4000)
+            
+            # Optional: Clear the backup so you can't reset again until you extend again
+            self.tangent_backups = {}
+
+        except Exception as e:
+            self.log(f"Error resetting tangent extensions: {e}", 2)
+            slicer.util.errorDisplay(f"Could not reset extensions: {e}")
+
+   
+    def onElongateNasalFloorTangentsClicked(self):
+        """Extends only the T4R and T4L tangents anteriorly."""
+        self.log("'Elongate Nasal Floor Tangents' button clicked.")
+        
+        extensionLength = 50
+        tangents_to_extend = []
+
+        # Check if T4R exists and needs to be extended
+        if "T4R" in self.tangents:
+            tangents_to_extend.append("T4R")
+        
+        # Check if T4L exists and needs to be extended
+        if "T4L" in self.tangents:
+            tangents_to_extend.append("T4L")
+
+        if not tangents_to_extend:
+            slicer.util.messageBox("Please create the T4R and/or T4L tangents in Step 2 before elongating them.")
+            return
+
+        try:
+            # Backup the positions before extending, if not already backed up
+            for name in tangents_to_extend:
+                if name not in self.tangent_backups:
+                    self.tangent_backups[name] = self.tangents[name].copy()
+                    self.log(f"Backed up original position for {name}.")
+
+            # Extend each tangent and update its look in the 3D scene
             for name in tangents_to_extend:
                 self.extendTangent(name, extensionLength)
-                    
-            # Update the visualization for each extended tangent
-            for name in tangents_to_extend:
                 self.updateTangentVisualization(name)
-                    
-            self.log("Tangents extended successfully")
-            slicer.util.showStatusMessage(f"Tangents extended by {extensionLength}mm!", 2000)
-                
+
+            self.log(f"Extended nasal floor tangents by {extensionLength}mm.")
+            slicer.util.showStatusMessage(f"Nasal floor tangents extended by {extensionLength}mm!", 3000)
+
         except Exception as e:
-            # Add the error message to our log for easier debugging
-            self.log(f"Error in onExtendTangentsClicked: {e}", level=2)
-            slicer.util.errorDisplay(f"Error extending tangents: {str(e)}")
+            self.log(f"Error in onElongateNasalFloorTangentsClicked: {e}", 2)
+            slicer.util.errorDisplay(f"Error elongating nasal floor tangents: {e}")
 
     def onR2MethodChanged(self, button):
             """Handle R2 method selection"""
@@ -1977,5 +2138,5 @@ gerasimowPredictor = GerasimowNosePredictor()
 # Add this right after
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
-print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")    
+print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
 ```
