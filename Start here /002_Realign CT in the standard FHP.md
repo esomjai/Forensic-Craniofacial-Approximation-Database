@@ -25,8 +25,7 @@ These filetypes will appear throughout the tutorials as they provide a transferr
 
 Please download the json file for this part of the process by double-clicking: 
 
-
-[FHP_landmarks.mrk.json](https://github.com/user-attachments/files/21429663/FHP_landmarks.mrk.json)
+[FHP_landmarks.json](https://github.com/user-attachments/files/22434441/FHP_landmarks.json)
 
 
 This file contains the following landmarks: 
@@ -222,8 +221,8 @@ displayNode.SetVisibility(True)
 <details>
 
 <summary>4-point FHP</summary>
-Allocate the 4 landmarks found in file 
-[FH4_landmarks.json](https://github.com/user-attachments/files/20265033/FH4_landmarks.json) - yes, you are re-allocating 3 of the same points.
+[FH4_landmarks.json](https://github.com/user-attachments/files/22434458/FH4_landmarks.json)
+- yes, you are re-allocating 3 of the same points.
 
 | position  | no. in table | Name | Description                                                        |
 |---|----|-------|--------------------------------------------------------------------|
@@ -252,7 +251,8 @@ points = np.array([landmarksNode.GetNthControlPointPosition(i) for i in range(la
 if points.shape[0] < 3:
     raise ValueError("At least three points are required to define a plane.")
 
-# Calculate the centroid of the points
+# Calculate the ce[FH4_landmarks.json](https://github.com/user-attachments/files/22434454/FH4_landmarks.json)
+ntroid of the points
 centroid = points.mean(axis=0)
 
 # Perform Singular Value Decomposition (SVD) to find the normal of the best-fit plane
