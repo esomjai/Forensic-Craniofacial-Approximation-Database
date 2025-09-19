@@ -221,7 +221,9 @@ displayNode.SetVisibility(True)
 <details>
 
 <summary>4-point FHP</summary>
-[FH4_landmarks.json](https://github.com/user-attachments/files/22434458/FH4_landmarks.json)
+[FH4_landmarks.json](https://github.com/user-attachments/files/22434548/FH4_landmarks.json)
+
+
 - yes, you are re-allocating 3 of the same points.
 
 | position  | no. in table | Name | Description                                                        |
