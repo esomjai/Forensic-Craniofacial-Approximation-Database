@@ -48,8 +48,7 @@ KrogmanIscan_hard_tissue contains:
 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^7]      |
-| 1            
+| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^7]      |         
     | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^7]      |
 | 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^7]      |
 | 3                | 4                | subspinale      | subspinale       | Most rostral (end) point on the internasal suture.                                                                            | Rynn et al. 2010[^7]      |
