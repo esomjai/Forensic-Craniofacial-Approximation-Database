@@ -49,7 +49,8 @@ KrogmanIscan_hard_tissue contains:
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^7]      |
-| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^7]      |
+| 1            
+    | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^7]      |
 | 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^7]      |
 | 3                | 4                | subspinale      | subspinale       | Most rostral (end) point on the internasal suture.                                                                            | Rynn et al. 2010[^7]      |
 | 4                | 5                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^7]      |
@@ -74,7 +75,11 @@ To help with the side profile, we will establish the “INB” plane as defined 
 
 > a midsagittal plane (INB) which bisected the inion, nasion and bregma
 
-by downloading the hard tissue markups file for this method: [KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json)
+by downloading the hard tissue markups file for this method:
+
+[KrogmanIscan_hard_tissue.mrk.json](https://github.com/user-attachments/files/22452149/KrogmanIscan_hard_tissue.mrk.json)
+
+
  allocating the first three landmarks (nasion, inion, bregma) and copying and pasting the following code: 
  
 <details>
