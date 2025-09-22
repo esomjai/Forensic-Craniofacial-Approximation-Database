@@ -1,3 +1,4 @@
+
 # The Threefold ANS Method by Krogman & Iscan, 1986[^2], as interpreted by Rynn et al. (2010)[^7]
 
 
@@ -936,4 +937,8 @@ You can also just carry out both methods (line/cylinder) one after the other - t
 [^9]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.	
 [^10]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
 
-	
+
+
+<img width="131" height="47" alt="roi cut" src="https://github.com/user-attachments/assets/fd358337-fc94-466d-8bc9-b7149fddf9b9" />
+<img width="136" height="54" alt="plane cut" src="https://github.com/user-attachments/assets/dfd9f7a8-e63f-48fd-aac0-f2e233539651" />
+<img width="161" height="57" alt="create roi" src="https://github.com/user-attachments/assets/9d0deb48-fcbf-49b1-9c5b-9b2720dbb28c" />
