@@ -1,10 +1,6 @@
 ```python
 # Threefold ANS Method GUI - Version 45 (Bug Fixes)
-# A beginner-friendly, step-by-step tool for 3D Slicer.
-#
-# This version fixes two bugs from the previous merge:
-# 1. Removes duplicated code in onAdjustMP to fix a Qt layout error.
-# 2. Corrects a typo in createMidphiltrumGuide to fix a Python TypeError.
+
 
 import os
 import vtk
