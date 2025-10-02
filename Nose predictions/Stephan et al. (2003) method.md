@@ -65,9 +65,9 @@ The guide contains the following steps:
 | 8                | 9                | RL           | right lowest    | The right lowest point on the aperture border in profile view                                                                 | Somjai           |
 
 Download the landmarks file 
-[lmrks_Stephan.mrk.json](https://github.com/user-attachments/files/20213400/lmrks_Stephan.mrk.json)
 
 Optional soft tissue landmark file for the [error measurements step](#error-measurements) 
+[lmrks_Stephan.mrk.json](https://github.com/user-attachments/files/22662064/lmrks_Stephan.mrk.json)
 
 
 [soft_tissue_Stephan.mrk.json](https://github.com/user-attachments/files/20213398/soft_tissue_Stephan.mrk.json)
