@@ -50,8 +50,8 @@ Illustration of the method:
 
 - [ ] The scan has to be re-aligned in the FHP
 - [ ] You should have a Bone and Skin model via segmentation (explained later)
-- [ ] Allocate ALL landmarks from the [hard_tissue_PU.mrk.json](https://github.com/user-attachments/files/20212741/hard_tissue_PU.mrk.json)
- file 
+- [ ] Allocate ALL landmarks from the [hard_tissue_PU.mrk.json](https://github.com/user-attachments/files/22872691/hard_tissue_PU.mrk.json)
+
 
 
 
