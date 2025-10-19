@@ -47,7 +47,7 @@ The technique by Rynn et al 2010[^3] has been applied, tested and recalibrated b
 > If you are only interested in reproducing the x, y, z axes and the pron ant, pron vert, pron pFHP, nasal length (nas ln), nasal height (nas ht), nasal depth (nas dp) measurements, allocate ONLY landmarks highlighted with a 🔵 for hard tissue points and 🟧 for soft tissue points.
 
 #### Hard tissue landmarks
-[Rynn_hard_tissue.mrk.json](https://github.com/user-attachments/files/20417966/Rynn_hard_tissue.mrk.json)
+[Rynn_hard_tissue.mrk.json](https://github.com/user-attachments/files/22989769/Rynn_hard_tissue.mrk.json)
 
 
 | Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
@@ -75,7 +75,8 @@ The technique by Rynn et al 2010[^3] has been applied, tested and recalibrated b
 
 #### Soft tissue landmarks
 
-[Rynn_soft_tissue.mrk.json](https://github.com/user-attachments/files/20264693/Rynn_soft_tissue.mrk.json)
+
+
 
 | Position in code | Position in file | Name in file   | Landmark name | Definition                                                                                                            | Defined by |
 |------------------|------------------|---------------|--------------|-----------------------------------------------------------------------------------------------------------------------|------------|
@@ -99,6 +100,7 @@ The technique by Rynn et al 2010[^3] has been applied, tested and recalibrated b
 | 17               | 18               | pt8R          | pt8R         | columella break point on the right                                                                                    | Rynn et al 2010[^3]          |
 | 18               | 19               | pt8L          | pt8L         | columella break point on the left                                                                                     | Rynn et al 2010[^3]          |
 
+[Rynn_soft_tissue.mrk.json](https://github.com/user-attachments/files/22989771/Rynn_soft_tissue.mrk.json)
 
 
 For the precision of this method, follow the 4-point FHP guide in () with downloading and allocating [FH4_landmarks.json](https://github.com/user-attachments/files/20265033/FH4_landmarks.json)
