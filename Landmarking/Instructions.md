@@ -15,26 +15,25 @@ The GUI includes the following steps:
 
 1.  **Open 3D Slicer.**
 2.  Import the DICOM of the CT
-Click the DCM button, then find the folder
+3.  Click the DCM button, then find the folder
+
+
 <img width="750"  alt="import 1" src="https://github.com/user-attachments/assets/8169cb06-a4bf-43b3-bf97-bf8b2e3a626e" />
 
-Open the imported scan
+4. Open the imported scan
 <img width="750"  alt="import 2" src="https://github.com/user-attachments/assets/d76381ad-659c-40d5-84ac-1beaaf4cb842" />
 
-For the 3D rendering to appear in the "blue" scene, drag and drop it: 
+5. For the 3D rendering to appear in the "blue" scene, drag and drop it: 
 
 <img width="750" alt="import 3" src="https://github.com/user-attachments/assets/dee9fe49-0a60-49dd-9262-49be0ce17e1e" />
 
-4.  Navigate to the **Python Interactor** by clicking `View -> Python Interactor` in the top menu.
+6. Navigate to the **Python Interactor** by clicking `View -> Python Interactor` in the top menu.
+ 
 <img width="750" alt="open python" src="https://github.com/user-attachments/assets/5f6adbd4-31ef-4c54-9ba1-edd77f71292d" />
 
-6.  **Copy the entire Python script** from the code block below.
-7.  **Paste the script** into the Python Interactor window.
-8.  Press **Ctrl+Enter** (or **Cmd+Enter** on Mac) to run the script. The "Landmarking" GUI will appear in the Slicer window.
-
-![Placeholder for image showing where the Python Interactor is](https://placehold.co/600x300?text=Image:+View+->+Python+Interactor)
-
-***
+7.  **Copy the entire Python script** from the code block below.
+8.  **Paste the script** into the Python Interactor window.
+9.  Press **Enter** to run the script. The "Landmarking" GUI will appear in the Slicer window.
 
 ### Python Script
 
@@ -768,6 +767,8 @@ landmarkingGui.show()
 
 ```
 
+
+
 ### Using the GUI: Step-by-Step
 
 After running the script, the "Landmarking" window will appear. Here is how to use it:
@@ -776,10 +777,18 @@ After running the script, the "Landmarking" window will appear. Here is how to u
 This step orients your CT scan correctly.
 1.  **Input Volume:** Select your loaded CT scan from the dropdown menu.
 2.  **FHP Landmarks:** Click **"Auto-load FHP Landmarks"** to download the points needed, or select your own if you have them.
-3.  **Apply Realignment:** Once the volume and landmarks are selected, click **"Apply FHP Realignment"**.
-4.  Click **"Next"**.
+3.  
+    <img width="750"  alt="GUI1" src="https://github.com/user-attachments/assets/c52ea595-ee2a-450f-a733-f4bc208039d3" />
+    
+Now, place them on the model - you may have to adjust the visiblility to see ONLY bone in the **Volume Renedering** module. Then, this button should be available to click:
 
-![Placeholder for image showing Step 1 UI](https://placehold.co/600x400?text=Image:+Step+1+UI+with+selectors)
+<img width="473" height="222" alt="GUI2" src="https://github.com/user-attachments/assets/19579707-3326-4e25-b9d3-55ee81fefb5f" />
+
+
+5.  **Apply Realignment:** Once the volume and landmarks are selected and placed, click **"Apply FHP Realignment"**.
+6.  Click **"Next"**.
+
+
 
 #### Step 2: Segmentation Option
 Choose whether you need to create 3D models from your CT scan.
@@ -788,12 +797,36 @@ Choose whether you need to create 3D models from your CT scan.
 
 #### Step 3: Skull Segmentation
 Follow the instructions in the GUI to create a 3D model of the skull. The instructions are hidden by default; click on **"Show/Hide Segmentation Instructions"** to see them.
+
+
+
+
+
+<img width="750"  alt="Segm step1" src="https://github.com/user-attachments/assets/daf08fba-e3af-4ab9-89e7-06662189099a" />
+
+<img width="195" height="102" alt="Segm step2" src="https://github.com/user-attachments/assets/5a9ba052-dd7e-4b23-9fb8-cc8cfe48427f" />
+
+<img width="1925" height="550" alt="Segm step3" src="https://github.com/user-attachments/assets/7b994fb2-9d08-42b9-aa74-4a63e7b5a0f0" />
+
+<img width="750" height="1476" alt="Segm step4" src="https://github.com/user-attachments/assets/d8e13688-fa16-45fd-b796-36fe530e6381" />
+
+<img width="750" height="27" alt="Segm step5" src="https://github.com/user-attachments/assets/dce389f8-d65d-4f48-ba7e-cfb4d008f519" />
+
+<img width="750"  alt="Segm step6" src="https://github.com/user-attachments/assets/648f2f97-3541-44a1-bca4-fe234ab4121d" />
+
+<img width="750"" alt="Segm step7" src="https://github.com/user-attachments/assets/66076a1b-6a28-49f7-a6bf-a401e492279e" />
+
+<img width="750" alt="Segm step8" src="https://github.com/user-attachments/assets/644c2da7-f1ed-4279-b9a0-7122ad2b40a6" />
+
+
+
+
+
 1.  Follow the numbered steps to create a segment, threshold it for bone, and export it as a model named "Bone".
 2.  **Re-import** that "Bone" model back into Slicer.
 3.  In the GUI, select your re-imported model in the **"Re-imported Bone Model"** dropdown.
 4.  Click **"Next"**.
 
-![Placeholder for image showing Segmentation instructions](https://placehold.co/600x400?text=Image:+Segmentation+Instructions)
 
 #### Step 4: Soft Tissue Segmentation
 This is similar to the previous step, but for creating the soft tissue model.
