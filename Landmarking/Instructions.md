@@ -15,13 +15,22 @@ The GUI includes the following steps:
 
 1.  **Open 3D Slicer.**
 2.  Import the DICOM of the CT
-<img width="750"  alt="import 2" src="https://github.com/user-attachments/assets/d76381ad-659c-40d5-84ac-1beaaf4cb842" />
+Click the DCM button, then find the folder
 <img width="750"  alt="import 1" src="https://github.com/user-attachments/assets/8169cb06-a4bf-43b3-bf97-bf8b2e3a626e" />
 
+Open the imported scan
+<img width="750"  alt="import 2" src="https://github.com/user-attachments/assets/d76381ad-659c-40d5-84ac-1beaaf4cb842" />
+
+For the 3D rendering to appear in the "blue" scene, drag and drop it: 
+
+<img width="750" alt="import 3" src="https://github.com/user-attachments/assets/dee9fe49-0a60-49dd-9262-49be0ce17e1e" />
+
 4.  Navigate to the **Python Interactor** by clicking `View -> Python Interactor` in the top menu.
-5.  **Copy the entire Python script** from the code block below.
-6.  **Paste the script** into the Python Interactor window.
-7.  Press **Ctrl+Enter** (or **Cmd+Enter** on Mac) to run the script. The "Landmarking" GUI will appear in the Slicer window.
+<img width="750" alt="open python" src="https://github.com/user-attachments/assets/5f6adbd4-31ef-4c54-9ba1-edd77f71292d" />
+
+6.  **Copy the entire Python script** from the code block below.
+7.  **Paste the script** into the Python Interactor window.
+8.  Press **Ctrl+Enter** (or **Cmd+Enter** on Mac) to run the script. The "Landmarking" GUI will appear in the Slicer window.
 
 ![Placeholder for image showing where the Python Interactor is](https://placehold.co/600x300?text=Image:+View+->+Python+Interactor)
 
