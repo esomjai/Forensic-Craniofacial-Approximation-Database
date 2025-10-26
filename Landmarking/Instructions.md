@@ -14,10 +14,14 @@ The GUI includes the following steps:
 ### How to Use This Guide
 
 1.  **Open 3D Slicer.**
-2.  Navigate to the **Python Interactor** by clicking `View -> Python Interactor` in the top menu.
-3.  **Copy the entire Python script** from the code block below.
-4.  **Paste the script** into the Python Interactor window.
-5.  Press **Ctrl+Enter** (or **Cmd+Enter** on Mac) to run the script. The "Landmarking" GUI will appear in the Slicer window.
+2.  Import the DICOM of the CT
+<img width="750"  alt="import 2" src="https://github.com/user-attachments/assets/d76381ad-659c-40d5-84ac-1beaaf4cb842" />
+<img width="750"  alt="import 1" src="https://github.com/user-attachments/assets/8169cb06-a4bf-43b3-bf97-bf8b2e3a626e" />
+
+4.  Navigate to the **Python Interactor** by clicking `View -> Python Interactor` in the top menu.
+5.  **Copy the entire Python script** from the code block below.
+6.  **Paste the script** into the Python Interactor window.
+7.  Press **Ctrl+Enter** (or **Cmd+Enter** on Mac) to run the script. The "Landmarking" GUI will appear in the Slicer window.
 
 ![Placeholder for image showing where the Python Interactor is](https://placehold.co/600x300?text=Image:+View+->+Python+Interactor)
 
