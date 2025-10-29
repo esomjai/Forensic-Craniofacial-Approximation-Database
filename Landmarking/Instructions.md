@@ -40,6 +40,7 @@ The GUI includes the following steps:
 Copy the complete script below to run the Landmarking GUI in 3D Slicer.
 
 ```python
+
 import os
 import vtk
 import numpy as np
@@ -102,15 +103,12 @@ class InstructionDialog(qt.QDialog):
 
         self.mainLayout.addWidget(buttonGroup)
 
-        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+       
         
-        # --- THIS IS THE NEW "SMART" INSTRUCTION LOGIC ---
-        # We check the modelName and set the recommended threshold accordingly.
         if modelName == "Bone":
             recommended_threshold = "500"
-        else: # Assumes "Skin"
+        else:
             recommended_threshold = "-500"
-        # --- END OF NEW LOGIC ---
 
         instructions_text = f"""
             <p><b>How to Create Your {modelName} Model</b></p>
@@ -135,7 +133,8 @@ class InstructionDialog(qt.QDialog):
         self.mainLayout.addWidget(instructionLabel)
 
         self.closeButton = qt.QPushButton("Close")
-        self.closeButton.clicked.connect(self.close)
+        # --- THIS IS THE FIX for the popup window ---
+        self.closeButton.clicked.connect(lambda: self.close())
         self.mainLayout.addWidget(self.closeButton)
 
 
@@ -203,7 +202,8 @@ class LandmarkingGUI(qt.QWidget):
         
         self.finishButton = qt.QPushButton("Finish")
         self.finishButton.setToolTip("Close this tool.")
-        self.finishButton.clicked.connect(self.close)
+        # --- THIS IS THE FIX for the main GUI window ---
+        self.finishButton.clicked.connect(lambda: self.close())
         self.finishButton.hide()
         
         navLayout.addWidget(self.prevButton)
@@ -891,7 +891,6 @@ except:
 
 landmarkingGui = LandmarkingGUI()
 landmarkingGui.show()
-
 ```
 
 
