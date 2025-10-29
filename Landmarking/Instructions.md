@@ -48,85 +48,168 @@ import slicer
 import urllib.request
 import tempfile
 import ctk
+import logging
+from SegmentEditorEffects import *
+
+class InstructionDialog(qt.QDialog):
+    def __init__(self, modelName, parent=None):
+        qt.QDialog.__init__(self, parent)
+        self.setWindowTitle(f"{modelName} Segmentation Instructions")
+        self.setWindowFlags(self.windowFlags() | qt.Qt.WindowStaysOnTopHint)
+        
+        self.mainLayout = qt.QVBoxLayout(self)
+
+        buttonGroup = qt.QGroupBox("Quick Access")
+        buttonLayout = qt.QVBoxLayout(buttonGroup)
+        
+        # --- THIS IS THE UPDATED BUTTON LIST ---
+        # We now have a list of dictionaries, which is more flexible.
+        # It lets us have different actions for different buttons.
+        actions = [
+            {
+                "name": "SegmentEditor",
+                "icon": ":/Icons/SegmentEditor.png",
+                "action": lambda: slicer.util.selectModule("SegmentEditor")
+            },
+            {
+                "name": "VolumeRendering",
+                "icon": ":/Icons/VolumeRendering.png",
+                "action": lambda: slicer.util.selectModule("VolumeRendering")
+            },
+            {
+                "name": "Segmentations",
+                "icon": ":/Icons/Segmentations.png",
+                "action": lambda: slicer.util.selectModule("Segmentations")
+            },
+            {
+                "name": "Models",
+                "icon": ":/Icons/Models.png",
+                "action": lambda: slicer.util.selectModule("Models")
+            },
+            {
+                "name": "Add Data",
+                "icon": ":/Icons/AddData.png",
+                "action": slicer.util.openAddDataDialog # This function opens the "Add Data" dialog
+            }
+        ]
+
+        for item in actions:
+            # For "Add Data", the name is good. For modules, we add "Module" to the end.
+            button_text = f" Open {item['name']}"
+            if "Module" not in item["name"] and "Data" not in item["name"]:
+                 button_text += " Module"
+
+            btn = qt.QPushButton(button_text)
+            btn.setIcon(qt.QIcon(item["icon"]))
+            btn.clicked.connect(item["action"])
+            buttonLayout.addWidget(btn)
+        # --- END OF UPDATED BUTTON LIST ---
+
+        self.mainLayout.addWidget(buttonGroup)
+
+        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        
+       
+        instructions_text = (
+            f"<b>How to Create Your {modelName} Model</b><br><br>"
+            f"This window will stay open while you work. You can move it to another screen.<br><br>"
+            f"<b>Your Steps:</b><br>"
+            f"1. <b>Add a Segment:A new, empty segmentation called '<b>{modelName}_Segmentation</b>' has been created for you in the 'Segment Editor' panel.<br><br>"
+            f"2. <b>Select Threshold Tool:</b> From the list of tools, click on '<b>Threshold</b>' - it is in the top row on the right.<br>"
+            f"3. <b>Adjust Threshold:</b> Use the 'Threshold Range' slider to select the tissue you want. For bone, a good starting point is 500. You will see the selected area highlighted and 'blinking' in the slice views.<br>"
+            f"4. <b>Apply:</b> Once you are happy with the highlighted area, click the '<b>Apply</b>' button.<br>"
+            f"5. <b>Show 3D Model:</b> At the top of the Segment Editor panel, click the '<b>Show 3D</b>' button. After a moment, your 3D model will appear!  <br>"
+            f"6. <b>Now, click the green arrow next to the 'Show 3D' or click the '<b>Open Segmentations module</b>' button. Scroll down and open the '<b>Export/import models and labelmaps' as well as the '<b>Export to files</b>' dropdown menus. "
+            f"7. <b> Make sure the following are chosen: '<b>Export</b>', '<b>Models</b>' in the fist section; then choose your folder to export to in the next section and click '<b>Export</b>'in the second section"
+            f"8. <b> Re-import your saved model by clicking the '<b>Add Data</b>' widget on top of Slicer or in this window and choose the resently created STL file.  Check that this model now exists by clicking '<b>Open Models module</b>. "
+            f"9. <b>Confirm:</b> Come back to this 'Landmarking' window and select your new model from the '<b>{modelName} Model</b>' dropdown menu to continue.<br><br>"
+            f"<a href='{video_url}'>Click here to watch a tutorial video.</a>"
+        )
+        instructionLabel = qt.QLabel(instructions_text)
+        instructionLabel.setTextFormat(qt.Qt.RichText)
+        instructionLabel.setWordWrap(True)
+        instructionLabel.setOpenExternalLinks(True)
+        self.mainLayout.addWidget(instructionLabel)
+
+        self.closeButton = qt.QPushButton("Close")
+        self.closeButton.clicked.connect(self.close)
+        self.mainLayout.addWidget(self.closeButton)
+
 
 class LandmarkingGUI(qt.QWidget):
     def __init__(self, parent=None):
         qt.QWidget.__init__(self, parent)
         self.setWindowTitle("Landmarking")
-        self.setObjectName("LandmarkingGUI") # Changed from "Landmarking" to be more specific
+        self.setObjectName("LandmarkingGUI")
         
+        self.setWindowFlags(self.windowFlags() | qt.Qt.WindowStaysOnTopHint)
+
         self.mainLayout = qt.QVBoxLayout(self)
         self.mainLayout.setSpacing(10)
         
         self.stepStack = qt.QStackedWidget()
         self.mainLayout.addWidget(self.stepStack)
         
-        # Node storage
         self.landmarksNode = None
         self.referencePlane = None
         self.boneModel = None
         self.softTissueModel = None
+        self.inputVolume = None
+        self.croppedVolume = None
         
-        # Segmentation option
         self.wantsSegmentation = True
-        
-        # Observers and flags
         self.isDynamicModelerInstalled = False
+        self.currentStep = 0
         
         self.createAllStepWidgets()
         self.setupNavigation()
         self.checkDependencies()
         self.syncWithScene()
         
-        self.currentStep = 0
         self.updateStepUI()
 
     def createAllStepWidgets(self):
         self.createStep0_FHPRealignment()
-        self.createStep1_SegmentationOption()
-        self.createStep2_Segmentation()  
-        self.createStep3_SoftTissueSegmentation()
-        self.createStep4_LandmarkPlacement()
+        self.createStep1_ROICrop()
+        self.createStep2_SegmentationOption()
+        self.createStep3_Segmentation()  
+        self.createStep4_SoftTissueSegmentation()
+        self.createStep5_LandmarkPlacement()
 
     def checkDependencies(self):
-        """Check if required extensions are installed"""
         moduleName = "DynamicModeler" 
         if moduleName in slicer.app.moduleManager().factoryManager().registeredModuleNames():
             self.isDynamicModelerInstalled = True
-        else:
-            self.isDynamicModelerInstalled = False
-            msgBox = qt.QMessageBox()
-            msgBox.setWindowTitle("Missing Required Extension")
-            msgBox.setIcon(qt.QMessageBox.Warning)
-            msgBox.setTextFormat(qt.Qt.RichText)
-            msgBox.setText(
-                "The <b>Dynamic Modeler</b> extension is required for this tool, but it was not found.<br><br>"
-                "Please install it to continue:<br>"
-                "1. Go to the menu: <b>View -> Extension Manager</b>.<br>"
-                "2. In the 'Search' bar, type <b>Dynamic Modeler</b>.<br>"
-                "3. Click the <b>'Install'</b> button.<br>"
-                "4. <b>Restart 3D Slicer</b> after the installation is complete.<br><br>"
-                "This tool will not function correctly until the extension is installed and Slicer is restarted.")
-            msgBox.exec_()
 
     def setupNavigation(self):
         navWidget = qt.QWidget()
         navLayout = qt.QHBoxLayout(navWidget)
         navLayout.setContentsMargins(0, 0, 0, 0)
+        
         self.prevButton = qt.QPushButton("Previous")
         self.prevButton.setToolTip("Go to the previous step.")
         self.prevButton.clicked.connect(self.onPrevButtonClicked)
-        self.stepLabel = qt.QLabel("Step 1/5")
+        
+        self.stepLabel = qt.QLabel("Step 1/6")
         self.stepLabel.setAlignment(qt.Qt.AlignCenter)
         self.stepLabel.setStyleSheet("font-weight: bold; font-size: 14px;")
+        
         self.nextButton = qt.QPushButton("Next")
         self.nextButton.setToolTip("Go to the next step.")
         self.nextButton.clicked.connect(self.onNextButtonClicked)
+        
+        self.finishButton = qt.QPushButton("Finish")
+        self.finishButton.setToolTip("Close this tool.")
+        self.finishButton.clicked.connect(self.close)
+        self.finishButton.hide()
+        
         navLayout.addWidget(self.prevButton)
         navLayout.addStretch(1)
         navLayout.addWidget(self.stepLabel)
         navLayout.addStretch(1)
         navLayout.addWidget(self.nextButton)
+        navLayout.addWidget(self.finishButton)
+        
         self.mainLayout.addWidget(navWidget)
 
     def createStep0_FHPRealignment(self):
@@ -149,6 +232,7 @@ class LandmarkingGUI(qt.QWidget):
         self.inputVolumeSelector.nodeTypes = ["vtkMRMLScalarVolumeNode"]
         self.inputVolumeSelector.setMRMLScene(slicer.mrmlScene)
         self.inputVolumeSelector.setToolTip("Pick the input CT volume to be realigned.")
+        self.inputVolumeSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onVolumeSelected)
         formLayout.addRow("Input Volume: ", self.inputVolumeSelector)
         
         self.inputFiducialsSelector = slicer.qMRMLNodeComboBox()
@@ -179,6 +263,11 @@ class LandmarkingGUI(qt.QWidget):
         self.autoLoadLandmarksButton.setToolTip("Download and load standard FHP landmarks.")
         self.autoLoadLandmarksButton.clicked.connect(self.autoLoadFHPlandmarks)
         layout.addWidget(self.autoLoadLandmarksButton)
+
+        self.skipFHPButton = qt.QPushButton("Skip this step (if already done)")
+        self.skipFHPButton.setToolTip("Go directly to the next step without performing realignment.")
+        self.skipFHPButton.clicked.connect(self.onSkipStep0)
+        layout.addWidget(self.skipFHPButton)
         
         self.step0StatusLabel = qt.QLabel("Status: Please select input volume and landmarks.")
         self.step0StatusLabel.setWordWrap(True)
@@ -190,12 +279,60 @@ class LandmarkingGUI(qt.QWidget):
         self.inputVolumeSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onFHPSelect)
         self.inputFiducialsSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.onFHPSelect)
 
-    def createStep1_SegmentationOption(self):
+    def createStep1_ROICrop(self):
+        widget = qt.QWidget()
+        layout = qt.QVBoxLayout(widget)
+        layout.setSpacing(15)
+
+        title = qt.QLabel("Step 2 (Optional): Crop Volume with ROI")
+        title.setStyleSheet("font-weight: bold; font-size: 18px;")
+        title.setAlignment(qt.Qt.AlignCenter)
+        layout.addWidget(title)
+
+         desc = qt.QLabel(
+            "If your volume is very large, you can draw an ROI (Region of Interest) box "
+            "around the head to speed up the segmentation steps. If you don't need to do this, just click 'Next'."
+
+            "To <b>Crop the original Volume:</b> Click the '<b>Open Volume Rendering module</b>' shortcut. Find the '<b>Crop</b>' line: make sure you have Enale ticked, and the '<b>Display ROI</b>' eye icon open. " 
+            "If necessary, toggle the Shift button for better visibility - you want to include the relevant hard and soft tissue features within the box, but exclude any extra scanner material. This area within the box will be referred to as '<b>Volume Rendering ROI</b>'"
+            "For the ROI Node, you need to choose this option, then click '<b>Crop Volume</b>'. A new item called 'name_of_original_volume_cropped should appear. to see only this, you may need to hide the original volume (shut eye icon) and re-drag the cropped one into the blue 3D scene" "
+        )
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+        
+        vr_button = qt.QPushButton(" Open Volume Rendering Module")
+        vr_button.setIcon(qt.QIcon(":/Icons/VolumeRendering.png"))
+        vr_button.setToolTip("Open the Volume Rendering module to help visualize the ROI placement.")
+        vr_button.clicked.connect(lambda: slicer.util.selectModule("VolumeRendering"))
+        layout.addWidget(vr_button)
+
+        formLayout = qt.QFormLayout()
+        self.roiNodeSelector = slicer.qMRMLNodeComboBox()
+        self.roiNodeSelector.nodeTypes = ["vtkMRMLAnnotationROINode", "vtkMRMLMarkupsROINode"]
+        self.roiNodeSelector.setMRMLScene(slicer.mrmlScene)
+        self.roiNodeSelector.setToolTip("Select an ROI box you have drawn in the scene.")
+        self.roiNodeSelector.noneEnabled = True
+        formLayout.addRow("ROI Node:", self.roiNodeSelector)
+        layout.addLayout(formLayout)
+
+        self.cropVolumeButton = qt.QPushButton("Crop Volume")
+        self.cropVolumeButton.setToolTip("Crop the input volume using the selected ROI.")
+        self.cropVolumeButton.clicked.connect(self.onCropVolume)
+        layout.addWidget(self.cropVolumeButton)
+
+        self.step1StatusLabel = qt.QLabel("Status: Select an ROI and click 'Crop Volume', or skip this step.")
+        self.step1StatusLabel.setWordWrap(True)
+        layout.addWidget(self.step1StatusLabel)
+
+        layout.addStretch(1)
+        self.stepStack.addWidget(widget)
+
+    def createStep2_SegmentationOption(self):
         widget = qt.QWidget()
         layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
         
-        title = qt.QLabel("Step 2: Segmentation Option")
+        title = qt.QLabel("Step 3: Segmentation Option")
         title.setStyleSheet("font-weight: bold; font-size: 18px;")
         title.setAlignment(qt.Qt.AlignCenter)
         layout.addWidget(title)
@@ -221,59 +358,41 @@ class LandmarkingGUI(qt.QWidget):
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
 
-    def createStep2_Segmentation(self):
+    def createStep3_Segmentation(self):
         widget = qt.QWidget()
         mainLayout = qt.QVBoxLayout(widget)
         mainLayout.setSpacing(15)
         
-        title = qt.QLabel("Step 3: Segment, Export, and Re-import the Skull Model")
+        title = qt.QLabel("Step 4: Create the Skull Model")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         mainLayout.addWidget(title)
-        
-        self.segmentationCollapsible = ctk.ctkCollapsibleButton()
-        self.segmentationCollapsible.text = "Show/Hide Segmentation Instructions"
-        self.segmentationCollapsible.collapsed = True
-        
-        segmentationLayout = qt.QVBoxLayout(self.segmentationCollapsible)
-        segmentationLayout.setContentsMargins(10, 10, 10, 10)
-        
-        instructions = qt.QLabel()
-        instructions.setTextFormat(qt.Qt.RichText)
-        instructions.setOpenExternalLinks(True)
-        instructions.setWordWrap(True)
-        instructions.setText(
-            "Follow these steps carefully to create a clean 'Bone' model for the next steps.<br><br>"
-            "<b>1. Open Segment Editor:</b> Click this button to open the module.<br>"
+
+        desc = qt.QLabel(
+            "This step will help you create a 3D model of the bone using Slicer's built-in tools."
         )
-        segmentationLayout.addWidget(instructions)
+        desc.setWordWrap(True)
+        mainLayout.addWidget(desc)
+
+        manualGroup = qt.QGroupBox("Guided Manual Segmentation")
+        manualLayout = qt.QVBoxLayout(manualGroup)
         
-        self.openSegmentEditorButton = qt.QPushButton("Open Segment Editor Module")
-        self.openSegmentEditorButton.clicked.connect(lambda: slicer.util.selectModule('SegmentEditor'))
-        segmentationLayout.addWidget(self.openSegmentEditorButton)
-        
-        instructions2 = qt.QLabel()
-        instructions2.setTextFormat(qt.Qt.RichText)
-        instructions2.setOpenExternalLinks(True)
-        instructions2.setWordWrap(True)
-        instructions2.setText(
-            "<br><b>2. Rename your segmentation:</b> Click the dropdown menu next to <b>Segmentation:</b> and choose 'Rename current Segmentation'.<br><br>"
-            "<b>3. Source Volume</b> should be the name of your DICOM file.<br><br>"
-            "<b>4. Click the plus sign [+] 'Add'.</b><br><br>"
-            "<b>5. Choose the Threshold tool</b> from the panel below (in the right column, first row).<br><br>"
-            "<b>6. Edit the Threshold Range:</b> The minimum is usually 500.<br><br>"
-            "<b>7. Click 'Apply'</b>, then find the <b>'Show 3D'</b> button on the top and click it.<br><br>"
-            "<b>8. Go to the 'Segmentations' module.</b><br><br>"
-            "<b>9. Double click on the row below 'Name'</b> and edit the model name into <b>'Bone'</b>.<br><br>"
-            "<b>10. Scroll to 'Export/import models and labelmaps':</b> Make sure 'Export' and 'Models' are selected.<br><br>"
-            "<b>11. IMPORTANT:</b> Re-import this model by clicking the <b>'Data'</b> button, 'Choose file(s) to add...', and selecting the exported model file."
+        manualDesc = qt.QLabel(
+            "Click the button below to switch to the Segment Editor and get step-by-step instructions."
         )
-        segmentationLayout.addWidget(instructions2)
+        manualDesc.setWordWrap(True)
+        manualLayout.addWidget(manualDesc)
         
-        mainLayout.addWidget(self.segmentationCollapsible)
+        self.setupBoneSegmentationButton = qt.QPushButton("Setup Bone Segmentation")
+        self.setupBoneSegmentationButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
+        self.setupBoneSegmentationButton.clicked.connect(self.setupBoneSegmentation)
+        manualLayout.addWidget(self.setupBoneSegmentationButton)
         
-        confirmGroup = qt.QGroupBox("Final Confirmation")
+        mainLayout.addWidget(manualGroup)
+
+        confirmGroup = qt.QGroupBox("Model Confirmation")
         confirmLayout = qt.QFormLayout(confirmGroup)
-        confirmLabel = qt.QLabel("Once the model is re-imported, please select it below:")
+        
+        confirmLabel = qt.QLabel("Once your model is created, select it here to continue:")
         confirmLabel.setWordWrap(True)
         
         self.boneModelSelector = slicer.qMRMLNodeComboBox()
@@ -282,123 +401,54 @@ class LandmarkingGUI(qt.QWidget):
         self.boneModelSelector.addEnabled = False
         self.boneModelSelector.removeEnabled = False
         self.boneModelSelector.noneEnabled = True
-        self.boneModelSelector.setToolTip("Select the 'Bone' model you just re-imported.")
-        self.boneModelSelector.currentNodeChanged.connect(self.onConfirmSegmentation)
+        self.boneModelSelector.setToolTip("Select the 'Bone' model you created.")
+        self.boneModelSelector.currentNodeChanged.connect(self.onConfirmBoneSegmentation)
         
         confirmLayout.addRow(confirmLabel)
-        confirmLayout.addRow("Re-imported Bone Model:", self.boneModelSelector)
+        confirmLayout.addRow("Bone Model:", self.boneModelSelector)
         mainLayout.addWidget(confirmGroup)
         
-        self.step2StatusLabel = qt.QLabel("Status: Waiting for user to select the re-imported 'Bone' model.")
-        self.step2StatusLabel.setWordWrap(True)
-        mainLayout.addWidget(self.step2StatusLabel)
+        self.step3StatusLabel = qt.QLabel("Status: Ready to create bone model.")
+        self.step3StatusLabel.setWordWrap(True)
+        mainLayout.addWidget(self.step3StatusLabel)
         
-        self.dynamicModelerCollapsible = ctk.ctkCollapsibleButton()
-        self.dynamicModelerCollapsible.text = "Optional: Cut the Bone Model (if needed)"
-        self.dynamicModelerCollapsible.collapsed = True
-        
-        dynamicModelerLayout = qt.QVBoxLayout(self.dynamicModelerCollapsible)
-        dynamicModelerLayout.setContentsMargins(10, 10, 10, 10)
-
-        roiTipLabel = qt.QLabel()
-        roiTipLabel.setTextFormat(qt.Qt.RichText)
-        roiTipLabel.setWordWrap(True)
-        roiTipLabel.setText(
-            "<b>If your model is too large</b>, you can use the 'ROI cut' tool to trim it:<br><br>"
-            "&bull; Go to the <b>'Markups'</b> module and create a new <b>ROI</b>, drawing a box around the area to keep."
-        )
-        dynamicModelerLayout.addWidget(roiTipLabel)
-
-        openMarkupsLayout = qt.QHBoxLayout()
-        openMarkupsLabel = qt.QLabel("Click to open Markups module:")
-        self.openMarkupsButton = qt.QPushButton("Open Markups Module")
-        self.openMarkupsButton.clicked.connect(lambda: slicer.util.selectModule('Markups'))
-        openMarkupsLayout.addWidget(openMarkupsLabel)
-        openMarkupsLayout.addStretch()
-        openMarkupsLayout.addWidget(self.openMarkupsButton)
-        dynamicModelerLayout.addLayout(openMarkupsLayout)
-
-        roiTipLabel2 = qt.QLabel()
-        roiTipLabel2.setTextFormat(qt.Qt.RichText)
-        roiTipLabel2.setWordWrap(True)
-        roiTipLabel2.setText(
-            "<br>&bull; Return to the <b>'Dynamic Modeler'</b> module and use the <b>'ROI cut'</b> tool.<br><br>"
-            "&bull; Set the 'Input Model' and the 'ROI node'.<br><br>"
-            "&bull; In 'Output nodes', find 'Clipped output model (inside)' and select your original model to replace it.<br><br>"
-            "&bull; Click 'Apply' to finish."
-        )
-        dynamicModelerLayout.addWidget(roiTipLabel2)
-        
-        dynamicModelerLayout.addSpacing(15)
-
-        planeCutLabel = qt.QLabel()
-        planeCutLabel.setTextFormat(qt.Qt.RichText)
-        planeCutLabel.setWordWrap(True)
-        planeCutLabel.setText(
-            "<b>2.</b> Use the <b>'Plane cut'</b> tool to cut your model:<br><br>"
-            "&bull; In the Dynamic Modeler module, select the <b>'Plane cut'</b> tool.<br><br>"
-            "&bull; Set the 'Input Model' and 'Plane'.<br><br>"
-            "&bull; Click 'Apply' to perform the cut."
-        )
-        dynamicModelerLayout.addWidget(planeCutLabel)
-
-        dynamicModelerLayout.addSpacing(15)
-
-        confirmCutLabel = qt.QLabel("<b>3.</b> If you've created the cut models, click the button below to proceed.")
-        confirmCutLabel.setTextFormat(qt.Qt.RichText)
-        confirmCutLabel.setWordWrap(True)
-        dynamicModelerLayout.addWidget(confirmCutLabel)
-        
-        self.confirmCutButton = qt.QPushButton("Confirm Model Cut")
-        self.confirmCutButton.clicked.connect(self.onConfirmCut)
-        dynamicModelerLayout.addWidget(self.confirmCutButton, 0, qt.Qt.AlignHCenter)
-        
-        dynamicModelerLayout.addSpacing(10)
-
-        self.step2CutStatusLabel = qt.QLabel("Status: Optional - you can cut the model if needed.")
-        self.step2CutStatusLabel.setWordWrap(True)
-        dynamicModelerLayout.addWidget(self.step2CutStatusLabel)
-        
-        mainLayout.addWidget(self.dynamicModelerCollapsible)
         mainLayout.addStretch(1)
-        
         self.stepStack.addWidget(widget)
 
-    def createStep3_SoftTissueSegmentation(self):
+    def createStep4_SoftTissueSegmentation(self):
         widget = qt.QWidget()
         mainLayout = qt.QVBoxLayout(widget)
         mainLayout.setSpacing(15)
         
-        title = qt.QLabel("Step 4: Soft Tissue Segmentation")
+        title = qt.QLabel("Step 5: Create the Skin Model")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         mainLayout.addWidget(title)
         
         desc = qt.QLabel(
-            "Now we'll create a soft tissue model using a different threshold range. "
-            "Follow the same process as before but with these changes:")
+            "Follow the same process as bone segmentation, but with different threshold values for skin."
+        )
         desc.setWordWrap(True)
         mainLayout.addWidget(desc)
         
-        instructions = qt.QLabel()
-        instructions.setTextFormat(qt.Qt.RichText)
-        instructions.setWordWrap(True)
-        instructions.setText(
-            "<b>Instructions for Soft Tissue Segmentation:</b><br><br>"
-            "1. In the <b>Segment Editor</b>, create a new segment.<br>"
-            "2. Use the <b>Threshold tool</b> with a range of approximately <b>-200 to 200</b> Hounsfield Units.<br>"
-            "3. Name this segment <b>'SoftTissue'</b>.<br>"
-            "4. Export and re-import the model as before.<br>"
-            "5. Select the re-imported soft tissue model below."
+        manualGroup = qt.QGroupBox("Guided Manual Segmentation")
+        manualLayout = qt.QVBoxLayout(manualGroup)
+
+        manualDesc = qt.QLabel(
+            "Click the button below to switch to the Segment Editor and get step-by-step instructions."
         )
-        mainLayout.addWidget(instructions)
-        
-        self.openSegmentEditorButton2 = qt.QPushButton("Open Segment Editor Module")
-        self.openSegmentEditorButton2.clicked.connect(lambda: slicer.util.selectModule('SegmentEditor'))
-        mainLayout.addWidget(self.openSegmentEditorButton2)
-        
-        confirmGroup = qt.QGroupBox("Soft Tissue Model Confirmation")
+        manualDesc.setWordWrap(True)
+        manualLayout.addWidget(manualDesc)
+
+        self.setupSkinSegmentationButton = qt.QPushButton("Setup Skin Segmentation")
+        self.setupSkinSegmentationButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
+        self.setupSkinSegmentationButton.clicked.connect(self.setupSkinSegmentation)
+        manualLayout.addWidget(self.setupSkinSegmentationButton)
+        mainLayout.addWidget(manualGroup)
+
+        confirmGroup = qt.QGroupBox("Model Confirmation")
         confirmLayout = qt.QFormLayout(confirmGroup)
-        confirmLabel = qt.QLabel("Once the soft tissue model is re-imported, please select it below:")
+        
+        confirmLabel = qt.QLabel("Once your model is created, select it here to continue:")
         confirmLabel.setWordWrap(True)
         
         self.softTissueModelSelector = slicer.qMRMLNodeComboBox()
@@ -407,32 +457,89 @@ class LandmarkingGUI(qt.QWidget):
         self.softTissueModelSelector.addEnabled = False
         self.softTissueModelSelector.removeEnabled = False
         self.softTissueModelSelector.noneEnabled = True
-        self.softTissueModelSelector.setToolTip("Select the 'SoftTissue' model you just re-imported.")
+        self.softTissueModelSelector.setToolTip("Select the 'Skin' model you created.")
         self.softTissueModelSelector.currentNodeChanged.connect(self.onConfirmSoftTissueSegmentation)
         
         confirmLayout.addRow(confirmLabel)
-        confirmLayout.addRow("Re-imported Soft Tissue Model:", self.softTissueModelSelector)
+        confirmLayout.addRow("Skin Model:", self.softTissueModelSelector)
         mainLayout.addWidget(confirmGroup)
         
-        self.step3StatusLabel = qt.QLabel("Status: Waiting for user to select the re-imported 'SoftTissue' model.")
-        self.step3StatusLabel.setWordWrap(True)
-        mainLayout.addWidget(self.step3StatusLabel)
+        self.step4StatusLabel = qt.QLabel("Status: Ready to create skin model.")
+        self.step4StatusLabel.setWordWrap(True)
+        mainLayout.addWidget(self.step4StatusLabel)
         
         mainLayout.addStretch(1)
         self.stepStack.addWidget(widget)
 
-    def createStep4_LandmarkPlacement(self):
+    def setupBoneSegmentation(self):
+        self.setupSegmentation("Bone")
+
+    def setupSkinSegmentation(self):
+        self.setupSegmentation("Skin")
+
+    def setupSegmentation(self, modelName):
+        sourceVolume = self.croppedVolume if self.croppedVolume else self.inputVolume
+        if not sourceVolume:
+            slicer.util.errorDisplay("No source volume found. Please select one in Step 1.")
+            return
+
+        statusLabel = self.step3StatusLabel if modelName == "Bone" else self.step4StatusLabel
+        statusLabel.setText(f"Status: Switching to Segment Editor module...")
+        slicer.app.processEvents()
+
+        try:
+            slicer.util.selectModule('SegmentEditor')
+            
+            try:
+                segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", f"{modelName}_Segmentation")
+                segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(sourceVolume)
+                
+                topLevelWidget = slicer.modules.segmenteditor.widgetRepresentation()
+                segmentEditorWidget = slicer.util.findChild(topLevelWidget, 'qMRMLSegmentEditorWidget')
+
+                if segmentEditorWidget:
+                    segmentEditorWidget.setSegmentationNode(segmentationNode)
+                    segmentEditorWidget.setSourceVolumeNode(sourceVolume)
+            except Exception as e:
+                logging.info(f"Could not pre-configure Segment Editor, but this is okay. Error: {e}")
+            
+            statusLabel.setText("Status: Segment Editor is ready. Follow the instructions in the popup.")
+            
+            self.instructionDialog = InstructionDialog(modelName, self)
+            self.instructionDialog.show()
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Could not automatically switch to Segment Editor. Please open it manually from the 'Modules' dropdown.\n\nError: {e}")
+
+    def onConfirmBoneSegmentation(self, node):
+        if node:
+            self.boneModel = node
+            self.step3StatusLabel.setText(f"Status: Confirmed '{node.GetName()}' as bone model. You can proceed.")
+        else:
+            self.boneModel = None
+            self.step3StatusLabel.setText("Status: Waiting for bone model selection.")
+
+    def onConfirmSoftTissueSegmentation(self, node):
+        if node:
+            self.softTissueModel = node
+            self.step4StatusLabel.setText(f"Status: Confirmed '{node.GetName()}' as skin model. You can proceed.")
+        else:
+            self.softTissueModel = None
+            self.step4StatusLabel.setText("Status: Waiting for skin model selection.")
+
+    def createStep5_LandmarkPlacement(self):
         widget = qt.QWidget()
         layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
         
-        title = qt.QLabel("Step 5: Landmark Placement")
+        title = qt.QLabel("Step 6: Landmark Placement")
         title.setStyleSheet("font-weight: bold; font-size: 18px;")
         title.setAlignment(qt.Qt.AlignCenter)
         layout.addWidget(title)
         
         desc = qt.QLabel(
-            "Now that you have your models, load the landmark templates and place them.")
+            "Now that you have your models, you can load the landmark templates "
+            "and place them on the appropriate models.")
         desc.setWordWrap(True)
         layout.addWidget(desc)
         
@@ -440,14 +547,10 @@ class LandmarkingGUI(qt.QWidget):
         buttonLayout.setSpacing(10)
         
         self.loadHardLandmarksButton = qt.QPushButton("Load Hard Tissue Landmarks")
-        self.loadHardLandmarksButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
-        self.loadHardLandmarksButton.setToolTip("Load hard tissue landmarks for placement on the bone model.")
         self.loadHardLandmarksButton.clicked.connect(self.onDownloadHardLandmarks)
         buttonLayout.addWidget(self.loadHardLandmarksButton)
         
         self.loadSoftLandmarksButton = qt.QPushButton("Load Soft Tissue Landmarks") 
-        self.loadSoftLandmarksButton.setStyleSheet("background-color: #28a745; color: white; font-weight: bold; padding: 8px;")
-        self.loadSoftLandmarksButton.setToolTip("Load soft tissue landmarks for placement on the soft tissue model.")
         self.loadSoftLandmarksButton.clicked.connect(self.onDownloadSoftLandmarks)
         buttonLayout.addWidget(self.loadSoftLandmarksButton)
         
@@ -455,9 +558,9 @@ class LandmarkingGUI(qt.QWidget):
         
         instructions = qt.QLabel(
             "<b>Instructions:</b><br>"
-            "1. Click the buttons above to load the landmark templates.<br>"
-            "2. Place the hard tissue landmarks on your 'Bone' model.<br>"
-            "3. Place the soft tissue landmarks on your 'SoftTissue' model."
+            "1. Click the buttons above to load the landmark templates<br>"
+            "2. Place the hard tissue landmarks on your 'Bone' model<br>"
+            "3. Place the soft tissue landmarks on your 'Skin' model"
         )
         instructions.setTextFormat(qt.Qt.RichText)
         instructions.setWordWrap(True)
@@ -467,27 +570,65 @@ class LandmarkingGUI(qt.QWidget):
         exportLayout = qt.QVBoxLayout(exportGroup)
         
         exportInstructions = qt.QLabel(
-            "Click the button below to copy all landmark names and RAS coordinates to the clipboard "
-            "in a format that can be pasted into Excel."
+            "Click the button below to copy all landmark names and RAS coordinates to the clipboard."
         )
         exportInstructions.setWordWrap(True)
         exportLayout.addWidget(exportInstructions)
         
         self.exportToClipboardButton = qt.QPushButton("Copy Landmarks to Clipboard")
-        self.exportToClipboardButton.setStyleSheet("background-color: #ffc107; color: black; font-weight: bold; padding: 8px;")
-        self.exportToClipboardButton.setToolTip("Copy all landmark coordinates to clipboard for Excel")
         self.exportToClipboardButton.clicked.connect(self.exportLandmarksToClipboard)
         exportLayout.addWidget(self.exportToClipboardButton)
         
         layout.addWidget(exportGroup)
         
-        self.step4StatusLabel = qt.QLabel("Status: Ready to load landmarks.")
-        self.step4StatusLabel.setWordWrap(True)
-        layout.addWidget(self.step4StatusLabel)
+        self.step5StatusLabel = qt.QLabel("Status: Ready to load landmarks.")
+        self.step5StatusLabel.setWordWrap(True)
+        layout.addWidget(self.step5StatusLabel)
         
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
 
+    def onSkipStep0(self):
+        if not self.inputVolumeSelector.currentNode():
+            slicer.util.warningDisplay("Please select an input volume before skipping.")
+            return
+        
+        self.currentStep += 1
+        self.updateStepUI()
+
+    def onVolumeSelected(self, node):
+        self.inputVolume = node
+        if node and node.GetTransformNodeID():
+            self.undoFHPButton.setEnabled(True)
+            self.step0StatusLabel.setText("Status: Loaded volume appears to be realigned. You can proceed or undo.")
+        elif node:
+            self.undoFHPButton.setEnabled(False)
+        self.onFHPSelect()
+
+    def onCropVolume(self):
+        roiNode = self.roiNodeSelector.currentNode()
+        if not self.inputVolume:
+            slicer.util.warningDisplay("Please select an input volume in Step 1 first.")
+            return
+        if not roiNode:
+            slicer.util.warningDisplay("Please select an ROI node to crop with.")
+            return
+        
+        self.step1StatusLabel.setText("Status: Cropping volume...")
+        slicer.app.processEvents()
+
+        cropVolumeLogic = slicer.modules.cropvolume.logic()
+        
+        self.croppedVolume = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode", self.inputVolume.GetName() + "_cropped")
+        
+        cropVolumeLogic.CropVoxelBased(roiNode, self.inputVolume, self.croppedVolume)
+        
+        self.inputVolume.GetDisplayNode().SetVisibility(False)
+        slicer.util.setSliceViewerLayers(background=self.croppedVolume)
+
+        self.step1StatusLabel.setText(f"Status: Volume cropped successfully. The new volume '{self.croppedVolume.GetName()}' is now active.")
+        slicer.util.showStatusMessage("Volume cropped!", 3000)
+                
     def onFHPSelect(self):
         volumeNode = self.inputVolumeSelector.currentNode()
         fiducialNode = self.inputFiducialsSelector.currentNode()
@@ -576,10 +717,10 @@ class LandmarkingGUI(qt.QWidget):
         inputVolume = self.inputVolumeSelector.currentNode()
         if not inputVolume: return
             
-        fhpTransformNode = slicer.util.getFirstNodeByName('FHP_Realign_Transform')
-        if fhpTransformNode:
+        transformNode = inputVolume.GetParentTransformNode()
+        if transformNode:
             inputVolume.SetAndObserveTransformNodeID(None)
-            slicer.mrmlScene.RemoveNode(fhpTransformNode)
+            slicer.mrmlScene.RemoveNode(transformNode)
             
         self.undoFHPButton.setEnabled(False)
         self.step0StatusLabel.setText("Status: FHP realignment undone.")
@@ -609,79 +750,71 @@ class LandmarkingGUI(qt.QWidget):
             slicer.util.errorDisplay(f"Could not download landmarks file: {e}")
 
     def syncWithScene(self):
-        self.boneModel = slicer.util.getFirstNodeByName("Bone")
-        if self.boneModel: self.boneModelSelector.setCurrentNode(self.boneModel)
-            
-        self.softTissueModel = slicer.util.getFirstNodeByName("SoftTissue")
-        if self.softTissueModel: self.softTissueModelSelector.setCurrentNode(self.softTissueModel)
+        if not self.boneModel: self.boneModel = slicer.util.getFirstNodeByName("Bone")
+        if not self.softTissueModel: self.softTissueModel = slicer.util.getFirstNodeByName("Skin")
         
-        if self.boneModel and hasattr(self, 'step2CutStatusLabel'):
-            self.step2CutStatusLabel.setText("Status: Bone model ready. You can proceed with cutting if needed.")
-
-    def onLoadLocalLandmarks(self, fileName=None, nodeName=None):
-        if not fileName: 
-            fileName, _ = qt.QFileDialog.getOpenFileName(self, "Load Landmarks", "", "Markup JSON Files (*.mrk.json)")
-        if fileName:
-            loadedNode = slicer.util.loadMarkups(fileName)
-            if loadedNode:
-                finalName = nodeName if nodeName else "Hard_tissue"
-                loadedNode.SetName(finalName)
-                slicer.util.showStatusMessage(f"'{finalName}' loaded!", 3000)
-            else: 
-                slicer.util.errorDisplay(f"Failed to load landmarks from {fileName}.")
+        if self.inputVolumeSelector.currentNode():
+            self.onVolumeSelected(self.inputVolumeSelector.currentNode())
 
     def onDownloadHardLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/23121222/hard_tissue.mrk.json", "Hard_tissue_landmarks", self.step4StatusLabel)
+        self.onDownloadAndLoad("https://github.com/user-attachments/files/23121222/hard_tissue.mrk.json", "Hard_tissue_landmarks", self.step5StatusLabel)
 
     def onDownloadSoftLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/23121223/soft_tissue.mrk.json", "Soft_tissue_landmarks", self.step4StatusLabel)
+        self.onDownloadAndLoad("https://github.com/user-attachments/files/23121223/soft_tissue.mrk.json", "Soft_tissue_landmarks", self.step5StatusLabel)
 
     def onDownloadAndLoad(self, url, nodeName, statusLabel):
-        statusLabel.setText("Status: Downloading..."); slicer.app.processEvents()
+        statusLabel.setText(f"Status: Downloading '{nodeName}'..."); slicer.app.processEvents()
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix='.mrk.json') as tempFile:
                 urllib.request.urlretrieve(url, tempFile.name)
                 tempFilePath = tempFile.name
             
-            self.onLoadLocalLandmarks(tempFilePath, nodeName)
-            statusLabel.setText(f"Status: Successfully loaded '{nodeName}'.")
+            loadedNode = slicer.util.loadMarkups(tempFilePath)
+            if loadedNode:
+                loadedNode.SetName(nodeName)
+                statusLabel.setText(f"Status: Successfully loaded '{nodeName}'.")
+            else:
+                slicer.util.errorDisplay(f"Failed to load landmarks from {tempFilePath}.")
+
         except Exception as e:
             statusLabel.setText(f"Status: Error! Could not download. Error: {e}"); slicer.util.errorDisplay(f"Failed to download from the web. Error: {e}")
         finally:
             if 'tempFilePath' in locals() and os.path.exists(tempFilePath): 
                 os.remove(tempFilePath)
-
-    def onConfirmSegmentation(self, node):
-        if node:
-            self.boneModel = node; self.step2StatusLabel.setText(f"Status: Confirmed '{self.boneModel.GetName()}' as the bone model.")
-        else:
-            self.boneModel = None; self.step2StatusLabel.setText("Status: Waiting for user to select the re-imported 'Bone' model.")
-
-    def onConfirmSoftTissueSegmentation(self, node):
-        if node:
-            self.softTissueModel = node
-            self.step3StatusLabel.setText(f"Status: Confirmed '{self.softTissueModel.GetName()}' as the soft tissue model.")
-        else:
-            self.softTissueModel = None
-            self.step3StatusLabel.setText("Status: Waiting for user to select the re-imported 'SoftTissue' model.")
-
+    
     def onNextButtonClicked(self):
-        self.syncWithScene() 
         stepComplete = False
         
-        if self.currentStep == 0: stepComplete = self.inputVolumeSelector.currentNode() is not None
-        elif self.currentStep == 1: self.wantsSegmentation = self.segmentationYesRadio.isChecked(); stepComplete = True
-        elif self.currentStep == 2: stepComplete = self.boneModel is not None
-        elif self.currentStep == 3: stepComplete = self.softTissueModel is not None
-        elif self.currentStep == 4: stepComplete = True
+        if self.currentStep == 0:
+            isVolumeSelected = self.inputVolume is not None
+            isVolumeTransformed = isVolumeSelected and self.inputVolume.GetTransformNodeID() is not None
+            isUndoEnabled = self.undoFHPButton.isEnabled()
+            stepComplete = isVolumeSelected and (isVolumeTransformed or isUndoEnabled)
+
+        elif self.currentStep == 1:
+            stepComplete = True
+        elif self.currentStep == 2:
+            self.wantsSegmentation = self.segmentationYesRadio.isChecked()
+            stepComplete = True
+        elif self.currentStep == 3:
+            stepComplete = self.boneModel is not None
+        elif self.currentStep == 4:
+            stepComplete = self.softTissueModel is not None
+        elif self.currentStep == 5:
+            stepComplete = True
 
         if not stepComplete: 
-            slicer.util.warningDisplay(f"Please complete the current step before proceeding.")
+            if self.currentStep == 0:
+                slicer.util.warningDisplay("Please apply the FHP Realignment or use the 'Skip' button before proceeding.")
+            elif self.currentStep == 3 or self.currentStep == 4:
+                slicer.util.warningDisplay("Please create and/or select your model in the 'Model Confirmation' dropdown before proceeding.")
+            else:
+                slicer.util.warningDisplay(f"Please complete the current step before proceeding.")
             return
             
         nextStep = self.currentStep + 1
-        if self.currentStep == 1 and not self.wantsSegmentation:
-            nextStep = 4  # Skip to landmark placement
+        if self.currentStep == 2 and not self.wantsSegmentation:
+            nextStep = 5
         
         if nextStep < self.stepStack.count: 
             self.currentStep = nextStep
@@ -690,32 +823,21 @@ class LandmarkingGUI(qt.QWidget):
     def onPrevButtonClicked(self):
         if self.currentStep > 0: 
             prevStep = self.currentStep - 1
-            if self.currentStep == 4 and not self.wantsSegmentation:
-                prevStep = 1
+            if self.currentStep == 5 and not self.wantsSegmentation:
+                prevStep = 2
             self.currentStep = prevStep
             self.updateStepUI()
 
     def updateStepUI(self):
         self.stepStack.setCurrentIndex(self.currentStep)
         totalSteps = self.stepStack.count
+        self.stepLabel.setText(f"Step {self.currentStep + 1}/{totalSteps}")
         
-        # Adjust step count based on segmentation choice
-        if not self.wantsSegmentation:
-            if self.currentStep == 1: self.stepLabel.setText(f"Step {self.currentStep + 1}/{totalSteps-2}")
-            elif self.currentStep > 1: self.stepLabel.setText(f"Step {self.currentStep-1}/{totalSteps-2}")
-        else:
-            self.stepLabel.setText(f"Step {self.currentStep + 1}/{totalSteps}")
-
+        isLastStep = self.currentStep == totalSteps - 1
+        self.nextButton.setVisible(not isLastStep)
+        self.finishButton.setVisible(isLastStep)
+        
         self.prevButton.setEnabled(self.currentStep > 0)
-        self.nextButton.setEnabled(self.currentStep < totalSteps - 1)
-
-    def onOpenDynamicModeler(self):
-        slicer.util.selectModule('DynamicModeler')
-        self.step2CutStatusLabel.setText("Status: Dynamic Modeler opened. Follow the instructions above.")
-
-    def onConfirmCut(self):
-        self.step2CutStatusLabel.setText("Status: Model cut confirmed! You can proceed.")
-        slicer.util.showStatusMessage("Model cut confirmed!", 3000)
 
     def exportLandmarksToClipboard(self):
         try:
@@ -727,7 +849,7 @@ class LandmarkingGUI(qt.QWidget):
             landmarks_data = []
             for i in range(landmark_nodes.GetNumberOfItems()):
                 node = landmark_nodes.GetItemAsObject(i)
-                if node.GetNumberOfControlPoints() > 0:
+                if node.GetNumberOfControlPoints() > 0 and "FHP_Standard_Landmarks" not in node.GetName():
                     for j in range(node.GetNumberOfControlPoints()):
                         pos = [0,0,0]
                         node.GetNthControlPointPositionWorld(j, pos)
@@ -737,30 +859,29 @@ class LandmarkingGUI(qt.QWidget):
                         })
             
             if not landmarks_data:
-                slicer.util.warningDisplay("No landmarks with points found.")
+                slicer.util.warningDisplay("No landmarks with points found to export.")
                 return
 
             landmarks_data.sort(key=lambda x: (x['node'], x['label']))
             
-            csv_lines = ["Node Name,Landmark Name,RAS-X,RAS-Y,RAS-Z"]
-            csv_lines.extend([f"{lm['node']},{lm['label']},{lm['x']:.3f},{lm['y']:.3f},{lm['z']:.3f}" for lm in landmarks_data])
+            clipboard_lines = ["Node Name\tLandmark Name\tRAS-X\tRAS-Y\tRAS-Z"]
+            clipboard_lines.extend([f"{lm['node']}\t{lm['label']}\t{lm['x']:.3f}\t{lm['y']:.3f}\t{lm['z']:.3f}" for lm in landmarks_data])
             
-            qt.QApplication.clipboard().setText("\n".join(csv_lines))
+            qt.QApplication.clipboard().setText("\n".join(clipboard_lines))
             
             num_landmarks = len(landmarks_data)
-            self.step4StatusLabel.setText(f"Status: Copied {num_landmarks} landmarks to clipboard.")
-            qt.QMessageBox.information(self, "Landmarks Copied", f"Copied {num_landmarks} landmarks to clipboard.")
+            self.step5StatusLabel.setText(f"Status: Copied {num_landmarks} landmarks to clipboard.")
+            qt.QMessageBox.information(self, "Landmarks Copied", f"Copied {num_landmarks} landmarks to clipboard.\nYou can now paste into Excel or another spreadsheet program.")
             
         except Exception as e:
             slicer.util.errorDisplay(f"Error exporting landmarks: {str(e)}")
-            self.step4StatusLabel.setText(f"Status: Error exporting landmarks: {str(e)}")
+            self.step5StatusLabel.setText(f"Status: Error exporting landmarks: {str(e)}")
 
 # --- Entry Point ---
-# Cleans up any existing instance of the GUI to avoid duplicates
 try:
     slicer.util.findChild(slicer.util.mainWindow(), "LandmarkingGUI").deleteLater()
 except:
-    pass # No instance found, which is fine
+    pass
 
 landmarkingGui = LandmarkingGUI()
 landmarkingGui.show()
