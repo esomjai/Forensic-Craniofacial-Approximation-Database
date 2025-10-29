@@ -295,7 +295,7 @@ class LandmarkingGUI(qt.QWidget):
 
             "To <b>Crop the original Volume:</b> Click the '<b>Open Volume Rendering module</b>' shortcut. Find the '<b>Crop</b>' line: make sure you have Enale ticked, and the '<b>Display ROI</b>' eye icon open. " 
             "If necessary, toggle the Shift button for better visibility - you want to include the relevant hard and soft tissue features within the box, but exclude any extra scanner material. This area within the box will be referred to as '<b>Volume Rendering ROI</b>'"
-            "For the ROI Node, you need to choose this option, then click '<b>Crop Volume</b>'. A new item called 'name_of_original_volume_cropped should appear. to see only this, you may need to hide the original volume (shut eye icon) and re-drag the cropped one into the blue 3D scene" "
+            "For the ROI Node, you need to choose this option, then click '<b>Crop Volume</b>'. A new item called 'name_of_original_volume_cropped should appear. to see only this, you may need to hide the original volume (shut eye icon) and re-drag the cropped one into the blue 3D scene" 
         )
         desc.setWordWrap(True)
         layout.addWidget(desc)
