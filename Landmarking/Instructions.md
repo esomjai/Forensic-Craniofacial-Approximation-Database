@@ -62,9 +62,6 @@ class InstructionDialog(qt.QDialog):
         buttonGroup = qt.QGroupBox("Quick Access")
         buttonLayout = qt.QVBoxLayout(buttonGroup)
         
-        # --- THIS IS THE UPDATED BUTTON LIST ---
-        # We now have a list of dictionaries, which is more flexible.
-        # It lets us have different actions for different buttons.
         actions = [
             {
                 "name": "SegmentEditor",
@@ -89,12 +86,11 @@ class InstructionDialog(qt.QDialog):
             {
                 "name": "Add Data",
                 "icon": ":/Icons/AddData.png",
-                "action": slicer.util.openAddDataDialog # This function opens the "Add Data" dialog
+                "action": slicer.util.openAddDataDialog
             }
         ]
 
         for item in actions:
-            # For "Add Data", the name is good. For modules, we add "Module" to the end.
             button_text = f" Open {item['name']}"
             if "Module" not in item["name"] and "Data" not in item["name"]:
                  button_text += " Module"
@@ -103,28 +99,35 @@ class InstructionDialog(qt.QDialog):
             btn.setIcon(qt.QIcon(item["icon"]))
             btn.clicked.connect(item["action"])
             buttonLayout.addWidget(btn)
-        # --- END OF UPDATED BUTTON LIST ---
 
         self.mainLayout.addWidget(buttonGroup)
 
         video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         
-       
-        instructions_text = (
-            f"<b>How to Create Your {modelName} Model</b><br><br>"
-            f"This window will stay open while you work. You can move it to another screen.<br><br>"
-            f"<b>Your Steps:</b><br>"
-            f"1. <b>Add a Segment:A new, empty segmentation called '<b>{modelName}_Segmentation</b>' has been created for you in the 'Segment Editor' panel.<br><br>"
-            f"2. <b>Select Threshold Tool:</b> From the list of tools, click on '<b>Threshold</b>' - it is in the top row on the right.<br>"
-            f"3. <b>Adjust Threshold:</b> Use the 'Threshold Range' slider to select the tissue you want. For bone, a good starting point is 500. You will see the selected area highlighted and 'blinking' in the slice views.<br>"
-            f"4. <b>Apply:</b> Once you are happy with the highlighted area, click the '<b>Apply</b>' button.<br>"
-            f"5. <b>Show 3D Model:</b> At the top of the Segment Editor panel, click the '<b>Show 3D</b>' button. After a moment, your 3D model will appear!  <br>"
-            f"6. <b>Now, click the green arrow next to the 'Show 3D' or click the '<b>Open Segmentations module</b>' button. Scroll down and open the '<b>Export/import models and labelmaps' as well as the '<b>Export to files</b>' dropdown menus. "
-            f"7. <b> Make sure the following are chosen: '<b>Export</b>', '<b>Models</b>' in the fist section; then choose your folder to export to in the next section and click '<b>Export</b>'in the second section"
-            f"8. <b> Re-import your saved model by clicking the '<b>Add Data</b>' widget on top of Slicer or in this window and choose the resently created STL file.  Check that this model now exists by clicking '<b>Open Models module</b>. "
-            f"9. <b>Confirm:</b> Come back to this 'Landmarking' window and select your new model from the '<b>{modelName} Model</b>' dropdown menu to continue.<br><br>"
-            f"<a href='{video_url}'>Click here to watch a tutorial video.</a>"
-        )
+        # --- THIS IS THE NEW "SMART" INSTRUCTION LOGIC ---
+        # We check the modelName and set the recommended threshold accordingly.
+        if modelName == "Bone":
+            recommended_threshold = "500"
+        else: # Assumes "Skin"
+            recommended_threshold = "-500"
+        # --- END OF NEW LOGIC ---
+
+        instructions_text = f"""
+            <p><b>How to Create Your {modelName} Model</b></p>
+            <p>This window will stay open while you work. You can move it to another screen.</p>
+            <p><b>Your Steps:</b></p>
+            <p>1. <b>Add a Segment:</b> A new, empty segmentation called '<b>{modelName}_Segmentation</b>' has been created for you in the 'Segment Editor' panel. Click the green '<b>Add</b>' button to create a new segment inside it.</p>
+            <p>2. <b>Select Threshold Tool:</b> From the list of tools, click on '<b>Threshold</b>'. It is usually in the top row on the right.</p>
+            <p>3. <b>Adjust Threshold:</b> Use the 'Threshold Range' slider to select the tissue you want. For {modelName}, a good starting point is <b>{recommended_threshold}</b>. You will see the selected area highlighted in the slice views.</p>
+            <p>4. <b>Apply:</b> Once you are happy with the highlighted area, click the '<b>Apply</b>' button.</p>
+            <p>5. <b>Show 3D Model:</b> At the top of the Segment Editor panel, click the '<b>Show 3D</b>' button. After a moment, your 3D model will appear!</p>
+            <p>6. <b>Export the Model:</b> Click the '<b>Open Segmentations Module</b>' button above. Find the 'Export/import...' section and the 'Export to files' section. Make sure '<b>Export</b>' and '<b>Models</b>' are selected. Then, choose a folder and click the final '<b>Export</b>' button.</p>
+            <p>7. <b>Re-import the Model:</b> Click the '<b>Open Add Data</b>' button above and choose the STL file you just saved. You can check that it loaded correctly in the '<b>Models</b>' module.</p>
+            <p>8. <b>Confirm:</b> Come back to the main 'Landmarking' window and select your new, re-imported model from the '<b>{modelName} Model</b>' dropdown menu to continue.</p>
+            <br>
+            <p><a href='{video_url}'>Click here to watch a tutorial video.</a></p>
+        """
+
         instructionLabel = qt.QLabel(instructions_text)
         instructionLabel.setTextFormat(qt.Qt.RichText)
         instructionLabel.setWordWrap(True)
@@ -288,15 +291,18 @@ class LandmarkingGUI(qt.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 18px;")
         title.setAlignment(qt.Qt.AlignCenter)
         layout.addWidget(title)
-
-        desc = qt.QLabel(
-            "If your volume is very large, you can draw an ROI (Region of Interest) box "
-            "around the head to speed up the segmentation steps. If you don't need to do this, just click 'Next'."
-
-            "To <b>Crop the original Volume:</b> Click the '<b>Open Volume Rendering module</b>' shortcut. Find the '<b>Crop</b>' line: make sure you have Enale ticked, and the '<b>Display ROI</b>' eye icon open. " 
-            "If necessary, toggle the Shift button for better visibility - you want to include the relevant hard and soft tissue features within the box, but exclude any extra scanner material. This area within the box will be referred to as '<b>Volume Rendering ROI</b>'"
-            "For the ROI Node, you need to choose this option, then click '<b>Crop Volume</b>'. A new item called 'name_of_original_volume_cropped should appear. to see only this, you may need to hide the original volume (shut eye icon) and re-drag the cropped one into the blue 3D scene" 
-        )
+        
+        desc_text = """
+            <p>If your volume is very large, you can draw an ROI (Region of Interest) box to speed up later steps. If not, just click 'Next'.</p>
+            <p><b>To Crop the Volume:</b>
+            <br>1. Click the '<b>Open Volume Rendering Module</b>' button below.
+            <br>2. Find the '<b>Crop</b>' section and make sure '<b>Enable</b>' is ticked and the '<b>Display ROI</b>' eye icon is open.
+            <br>3. Adjust the box to include all relevant features but exclude extra scanner material.
+            <br>4. In this window, select '<b>Volume Rendering ROI</b>' from the 'ROI Node' dropdown.
+            <br>5. Click the '<b>Crop Volume</b>' button. A new volume ending in '..._cropped' will be created and activated.</p>
+        """
+        desc = qt.QLabel(desc_text)
+        desc.setTextFormat(qt.Qt.RichText)
         desc.setWordWrap(True)
         layout.addWidget(desc)
         
