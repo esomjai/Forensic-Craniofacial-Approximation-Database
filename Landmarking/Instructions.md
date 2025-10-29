@@ -289,7 +289,7 @@ class LandmarkingGUI(qt.QWidget):
         title.setAlignment(qt.Qt.AlignCenter)
         layout.addWidget(title)
 
-         desc = qt.QLabel(
+        desc = qt.QLabel(
             "If your volume is very large, you can draw an ROI (Region of Interest) box "
             "around the head to speed up the segmentation steps. If you don't need to do this, just click 'Next'."
 
