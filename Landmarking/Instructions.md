@@ -103,7 +103,7 @@ class InstructionDialog(qt.QDialog):
 
         self.mainLayout.addWidget(buttonGroup)
 
-       
+        video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         
         if modelName == "Bone":
             recommended_threshold = "500"
