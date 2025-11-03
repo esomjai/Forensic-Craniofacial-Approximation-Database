@@ -1,43 +1,10 @@
 # Landmarking Workflow GUI
 
-
-[Soft_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23305193/Soft_tissue_landmarks.mrk.json)
-[Hard_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23305190/Hard_tissue_landmarks.mrk.json)
-
-This guide provides a custom Python script that creates a user-friendly, step-by-step Graphical User Interface (GUI) inside 3D Slicer for a complete landmarking study. It is designed for beginners and walks the user through every stage, from initial setup to final landmark export.
-
-The GUI includes the following steps:
-- **Step 0: FHP Realignment:** Orient the skull correctly using the Frankfort Horizontal Plane.
-- **Step 1 & 2: Bone Segmentation:** Create a 3D model of the skull from a CT scan.
-- **Step 3: Soft Tissue Segmentation:** Create a 3D model of the soft tissues.
-- **Step 4: Landmark Placement:** Load landmark templates and place them on the models.
-- **Export:** Copy all landmark coordinates to the clipboard to easily paste them into Excel.
-
-***
-
-### How to Use This Guide
-
-1.  **Open 3D Slicer.**
-2.  Import the DICOM of the CT
-3.  Click the DCM button, then find the folder
+[Soft_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23317570/Soft_tissue_landmarks.mrk.json)
+[Hard_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23317568/Hard_tissue_landmarks.mrk.json)
 
 
-<img width="750"  alt="import 1" src="https://github.com/user-attachments/assets/8169cb06-a4bf-43b3-bf97-bf8b2e3a626e" />
 
-4. Open the imported scan
-<img width="750"  alt="import 2" src="https://github.com/user-attachments/assets/d76381ad-659c-40d5-84ac-1beaaf4cb842" />
-
-5. For the 3D rendering to appear in the "blue" scene, drag and drop it: 
-
-<img width="750" alt="import 3" src="https://github.com/user-attachments/assets/dee9fe49-0a60-49dd-9262-49be0ce17e1e" />
-
-6. Navigate to the **Python Interactor** by clicking `View -> Python Interactor` in the top menu.
- 
-<img width="750" alt="open python" src="https://github.com/user-attachments/assets/5f6adbd4-31ef-4c54-9ba1-edd77f71292d" />
-
-7.  **Copy the entire Python script** from the code block below.
-8.  **Paste the script** into the Python Interactor window.
-9.  Press **Enter** to run the script. The "Landmarking" GUI will appear in the Slicer window.
 
 ### Python Script
 
@@ -994,83 +961,3 @@ landmarkingGui = LandmarkingGUI()
 landmarkingGui.show()
 ```
 
-
-
-### Using the GUI: Step-by-Step
-
-After running the script, the "Landmarking" window will appear. Here is how to use it:
-
-#### Step 1: FHP Realignment
-This step orients your CT scan correctly.
-1.  **Input Volume:** Select your loaded CT scan from the dropdown menu.
-2.  **FHP Landmarks:** Click **"Auto-load FHP Landmarks"** to download the points needed, or select your own if you have them.
-3.  
-    <img width="750"  alt="GUI1" src="https://github.com/user-attachments/assets/c52ea595-ee2a-450f-a733-f4bc208039d3" />
-    
-Now, place them on the model - you may have to adjust the visiblility to see ONLY bone in the **Volume Renedering** module. Then, this button should be available to click:
-
-<img width="473" height="222" alt="GUI2" src="https://github.com/user-attachments/assets/19579707-3326-4e25-b9d3-55ee81fefb5f" />
-
-
-5.  **Apply Realignment:** Once the volume and landmarks are selected and placed, click **"Apply FHP Realignment"**.
-6.  Click **"Next"**.
-
-
-
-#### Step 2: Segmentation Option
-Choose whether you need to create 3D models from your CT scan.
-- If you already have 3D models (`.stl`, `.obj`), you can select **"No, skip segmentation steps"** and click **"Next"** to jump to Step 5.
-- Otherwise, leave **"Yes"** selected and click **"Next"**.
-
-#### Step 3: Skull Segmentation
-Follow the instructions in the GUI to create a 3D model of the skull. The instructions are hidden by default; click on **"Show/Hide Segmentation Instructions"** to see them.
-
-
-
-
-
-<img width="750"  alt="Segm step1" src="https://github.com/user-attachments/assets/daf08fba-e3af-4ab9-89e7-06662189099a" />
-
-<img width="195" height="102" alt="Segm step2" src="https://github.com/user-attachments/assets/5a9ba052-dd7e-4b23-9fb8-cc8cfe48427f" />
-
-<img width="1925" height="550" alt="Segm step3" src="https://github.com/user-attachments/assets/7b994fb2-9d08-42b9-aa74-4a63e7b5a0f0" />
-
-<img width="750" height="1476" alt="Segm step4" src="https://github.com/user-attachments/assets/d8e13688-fa16-45fd-b796-36fe530e6381" />
-
-<img width="750" height="27" alt="Segm step5" src="https://github.com/user-attachments/assets/dce389f8-d65d-4f48-ba7e-cfb4d008f519" />
-
-<img width="750"  alt="Segm step6" src="https://github.com/user-attachments/assets/648f2f97-3541-44a1-bca4-fe234ab4121d" />
-
-<img width="750"" alt="Segm step7" src="https://github.com/user-attachments/assets/66076a1b-6a28-49f7-a6bf-a401e492279e" />
-
-<img width="750" alt="Segm step8" src="https://github.com/user-attachments/assets/644c2da7-f1ed-4279-b9a0-7122ad2b40a6" />
-
-
-
-
-
-1.  Follow the numbered steps to create a segment, threshold it for bone, and export it as a model named "Bone".
-2.  **Re-import** that "Bone" model back into Slicer.
-3.  In the GUI, select your re-imported model in the **"Re-imported Bone Model"** dropdown.
-4.  Click **"Next"**.
-
-
-#### Step 4: Soft Tissue Segmentation
-This is similar to the previous step, but for creating the soft tissue model.
-1.  Follow the instructions to create a new segment using a different threshold.
-2.  Name it, export it, and re-import it as "SoftTissue".
-3.  Select it from the dropdown in the GUI.
-4.  Click **"Next"**.
-
-#### Step 5: Landmark Placement
-This is the final step where you place the landmarks.
-1.  Click **"Load Hard Tissue Landmarks"** and **"Load Soft Tissue Landmarks"**. This will add two new landmark lists to the scene.
-2.  Select a landmark from the list and click on the corresponding model in the 3D view to place it.
-3.  Once you have placed all your landmarks, use the **"Export Landmarks to Excel"** section. Click the **"Copy Landmarks to Clipboard"** button.
-4.  You can now open Excel (or Google Sheets) and paste the data. It will be perfectly formatted in columns.
-
-![Placeholder for image showing landmark export](https://placehold.co/600x400?text=Image:+Landmark+Placement+and+Export)
-
-***
-
-This format should make it much easier for a new user to follow along. You can now take screenshots of your GUI at each step and replace the `![Placeholder...` links with your actual images. Let me know if you'd like any more help with this!
