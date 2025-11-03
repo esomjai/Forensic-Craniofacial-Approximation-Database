@@ -1,5 +1,9 @@
 # Landmarking Workflow GUI
 
+
+[Soft_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23305193/Soft_tissue_landmarks.mrk.json)
+[Hard_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23305190/Hard_tissue_landmarks.mrk.json)
+
 This guide provides a custom Python script that creates a user-friendly, step-by-step Graphical User Interface (GUI) inside 3D Slicer for a complete landmarking study. It is designed for beginners and walks the user through every stage, from initial setup to final landmark export.
 
 The GUI includes the following steps:
