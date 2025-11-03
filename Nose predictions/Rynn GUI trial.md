@@ -1,16 +1,4 @@
 ```python
-# =============================================================================
-#
-#  Rynn Method - Simplified GUI (Version 52.0 - Perfect Report Format)
-#
-#  Hello esomjai!
-#
-#  FINAL VERSION with equation formulas displayed in the report!
-#  Example: PA_1_1: pred Rynn PA = 0.83*Y-3.5 = 26.14 mm
-#
-#  To use: RESTART 3D Slicer, then paste this entire script.
-#
-# =============================================================================
 
 import os
 import vtk
