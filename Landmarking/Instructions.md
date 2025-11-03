@@ -67,6 +67,9 @@ class InstructionDialog(qt.QDialog):
         buttonGroup = qt.QGroupBox("Quick Access")
         buttonLayout = qt.QVBoxLayout(buttonGroup)
         
+        # --- THIS IS THE UPDATED BUTTON LIST ---
+        # We now have a list of dictionaries, which is more flexible.
+        # It lets us have different actions for different buttons.
         actions = [
             {
                 "name": "SegmentEditor",
@@ -91,11 +94,12 @@ class InstructionDialog(qt.QDialog):
             {
                 "name": "Add Data",
                 "icon": ":/Icons/AddData.png",
-                "action": slicer.util.openAddDataDialog
+                "action": slicer.util.openAddDataDialog # This function opens the "Add Data" dialog
             }
         ]
 
         for item in actions:
+            # For "Add Data", the name is good. For modules, we add "Module" to the end.
             button_text = f" Open {item['name']}"
             if "Module" not in item["name"] and "Data" not in item["name"]:
                  button_text += " Module"
@@ -104,32 +108,28 @@ class InstructionDialog(qt.QDialog):
             btn.setIcon(qt.QIcon(item["icon"]))
             btn.clicked.connect(item["action"])
             buttonLayout.addWidget(btn)
+        # --- END OF UPDATED BUTTON LIST ---
 
         self.mainLayout.addWidget(buttonGroup)
 
         video_url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         
-        if modelName == "Bone":
-            recommended_threshold = "500"
-        else:
-            recommended_threshold = "-500"
-
-        instructions_text = f"""
-            <p><b>How to Create Your {modelName} Model</b></p>
-            <p>This window will stay open while you work. You can move it to another screen.</p>
-            <p><b>Your Steps:</b></p>
-            <p>1. <b>Add a Segment:</b> A new, empty segmentation called '<b>{modelName}_Segmentation</b>' has been created for you in the 'Segment Editor' panel. Click the green '<b>Add</b>' button to create a new segment inside it.</p>
-            <p>2. <b>Select Threshold Tool:</b> From the list of tools, click on '<b>Threshold</b>'. It is usually in the top row on the right.</p>
-            <p>3. <b>Adjust Threshold:</b> Use the 'Threshold Range' slider to select the tissue you want. For {modelName}, a good starting point is <b>{recommended_threshold}</b>. You will see the selected area highlighted in the slice views.</p>
-            <p>4. <b>Apply:</b> Once you are happy with the highlighted area, click the '<b>Apply</b>' button.</p>
-            <p>5. <b>Show 3D Model:</b> At the top of the Segment Editor panel, click the '<b>Show 3D</b>' button. After a moment, your 3D model will appear!</p>
-            <p>6. <b>Export the Model:</b> Click the '<b>Open Segmentations Module</b>' button above. Find the 'Export/import...' section and the 'Export to files' section. Make sure '<b>Export</b>' and '<b>Models</b>' are selected. Then, choose a folder and click the final '<b>Export</b>' button.</p>
-            <p>7. <b>Re-import the Model:</b> Click the '<b>Open Add Data</b>' button above and choose the STL file you just saved. You can check that it loaded correctly in the '<b>Models</b>' module.</p>
-            <p>8. <b>Confirm:</b> Come back to the main 'Landmarking' window and select your new, re-imported model from the '<b>{modelName} Model</b>' dropdown menu to continue.</p>
-            <br>
-            <p><a href='{video_url}'>Click here to watch a tutorial video.</a></p>
-        """
-
+       
+        instructions_text = (
+            f"<b>How to Create Your {modelName} Model</b><br><br>"
+            f"This window will stay open while you work. You can move it to another screen.<br><br>"
+            f"<b>Your Steps:</b><br>"
+            f"1. <b>Add a Segment:A new, empty segmentation called '<b>{modelName}_Segmentation</b>' has been created for you in the 'Segment Editor' panel.<br><br>"
+            f"2. <b>Select Threshold Tool:</b> From the list of tools, click on '<b>Threshold</b>' - it is in the top row on the right.<br>"
+            f"3. <b>Adjust Threshold:</b> Use the 'Threshold Range' slider to select the tissue you want. For bone, a good starting point is 500. You will see the selected area highlighted and 'blinking' in the slice views.<br>"
+            f"4. <b>Apply:</b> Once you are happy with the highlighted area, click the '<b>Apply</b>' button.<br>"
+            f"5. <b>Show 3D Model:</b> At the top of the Segment Editor panel, click the '<b>Show 3D</b>' button. After a moment, your 3D model will appear!  <br>"
+            f"6. <b>Now, click the green arrow next to the 'Show 3D' or click the '<b>Open Segmentations module</b>' button. Scroll down and open the '<b>Export/import models and labelmaps' as well as the '<b>Export to files</b>' dropdown menus. "
+            f"7. <b> Make sure the following are chosen: '<b>Export</b>', '<b>Models</b>' in the fist section; then choose your folder to export to in the next section and click '<b>Export</b>'in the second section"
+            f"8. <b> Re-import your saved model by clicking the '<b>Add Data</b>' widget on top of Slicer or in this window and choose the resently created STL file.  Check that this model now exists by clicking '<b>Open Models module</b>. "
+            f"9. <b>Confirm:</b> Come back to this 'Landmarking' window and select your new model from the '<b>{modelName} Model</b>' dropdown menu to continue.<br><br>"
+            f"<a href='{video_url}'>Click here to watch a tutorial video.</a>"
+        )
         instructionLabel = qt.QLabel(instructions_text)
         instructionLabel.setTextFormat(qt.Qt.RichText)
         instructionLabel.setWordWrap(True)
@@ -137,8 +137,7 @@ class InstructionDialog(qt.QDialog):
         self.mainLayout.addWidget(instructionLabel)
 
         self.closeButton = qt.QPushButton("Close")
-        # --- THIS IS THE FIX for the popup window ---
-        self.closeButton.clicked.connect(lambda: self.close())
+        self.closeButton.clicked.connect(self.close)
         self.mainLayout.addWidget(self.closeButton)
 
 
@@ -206,8 +205,7 @@ class LandmarkingGUI(qt.QWidget):
         
         self.finishButton = qt.QPushButton("Finish")
         self.finishButton.setToolTip("Close this tool.")
-        # --- THIS IS THE FIX for the main GUI window ---
-        self.finishButton.clicked.connect(lambda: self.close())
+        self.finishButton.clicked.connect(self.close)
         self.finishButton.hide()
         
         navLayout.addWidget(self.prevButton)
@@ -295,20 +293,25 @@ class LandmarkingGUI(qt.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 18px;")
         title.setAlignment(qt.Qt.AlignCenter)
         layout.addWidget(title)
-        
+
         desc_text = """
-            <p>If your volume is very large, you can draw an ROI (Region of Interest) box to speed up later steps. If not, just click 'Next'.</p>
-            <p><b>To Crop the Volume:</b>
-            <br>1. Click the '<b>Open Volume Rendering Module</b>' button below.
-            <br>2. Find the '<b>Crop</b>' section and make sure '<b>Enable</b>' is ticked and the '<b>Display ROI</b>' eye icon is open.
-            <br>3. Adjust the box to include all relevant features but exclude extra scanner material.
-            <br>4. In this window, select '<b>Volume Rendering ROI</b>' from the 'ROI Node' dropdown.
-            <br>5. Click the '<b>Crop Volume</b>' button. A new volume ending in '..._cropped' will be created and activated.</p>
-        """
-        desc = qt.QLabel(desc_text)
-        desc.setTextFormat(qt.Qt.RichText)
-        desc.setWordWrap(True)
-        layout.addWidget(desc)
+    <p>If your volume is very large, you can crop it with an ROI (Region of Interest) box to speed up later steps.</p>
+    <p>If you don't need to crop, just click '<b>Next</b>' to skip this step.</p>
+    
+    <p><b>How to Crop the Volume:</b></p>
+    <ol>
+        <li>Click the '<b>Open Volume Rendering Module</b>' button below.</li>
+        <li>In the Volume Rendering module, find the '<b>Crop</b>' section.</li>
+        <li>Make sure '<b>Enable</b>' is checked (✓).</li>
+        <li>Click the eye icon next to '<b>Display ROI</b>' to make the box visible.</li>
+        <li>Adjust the red box in the 3D view to include all relevant anatomy but exclude extra scanner material.</li>
+        <li>Come back to this window and select '<b>Volume Rendering ROI</b>' from the 'ROI Node' dropdown above.</li>
+        <li>Click the '<b>Crop Volume</b>' button.</li>
+        <li>A new volume ending in '<b>_cropped</b>' will be created and automatically activated! ✅</li>
+    </ol>
+    
+    <p><i>Tip: Cropping is optional but recommended for very large scans.</i></p>
+"""
         
         vr_button = qt.QPushButton(" Open Volume Rendering Module")
         vr_button.setIcon(qt.QIcon(":/Icons/VolumeRendering.png"))
@@ -488,38 +491,132 @@ class LandmarkingGUI(qt.QWidget):
         self.setupSegmentation("Skin")
 
     def setupSegmentation(self, modelName):
+        """
+        Fully automated segmentation - no manual steps required!
+        Creates a 3D model of bone or skin automatically.
+        """
         sourceVolume = self.croppedVolume if self.croppedVolume else self.inputVolume
         if not sourceVolume:
             slicer.util.errorDisplay("No source volume found. Please select one in Step 1.")
             return
 
         statusLabel = self.step3StatusLabel if modelName == "Bone" else self.step4StatusLabel
-        statusLabel.setText(f"Status: Switching to Segment Editor module...")
+        statusLabel.setText(f"Status: Creating {modelName} segmentation automatically...")
         slicer.app.processEvents()
 
         try:
-            slicer.util.selectModule('SegmentEditor')
+            # Get the actual minimum and maximum values from the CT scan
+            imageData = sourceVolume.GetImageData()
+            minValue, maxValue = imageData.GetScalarRange()
             
-            try:
-                segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", f"{modelName}_Segmentation")
-                segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(sourceVolume)
+            statusLabel.setText(f"Status: Analyzing CT scan (range: {minValue:.0f} to {maxValue:.0f})...")
+            slicer.app.processEvents()
+            
+            # Step 1: Create a new segmentation node with a clean name
+            segmentationNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode", f"{modelName}_Segmentation")
+            segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(sourceVolume)
+            
+            # Step 2: Create a new segment with the exact name we want (e.g., "Bone" or "Skin")
+            # This is the key change - we're giving it the modelName directly!
+            segment = segmentationNode.GetSegmentation().AddEmptySegment(modelName, modelName)
+            segmentID = segment
+            
+            # Step 3: Set up the Segment Editor logic (this is the "brain" that does the work)
+            segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
+            segmentEditorWidget.setMRMLScene(slicer.mrmlScene)
+            segmentEditorNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentEditorNode")
+            segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
+            segmentEditorWidget.setSegmentationNode(segmentationNode)
+            segmentEditorWidget.setSourceVolumeNode(sourceVolume)
+            
+            # Step 4: Apply threshold automatically (this is like using the Threshold tool)
+            statusLabel.setText(f"Status: Applying threshold for {modelName}...")
+            slicer.app.processEvents()
+            
+            # Set the threshold range based on tissue type
+            if modelName == "Bone":
+                minThreshold = 500  # Bone typically starts at 500 HU (Hounsfield Units)
+                maxThreshold = maxValue  # Use the highest value in the scan!
+            else:  # Skin
+                minThreshold = -500  # Soft tissue range
+                maxThreshold = 500  # Soft tissue upper limit
+            
+            # Show the user what values we're using
+            statusLabel.setText(f"Status: Using threshold {minThreshold:.0f} to {maxThreshold:.0f} for {modelName}...")
+            slicer.app.processEvents()
+            
+            # Get the Threshold effect
+            segmentEditorWidget.setActiveEffectByName("Threshold")
+            effect = segmentEditorWidget.activeEffect()
+            effect.setParameter("MinimumThreshold", str(minThreshold))
+            effect.setParameter("MaximumThreshold", str(maxThreshold))
+            effect.self().onApply()  # This is like clicking the "Apply" button
+            
+            # Step 5: Create the 3D model (this is like clicking "Show 3D")
+            statusLabel.setText(f"Status: Creating 3D surface representation...")
+            slicer.app.processEvents()
+            
+            # This creates the 3D visualization from the segmentation
+            segmentationNode.CreateClosedSurfaceRepresentation()
+            
+            # Step 6: Export to a model node with the clean name!
+            statusLabel.setText(f"Status: Exporting to model...")
+            slicer.app.processEvents()
+            
+            # Create a model node with the EXACT name we want: "Bone" or "Skin"
+            modelNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", modelName)
+            
+            # Export the segment to this specific model node
+            segmentationLogic = slicer.modules.segmentations.logic()
+            success = segmentationLogic.ExportSegmentToRepresentationNode(
+                segmentationNode.GetSegmentation().GetSegment(segmentID),
+                modelNode
+            )
+            
+            if success:
+                statusLabel.setText(f"Status: Model exported, applying colors...")
+                slicer.app.processEvents()
                 
-                topLevelWidget = slicer.modules.segmenteditor.widgetRepresentation()
-                segmentEditorWidget = slicer.util.findChild(topLevelWidget, 'qMRMLSegmentEditorWidget')
-
-                if segmentEditorWidget:
-                    segmentEditorWidget.setSegmentationNode(segmentationNode)
-                    segmentEditorWidget.setSourceVolumeNode(sourceVolume)
-            except Exception as e:
-                logging.info(f"Could not pre-configure Segment Editor, but this is okay. Error: {e}")
+                # Make the model look nice (set color based on tissue type)
+                displayNode = modelNode.GetDisplayNode()
+                if not displayNode:
+                    modelNode.CreateDefaultDisplayNodes()
+                    displayNode = modelNode.GetDisplayNode()
+                
+                if displayNode:
+                    if modelName == "Bone":
+                        displayNode.SetColor(0.9, 0.9, 0.8)  # Bone white color
+                    else:
+                        displayNode.SetColor(1.0, 0.8, 0.7)  # Skin peachy color
+                    displayNode.SetOpacity(1.0)
+                    displayNode.SetVisibility(True)
+                
+                # Automatically select it in the dropdown
+                if modelName == "Bone":
+                    self.boneModel = modelNode
+                    self.boneModelSelector.setCurrentNode(modelNode)
+                else:
+                    self.softTissueModel = modelNode
+                    self.softTissueModelSelector.setCurrentNode(modelNode)
+                
+                statusLabel.setText(f"Status: ✅ {modelName} model created successfully! (Threshold: {minThreshold:.0f} to {maxThreshold:.0f})")
+                slicer.util.showStatusMessage(f"✅ {modelName} segmentation completed!", 3000)
+                
+                # Optional: Hide the segmentation node so only the model shows
+                if segmentationNode.GetDisplayNode():
+                    segmentationNode.GetDisplayNode().SetVisibility(False)
+                
+            else:
+                raise Exception("Failed to export segment to model node")
             
-            statusLabel.setText("Status: Segment Editor is ready. Follow the instructions in the popup.")
-            
-            self.instructionDialog = InstructionDialog(modelName, self)
-            self.instructionDialog.show()
+            # Clean up the temporary segment editor node
+            slicer.mrmlScene.RemoveNode(segmentEditorNode)
             
         except Exception as e:
-            slicer.util.errorDisplay(f"Could not automatically switch to Segment Editor. Please open it manually from the 'Modules' dropdown.\n\nError: {e}")
+            statusLabel.setText(f"Status: ❌ Error: {str(e)}")
+            slicer.util.errorDisplay(f"Automatic segmentation failed:\n\n{str(e)}\n\nPlease try the manual method or report this issue.")
+            import traceback
+            traceback.print_exc()
 
     def onConfirmBoneSegmentation(self, node):
         if node:
@@ -767,10 +864,10 @@ class LandmarkingGUI(qt.QWidget):
             self.onVolumeSelected(self.inputVolumeSelector.currentNode())
 
     def onDownloadHardLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/23121222/hard_tissue.mrk.json", "Hard_tissue_landmarks", self.step5StatusLabel)
+        self.onDownloadAndLoad("https://github.com/user-attachments/files/23305190/Hard_tissue_landmarks.mrk.json", "Hard_tissue_landmarks", self.step5StatusLabel)
 
     def onDownloadSoftLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/23121223/soft_tissue.mrk.json", "Soft_tissue_landmarks", self.step5StatusLabel)
+        self.onDownloadAndLoad("https://github.com/user-attachments/files/23305193/Soft_tissue_landmarks.mrk.json", "Soft_tissue_landmarks", self.step5StatusLabel)
 
     def onDownloadAndLoad(self, url, nodeName, statusLabel):
         statusLabel.setText(f"Status: Downloading '{nodeName}'..."); slicer.app.processEvents()
