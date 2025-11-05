@@ -12,7 +12,6 @@ NOW, the Segmentation is fully automated :)
 Copy the complete script below to run the Landmarking GUI in 3D Slicer.
 
 ```python
-
 import os
 import vtk
 import numpy as np
@@ -39,6 +38,15 @@ class LandmarkingGUI(qt.QWidget):
         self.stepStack = qt.QStackedWidget()
         self.mainLayout.addWidget(self.stepStack)
         
+        self._gn_index = -1
+        self._gn_prime_index = -1
+        self._gn_observer = None
+        self._gn_prime_observer = None
+        self._is_updating_gn = False
+        self._is_updating_gn_prime = False
+        self._initial_gn_pos = None
+        self._initial_gn_prime_pos = None
+
         self.landmarksNode = None
         self.referencePlane = None
         self.boneModel = None
@@ -556,6 +564,58 @@ class LandmarkingGUI(qt.QWidget):
         instructions.setWordWrap(True)
         layout.addWidget(instructions)
         
+        gnGroup = qt.QGroupBox("Calculate Gnathion Points (gn and gn')")
+        gnLayout = qt.QVBoxLayout(gnGroup)
+        
+        gnDesc = qt.QLabel(
+            "The gnathion points (gn and gn') are calculated as the midpoint between "
+            "pogonion and menton. Click the buttons below to automatically calculate and place them."
+        )
+        gnDesc.setWordWrap(True)
+        gnLayout.addWidget(gnDesc)
+        
+        # Button to create hard tissue gn
+        self.createGnButton = qt.QPushButton("1. Calculate Hard Tissue 'gn' Point")
+        self.createGnButton.setToolTip("Creates 'gn' point halfway between 'pg' and 'me'")
+        self.createGnButton.clicked.connect(self.onCreateGn)
+        gnLayout.addWidget(self.createGnButton)
+        
+        # Button to adjust hard tissue gn
+        self.adjustGnButton = qt.QPushButton("2. Adjust 'gn' Point (Anteroposterior)")
+        self.adjustGnButton.setToolTip("Allow anteroposterior adjustment of 'gn' point")
+        self.adjustGnButton.clicked.connect(self.onAdjustGn)
+        self.adjustGnButton.setEnabled(False)
+        gnLayout.addWidget(self.adjustGnButton)
+        
+        # Button to confirm hard tissue gn
+        self.confirmGnButton = qt.QPushButton("3. Confirm 'gn' Placement")
+        self.confirmGnButton.clicked.connect(self.onConfirmGn)
+        self.confirmGnButton.setEnabled(False)
+        gnLayout.addWidget(self.confirmGnButton)
+        
+        gnLayout.addSpacing(10)
+        
+        # Button to create soft tissue gn'
+        self.createGnPrimeButton = qt.QPushButton("4. Calculate Soft Tissue 'gn'' Point")
+        self.createGnPrimeButton.setToolTip("Creates 'gn'' point halfway between 'pg'' and 'me''")
+        self.createGnPrimeButton.clicked.connect(self.onCreateGnPrime)
+        gnLayout.addWidget(self.createGnPrimeButton)
+        
+        # Button to adjust soft tissue gn'
+        self.adjustGnPrimeButton = qt.QPushButton("5. Adjust 'gn'' Point (Anteroposterior)")
+        self.adjustGnPrimeButton.setToolTip("Allow anteroposterior adjustment of 'gn'' point")
+        self.adjustGnPrimeButton.clicked.connect(self.onAdjustGnPrime)
+        self.adjustGnPrimeButton.setEnabled(False)
+        gnLayout.addWidget(self.adjustGnPrimeButton)
+        
+        # Button to confirm soft tissue gn'
+        self.confirmGnPrimeButton = qt.QPushButton("6. Confirm 'gn'' Placement")
+        self.confirmGnPrimeButton.clicked.connect(self.onConfirmGnPrime)
+        self.confirmGnPrimeButton.setEnabled(False)
+        gnLayout.addWidget(self.confirmGnPrimeButton)
+        
+        layout.addWidget(gnGroup)
+
         exportGroup = qt.QGroupBox("Export Landmarks to Excel")
         exportLayout = qt.QVBoxLayout(exportGroup)
         
@@ -767,10 +827,10 @@ class LandmarkingGUI(qt.QWidget):
             self.onVolumeSelected(self.inputVolumeSelector.currentNode())
 
     def onDownloadHardLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/23317568/Hard_tissue_landmarks.mrk.json", "Hard_tissue_landmarks", self.step5StatusLabel)
+        self.onDownloadAndLoad("https://github.com/user-attachments/files/23375945/Hard_tissue_landmarks.mrk.json", "Hard_tissue_landmarks", self.step5StatusLabel)
 
     def onDownloadSoftLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/23317570/Soft_tissue_landmarks.mrk.json", "Soft_tissue_landmarks", self.step5StatusLabel)
+        self.onDownloadAndLoad("https://github.com/user-attachments/files/23375946/Soft_tissue_landmarks.mrk.json", "Soft_tissue_landmarks", self.step5StatusLabel)
 
     def onDownloadAndLoad(self, url, nodeName, statusLabel):
         statusLabel.setText(f"Status: Downloading '{nodeName}'..."); slicer.app.processEvents()
@@ -849,6 +909,255 @@ class LandmarkingGUI(qt.QWidget):
         except Exception as e:
             print(f"⚠️ Error closing window: {e}")
     
+
+    def onCreateGn(self):
+        """Calculate and place hard tissue gn point"""
+        try:
+            # Get hard tissue landmarks
+            hardLandmarksNode = slicer.util.getFirstNodeByName("Hard_tissue_landmarks")
+            if not hardLandmarksNode:
+                slicer.util.warningDisplay("Hard tissue landmarks not found. Please load them first.")
+                return
+            
+            # Find pg and me points
+            pg_pos = None
+            me_pos = None
+            
+            for i in range(hardLandmarksNode.GetNumberOfControlPoints()):
+                label = hardLandmarksNode.GetNthControlPointLabel(i).lower()
+                pos = [0, 0, 0]
+                hardLandmarksNode.GetNthControlPointPositionWorld(i, pos)
+                
+                if label == "pg":
+                    pg_pos = np.array(pos)
+                elif label == "me":
+                    me_pos = np.array(pos)
+            
+            if pg_pos is None or me_pos is None:
+                slicer.util.warningDisplay("Could not find 'pg' and/or 'me' points in hard tissue landmarks.")
+                return
+            
+            # Calculate midpoint
+            gn_pos = (pg_pos + me_pos) / 2.0
+            
+            # Check if gn already exists, if so update it, otherwise create it
+            gn_exists = False
+            for i in range(hardLandmarksNode.GetNumberOfControlPoints()):
+                if hardLandmarksNode.GetNthControlPointLabel(i).lower() == "gn":
+                    hardLandmarksNode.SetNthControlPointPositionWorld(i, gn_pos)
+                    hardLandmarksNode.SetNthControlPointDescription(i, "Median point halfway between pg and me")
+                    self._gn_index = i
+                    gn_exists = True
+                    break
+            
+            if not gn_exists:
+                self._gn_index = hardLandmarksNode.AddControlPoint(gn_pos, "gn")
+                hardLandmarksNode.SetNthControlPointDescription(self._gn_index, "Median point halfway between pg and me")
+            
+            self._initial_gn_pos = gn_pos.copy()
+            
+            self.createGnButton.setEnabled(False)
+            self.adjustGnButton.setEnabled(True)
+            self.step5StatusLabel.setText("Status: 'gn' point created. You may now adjust it if needed.")
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error creating gn point: {str(e)}")
+    
+    def onAdjustGn(self):
+        """Enable anteroposterior adjustment of gn point"""
+        try:
+            hardLandmarksNode = slicer.util.getFirstNodeByName("Hard_tissue_landmarks")
+            if not hardLandmarksNode:
+                return
+            
+            # Remove existing observer if any
+            if self._gn_observer:
+                hardLandmarksNode.RemoveObserver(self._gn_observer)
+            
+            # Add observer to constrain movement
+            self._gn_observer = hardLandmarksNode.AddObserver(
+                slicer.vtkMRMLMarkupsNode.PointModifiedEvent,
+                self.onGnModified
+            )
+            
+            # Focus on the point
+            slicer.modules.markups.logic().JumpSlicesToNthPointInMarkup(
+                hardLandmarksNode.GetID(), self._gn_index
+            )
+            
+            self.adjustGnButton.setEnabled(False)
+            self.confirmGnButton.setEnabled(True)
+            self.step5StatusLabel.setText("Status: Adjust 'gn' point (movement constrained to anteroposterior axis).")
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error adjusting gn: {str(e)}")
+    
+    def onGnModified(self, caller, event):
+        """Constrain gn movement to anteroposterior axis only"""
+        if self._is_updating_gn or self._gn_index == -1:
+            return
+        
+        self._is_updating_gn = True
+        try:
+            hardLandmarksNode = slicer.util.getFirstNodeByName("Hard_tissue_landmarks")
+            if not hardLandmarksNode:
+                return
+            
+            # Get current position
+            current_pos = np.zeros(3)
+            hardLandmarksNode.GetNthControlPointPositionWorld(self._gn_index, current_pos)
+            
+            # Constrain to anteroposterior (Y-axis) only
+            constrained_pos = [self._initial_gn_pos[0], current_pos[1], self._initial_gn_pos[2]]
+            
+            # Update position
+            if not np.allclose(current_pos, constrained_pos, atol=0.01):
+                hardLandmarksNode.SetNthControlPointPositionWorld(self._gn_index, constrained_pos)
+        
+        except Exception:
+            pass
+        finally:
+            self._is_updating_gn = False
+    
+    def onConfirmGn(self):
+        """Confirm gn placement"""
+        try:
+            hardLandmarksNode = slicer.util.getFirstNodeByName("Hard_tissue_landmarks")
+            if hardLandmarksNode and self._gn_observer:
+                hardLandmarksNode.RemoveObserver(self._gn_observer)
+                self._gn_observer = None
+            
+            self.confirmGnButton.setEnabled(False)
+            self.step5StatusLabel.setText("Status: 'gn' point confirmed!")
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error confirming gn: {str(e)}")
+    
+    # ============ GNATHION PRIME (gn') FUNCTIONS ============
+    
+    def onCreateGnPrime(self):
+        """Calculate and place soft tissue gn' point"""
+        try:
+            # Get soft tissue landmarks
+            softLandmarksNode = slicer.util.getFirstNodeByName("Soft_tissue_landmarks")
+            if not softLandmarksNode:
+                slicer.util.warningDisplay("Soft tissue landmarks not found. Please load them first.")
+                return
+            
+            # Find pg' and me' points
+            pg_prime_pos = None
+            me_prime_pos = None
+            
+            for i in range(softLandmarksNode.GetNumberOfControlPoints()):
+                label = softLandmarksNode.GetNthControlPointLabel(i).lower()
+                pos = [0, 0, 0]
+                softLandmarksNode.GetNthControlPointPositionWorld(i, pos)
+                
+                if label == "pg'":
+                    pg_prime_pos = np.array(pos)
+                elif label == "me'":
+                    me_prime_pos = np.array(pos)
+            
+            if pg_prime_pos is None or me_prime_pos is None:
+                slicer.util.warningDisplay("Could not find 'pg'' and/or 'me'' points in soft tissue landmarks.")
+                return
+            
+            # Calculate midpoint
+            gn_prime_pos = (pg_prime_pos + me_prime_pos) / 2.0
+            
+            # Check if gn' already exists
+            gn_prime_exists = False
+            for i in range(softLandmarksNode.GetNumberOfControlPoints()):
+                if softLandmarksNode.GetNthControlPointLabel(i).lower() == "gn'":
+                    softLandmarksNode.SetNthControlPointPositionWorld(i, gn_prime_pos)
+                    softLandmarksNode.SetNthControlPointDescription(i, "Median point halfway between pg′ and me′")
+                    self._gn_prime_index = i
+                    gn_prime_exists = True
+                    break
+            
+            if not gn_prime_exists:
+                self._gn_prime_index = softLandmarksNode.AddControlPoint(gn_prime_pos, "gn'")
+                softLandmarksNode.SetNthControlPointDescription(self._gn_prime_index, "Median point halfway between pg′ and me′")
+            
+            self._initial_gn_prime_pos = gn_prime_pos.copy()
+            
+            self.createGnPrimeButton.setEnabled(False)
+            self.adjustGnPrimeButton.setEnabled(True)
+            self.step5StatusLabel.setText("Status: 'gn'' point created. You may now adjust it if needed.")
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error creating gn' point: {str(e)}")
+    
+    def onAdjustGnPrime(self):
+        """Enable anteroposterior adjustment of gn' point"""
+        try:
+            softLandmarksNode = slicer.util.getFirstNodeByName("Soft_tissue_landmarks")
+            if not softLandmarksNode:
+                return
+            
+            # Remove existing observer if any
+            if self._gn_prime_observer:
+                softLandmarksNode.RemoveObserver(self._gn_prime_observer)
+            
+            # Add observer to constrain movement
+            self._gn_prime_observer = softLandmarksNode.AddObserver(
+                slicer.vtkMRMLMarkupsNode.PointModifiedEvent,
+                self.onGnPrimeModified
+            )
+            
+            # Focus on the point
+            slicer.modules.markups.logic().JumpSlicesToNthPointInMarkup(
+                softLandmarksNode.GetID(), self._gn_prime_index
+            )
+            
+            self.adjustGnPrimeButton.setEnabled(False)
+            self.confirmGnPrimeButton.setEnabled(True)
+            self.step5StatusLabel.setText("Status: Adjust 'gn'' point (movement constrained to anteroposterior axis).")
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error adjusting gn': {str(e)}")
+    
+    def onGnPrimeModified(self, caller, event):
+        """Constrain gn' movement to anteroposterior axis only"""
+        if self._is_updating_gn_prime or self._gn_prime_index == -1:
+            return
+        
+        self._is_updating_gn_prime = True
+        try:
+            softLandmarksNode = slicer.util.getFirstNodeByName("Soft_tissue_landmarks")
+            if not softLandmarksNode:
+                return
+            
+            # Get current position
+            current_pos = np.zeros(3)
+            softLandmarksNode.GetNthControlPointPositionWorld(self._gn_prime_index, current_pos)
+            
+            # Constrain to anteroposterior (Y-axis) only
+            constrained_pos = [self._initial_gn_prime_pos[0], current_pos[1], self._initial_gn_prime_pos[2]]
+            
+            # Update position
+            if not np.allclose(current_pos, constrained_pos, atol=0.01):
+                softLandmarksNode.SetNthControlPointPositionWorld(self._gn_prime_index, constrained_pos)
+        
+        except Exception:
+            pass
+        finally:
+            self._is_updating_gn_prime = False
+    
+    def onConfirmGnPrime(self):
+        """Confirm gn' placement"""
+        try:
+            softLandmarksNode = slicer.util.getFirstNodeByName("Soft_tissue_landmarks")
+            if softLandmarksNode and self._gn_prime_observer:
+                softLandmarksNode.RemoveObserver(self._gn_prime_observer)
+                self._gn_prime_observer = None
+            
+            self.confirmGnPrimeButton.setEnabled(False)
+            self.step5StatusLabel.setText("Status: 'gn'' point confirmed! You may now export landmarks.")
+            
+        except Exception as e:
+            slicer.util.errorDisplay(f"Error confirming gn': {str(e)}")
+
     def updateStepUI(self):
         self.stepStack.setCurrentIndex(self.currentStep)
         totalSteps = self.stepStack.count
@@ -907,5 +1216,6 @@ except:
 
 landmarkingGui = LandmarkingGUI()
 landmarkingGui.show()
+
 ```
 
