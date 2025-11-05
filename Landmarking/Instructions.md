@@ -1,7 +1,8 @@
 # Landmarking Workflow GUI
 
-[Soft_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23317570/Soft_tissue_landmarks.mrk.json)
-[Hard_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23317568/Hard_tissue_landmarks.mrk.json)
+[Soft_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23375946/Soft_tissue_landmarks.mrk.json)
+[Hard_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23375945/Hard_tissue_landmarks.mrk.json)
+
 
 NOW, the Segmentation is fully automated :)
 
