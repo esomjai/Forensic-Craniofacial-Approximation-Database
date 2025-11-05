@@ -4,7 +4,7 @@
 [Hard_tissue_landmarks.mrk.json](https://github.com/user-attachments/files/23375945/Hard_tissue_landmarks.mrk.json)
 
 
-NOW, the Segmentation is fully automated :)
+NOW, the Segmentation is fully automated AND the gn gn' landmarks are placed midway - you just need to adjust the anteroposteriorly:)
 
 
 ### Python Script
