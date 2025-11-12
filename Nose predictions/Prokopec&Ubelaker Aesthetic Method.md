@@ -2,6 +2,8 @@
 
 The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2010)[^3].
 The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2010)[^3] also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
+[nose_profile_outline_6.mrk.json](https://github.com/user-attachments/files/23497912/nose_profile_outline_6.mrk.json)
+[hard_tissue_PU.mrk.json](https://github.com/user-attachments/files/23497911/hard_tissue_PU.mrk.json)
 
 This will be achieved by:
 
