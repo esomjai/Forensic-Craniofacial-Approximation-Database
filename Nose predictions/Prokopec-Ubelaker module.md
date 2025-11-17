@@ -26,11 +26,38 @@ class ProkopecUbelakerGUI(qt.QWidget):
         self.helpersVisible = True
         self.activeProfilePlaneName = "INB" # Default to INB
         
+        self.colorPalette = [
+            (0.0, 0.8, 0.8),  # Teal
+            (0.0, 1.0, 0.0),  # Green
+            (1.0, 1.0, 0.0),  # Yellow
+            (1.0, 0.5, 0.0),  # Orange
+            (1.0, 0.0, 0.0),  # Red
+            (1.0, 0.0, 1.0)   # Magenta
+        ]
+        
         self.createStepWidgets()
         self.setupNavigation()
         
         self.currentStep = 0
         self.updateStepUI()
+        
+    def get_plane_count(self):
+        """Get current plane count from slider"""
+        return int(self.planeCountSlider.value)
+    
+    def get_run_label(self):
+        """Get and sanitize run label (replace spaces, remove special chars)"""
+        # For now, just return empty string since we don't have run labels yet
+        return ""
+    
+    def get_suffix(self):
+        """Combined suffix: plane count + optional run label"""
+        pc = self.get_plane_count()
+        run = self.get_run_label()
+        if run:
+            return f"_{pc}p_{run}"
+        else:
+            return f"_{pc}p"
         
     def setupNavigation(self):
         navWidget = qt.QWidget()
@@ -83,6 +110,24 @@ class ProkopecUbelakerGUI(qt.QWidget):
             self.currentStep = 8
             
         self.updateStepUI()
+        
+    def addImageFromGitHub(self, layout, imageName, width=400, height=300):
+        """Helper function to add educational images from GitHub"""
+        imageLabel = qt.QLabel()
+        imageLabel.setAlignment(qt.Qt.AlignCenter)
+        imageLabel.setContentsMargins(0, 5, 0, 5)
+        baseUrl = "https://raw.githubusercontent.com/esomjai/Forensic-Craniofacial-Approximation-Database/basics/Nose%20predictions/images/"
+        imageUrl = baseUrl + imageName
+        try:
+            imageData = urllib.request.urlopen(imageUrl).read()
+            pixmap = qt.QPixmap()
+            pixmap.loadFromData(imageData)
+            imageLabel.setPixmap(pixmap.scaled(width, height, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation))
+            layout.addWidget(imageLabel)
+            return True
+        except Exception as e:
+            print(f"Could not load image {imageName}: {e}")
+            return False
 
     def cleanupScene(self, plane_count):
         suffix = f"_{plane_count}p"
@@ -143,7 +188,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(title)
         
-        detailLabel = qt.QLabel("Please select or load your hard tissue landmarks. The next step will explain which landmarks are required for each calculation method.")
+        detailLabel = qt.QLabel("Please select your hard tissue landmarks, load them from a file, or download the list.")
         detailLabel.setWordWrap(True)
         layout.addWidget(detailLabel)
         
@@ -159,14 +204,22 @@ class ProkopecUbelakerGUI(qt.QWidget):
         selectorLayout.addRow("Hard Tissue Landmarks:", self.landmarksSelector)
         layout.addWidget(selectorFrame)
         
+        buttonLayout = qt.QHBoxLayout()
+        
         self.loadLandmarksButton = qt.QPushButton("Load From File")
-        layout.addWidget(self.loadLandmarksButton)
+        buttonLayout.addWidget(self.loadLandmarksButton)
+        
+        self.downloadDemoLandmarksButton = qt.QPushButton("Download Landmarks")
+        buttonLayout.addWidget(self.downloadDemoLandmarksButton)
+        
+        layout.addLayout(buttonLayout)
         
         self.landmarksStatusLabel = qt.QLabel("Please select or load landmarks.")
         self.landmarksStatusLabel.setWordWrap(True)
         layout.addWidget(self.landmarksStatusLabel)
         
         self.loadLandmarksButton.connect('clicked(bool)', self.onLoadLandmarksClicked)
+        self.downloadDemoLandmarksButton.connect('clicked(bool)', self.onDownloadHardTissueClicked)
         self.stepStack.addWidget(widget)
 
     def createStep3Widget(self):
@@ -177,7 +230,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
         layout.addWidget(title)
         
         planeInfoLabel = qt.QLabel()
-        planeInfoLabel.setTextFormat(qt.Qt.RichText) # This is the fix for the bold tag
+        planeInfoLabel.setTextFormat(qt.Qt.RichText)
         planeInfoLabel.setText("The method for creating the profile plane determines which landmarks are required:<br>• <b>INB plane:</b> nasion, inion, bregma<br>• <b>MSP (best fit):</b> nasion, prosthion, subspinale, rhinion, acanthion")
         planeInfoLabel.setWordWrap(True)
         layout.addWidget(planeInfoLabel)
@@ -216,17 +269,28 @@ class ProkopecUbelakerGUI(qt.QWidget):
         title = qt.QLabel("Step 4: Mirror Plane Configuration")
         title.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(title)
-        detailLabel = qt.QLabel("Choose the number of mirror planes (4, 5, or 6). This will clean up items from any previous run with the same number of planes.")
+        
+        detailLabel = qt.QLabel("First, define the Maximum Aperture Width (MAW) by creating a line. Then, choose the number of mirror planes (4, 5, or 6).")
         detailLabel.setWordWrap(True)
         layout.addWidget(detailLabel)
+        
         selectorFrame = qt.QFrame()
         selectorLayout = qt.QFormLayout(selectorFrame)
+        
+        mawLayout = qt.QHBoxLayout()
         self.mawSelector = slicer.qMRMLNodeComboBox()
         self.mawSelector.nodeTypes = ["vtkMRMLMarkupsLineNode"]
-        self.mawSelector.addEnabled = True
+        self.mawSelector.addEnabled = False
+        self.mawSelector.removeEnabled = True
         self.mawSelector.noneEnabled = True
         self.mawSelector.setMRMLScene(slicer.mrmlScene)
-        selectorLayout.addRow("Maximum Aperture Width:", self.mawSelector)
+        mawLayout.addWidget(self.mawSelector)
+        
+        self.createMAWButton = qt.QPushButton("Create MAW Line")
+        mawLayout.addWidget(self.createMAWButton)
+        
+        selectorLayout.addRow("Maximum Aperture Width:", mawLayout)
+        
         self.planeCountSlider = qt.QSlider(qt.Qt.Horizontal)
         self.planeCountSlider.minimum = 4
         self.planeCountSlider.maximum = 6
@@ -235,12 +299,17 @@ class ProkopecUbelakerGUI(qt.QWidget):
         self.planeCountSlider.setTickInterval(1)
         self.planeCountLabel = qt.QLabel(f"Number of mirror planes: {self.planeCountSlider.value}")
         selectorLayout.addRow(self.planeCountLabel, self.planeCountSlider)
+        
         layout.addWidget(selectorFrame)
+        
         self.createMirrorPlanesButton = qt.QPushButton("Create Mirror Planes")
         layout.addWidget(self.createMirrorPlanesButton)
+        
         self.mirrorPlanesStatusLabel = qt.QLabel("Ready to create mirror planes.")
         self.mirrorPlanesStatusLabel.setWordWrap(True)
         layout.addWidget(self.mirrorPlanesStatusLabel)
+        
+        self.createMAWButton.connect('clicked(bool)', self.onCreateMAWClicked)
         self.planeCountSlider.connect('valueChanged(int)', self.onPlaneCountChanged)
         self.createMirrorPlanesButton.connect('clicked(bool)', self.onCreateMirrorPlanesClicked)
         self.stepStack.addWidget(widget)
@@ -286,14 +355,35 @@ class ProkopecUbelakerGUI(qt.QWidget):
         title = qt.QLabel("Step 6: Nasal Aperture Outline Setup")
         title.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(title)
-        detailLabel = qt.QLabel("Download the nasal bone outline landmarks. After downloading, you MUST adjust the point positions to match your skull from a lateral (side) view.")
+        
+        detailLabel = qt.QLabel("Select existing nasal bone outline landmarks OR download new ones. After downloading/selecting, you MUST adjust the point positions to match your skull from a lateral (side/profile) view.\n\nPlace points according to their sides (L - left, R - right), with L1 the most superior on the left.")
         detailLabel.setWordWrap(True)
         layout.addWidget(detailLabel)
+        
+        # ADD SELECTOR (like in Step 2 and Step 4!)
+        selectorFrame = qt.QFrame()
+        selectorLayout = qt.QFormLayout(selectorFrame)
+        self.nasalBoneOutlineSelector = slicer.qMRMLNodeComboBox()
+        self.nasalBoneOutlineSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
+        self.nasalBoneOutlineSelector.addEnabled = True
+        self.nasalBoneOutlineSelector.removeEnabled = True
+        self.nasalBoneOutlineSelector.noneEnabled = True
+        self.nasalBoneOutlineSelector.setMRMLScene(slicer.mrmlScene)
+        selectorLayout.addRow("Nasal Bone Outline:", self.nasalBoneOutlineSelector)
+        layout.addWidget(selectorFrame)
+        
         self.downloadOutlineButton = qt.QPushButton("Download Aperture Outline Landmarks")
         layout.addWidget(self.downloadOutlineButton)
-        self.bonePointsStatusLabel = qt.QLabel("Ready to download.")
+        
+        self.bonePointsStatusLabel = qt.QLabel("Select existing landmarks or download new ones.")
         self.bonePointsStatusLabel.setWordWrap(True)
         layout.addWidget(self.bonePointsStatusLabel)
+        
+        # Image container (shown after download)
+        self.step6ImageContainer = qt.QWidget()
+        self.step6ImageLayout = qt.QVBoxLayout(self.step6ImageContainer)
+        self.step6ImageContainer.setVisible(False)
+        layout.addWidget(self.step6ImageContainer)
         
         self.toggleVisibilityButton6 = qt.QPushButton("Toggle Helper Visibility")
         layout.addWidget(self.toggleVisibilityButton6)
@@ -302,6 +392,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
         self.confirmationLabel.setStyleSheet("color: orange; font-weight: bold;")
         self.confirmationLabel.setWordWrap(True)
         layout.addWidget(self.confirmationLabel)
+        
         self.downloadOutlineButton.connect('clicked(bool)', self.onDownloadNasalBoneOutlineClicked)
         self.toggleVisibilityButton6.connect('clicked(bool)', self.onToggleVisibilityClicked)
         self.stepStack.addWidget(widget)
@@ -355,18 +446,50 @@ class ProkopecUbelakerGUI(qt.QWidget):
         title = qt.QLabel("Step 8: Compare with True Soft Tissue (Optional)")
         title.setStyleSheet("font-weight: bold; font-size: 14px;")
         layout.addWidget(title)
-        detailLabel = qt.QLabel("To measure prediction accuracy, download the true soft tissue landmarks, adjust them, and then create error measurements.")
+        
+        detailLabel = qt.QLabel("To measure prediction accuracy:\n1) Select existing soft tissue landmarks OR download new ones\n2) Place them on the soft tissue nose (point '1' most superior)\n3) Optionally adjust them to snap to lines\n4) Choose which prediction to compare\n5) Create error measurements")
         detailLabel.setWordWrap(True)
         layout.addWidget(detailLabel)
+        
+        # ADD SELECTOR (like in Step 2 and Step 4!)
+        selectorFrame = qt.QFrame()
+        selectorLayout = qt.QFormLayout(selectorFrame)
+        self.softTissueOutlineSelector = slicer.qMRMLNodeComboBox()
+        self.softTissueOutlineSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
+        self.softTissueOutlineSelector.addEnabled = True
+        self.softTissueOutlineSelector.removeEnabled = True
+        self.softTissueOutlineSelector.noneEnabled = True
+        self.softTissueOutlineSelector.setMRMLScene(slicer.mrmlScene)
+        selectorLayout.addRow("True Soft Tissue Outline:", self.softTissueOutlineSelector)
+        layout.addWidget(selectorFrame)
+        
         self.downloadTrueSoftTissueButton = qt.QPushButton("1. Download True Soft Tissue Landmarks")
         layout.addWidget(self.downloadTrueSoftTissueButton)
+        
+        self.addImageFromGitHub(layout, "8.1.png", width=400, height=280)
+        
         self.adjustTrueSoftTissueButton = qt.QPushButton("2. Adjust True Soft Tissue to Lines")
         layout.addWidget(self.adjustTrueSoftTissueButton)
-        self.createErrorsButton = qt.QPushButton("3. Create All Error Measurements")
+        
+        predictionSelectionFrame = qt.QFrame()
+        predictionSelectionLayout = qt.QFormLayout(predictionSelectionFrame)
+        self.predictionTypeComboBox = qt.QComboBox()
+        self.predictionTypeComboBox.addItems([
+            "Select prediction type to compare...",
+            "Mirrored (no soft tissue)",
+            "2mm soft tissue",
+            "Custom soft tissue"
+        ])
+        predictionSelectionLayout.addRow("3a. Choose Prediction Type:", self.predictionTypeComboBox)
+        layout.addWidget(predictionSelectionFrame)
+        
+        self.createErrorsButton = qt.QPushButton("3b. Create Error Measurements for Selected Prediction")
         layout.addWidget(self.createErrorsButton)
-        self.softTissueStatusLabel = qt.QLabel("Ready for comparison.")
+        
+        self.softTissueStatusLabel = qt.QLabel("Select existing landmarks or download new ones.")
         self.softTissueStatusLabel.setWordWrap(True)
         layout.addWidget(self.softTissueStatusLabel)
+        
         self.downloadTrueSoftTissueButton.connect('clicked(bool)', self.onDownloadSoftTissueOutlineClicked)
         self.adjustTrueSoftTissueButton.connect('clicked(bool)', self.onAdjustTrueSoftTissueClicked)
         self.createErrorsButton.connect('clicked(bool)', self.onCreateErrorsClicked)
@@ -422,6 +545,39 @@ class ProkopecUbelakerGUI(qt.QWidget):
         status = "shown" if self.helpersVisible else "hidden"
         slicer.util.delayDisplay(f"Helper nodes {status}. {plane_name_part} lines remain visible.", 500)
 
+    def onDownloadHardTissueClicked(self):
+        with slicer.util.tryWithErrorDisplay("Failed to download landmarks."):
+            url = "https://github.com/user-attachments/files/22872691/hard_tissue_PU.mrk.json"
+            node_name = "hard_tissue_PU"
+            self.landmarksStatusLabel.setText("Downloading landmarks...")
+            slicer.app.processEvents()
+
+            try:
+                old_node = slicer.util.getNode(node_name)
+                slicer.mrmlScene.RemoveNode(old_node)
+            except slicer.util.MRMLNodeNotFoundException:
+                pass
+
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                
+                with tempfile.NamedTemporaryFile(suffix='.mrk.json', delete=False) as temp_file:
+                    temp_file.write(response.content)
+                    temp_file_path = temp_file.name
+                    
+                landmarksNode = slicer.util.loadMarkups(temp_file_path)
+                os.unlink(temp_file_path)
+                
+                if landmarksNode:
+                    landmarksNode.SetName(node_name)
+                    self.landmarksSelector.setCurrentNode(landmarksNode)
+                    self.landmarksStatusLabel.setText(f"Loaded '{node_name}' successfully!")
+                else:
+                    self.landmarksStatusLabel.setText("Failed to load landmarks from downloaded file.")
+            except Exception as e:
+                self.landmarksStatusLabel.setText(f"Error: {str(e)}")
+
     def onLoadLandmarksClicked(self):
         fileName, _ = qt.QFileDialog.getOpenFileName(self, "Load Landmarks", "", "Markup Files (*.mrk.json)")
         if fileName:
@@ -462,6 +618,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
             self.createReferencePlanesButton.setEnabled(False)
             self.planesStatusLabel.setText("Please choose a plane creation method.")
 
+    # --- THIS FUNCTION IS CORRECTED ---
     def onCreateReferencePlanesClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to create reference planes."):
             choice_index = self.planeChoiceComboBox.currentIndex
@@ -497,8 +654,11 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 planeNode.SetOrigin(origin)
                 planeNode.SetNormal(normal)
                 planeNode.SetSize(450, 450)
-                planeNode.GetDisplayNode().SetSelectedColor(*color)
-                planeNode.GetDisplayNode().SetOpacity(0.3)
+                displayNode = planeNode.GetDisplayNode()
+                # --- FIX: Use .SetColor() instead of .SetUnselectedColor() ---
+                displayNode.SetColor(color) 
+                displayNode.SetSelectedColor(color)
+                displayNode.SetOpacity(0.7) # Keeping your preferred opacity
                 return planeNode
             
             profile_plane = None
@@ -543,9 +703,21 @@ class ProkopecUbelakerGUI(qt.QWidget):
             else:
                 self.planesStatusLabel.setText("Failed to create the primary profile plane.")
 
+    def onCreateMAWClicked(self):
+        with slicer.util.tryWithErrorDisplay("Failed to set up for MAW line creation."):
+            node_name = "MAW"
+            slicer.util.selectModule('Markups')
+            lineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', node_name)
+            slicer.modules.markups.logic().SetActiveListID(lineNode)
+            interactionNode = slicer.app.applicationLogic().GetInteractionNode()
+            interactionNode.SetCurrentInteractionMode(slicer.vtkMRMLInteractionNode.Place)
+            self.mawSelector.setCurrentNode(lineNode)
+            self.mirrorPlanesStatusLabel.setText("Now placing points for the 'MAW' line. Click in the scene to define it.")
+
     def onPlaneCountChanged(self, value):
         self.planeCountLabel.setText(f"Number of mirror planes: {value}")
 
+    # --- THIS FUNCTION IS CORRECTED ---
     def onCreateMirrorPlanesClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to create mirror planes."):
             plane_count = self.planeCountSlider.value
@@ -556,11 +728,11 @@ class ProkopecUbelakerGUI(qt.QWidget):
             try:
                 ptp_plane = slicer.util.getNode('PTP')
             except slicer.util.MRMLNodeNotFoundException:
-                self.mirrorPlanesStatusLabel.setText("Error: Create reference planes first.")
+                self.mirrorPlanesStatusLabel.setText("Error: Create reference planes first (Step 3).")
                 return
             landmarks_node = self.landmarksSelector.currentNode()
             if not landmarks_node:
-                self.mirrorPlanesStatusLabel.setText("Error: Select landmarks first.")
+                self.mirrorPlanesStatusLabel.setText("Error: Select landmarks first (Step 2).")
                 return
             rhinion_pos = None
             for i in range(landmarks_node.GetNumberOfControlPoints()):
@@ -572,7 +744,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 return
             maw_node = self.mawSelector.currentNode()
             if not maw_node or maw_node.GetNumberOfControlPoints() < 2:
-                self.mirrorPlanesStatusLabel.setText("Error: Please define the Maximum Aperture Width line.")
+                self.mirrorPlanesStatusLabel.setText("Error: Please define the Maximum Aperture Width (MAW) line.")
                 return
             p1 = np.array([0,0,0]); maw_node.GetNthControlPointPosition(0, p1)
             p2 = np.array([0,0,0]); maw_node.GetNthControlPointPosition(1, p2)
@@ -589,11 +761,19 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 plane.SetOrigin(plane_pos)
                 plane.SetNormal(ptp_normal)
                 plane.SetSize(150, 150)
-                plane.GetDisplayNode().SetOpacity(0.4)
+                
+                displayNode = plane.GetDisplayNode()
+                color = self.colorPalette[i % len(self.colorPalette)]
+                # --- FIX: Use .SetColor() instead of .SetUnselectedColor() ---
+                displayNode.SetColor(color)
+                displayNode.SetSelectedColor(color)
+                displayNode.SetOpacity(0.7) # Keeping your preferred opacity
+                
                 self.mirrorPlanes.append(plane)
                 self.helperNodes.append(plane)
-            self.mirrorPlanesStatusLabel.setText(f"Created {plane_count} mirror planes.")
+            self.mirrorPlanesStatusLabel.setText(f"Created {plane_count} colored mirror planes.")
 
+    # --- THIS FUNCTION IS CORRECTED ---
     def onCreateIntersectionLinesClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to create intersection lines."):
             plane_count = self.planeCountSlider.value
@@ -625,7 +805,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 self.intersectionLinesStatusLabel.setText(f"Error: Prerequisite missing - {e}")
                 return
 
-            def intersect_planes(p1_node, p2_node, line_name):
+            def intersect_planes(p1_node, p2_node, line_name, color):
                 n1, o1 = np.array(p1_node.GetNormal()), np.array(p1_node.GetOrigin())
                 n2, o2 = np.array(p2_node.GetNormal()), np.array(p2_node.GetOrigin())
                 
@@ -646,7 +826,12 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', line_name)
                 line_node.AddControlPoint(point)
                 line_node.AddControlPoint(point + 300 * direction)
-                line_node.GetDisplayNode().SetSelectedColor(1.0, 0.5, 0.0)
+                
+                displayNode = line_node.GetDisplayNode()
+                # --- FIX: Use .SetColor() instead of .SetUnselectedColor() ---
+                displayNode.SetColor(color)
+                displayNode.SetSelectedColor(color)
+                
                 return line_node
 
             count = 0
@@ -655,15 +840,20 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 try:
                     mirror_plane = slicer.util.getNode(f"Plane_{letter}{suffix}")
                     line_name = f"{self.activeProfilePlaneName}_{letter}{suffix}"
-                    line_node = intersect_planes(profile_plane, mirror_plane, line_name)
+                    
+                    # Get the color from the mirror plane to pass to the line
+                    color = mirror_plane.GetDisplayNode().GetColor()
+                    
+                    line_node = intersect_planes(profile_plane, mirror_plane, line_name, color)
                     if line_node:
                         count += 1
                         self.helperNodes.append(line_node)
                 except slicer.util.MRMLNodeNotFoundException:
                     print(f"Could not find mirror plane Plane_{letter}{suffix} to create intersection line.")
                     continue
-            self.intersectionLinesStatusLabel.setText(f"Created {count} intersection lines.")
+            self.intersectionLinesStatusLabel.setText(f"Created {count} colored intersection lines.")
 
+    # --- THIS FUNCTION IS CORRECTED ---
     def onCreateLinesABClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to create lines A and B."):
             plane_count = self.planeCountSlider.value
@@ -686,7 +876,10 @@ class ProkopecUbelakerGUI(qt.QWidget):
             line_a = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f"Line_A{suffix}")
             line_a.AddControlPoint(pos['prosthion'])
             line_a.AddControlPoint(pos['nasion'])
-            line_a.GetDisplayNode().SetSelectedColor(0.0, 1.0, 1.0)
+            displayNode_a = line_a.GetDisplayNode()
+            # --- FIX: Use .SetColor() ---
+            displayNode_a.SetColor(0.0, 1.0, 1.0) # Cyan
+            displayNode_a.SetSelectedColor(0.0, 1.0, 1.0)
             self.helperNodes.append(line_a)
 
             direction = pos['nasion'] - pos['prosthion']
@@ -694,17 +887,21 @@ class ProkopecUbelakerGUI(qt.QWidget):
             line_b = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f"Line_B{suffix}")
             line_b.AddControlPoint(pos['rhinion'] - 150 * direction)
             line_b.AddControlPoint(pos['rhinion'] + 150 * direction)
-            line_b.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)
+            displayNode_b = line_b.GetDisplayNode()
+            # --- FIX: Use .SetColor() ---
+            displayNode_b.SetColor(1.0, 1.0, 0.0) # Yellow
+            displayNode_b.SetSelectedColor(1.0, 1.0, 0.0)
             self.helperNodes.append(line_b)
             self.linesABStatusLabel.setText("Lines A and B created.")
 
     def onFindLineAIntersectionClicked(self):
-        self.find_line_intersections("Line_A", "mirrorA", color=(0.25, 0.88, 0.82))
+        self.find_line_intersections("Line_A", "mirrorA")
 
     def onFindLineBIntersectionClicked(self):
-        self.find_line_intersections("Line_B", "mirrorB", color=(1.0, 1.0, 0.0))
+        self.find_line_intersections("Line_B", "mirrorB")
 
-    def find_line_intersections(self, target_line_name, point_prefix, color):
+    # --- THIS FUNCTION IS CORRECTED ---
+    def find_line_intersections(self, target_line_name, point_prefix):
         with slicer.util.tryWithErrorDisplay(f"Failed to find intersections on {target_line_name}."):
             plane_count = self.planeCountSlider.value
             suffix = f"_{plane_count}p"
@@ -738,7 +935,13 @@ class ProkopecUbelakerGUI(qt.QWidget):
                     
                     point_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f"{point_prefix}_{letter}{suffix}")
                     point_node.AddControlPoint(intersection_point)
-                    point_node.GetDisplayNode().SetSelectedColor(color)
+                    
+                    displayNode = point_node.GetDisplayNode()
+                    line_color = intersecting_line.GetDisplayNode().GetColor()
+                    # --- FIX: Use .SetColor() ---
+                    displayNode.SetColor(line_color)
+                    displayNode.SetSelectedColor(line_color)
+
                     count += 1
                     self.helperNodes.append(point_node)
 
@@ -755,58 +958,73 @@ class ProkopecUbelakerGUI(qt.QWidget):
         urls = {
             4: "https://github.com/user-attachments/files/19318005/nasal.bone.outline.4.mrk.json",
             5: "https://github.com/user-attachments/files/19318009/nasal.bone.outline.5.mrk.json",
-            6: "https://github.com/user-attachments/files/19318010/nasal.bone.outline.6.mrk.json"
+            6: "https://github.com/user-attachments/files/23497912/nose_profile_outline_6.mrk.json"
         }
-        self.download_and_load_markup("nasal_bone_outline", self.bonePointsStatusLabel, urls)
+        node = self.download_and_load_markup("nasal_bone_outline", self.bonePointsStatusLabel, urls, show_step6_image=True)
+        if node:
+            self.nasalBoneOutlineSelector.setCurrentNode(node)
 
     def onDownloadSoftTissueOutlineClicked(self):
         urls = {
             4: "https://github.com/user-attachments/files/19327865/nose.profile.outline.4.mrk.json",
             5: "https://github.com/user-attachments/files/19327866/nose.profile.outline.5.mrk.json",
-            6: "https://github.com/user-attachments/files/19327871/nose.profile.outline.6.mrk.json"
+            6: "https://github.com/user-attachments/files/23497912/nose_profile_outline_6.mrk.json"
         }
-        self.download_and_load_markup("nose_profile_outline", self.softTissueStatusLabel, urls)
+        node = self.download_and_load_markup("nose_profile_outline", self.softTissueStatusLabel, urls)
+        if node:
+            self.softTissueOutlineSelector.setCurrentNode(node)
 
-    def download_and_load_markup(self, node_name_base, status_label, url_map):
+    def download_and_load_markup(self, node_name_base, status_label, url_map, show_step6_image=False):
         with slicer.util.tryWithErrorDisplay(f"Failed to download {node_name_base}."):
-            plane_count = self.planeCountSlider.value
-            suffix = f"_{plane_count}p"
+            plane_count = self.get_plane_count()
+            suffix = self.get_suffix()
             node_name = f"{node_name_base}{suffix}"
             status_label.setText("Downloading landmarks...")
             slicer.app.processEvents()
             
             if plane_count not in url_map:
                 status_label.setText("No file for this plane count.")
-                return
-                
+                return None
+            
             try:
-                old_node = slicer.util.getNode(node_name)
-                slicer.mrmlScene.RemoveNode(old_node)
-            except slicer.util.MRMLNodeNotFoundException:
-                pass
+                # Remove old node with same name
+                try:
+                    old_node = slicer.util.getNode(node_name)
+                    slicer.mrmlScene.RemoveNode(old_node)
+                except slicer.util.MRMLNodeNotFoundException:
+                    pass
                 
-            try:
                 response = requests.get(url_map[plane_count])
                 response.raise_for_status()
                 
                 with tempfile.NamedTemporaryFile(suffix='.mrk.json', delete=False) as temp_file:
                     temp_file.write(response.content)
                     temp_file_path = temp_file.name
-                    
+                
                 outlineNode = slicer.util.loadMarkups(temp_file_path)
                 os.unlink(temp_file_path)
                 
                 if outlineNode:
                     outlineNode.SetName(node_name)
-                    status_label.setText(f"Landmarks loaded. Please adjust positions if needed.")
+                    status_label.setText(f"Landmarks loaded. Adjust positions if needed.")
+                    
+                    # Show image in Step 6 after download
+                    if show_step6_image and hasattr(self, 'step6ImageContainer'):
+                        if not self.step6ImageContainer.isVisible():
+                            self.addImageFromGitHub(self.step6ImageLayout, "6.1.png", width=400, height=280)
+                            self.step6ImageContainer.setVisible(True)
+                    
                     slicer.modules.markups.logic().SetActiveListID(outlineNode)
                     slicer.util.selectModule('Markups')
                     self.helperNodes.append(outlineNode)
+                    return outlineNode  # RETURN THE NODE!
                 else:
                     status_label.setText("Failed to load landmarks from downloaded file.")
+                    return None
             except Exception as e:
                 status_label.setText(f"Error: {str(e)}")
-
+                return None
+            
     def onConnectOutlinesClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to connect outlines."):
             plane_count = self.planeCountSlider.value
@@ -829,7 +1047,9 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f"nasal outline{i+1}{suffix}")
                 line_node.AddControlPoint(points[i])
                 line_node.AddControlPoint(points[i + plane_count])
-                line_node.GetDisplayNode().SetSelectedColor(0.0, 1.0, 0.0)
+                displayNode = line_node.GetDisplayNode()
+                displayNode.SetColor(0.0, 1.0, 0.0)
+                displayNode.SetSelectedColor(0.0, 1.0, 0.0)
                 count += 1
                 self.helperNodes.append(line_node)
             self.predictionStatusLabel.setText(f"Connected {count} outline lines.")
@@ -872,7 +1092,9 @@ class ProkopecUbelakerGUI(qt.QWidget):
 
                     point_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f"bone{i+1}{suffix}")
                     point_node.AddControlPoint(intersection_point)
-                    point_node.GetDisplayNode().SetSelectedColor(1.0, 0.0, 1.0)
+                    displayNode = point_node.GetDisplayNode()
+                    displayNode.SetColor(1.0, 0.0, 1.0)
+                    displayNode.SetSelectedColor(1.0, 0.0, 1.0)
                     count += 1
                     self.helperNodes.append(point_node)
                 except (slicer.util.MRMLNodeNotFoundException, IndexError) as e:
@@ -900,7 +1122,9 @@ class ProkopecUbelakerGUI(qt.QWidget):
                     measurement_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f"nasalbonetoB{i+1}{suffix}")
                     measurement_line.AddControlPoint(mirror_pos)
                     measurement_line.AddControlPoint(bone_pos)
-                    measurement_line.GetDisplayNode().SetSelectedColor(0.8, 0.6, 1.0)
+                    displayNode_m = measurement_line.GetDisplayNode()
+                    displayNode_m.SetColor(0.8, 0.6, 1.0)
+                    displayNode_m.SetSelectedColor(0.8, 0.6, 1.0)
                     self.helperNodes.append(measurement_line)
 
                     length = np.linalg.norm(bone_pos - mirror_pos)
@@ -912,7 +1136,9 @@ class ProkopecUbelakerGUI(qt.QWidget):
                     pred_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f"{pred_name_base}{i+1}{suffix}")
                     pred_line.AddControlPoint(mirror_pos)
                     pred_line.AddControlPoint(end_point)
-                    pred_line.GetDisplayNode().SetSelectedColor(color)
+                    displayNode_p = pred_line.GetDisplayNode()
+                    displayNode_p.SetColor(color)
+                    displayNode_p.SetSelectedColor(color)
                     count += 1
                     self.helperNodes.append(pred_line)
                 except (slicer.util.MRMLNodeNotFoundException, IndexError) as e:
@@ -982,7 +1208,6 @@ class ProkopecUbelakerGUI(qt.QWidget):
             
             self.softTissueStatusLabel.setText(f"Adjusted {adjust_count} points to lines correctly.")
 
-    # --- THIS IS THE CORRECTED FUNCTION ---
     def onCreateErrorsClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to create error measurements."):
             plane_count = self.planeCountSlider.value
@@ -1002,29 +1227,23 @@ class ProkopecUbelakerGUI(qt.QWidget):
 
             error_count = 0
             for i in range(plane_count):
-                # True soft tissue points are 0, 1, 2... (top to bottom)
                 true_point_index = i
-                
-                # Prediction lines are 1, 2, 3... (bottom to top)
-                # We need to pair true point 0 with prediction 'plane_count'
                 prediction_node_index = plane_count - i
 
                 try:
                     true_point_pos = np.array(soft_tissue_node.GetNthControlPointPosition(true_point_index))
-
-                    # This will find all prediction types (mirror, 2mm, custom) for the correctly paired index
                     pred_nodes = slicer.util.getNodes(f"pred soft nose outline *{prediction_node_index}{suffix}")
 
                     for pred_node_name, pred_node in pred_nodes.items():
                         pred_endpoint_pos = np.array(pred_node.GetNthControlPointPosition(1))
-                        
-                        # The error line corresponds to the true point number (i+1)
                         error_line_name = f"pred error{true_point_index+1}{suffix}"
                         
                         error_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', error_line_name)
                         error_line.AddControlPoint(pred_endpoint_pos)
                         error_line.AddControlPoint(true_point_pos)
-                        error_line.GetDisplayNode().SetSelectedColor(0.8, 0.1, 0.1)
+                        displayNode = error_line.GetDisplayNode()
+                        displayNode.SetColor(0.8, 0.1, 0.1)
+                        displayNode.SetSelectedColor(0.8, 0.1, 0.1)
                         error_line.SetLocked(True)
                         error_count += 1
                         self.helperNodes.append(error_line)
@@ -1069,9 +1288,6 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 try:
                     num_str = ''.join(filter(str.isdigit, base_name.split(" ")[-1]))
                     if not num_str: continue
-
-                    # Find the corresponding error line
-                    # The prediction number is the 'flipped' index, we need the 'true' index
                     pred_num = int(num_str)
                     true_num = plane_count - pred_num + 1
 
@@ -1101,17 +1317,35 @@ class ProkopecUbelakerGUI(qt.QWidget):
         clipboard.setText(table_text)
         self.exportStatusLabel.setText("Results copied to clipboard.")
 
-    def onExportResultsClicked(self):
-        fileName, _ = qt.QFileDialog.getSaveFileName(self, "Export Results", "", "CSV Files (*.csv)")
-        if fileName:
-            with slicer.util.tryWithErrorDisplay("Failed to export results."):
-                with open(fileName, 'w', newline='') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow([self.measurementsTable.horizontalHeaderItem(i).text() for i in range(self.measurementsTable.columnCount)])
-                    for row in range(self.measurementsTable.rowCount):
-                        row_data = [self.measurementsTable.item(row, col).text() if self.measurementsTable.item(row, col) else "" for col in range(self.measurementsTable.columnCount)]
-                        writer.writerow(row_data)
-                self.exportStatusLabel.setText(f"Results exported to {os.path.basename(fileName)}.")
+        def onExportResultsClicked(self):
+            result = qt.QFileDialog.getSaveFileName(self, "Export Results", "", "CSV Files (*.csv)")
+        
+            # Check if we got a result (user didn't cancel)
+            if not result or len(result) == 0:
+                self.exportStatusLabel.setText("Export cancelled.")
+                return
+            
+            # Get the filename (handle both tuple and single value returns)
+            if isinstance(result, tuple):
+                fileName = result[0]
+            else:
+                fileName = result
+            
+            # Check if user actually entered a filename
+            if not fileName or fileName == "":
+                self.exportStatusLabel.setText("Export cancelled.")
+                return
+            
+            # Now proceed with saving
+            if fileName:
+                with slicer.util.tryWithErrorDisplay("Failed to export results."):
+                    with open(fileName, 'w', newline='') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow([self.measurementsTable.horizontalHeaderItem(i).text() for i in range(self.measurementsTable.columnCount())])
+                        for row in range(self.measurementsTable.rowCount()):
+                            row_data = [self.measurementsTable.item(row, col).text() if self.measurementsTable.item(row, col) else "" for col in range(self.measurementsTable.columnCount())]
+                            writer.writerow(row_data)
+                    self.exportStatusLabel.setText(f"Results exported to {os.path.basename(fileName)}.")
 
 # --- This part runs the GUI ---
 if not hasattr(slicer, 'ProkopecUbelakerGUIWidget') or not slicer.ProkopecUbelakerGUIWidget.isVisible():
