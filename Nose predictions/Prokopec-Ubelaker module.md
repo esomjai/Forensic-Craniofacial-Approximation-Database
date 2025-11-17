@@ -1,7 +1,5 @@
 ```python
-# A beginner-friendly GUI for the Prokopec-Ubelaker nasal prediction method
-# This version is corrected for 3D Slicer 5.8.1 and includes the user-requested MSP plane feature and all UI/logic fixes.
-# Just copy-paste this entire script into 3D Slicer's Python console!
+
 
 import os
 import vtk
