@@ -24,8 +24,7 @@ The main goal for this guide is the easy reproducibility of the Tedeschi-Olivier
 
 
 ### Landmarks in this guide 
-
-[Tedeschi_Oliviera_lmrks.mrk.json](https://github.com/user-attachments/files/23657455/Tedeschi_Oliviera_lmrks.mrk.json)
+[Tedeschi_Oliviera_lmrks.mrk.json](https://github.com/user-attachments/files/23657831/Tedeschi_Oliviera_lmrks.mrk.json)
 
 
 
@@ -37,7 +36,7 @@ The main goal for this guide is the easy reproducibility of the Tedeschi-Olivier
 | 3            | 4                | inion        | inion        | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Martin, 1928[^5]; Knussmann, 1988[^6]; Caple & Stephan 2016[^4] |
 | 4             | 5                | nasion       | nasion       | Intersection of the nasofrontal sutures in the median plane | Martin, 1928[^5]; Knussmann, 1988[^6]; Caple & Stephan 2016[^4] |
 | 5             | 6                | bregma       | bregma       | Where the sagittal and coronal sutures meet. | Martin, 1928[^5]; Knussmann, 1988[^6]; Caple & Stephan 2016[^4]|
-| 6             | 7                | pogonion       | pogonion       | Most anterior median point on the mental eminence of the mandible | Martin, 1928[^5]; Knussmann, 1988[^6]; Caple & Stephan 2016[^4]|
+
 
 
 ### Illustration of the method
