@@ -115,7 +115,7 @@ class TedeschiOlivieraGUI:
         
         mspInfoLabel = qt.QLabel(
             "<b>MSP (3-point):</b> Simple plane through rhinion, prosthion, and nasion<br>"
-            "<b>INB+MSP (5-point):</b> Best-fit plane through rhinion, prosthion, inion, nasion, and bregma (more robust)"
+            "<b>INB+MSP (5-point):</b> Best-fit plane through rhinion, prosthion, inion, nasion, and bregma"
         )
         mspInfoLabel.setWordWrap(True)
         mspInfoLabel.setStyleSheet("font-size: 10px; color: #555; margin-top: 5px;")
