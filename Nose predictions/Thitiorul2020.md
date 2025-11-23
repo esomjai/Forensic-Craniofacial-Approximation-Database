@@ -115,8 +115,7 @@ Now, I would hide the **reference nasion** markup list from the scene to avoid c
 
 ### Landmarks in this guide 
 
-
-[Thitiorul_hard_tissue.mrk.json](https://github.com/user-attachments/files/20638385/Thitiorul_hard_tissue.mrk.json)
+[Thitiorul_hard_tissue.mrk.json](https://github.com/user-attachments/files/23696758/Thitiorul_hard_tissue.mrk.json)
 
 
 > [!WARNING]
@@ -921,7 +920,8 @@ You may notice the "flipping" options in this code - for a while when developing
 
 ### Soft tissue landmark definition and error evaluation
 
-Click here to download: [true_Thitiorul_soft_tissue.mrk.json](https://github.com/user-attachments/files/20656265/true_Thitiorul_soft_tissue.mrk.json)
+Click here to download:[true_Thitiorul_soft_tissue.mrk.json](https://github.com/user-attachments/files/23696755/true_Thitiorul_soft_tissue.mrk.json)
+
 
 The predicted landmarks do not have any "definitions" attached to them in the Markups module - unlike the other .json files you encountered. That is because their definitions are the same as the following markup file which you'd have to allocate on the scan's soft tissue to evaluate how well the prediction did. 
 
