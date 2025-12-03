@@ -10,7 +10,7 @@ When noticing any errors, please contact me!
 
 This is a work in progress repository, so take everything with a pinch of salt :)
 
-[<kbd> <br> Nose approximation methods <br> </kbd>][https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/tree/c3433ee2bc12cfd122caaf5b6425a882edc56cf9/Nose%20predictions]
+<kbd> <br> Nose approximation methods <br> </kbd> [https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/tree/c3433ee2bc12cfd122caaf5b6425a882edc56cf9/Nose%20predictions]
 
 
 <img src="https://github.com/user-attachments/assets/87b7a617-e40c-455b-9880-90ee54df7536" width="400">
