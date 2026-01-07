@@ -27,7 +27,7 @@ The method followed here will split into two: the first will be called  **Gerasi
 
 ### Summary
 
-1. [Establish the INB plane](#inb-plane) as defined by Rynn et al., 2010[^10], which serves as the reference plane for generating a standardized profile view.
+1. [Establish the profile plane](#profile-plane) which serves as the reference plane for generating a standardized profile view.
 2. Prepare the CT scan by either:
    - [Cutting the Bone Segmentation](#profile-view-model) along the INB plane, or
    - Using the [Opacity toggle](#maltais-lapointe-2016s-method) to create a clear view.
@@ -86,11 +86,12 @@ Credit to Tinotenda Chiyangwa©[^15]
 | skull               | 226         |3071 (or maximum available)       |
 
 
-### INB plane
+### Profile plane
 
-To help with the side profile, we will establish the “INB” plane as defined by Rynn et al., 2010[^10].
+To help with the side profile, we will establish either MSP or INB plane, depending on landmark availability. 
 
-> A midsagittal plane (INB) which bisected the inion, nasion, and bregma.
+> “INB” plane as defined by Rynn et al., 2010[^10].: A midsagittal plane (INB) which bisected the inion, nasion, and bregma.
+>  “MSP” plane  defined by any landmarks described as midline: nasion, acanthion and rhinion
 
 Download the markups file for this method: [Gerasimow_landmarks.mrk.json](./path/to/Gerasimow_landmarks.mrk.json). Then allocate the first three landmarks (nasion, inion, bregma) and copy and paste the following code:
 
@@ -104,24 +105,57 @@ import numpy as np
 import slicer
 
 # Get the points from the "Gerasimow_landmarks" node
-hardTissueNode = slicer.util.getNode('Gerasimow_landmarks')
-point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
-point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
-point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
+hardTissueNode = slicer.util. getNode('Gerasimow_landmarks')
+nasion = np.array(hardTissueNode.GetNthControlPointPosition(0))    # point1: nasion
+inion = np.array(hardTissueNode.GetNthControlPointPosition(1))     # point2: inion
+bregma = np.array(hardTissueNode.GetNthControlPointPosition(2))    # point3: bregma
+
+# Calculate the centroid (average of the three points)
+centroid = (nasion + inion + bregma) / 3.0
 
 # Calculate the normal of the plane defined by the three points
-v1 = point2 - point1
-v2 = point3 - point1
+v1 = inion - nasion
+v2 = bregma - nasion
 planeNormal = np.cross(v1, v2)
 planeNormal = planeNormal / np.linalg.norm(planeNormal)  # Normalize the normal vector
 
 # Create a new plane node
 newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'INB')
 
-# Set the origin of the new plane to the first point
-newPlaneNode.SetOrigin(point1)
+# Set the origin of the new plane to the centroid
+newPlaneNode.SetOrigin(centroid)
 
 # Set the normal of the new plane
+newPlaneNode.SetNormal(planeNormal)
+```
+</details>
+
+<details>
+<summary>Code for MSP</summary>
+```python
+	#MSP plane#
+
+import numpy as np
+import slicer
+
+#Get the points from the "Gerasimow_landmarks" node
+hardTissueNode = slicer.util.getNode('Gerasimow_landmarks')
+nasion = np.array(hardTissueNode.GetNthControlPointPosition(0))
+acanthion = np.array(hardTissueNode.GetNthControlPointPosition(4))
+rhinion = np.array(hardTissueNode.GetNthControlPointPosition(3))
+
+#Calculate the centroid (average of the three points)
+centroid = (nasion + acanthion + rhinion) / 3.0
+
+#Calculate the normal of the plane
+v1 = acanthion - nasion
+v2 = rhinion - nasion
+planeNormal = np.cross(v1, v2)
+planeNormal = planeNormal / np.linalg.norm(planeNormal)
+
+#Create plane with origin at centroid
+newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'MSP')
+newPlaneNode.SetOrigin(centroid)
 newPlaneNode.SetNormal(planeNormal)
 ```
 </details>
