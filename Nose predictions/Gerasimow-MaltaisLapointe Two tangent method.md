@@ -194,7 +194,7 @@ In case still need the red/green/yellow slice windows for precise landmark place
 
 ### Profile view model
 
-For the T2 (tangent following the direction of the anterior nasal spine) both in original Gerasimow and the following Maliaais-LaPointe method, a profile view (of the Bone model cut along the profile plane) will be useful. 
+For the T2 (tangent following the direction of the anterior nasal spine) both in original Gerasimow and the following Maltais-LaPointe method, a profile view (of the Bone model cut along the profile plane) will be useful. 
 
 <details>
 <summary>Profile view model intructions</summary>
@@ -235,13 +235,15 @@ And you should have the following individual views (excluding/hiding the origina
 You can now allocate the remainder of the landmarks on either model - they should appear on ALL of them. 
 </details>
 
-### Establishing the tangents
+### Establishing the tangents (Gerasimow)
 If you want to do this by hand, you can follow the steps below. 
 Alternatively, you can use the [GUI](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/19d56a56ac868fd39836058d551f5d054fe5bf53/Nose%20predictions/GerasimowMaltaisLapointe%20GUI.md) 
 
+If you want to just re-cerate Gerasimow's method, follow the steps creating tangent1 and tangent2, with the adjusting codes. 
+
 Re-orient the view of either your left-bone model to see its right side OR your right-bone model to see its left side to look inside the cranium: 
 
-You'll have to establish the two tngents by hand
+You'll have to establish the two tangents by hand
 For the  the first tangent: 
 1) Draw a line by hand via “Markups”>”+Line” along the anterior 1/3rd of the nasal bones in side profile view and name it “tangent1” by double clicking on the name.
 <img src="https://github.com/user-attachments/assets/3bc8fbe5-4b0c-4ce9-b81f-bcb866b60e63" width="500">
@@ -435,9 +437,13 @@ They also introduce an additional new reference point for error rate measures; R
 
 Video showing the allocation, projection and elongation of 4 tangents.
 
+You'll need to draw all these tangents by hand and name them "tangent1", "tangent2", "tangent3" and "tangent4" for the following code to work. You'll also need to place R2. 
+
 https://github.com/user-attachments/assets/9d0c3401-cbd3-4846-9670-b5050c024b84 
 
-To place the second point of reference in addition to the pronasale, make "tangent2" visible in the "Markups" module, then change into the Skin segmentation to place these landmarks found in "Gerasimow_landmarks" on both sides. In the original study, this is looked at in 2D, so is one point, but in 3D Slicer and 3D view we will take the line connecting them and where it "pierces" the INB plane. This new point will be added to the end of the pre-existing node list. Then, the created intersection points will be connected to the soft tissue pronasale and R" to measure errors; the ones in relation to the pronasale with a deep red, while the R2 ones with a bright coral.
+To place the second point of reference in addition to the pronasale, make "tangent2" visible in the "Markups" module, then change into the Skin segmentation to place these landmarks found in "Gerasimow_landmarks" on both sides. In the original study, this is looked at in 2D, so is one point, but in 3D Slicer and 3D view we will take the line connecting them and where it "pierces" the INB plane. This new point will be added to the end of the pre-existing node list. Then, the created intersection points will be connected to the soft tissue pronasale and R2 to measure errors; the ones in relation to the pronasale with a deep red, while the R2 ones with a bright coral.
+
+Alternatively, use the [GUI](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/19d56a56ac868fd39836058d551f5d054fe5bf53/Nose%20predictions/GerasimowMaltaisLapointe%20GUI.md) for programmatically established *tangent4* and *R2* based on two nasal floor lines. 
 
 <details>
 <summary>Code for tangents</summary>
