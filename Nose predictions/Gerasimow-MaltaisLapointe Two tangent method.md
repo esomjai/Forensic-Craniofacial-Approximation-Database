@@ -157,8 +157,7 @@ planeNormal = planeNormal / np.linalg.norm(planeNormal)
 newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'MSP')
 newPlaneNode.SetOrigin(centroid)
 newPlaneNode.SetNormal(planeNormal)
-```
-</details>
+```</details>
 
 
 <img src="https://github.com/user-attachments/assets/77eaf9ee-b9a5-46ab-94cf-3bdd313f6985" width="500">
