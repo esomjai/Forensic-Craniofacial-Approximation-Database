@@ -138,10 +138,10 @@ newPlaneNode.SetNormal(planeNormal)
 ```
 </details>
 
-<details>
 
 If using the nasion, acanthion and rhinion landmarks, use this snippet: 
 
+<details>
 <summary>Code for MSP</summary>
 
 ```python
