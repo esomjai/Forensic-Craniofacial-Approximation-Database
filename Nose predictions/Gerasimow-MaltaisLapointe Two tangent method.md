@@ -86,14 +86,22 @@ Credit to Tinotenda Chiyangwa©[^15]
 | skull               | 226         |3071 (or maximum available)       |
 
 
+If you want to see how the code snippets individually build up these two methods, please read on.
+If you rather employ a graphic user interface, copy and paste the contents of this [link:](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/19d56a56ac868fd39836058d551f5d054fe5bf53/Nose%20predictions/GerasimowMaltaisLapointe%20GUI.md)  into the python console. 
+
+
 ### Profile plane
 
 To help with the side profile, we will establish either MSP or INB plane, depending on landmark availability. 
 
-> “INB” plane as defined by Rynn et al., 2010[^10].: A midsagittal plane (INB) which bisected the inion, nasion, and bregma.
->  “MSP” plane  defined by any landmarks described as midline: nasion, acanthion and rhinion
+“INB” plane as defined by Rynn et al., 2010[^10].: A midsagittal plane (INB) which bisected the inion, nasion, and bregma.
 
-Download the markups file for this method: [Gerasimow_landmarks.mrk.json](./path/to/Gerasimow_landmarks.mrk.json). Then allocate the first three landmarks (nasion, inion, bregma) and copy and paste the following code:
+
+“MSP” plane  defined by any landmarks described as midline: nasion, acanthion and rhinion
+
+Download the markups file for this method: [Gerasimow_landmarks.mrk.json](./path/to/Gerasimow_landmarks.mrk.json). Then choose the plane you can create based on landmarks that can be placed on the skull you work with, allocate the  landmarks and copy and paste the following code:the code snippet of your choosing. 
+
+The codes use a centroid origin, calculated from the landmarks that weights all plane-defining landmarks equally and  normal vector based on the same landmarks. 
 
 <details>
 <summary>Code for INB</summary>
@@ -131,7 +139,9 @@ newPlaneNode.SetNormal(planeNormal)
 </details>
 
 <details>
-	
+
+If using the nasion, acanthion and rhinion landmarks, use this snippet: 
+
 <summary>Code for MSP</summary>
 
 ```python
