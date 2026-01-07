@@ -1,6 +1,5 @@
 
-```
-python
+```python
 
 import numpy as np
 import slicer
