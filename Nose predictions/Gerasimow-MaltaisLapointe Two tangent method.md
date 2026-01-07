@@ -184,10 +184,6 @@ The generated INB plane view.
 INB extended via the toggles (dots).
 
 
-
-## Gerasimow's method
-
-
 ### Segmentation
 [link to step-by-step](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/003_Roi%20vs%20Segmentation.md)
 
@@ -198,7 +194,7 @@ In case still need the red/green/yellow slice windows for precise landmark place
 
 ### Profile view model
 
-For the original Gerasimow method, a profile view will be useful. 
+For the T2 (tangent following the direction of the anterior nasal spine) both in original Gerasimow and the following Maliaais-LaPointe method, a profile view (of the Bone model cut along the profile plane) will be useful. 
 
 <details>
 <summary>Profile view model intructions</summary>
@@ -240,46 +236,45 @@ You can now allocate the remainder of the landmarks on either model - they shoul
 </details>
 
 ### Establishing the tangents
+If you want to do this by hand, you can follow the steps below. 
+Alternatively, you can use the [GUI](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/19d56a56ac868fd39836058d551f5d054fe5bf53/Nose%20predictions/GerasimowMaltaisLapointe%20GUI.md) 
+
 Re-orient the view of either your left-bone model to see its right side OR your right-bone model to see its left side to look inside the cranium: 
 
-You'll have two options to establish the first tangent: 
+You'll have to establish the two tngents by hand
+For the  the first tangent: 
 1) Draw a line by hand via “Markups”>”+Line” along the anterior 1/3rd of the nasal bones in side profile view and name it “tangent1” by double clicking on the name.
 <img src="https://github.com/user-attachments/assets/3bc8fbe5-4b0c-4ce9-b81f-bcb866b60e63" width="500">
 
-2) Or if you’d like the first tangent to be the direction from nasion to rhinion, use the code “tangent1”
-
-<img src="https://github.com/user-attachments/assets/27edb95e-5669-40c7-bfda-333a8d772e4f" width="500">
-
-```python
-F=getNode('Gerasimow_landmarks')  
-#opens up the collection of point you stored in the markup file#
-L=slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
-firstPoint = F.GetNthControlPointPositionVector(0)     
-#number is the number on list of saved points#
-L.AddControlPoint(firstPoint)
-secondPoint = F.GetNthControlPointPositionVector(3)
-L.AddControlPoint(secondPoint)
-L.SetName('tangent1')     
-#name of your measurements#
-```
-
-Then draw a second line in the general direction of where the acanthion is pointing (like an arrow) and name it “tangent2”. Do not worry if it is slanted drastically to the opposite side – the next code snippet will correct that. 
+2) Then draw a second line in the general direction of where the acanthion is pointing (like an arrow) and name it “tangent2”. Do not worry if it is slanted drastically to the opposite side – the next code snippet will correct that. 
 ![image](https://github.com/user-attachments/assets/9ac99a96-4a61-4316-ae92-27b3e44836ee)
 
 
-Now, use the **tangents to INB** code that projects the lines to the INB and ensures that tangent 2 bisects the acanthion.
+Now, use the **tangents to profile** code that projects the lines to the INB and ensures that tangent 2 bisects the acanthion.
 
 <details>
-<summary>Code for tangents to INB</summary>
+<summary>Code for tangents to profile</summary>
 
 ```python
-###Tangents to INB###
+###Tangents to Plane (INB or MSP)###
 
 import slicer
 import numpy as np
 
-# Retrieve the INB plane
-INB_plane = slicer.util.getNode('INB')
+# Try to retrieve the plane (check for both INB and MSP)
+plane = None
+plane_name = ""
+try:
+    plane = slicer.util.getNode('INB')
+    plane_name = "INB"
+    print("Using INB plane")
+except:
+    try:
+        plane = slicer.util.getNode('MSP')
+        plane_name = "MSP"
+        print("Using MSP plane")
+    except:
+        raise RuntimeError("Neither INB nor MSP plane found!  Please create one first.")
 
 # Retrieve the point from hard tissue
 hard_tissue = slicer.util.getNode('Gerasimow_landmarks')
@@ -293,12 +288,12 @@ def project_point_onto_plane(point, plane_origin, plane_normal):
     return projected_point
 
 # Retrieve tangent1 and tangent2
-tangent1 = slicer.util.getNode('tangent1')
+tangent1 = slicer.util. getNode('tangent1')
 tangent2 = slicer.util.getNode('tangent2')
 
-# Project tangent1 and tangent2 onto the INB plane
-plane_origin = INB_plane.GetOrigin()
-plane_normal = INB_plane.GetNormal()
+# Project tangent1 and tangent2 onto the plane
+plane_origin = plane. GetOrigin()
+plane_normal = plane.GetNormal()
 
 tangent1_start = tangent1.GetNthControlPointPosition(0)
 tangent1_end = tangent1.GetNthControlPointPosition(1)
@@ -322,6 +317,8 @@ bisect_vector = np.array(point) - midpoint
 new_tangent2_end = midpoint + bisect_vector
 
 tangent2.SetNthControlPointPosition(1, *new_tangent2_end)
+
+print(f"Tangents projected onto {plane_name} plane and tangent2 adjusted to bisect point")
 ```
 </details>
 
@@ -424,7 +421,7 @@ This method does not require you to cut the model in the INB plane - but you wil
 
 <img src="https://github.com/user-attachments/assets/e9930a26-d832-4da6-8446-ccb3d7400b50" width="500">
 
-They established additionl tangents: 
+They established additional tangents: 
 Tangent 3 (T3) follows the last 1–2 mm of the nasal bone and tangent 4 (T4) follows the direction of the nasal floor to the right of the anterior nasal spine, 
 The nasal spine line is defined as the same as tangent 2.
 They also introduce an additional new reference point for error rate measures; R2 is where the nasal spine line meets the soft tissue nose (R1=pronasale). 
@@ -446,7 +443,6 @@ To place the second point of reference in addition to the pronasale, make "tange
 <summary>Code for tangents</summary>
 
 ```python
-
 ####Re-creating the R2 point#####
 import numpy as np
 import slicer
@@ -459,14 +455,23 @@ point6 = np.array(landmarks_node.GetNthControlPointPosition(6))
 point7 = np.array(landmarks_node.GetNthControlPointPosition(7))
 
 # Create a new line node called "RR2-LR2"
-line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'RR2-LR2')
+line_node = slicer. mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'RR2-LR2')
 
 # Set the control points of the new line
 line_node.AddControlPoint(vtk.vtkVector3d(*point6))
 line_node.AddControlPoint(vtk.vtkVector3d(*point7))
 
-# Retrieve the "INB" plane node
-plane_node = slicer.util.getNode('INB')
+# Try to retrieve the plane node (check for both INB and MSP)
+plane_node = None
+try:
+    plane_node = slicer.util.getNode('INB')
+    print("Using INB plane")
+except:
+    try:
+        plane_node = slicer.util.getNode('MSP')
+        print("Using MSP plane")
+    except:
+        raise RuntimeError("Neither INB nor MSP plane found!  Please create one first.")
 
 # Get the origin and normal of the plane
 plane_origin = np.array(plane_node.GetOrigin())
@@ -479,7 +484,7 @@ def find_intersection_with_plane(line_start, line_end, plane_origin, plane_norma
     intersection_point = line_start + t * line_dir
     return intersection_point
 
-# Find the intersection point of the "RR2-LR2" line with the "INB" plane
+# Find the intersection point of the "RR2-LR2" line with the plane
 intersection_point = find_intersection_with_plane(point6, point7, plane_origin, plane_normal)
 
 # Add the intersection point to the "Gerasimow landmarks" node
@@ -488,14 +493,25 @@ landmarks_node.AddControlPoint(intersection_point, 'R2')
 # Update the scene
 slicer.app.processEvents()
 
-###Tangents to INB & elongation###
+###Tangents to Plane & elongation###
 
 import slicer
 import numpy as np
 
-# Retrieve the INB plane
-INB_plane = slicer.util.getNode('INB')
-
+# Try to retrieve the plane (check for both INB and MSP)
+plane = None
+plane_name = ""
+try:
+    plane = slicer.util.getNode('INB')
+    plane_name = "INB"
+    print("Using INB plane for tangent projection")
+except:
+    try:
+        plane = slicer. util.getNode('MSP')
+        plane_name = "MSP"
+        print("Using MSP plane for tangent projection")
+    except:
+        raise RuntimeError("Neither INB nor MSP plane found! Please create one first.")
 
 # Function to project a point onto a plane
 def project_point_onto_plane(point, plane_origin, plane_normal):
@@ -510,9 +526,9 @@ tangent2 = slicer.util.getNode('tangent2')
 tangent3 = slicer.util.getNode('tangent3')
 tangent4 = slicer.util.getNode('tangent4')
 
-# Project tangents onto the INB plane
-plane_origin = INB_plane.GetOrigin()
-plane_normal = INB_plane.GetNormal()
+# Project tangents onto the plane
+plane_origin = plane.GetOrigin()
+plane_normal = plane.GetNormal()
 
 tangent1_start = tangent1.GetNthControlPointPosition(0)
 tangent1_end = tangent1.GetNthControlPointPosition(1)
@@ -544,8 +560,10 @@ tangent3.SetNthControlPointPosition(1, *tangent3_end_projected)
 tangent4.SetNthControlPointPosition(0, *tangent4_start_projected)
 tangent4.SetNthControlPointPosition(1, *tangent4_end_projected)
 
+print(f"Tangents projected onto {plane_name} plane")
 
-#import slicer
+###Elongate tangents###
+
 import numpy as np
 
 # Function to calculate the direction vector of a line
@@ -555,7 +573,7 @@ def calculate_direction_vector(start, end):
 # Function to find the intersection point of two lines
 def find_intersection_point(line1_start, line1_dir, line2_start, line2_dir):
     # Solve for t1 and t2 where line1_start + t1 * line1_dir = line2_start + t2 * line2_dir
-    A = np.array([line1_dir, -line2_dir]).T
+    A = np. array([line1_dir, -line2_dir]).T
     b = np.array(line2_start) - np.array(line1_start)
     t = np.linalg.lstsq(A, b, rcond=None)[0]
     intersection_point = line1_start + t[0] * line1_dir
@@ -572,7 +590,7 @@ def elongate_line(start, end, elongation_distance):
 # Retrieve tangents
 tangent1 = slicer.util.getNode('tangent1')
 tangent2 = slicer.util.getNode('tangent2')
-tangent3 = slicer.util.getNode('tangent3')
+tangent3 = slicer. util.getNode('tangent3')
 tangent4 = slicer.util.getNode('tangent4')
 
 # Get the start and end points of tangents
@@ -585,6 +603,11 @@ for tangent in tangents:
     new_start, new_end = elongate_line(start, end, elongation_distance)
     tangent.SetNthControlPointPosition(0, *new_start)
     tangent.SetNthControlPointPosition(1, *new_end)
+
+print("Tangents elongated by 100mm in both directions")
+
+###Find intersection points###
+
 import numpy as np
 
 # Create a new markups node list called "prediction points"
@@ -597,7 +620,7 @@ def calculate_direction_vector(start, end):
 # Function to find the intersection point of two lines
 def find_intersection_point(line1_start, line1_dir, line2_start, line2_dir):
     # Solve for t1 and t2 where line1_start + t1 * line1_dir = line2_start + t2 * line2_dir
-    A = np.array([line1_dir, -line2_dir]).T
+    A = np. array([line1_dir, -line2_dir]).T
     b = np.array(line2_start) - np.array(line1_start)
     t = np.linalg.lstsq(A, b, rcond=None)[0]
     intersection_point = line1_start + t[0] * line1_dir
@@ -605,7 +628,7 @@ def find_intersection_point(line1_start, line1_dir, line2_start, line2_dir):
 
 # Retrieve tangents
 tangent1 = slicer.util.getNode('tangent1')
-tangent2 = slicer.util.getNode('tangent2')
+tangent2 = slicer.util. getNode('tangent2')
 tangent3 = slicer.util.getNode('tangent3')
 tangent4 = slicer.util.getNode('tangent4')
 
@@ -646,6 +669,10 @@ prediction_points.AddControlPoint(T1T4intersection_point, 'pred T1-T4')
 prediction_points.AddControlPoint(T3T2intersection_point, 'pred T3-T2')
 prediction_points.AddControlPoint(T3T4intersection_point, 'pred T3-T4')
 
+print("Prediction points created")
+
+###Create error measurement lines###
+
 import slicer
 import numpy as np
 
@@ -678,6 +705,7 @@ create_line_between_points(8, 1, 'R2 T1-T4 pred error', (255/255, 69/255, 0/255)
 create_line_between_points(8, 2, 'R2 T3-T2 pred error', (255/255, 69/255, 0/255), node1_name='Gerasimow_landmarks', node2_name='prediction points')
 create_line_between_points(8, 3, 'R2 T3-T4 pred error', (255/255, 69/255, 0/255), node1_name='Gerasimow_landmarks', node2_name='prediction points')
 
+print("Error measurement lines created")
 ```
 
 
