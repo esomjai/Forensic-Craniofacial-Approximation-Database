@@ -1,3 +1,6 @@
+
+''' python
+
 import numpy as np
 import slicer
 import qt
@@ -1267,3 +1270,5 @@ class PurkaitSinghGUI(qt.QWidget):
 # Create and show the widget
 widget = PurkaitSinghGUI()
 widget.show()
+
+'''
