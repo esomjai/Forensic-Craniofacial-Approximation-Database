@@ -4,7 +4,7 @@
 1. - [Literature context](#literature-context)
    - [Summary](#summary)
    - [Landmarks](#landmarks-in-this-guide-for-both-methods)
-2. [INB plane](#inb-plane)
+2. [Profile plane](#profile-plane)
 3. [Gerasimow's method](#gerasimows-method)
    - [Segmentation](#segmentation)
    - [Profile view model](#profile-view-model)
