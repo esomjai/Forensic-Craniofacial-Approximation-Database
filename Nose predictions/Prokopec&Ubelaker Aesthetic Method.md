@@ -474,7 +474,9 @@ Now, your "Control Points">"Coordinates" menu should be populated by the two end
 Depending on your choosing, run the codes for the 4/5/6 mirror planes - or all three for comparison. 
 
 <details>
+	
 <summary>Code for 4 mirror planes</summary>
+
 ```python
 #4 mirror planes#
 import slicer
@@ -517,12 +519,14 @@ for i, pos in enumerate(planePositions):
 ```
 Image if the code for 4 mirror planes is employed:
 ![image](https://github.com/user-attachments/assets/c684f261-e427-4d4d-8831-17dc7d7e3bbe)
+
 </details>
 
 
 <details>
+
 <summary>Code for 5 mirror planes</summary>
-#### Code for 5 mirror planes
+
 ```python
 #5 mirror planes#
 import slicer
@@ -562,15 +566,19 @@ for i, pos in enumerate(planePositions):
     planeNode.SetNormal(ptpPlaneNormal)
 ```
 Image if the code for 5 mirror planes is employed: 
+
 ![image](https://github.com/user-attachments/assets/ea7b9888-95b6-436c-892d-ada9f77f2a6b)
+
+
 </details>
 
 
 <details>
+	
 <summary>Code for 6 mirror planes</summary>
-####Code for 6 mirror planes
+
 ```python
-#6 mirror planes#
+
 import slicer
 import numpy as np
 
@@ -620,10 +628,7 @@ This step establishes the 4/5/6 intersection lines where the individual mirror p
 
 <details>
 
-
 <summary>Code for 4 intersection lines</summary>
-
-####Code for 4 intersection lines with 4 mirror planes
 
 This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_D`.
 
@@ -722,11 +727,10 @@ for mirror_plane_name in MIRROR_PLANES:
 
 </details>
 
+
 <details>
 
 <summary>Code for 5 intersection lines</summary>
-
-####Code for 5 intersection lines with 5 mirror planes
 
 This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_E`.
 
@@ -825,11 +829,12 @@ Image after the 5 line code is iterated:
 
 </details>
 
+
+
 <details>
 
 <summary>Code for 6 intersection lines</summary>
 
-####Code for 6 intersection lines with 6 mirror planes
 
 This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_F`.
 
@@ -1000,53 +1005,121 @@ The intersection points (called “mirror points” in the code) of planes A, B,
 
 <summary>4 plane Line B intersection </summary>
 
-#### Code for Line B intersection points 4 planes
+### Line B Intersection Points
+
+This step finds the intersection points between the reference line (`Line_B`) and the sagittal intersection lines (`MSP_A`/`INB_A`, `MSP_B`/`INB_B`, etc.) created in the previous step. The new intersection points are created as uniquely named fiducials.
+
+<details>
+
+<summary>4 plane Line B intersection</summary>
+
+#### Code for Line B intersection points with 4 planes
 
 ```python
-###B intersection points 4####
 import numpy as np
 import slicer
 
-# Assuming 'Line_B' and 'INB_A', 'INB_B', 'INB_C', 'INB_D' are already defined in the scene
-lineNode_B = slicer.util.getNode('Line_B')
-lines = ['INB_A', 'INB_B', 'INB_C', 'INB_D']
+# --- Configuration ---
+main_line_name = 'Line_B'
+line_prefix_priority = ['MSP', 'INB']
+mirror_plane_suffixes = ['A', 'B', 'C', 'D']
+fiducial_color = (255/255, 105/255, 180/255) # Hot Pink
+
+# --- Main Script ---
 
 def get_line_points(lineNode):
-    startPoint = np.array([0.0, 0.0, 0.0])
-    endPoint = np.array([0.0, 0.0, 0.0])
-    lineNode.GetNthControlPointPositionWorld(0, startPoint)
-    lineNode.GetNthControlPointPositionWorld(1, endPoint)
+    """Safely get start and end points of a markups line."""
+    if not lineNode or lineNode.GetNumberOfControlPoints() < 2:
+        return None, None
+    startPoint = np.zeros(3)
+    endPoint = np.zeros(3)
+    lineNode.GetNthControlPointPosition(0, startPoint)
+    lineNode.GetNthControlPointPosition(1, endPoint)
     return startPoint, endPoint
 
 def find_line_intersection(line1Node, line2Node):
-    # Get points and directions of the lines
+    """Finds the 3D intersection point of two lines."""
     p1, p2 = get_line_points(line1Node)
-    d1 = p2 - p1
     q1, q2 = get_line_points(line2Node)
+
+    if p1 is None or q1 is None:
+        return None
+
+    d1 = p2 - p1
     d2 = q2 - q1
 
-    # Normalize directions
-    d1 /= np.linalg.norm(d1)
-    d2 /= np.linalg.norm(d2)
+    norm_d1 = np.linalg.norm(d1)
+    norm_d2 = np.linalg.norm(d2)
 
-    # Calculate intersection
+    if norm_d1 == 0 or norm_d2 == 0:
+        return None # Line has zero length
+
+    d1 /= norm_d1
+    d2 /= norm_d2
+
     cross_d1_d2 = np.cross(d1, d2)
-    if np.linalg.norm(cross_d1_d2) == 0:
+    norm_cross = np.linalg.norm(cross_d1_d2)
+
+    if norm_cross < 1e-6:
         return None  # Lines are parallel
 
-    t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / np.linalg.norm(cross_d1_d2)**2
-    intersection_point = p1 + t * d1
-    return intersection_point
+    # Solve for the intersection point
+    try:
+        t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / norm_cross**2
+        intersection_point = p1 + t * d1
+        return intersection_point
+    except Exception as e:
+        print(f"Could not calculate intersection: {e}")
+        return None
 
-for i, line_name in enumerate(lines):
-    line2Node = slicer.util.getNode(line_name)
-    intersection_point = find_line_intersection(lineNode_B, line2Node)
+# --- Execution ---
+main_line_node = slicer.mrmlScene.GetFirstNodeByName(main_line_name)
+if not main_line_node:
+    slicer.util.errorDisplay(f"Error: Main line '{main_line_name}' not found.")
+    raise ValueError(f"'{main_line_name}' not found.")
+
+# Determine which prefix to use (MSP or INB)
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    # Check if a line with this prefix exists (e.g., 'MSP_A')
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{mirror_plane_suffixes[0]}"):
+        prefix_to_use = prefix
+        print(f"Found intersection lines with prefix: '{prefix_to_use}'")
+        break
+
+if not prefix_to_use:
+    slicer.util.errorDisplay("Error: Could not find any intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Intersection lines not found.")
+
+# Generate the list of line names to check
+lines_to_intersect = [f"{prefix_to_use}_{suffix}" for suffix in mirror_plane_suffixes]
+
+for i, line_name in enumerate(lines_to_intersect):
+    line2Node = slicer.mrmlScene.GetFirstNodeByName(line_name)
+    if not line2Node:
+        print(f"Warning: Line '{line_name}' not found. Skipping.")
+        continue
+
+    intersection_point = find_line_intersection(main_line_node, line2Node)
+
     if intersection_point is not None:
-        fiducialNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'mirrorB_{chr(65 + i)}')
-        fiducialNode.AddControlPointWorld(intersection_point)
-        # Set the color to hot pink (RGB: 255, 105, 180)
+        fiducial_name = f'mirrorB_{chr(65 + i)}'
+        # Clean up old fiducial if it exists
+        old_fiducial = slicer.mrmlScene.GetFirstNodeByName(fiducial_name)
+        if old_fiducial:
+            slicer.mrmlScene.RemoveNode(old_fiducial)
+
+        fiducialNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', fiducial_name)
+        fiducialNode.AddControlPoint(intersection_point)
+
+        # Set fiducial color
         displayNode = fiducialNode.GetDisplayNode()
-        displayNode.SetSelectedColor(255/255, 105/255, 180/255)
+        if displayNode:
+            displayNode.SetSelectedColor(fiducial_color)
+            displayNode.SetColor(fiducial_color)
+        print(f"Created intersection point '{fiducial_name}'.")
+    else:
+        print(f"No intersection found between '{main_line_name}' and '{line_name}'.")
 
 ```
 
@@ -1056,120 +1129,236 @@ for i, line_name in enumerate(lines):
 
 <details>
 
-<summary>5 plane Line B intersection </summary>
+<summary>5 plane Line B intersection</summary>
 
-#### Code for Line B intersection points 5 planes
+#### Code for Line B intersection points with 5 planes
 
 ```python
-###B intersection points 5####
-
 import numpy as np
 import slicer
 
-# Assuming 'Line_B' and 'INB_A', 'INB_B', 'INB_C', 'INB_D', 'INB_E' are already defined in the scene
-lineNode_B = slicer.util.getNode('Line_B')
-lines = ['INB_A', 'INB_B', 'INB_C', 'INB_D', 'INB_E']
+# --- Configuration ---
+main_line_name = 'Line_B'
+line_prefix_priority = ['MSP', 'INB']
+mirror_plane_suffixes = ['A', 'B', 'C', 'D', 'E']
+fiducial_color = (255/255, 105/255, 180/255) # Hot Pink
+
+# --- Main Script ---
 
 def get_line_points(lineNode):
-    startPoint = np.array([0.0, 0.0, 0.0])
-    endPoint = np.array([0.0, 0.0, 0.0])
-    lineNode.GetNthControlPointPositionWorld(0, startPoint)
-    lineNode.GetNthControlPointPositionWorld(1, endPoint)
+    """Safely get start and end points of a markups line."""
+    if not lineNode or lineNode.GetNumberOfControlPoints() < 2:
+        return None, None
+    startPoint = np.zeros(3)
+    endPoint = np.zeros(3)
+    lineNode.GetNthControlPointPosition(0, startPoint)
+    lineNode.GetNthControlPointPosition(1, endPoint)
     return startPoint, endPoint
 
 def find_line_intersection(line1Node, line2Node):
-    # Get points and directions of the lines
+    """Finds the 3D intersection point of two lines."""
     p1, p2 = get_line_points(line1Node)
-    d1 = p2 - p1
     q1, q2 = get_line_points(line2Node)
+
+    if p1 is None or q1 is None:
+        return None
+
+    d1 = p2 - p1
     d2 = q2 - q1
 
-    # Normalize directions
-    d1 /= np.linalg.norm(d1)
-    d2 /= np.linalg.norm(d2)
+    norm_d1 = np.linalg.norm(d1)
+    norm_d2 = np.linalg.norm(d2)
 
-    # Calculate intersection
+    if norm_d1 == 0 or norm_d2 == 0:
+        return None # Line has zero length
+
+    d1 /= norm_d1
+    d2 /= norm_d2
+
     cross_d1_d2 = np.cross(d1, d2)
-    if np.linalg.norm(cross_d1_d2) == 0:
+    norm_cross = np.linalg.norm(cross_d1_d2)
+
+    if norm_cross < 1e-6:
         return None  # Lines are parallel
 
-    t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / np.linalg.norm(cross_d1_d2)**2
-    intersection_point = p1 + t * d1
-    return intersection_point
+    # Solve for the intersection point
+    try:
+        t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / norm_cross**2
+        intersection_point = p1 + t * d1
+        return intersection_point
+    except Exception as e:
+        print(f"Could not calculate intersection: {e}")
+        return None
 
-for i, line_name in enumerate(lines):
-    line2Node = slicer.util.getNode(line_name)
-    intersection_point = find_line_intersection(lineNode_B, line2Node)
+# --- Execution ---
+main_line_node = slicer.mrmlScene.GetFirstNodeByName(main_line_name)
+if not main_line_node:
+    slicer.util.errorDisplay(f"Error: Main line '{main_line_name}' not found.")
+    raise ValueError(f"'{main_line_name}' not found.")
+
+# Determine which prefix to use (MSP or INB)
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    # Check if a line with this prefix exists (e.g., 'MSP_A')
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{mirror_plane_suffixes[0]}"):
+        prefix_to_use = prefix
+        print(f"Found intersection lines with prefix: '{prefix_to_use}'")
+        break
+
+if not prefix_to_use:
+    slicer.util.errorDisplay("Error: Could not find any intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Intersection lines not found.")
+
+# Generate the list of line names to check
+lines_to_intersect = [f"{prefix_to_use}_{suffix}" for suffix in mirror_plane_suffixes]
+
+for i, line_name in enumerate(lines_to_intersect):
+    line2Node = slicer.mrmlScene.GetFirstNodeByName(line_name)
+    if not line2Node:
+        print(f"Warning: Line '{line_name}' not found. Skipping.")
+        continue
+
+    intersection_point = find_line_intersection(main_line_node, line2Node)
+
     if intersection_point is not None:
-        fiducialNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'mirrorB_{chr(65 + i)}')
-        fiducialNode.AddControlPointWorld(intersection_point)
-        # Set the color to hot pink (RGB: 255, 105, 180)
-        displayNode = fiducialNode.GetDisplayNode()
-        displayNode.SetSelectedColor(255/255, 105/255, 180/255)
+        fiducial_name = f'mirrorB_{chr(65 + i)}'
+        # Clean up old fiducial if it exists
+        old_fiducial = slicer.mrmlScene.GetFirstNodeByName(fiducial_name)
+        if old_fiducial:
+            slicer.mrmlScene.RemoveNode(old_fiducial)
 
+        fiducialNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', fiducial_name)
+        fiducialNode.AddControlPoint(intersection_point)
+
+        # Set fiducial color
+        displayNode = fiducialNode.GetDisplayNode()
+        if displayNode:
+            displayNode.SetSelectedColor(fiducial_color)
+            displayNode.SetColor(fiducial_color)
+        print(f"Created intersection point '{fiducial_name}'.")
+    else:
+        print(f"No intersection found between '{main_line_name}' and '{line_name}'.")
 ```
+
 ![image](https://github.com/user-attachments/assets/b3e7883c-5f12-4f4b-86e3-ce2e35cb5966)
 
 </details>
 
-
 <details>
 
-<summary>6 plane Line B intersection </summary>
+<summary>6 plane Line B intersection</summary>
 
-#### Code for Line B intersection points 6 planes
+#### Code for Line B intersection points with 6 planes
 ```python
 import numpy as np
 import slicer
 
-# Assuming 'Line_B' and 'INB_A', 'INB_B', 'INB_C', 'INB_D', 'INB_E', 'INB_F' are already defined in the scene
-lineNode_B = slicer.util.getNode('Line_B')
-lines = ['INB_A', 'INB_B', 'INB_C', 'INB_D', 'INB_E', 'INB_F']
+# --- Configuration ---
+main_line_name = 'Line_B'
+line_prefix_priority = ['MSP', 'INB']
+mirror_plane_suffixes = ['A', 'B', 'C', 'D', 'E', 'F']
+fiducial_color = (255/255, 105/255, 180/255) # Hot Pink
+
+# --- Main Script ---
 
 def get_line_points(lineNode):
-    startPoint = np.array([0.0, 0.0, 0.0])
-    endPoint = np.array([0.0, 0.0, 0.0])
-    lineNode.GetNthControlPointPositionWorld(0, startPoint)
-    lineNode.GetNthControlPointPositionWorld(1, endPoint)
+    """Safely get start and end points of a markups line."""
+    if not lineNode or lineNode.GetNumberOfControlPoints() < 2:
+        return None, None
+    startPoint = np.zeros(3)
+    endPoint = np.zeros(3)
+    lineNode.GetNthControlPointPosition(0, startPoint)
+    lineNode.GetNthControlPointPosition(1, endPoint)
     return startPoint, endPoint
 
 def find_line_intersection(line1Node, line2Node):
-    # Get points and directions of the lines
+    """Finds the 3D intersection point of two lines."""
     p1, p2 = get_line_points(line1Node)
-    d1 = p2 - p1
     q1, q2 = get_line_points(line2Node)
+
+    if p1 is None or q1 is None:
+        return None
+
+    d1 = p2 - p1
     d2 = q2 - q1
 
-    # Normalize directions
-    if np.linalg.norm(d1) == 0 or np.linalg.norm(d2) == 0:
-        return None  # Avoid division by zero
-    d1 /= np.linalg.norm(d1)
-    d2 /= np.linalg.norm(d2)
+    norm_d1 = np.linalg.norm(d1)
+    norm_d2 = np.linalg.norm(d2)
 
-    # Calculate intersection
+    if norm_d1 == 0 or norm_d2 == 0:
+        return None # Line has zero length
+
+    d1 /= norm_d1
+    d2 /= norm_d2
+
     cross_d1_d2 = np.cross(d1, d2)
-    if np.linalg.norm(cross_d1_d2) == 0:
+    norm_cross = np.linalg.norm(cross_d1_d2)
+
+    if norm_cross < 1e-6:
         return None  # Lines are parallel
 
-    t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / np.linalg.norm(cross_d1_d2)**2
-    intersection_point = p1 + t * d1
-    return intersection_point
+    # Solve for the intersection point
+    try:
+        t = np.dot(np.cross((q1 - p1), d2), cross_d1_d2) / norm_cross**2
+        intersection_point = p1 + t * d1
+        return intersection_point
+    except Exception as e:
+        print(f"Could not calculate intersection: {e}")
+        return None
 
-for i, line_name in enumerate(lines):
-    line2Node = slicer.util.getNode(line_name)
-    if line2Node is None:
-        print(f"Node {line_name} not found")
+# --- Execution ---
+main_line_node = slicer.mrmlScene.GetFirstNodeByName(main_line_name)
+if not main_line_node:
+    slicer.util.errorDisplay(f"Error: Main line '{main_line_name}' not found.")
+    raise ValueError(f"'{main_line_name}' not found.")
+
+# Determine which prefix to use (MSP or INB)
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    # Check if a line with this prefix exists (e.g., 'MSP_A')
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{mirror_plane_suffixes[0]}"):
+        prefix_to_use = prefix
+        print(f"Found intersection lines with prefix: '{prefix_to_use}'")
+        break
+
+if not prefix_to_use:
+    slicer.util.errorDisplay("Error: Could not find any intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Intersection lines not found.")
+
+# Generate the list of line names to check
+lines_to_intersect = [f"{prefix_to_use}_{suffix}" for suffix in mirror_plane_suffixes]
+
+for i, line_name in enumerate(lines_to_intersect):
+    line2Node = slicer.mrmlScene.GetFirstNodeByName(line_name)
+    if not line2Node:
+        print(f"Warning: Line '{line_name}' not found. Skipping.")
         continue
-    intersection_point = find_line_intersection(lineNode_B, line2Node)
+
+    intersection_point = find_line_intersection(main_line_node, line2Node)
+
     if intersection_point is not None:
-        fiducialNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', f'mirrorB_{chr(65 + i)}')
-        fiducialNode.AddControlPointWorld(intersection_point)
-        # Set the color to hot pink (RGB: 255, 105, 180)
+        fiducial_name = f'mirrorB_{chr(65 + i)}'
+        # Clean up old fiducial if it exists
+        old_fiducial = slicer.mrmlScene.GetFirstNodeByName(fiducial_name)
+        if old_fiducial:
+            slicer.mrmlScene.RemoveNode(old_fiducial)
+
+        fiducialNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', fiducial_name)
+        fiducialNode.AddControlPoint(intersection_point)
+
+        # Set fiducial color
         displayNode = fiducialNode.GetDisplayNode()
-        displayNode.SetColor(255/255, 105/255, 180/255)
+        if displayNode:
+            displayNode.SetSelectedColor(fiducial_color)
+            displayNode.SetColor(fiducial_color)
+        print(f"Created intersection point '{fiducial_name}'.")
+    else:
+        print(f"No intersection found between '{main_line_name}' and '{line_name}'.")
 ```
+
 ![image](https://github.com/user-attachments/assets/748c6a20-6caa-4419-aad2-ac1483ad3a8e)
 
+</details>
 
 ##### Optional Line A intersections
 </details>
