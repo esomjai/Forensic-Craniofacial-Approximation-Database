@@ -472,7 +472,13 @@ Example of the manually adjusted mp
 
 ### Predict Pronasale
 
-The following method is adapted from Step 7 of the GUI. It uses anatomically-correct calculations based on the bone model's surface normals and the RAS (Right-Anterior-Superior) coordinate system. The default FSTT (facial soft tissue thickness) value is 11.5mm based on [Hona and Stephan 2024](https://link.springer.com/article/10.1007/s00414-023-03087-x), and the multiplier is set to 3.0× ANS (Krogman and Iscan, 1986).
+The following script uses calculations based on the bone model's surface normals and the RAS (Right-Anterior-Superior) coordinate system. The default FSTT (facial soft tissue thickness) value is 11.5mm based on [Hona and Stephan 2024](https://link.springer.com/article/10.1007/s00414-023-03087-x)'s study[^11], and the multiplier is set to 3.0× ANS (Krogman and Iscan, 1986).
+
+After placing the FFST "peg" perpendicularly to the adjusted mp point with the aforementioned length; a line from the FSTT cylinder's anteriormost endpoint is drawn. This line is parallell to the nasal spine vector line and its length is calculated by the original Krogman-Iscan formula (3xANS=3xVMJ-aca). 
+
+There is another method included in the [GUI](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/cf1ead1c8511af060ad219252b803955ba30c53a/Nose%20predictions/Threefold%20ANS%20GUI.md), specifically cerated on an elderly population. 
+Matsuda et al. (2023)[^12] revised the original equation to 1.9xANS for their population - however, this comes with their caveat of the midphiltrum FSTT being extremely variable in the elderly. Therefore, the GUI allows for manual adjustment of the average value. 
+
 
 <details>
 
@@ -626,7 +632,9 @@ print(f"Predicted pronasale position: {pronasale_pos}")
 
 ### Error Calculation
 
-To validate the prediction against known soft tissue landmarks:
+To validate the prediction against known soft tissue landmarks, make sure you downloaded and allocated  [KrogmanIscan_soft_tissue.mrk.json](https://github.com/user-attachments/files/20234679/KrogmanIscan_soft_tissue.mrk.json) 
+
+Then, copy and paste the following script that creates lines between the predicted and true pronasale and give coordinates of the same. 
 
 <details>
 
@@ -691,23 +699,7 @@ print(f"Error distance: {error_distance:.2f} mm")
 
 </details>
 
-### Method Comparison
 
-The improved method from the GUI version offers several advantages:
-
-1. **Anatomically Correct**: Uses surface normals from the actual bone model rather than arbitrary perpendicular calculations
-2. **Coordinate System Aware**: Properly uses the RAS coordinate system with anterior direction validation
-3. **Normal Correction**: Ensures normals point anteriorly (away from skull) by checking against anterior direction
-4. **Better Visualization**: Optional cylinder visualization shows the FSTT region clearly
-5. **Evidence-Based Default**: Uses 11.5mm FSTT from Hona and Stephan 2024 research
-6. **Flexible Multipliers**: Supports both 3.0x (Krogman & Iscan) and 1.9x (Matsuda et al.) multipliers
-
-### Key Improvements Over Original Method
-
-- **Surface Normal Calculation**: The original method used cross products with arbitrary vectors. The improved method directly computes normals from the bone surface
-- **Direction Validation**: Ensures the perpendicular direction actually points anteriorly
-- **Simplified Workflow**: Combines multiple steps into a single, more maintainable script
-- **Better Error Handling**: More robust with clearer error messages
 
 
 ## Bibliography: 
@@ -722,9 +714,8 @@ The improved method from the GUI version offers several advantages:
 [^8]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
 [^9]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.
 [^10]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
+[^11]: Hona, T. W. P. T. and C. N. Stephan (2024). "Global facial soft tissue thicknesses for craniofacial identification (2023): a review of 140 years of data since Welcker’s first study." International Journal of Legal Medicine 138(2): 519-535.
+[^12]: Matsuda, H., et al. (2023). "Simplified Formula for Estimating Nasal Dimensions for 3-Dimensional Facial Reconstruction among Japanese Adults." Forensic Sciences 3: 381–393.
+	
 
 
-
-<img width="131" height="47" alt="roi cut" src="https://github.com/user-attachments/assets/fd358337-fc94-466d-8bc9-b7149fddf9b9" />
-<img width="136" height="54" alt="plane cut" src="https://github.com/user-attachments/assets/dfd9f7a8-e63f-48fd-aac0-f2e233539651" />
-<img width="161" height="57" alt="create roi" src="https://github.com/user-attachments/assets/9d0deb48-fcbf-49b1-9c5b-9b2720dbb28c" />
