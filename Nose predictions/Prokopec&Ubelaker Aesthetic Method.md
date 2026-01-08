@@ -3,32 +3,36 @@
 The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2010)[^3].
 The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2010)[^3] also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
 
-This will be achieved by:
-
-- Creating the [INB plane](#inb-plane), [NP plane](#np-plane) and [PT plane](#pt-plane) as defined by Rynn et al. (2010)
-- Using Maximum aperture width and the rhinion as the reference for equidistant planes
--  Choosing your [number of planes](#choose-a-number-of-planes) 
-- Creating [reference lines along the INB](#reference-lines-along-the-inb-and-456-mirror-planes) and 4/5/6 mirror planes
-- Establishing and adjusting [reference lines A and B](#reference-lines-a-and-b)
-- Creating the mirror points by finding the [intersection points between Line B and the INB intersection lines](#intersection-points-between-line-b-and-the-intersection-lines)
-  - Establishing the [optional Line A intersections](#optional-line-a-intersections)
-- Placing additional [nasal bone outline landmarks](#nasal-bone-outline-landmarks)
-- Placing [soft tissue nose outline landmarks](#soft-tissue-nose-outline-landmarks)
-  - Optionally, adjusting these in the profile plane
-- Creating the relevant [measurement lines](#measurement-lines)
-  - [Nasal bone outline connecting lines](#nasal-bone-outline-connecting-lines)
-  - [Their intersections with Line B](#nasal-bone-outline-connecting-lines--their-intersections-with-line-b)
-  - [Distances between Line A and nose profile & Line A and nasal aperture](#distances-between-line-a-and-nose-profile--line-a-and-nasal-aperture)
-- Understanding the [Output](#output)
-- [Extra codes for more ideas](#extra-codes-for-more-ideas)
-- [Bibliography](#bibliography)
+## Table of Contents
+	*   [Landmarks used for the method](#landmarks-in-this-guide)
+    *   [Profile plane](#profile-plane)
+        *   [INB Plane](#inb-plane)
+        *   [MSP Plane](#msp-plane)
+    *   [NP plane](#np-plane)
+    *   [PT plane](#pt-plane)
+    *   [Maximum aperture width](#maximum-aperture-width)
+*   [Choosing a number of Planes](#choose-a-number-of-planes)
+    *   [Reference lines along the INB and 4/5/6 mirror planes](#reference-lines-along-the-inb-and-456-mirror-planes)
+    *   [Reference lines A and B](#reference-lines-a-and-b)
+    *   [Intersection points between Line B and the intersection lines](#intersection-points-between-line-b-and-the-intersection-lines)
+    *   [Line B Intersection Points](#line-b-intersection-points)
+    *   [Optional: Line A Intersections](#optional-line-a-intersections)
+*   [Nasal bone outline landmarks](#nasal-bone-outline-landmarks)
+*   [Soft tissue nose outline landmarks](#soft-tissue-nose-outline-landmarks)
+    *   [Optional: Adjusting soft tissue landmarks to profile plane](#optional-adjusting-soft-tissue-landmarks-to-profile-plane)
+*   [Measurement lines](#measurement-lines)
+    *   [Nasal bone outline connecting lines & their intersections with Line B](#nasal-bone-outline-connecting-lines--their-intersections-with-line-b)
+    *   [Distances between Line A and nose profile & Line A and nasal aperture](#distances-between-line-a-and-nose-profile--line-a-and-nasal-aperture)
+    *   [Output](#output)
+*   [Extra codes for more ideas](#extra-codes-for-more-ideas)
+*   [Bibliography](#bibliography)
 
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
 
 
 
-Landmarks in this guide: 
+## Landmarks in this guide: 
 | Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
 |------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
 | 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^3]      |
