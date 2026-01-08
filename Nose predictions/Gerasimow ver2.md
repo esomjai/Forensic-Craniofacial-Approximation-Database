@@ -1441,7 +1441,7 @@ class GerasimowNosePredictor:
                 slicer.util.errorDisplay("Please select a landmarks node first")
                 return
             
-            bundle = self.landmarkBundleCombo.currentIndex
+            bundle = self.landmarkBundleCombo.currentIndex()
             
             try:
                 # Get the landmarks based on the selected bundle
