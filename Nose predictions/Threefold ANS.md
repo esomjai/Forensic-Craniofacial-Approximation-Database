@@ -18,18 +18,14 @@ Stephan et al. 2003[^5] trialled _“substituting original nasal spine length fo
 
 To repeat this interpretation by Rynn et al. (2010)[^7], we will:
 
+To repeat this interpretation by Rynn et al. (2010)[^7], we will:
+
 - [Establish an INB plane](#inb-plane)
 - [Make a profile view](#profile-view-model)
 - [Draw an acanthion vector](#establishing-the-acanthion-vector)
 - [Create and adjust the mid-philtrum point](#mid-philtrum-and-reference-to-mp)
-- [Choose a path to Soft tissue depth markers](#soft-tissue-depth-markers)
-- [Line as the FSTT](#path1-line-as-the-fstt)
-- [Line error of estimate](#line-error-of-estimate)
-- [Line method output](#line-method-output)
-- [Cylinder as the FSTT](#path2-cylinder-as-the-fstt)
-- [Cylinder Error of estimate](#cylinder-error-of-estimate)
-- [Cylinder method output](#cylinder-method-output)
-- [Combined method output](#combining-methods-output)
+- [Predict Pronasale](#predict-pronasale)
+- [Calculate the error](#error-calculation)
 
 
 Landmarks in this  guide for the Rynn interpretation: 
