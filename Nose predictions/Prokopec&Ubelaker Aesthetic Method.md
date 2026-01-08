@@ -2671,328 +2671,310 @@ To make sense of the output, keep in mind that the guideline method allows for t
 ### Extra codes for more ideas
 
 > [!IMPORTANT]
->Run these BEFORE you copy all linear measurements to clipboard if you want to implement them. Ignore the "pred soft nose outline1" 2 etc numbers - they should be identical to the nasalbonetoB1,2etc measurements. 
+> Run these BEFORE you copy all linear measurements to clipboard if you want to implement them. The "pred soft nose outline" measurements should be identical to the "nasalbonetoB" measurements.
 
-If the mirror plane idea has peaked your interest, there is a way to measure the difference (prediction error) between the actual nasal outline points and the predicted nasal outline points (assuming _Line_ B to be the mirror plane and the _nasalbonetoB1,2,3,4,5,6_ the distances between the mirror and the bony outline) which in this case we will define as starting from their respective mirror points and of the same length as their respective _nasalbonetoB1,2,3,4,5,6; creating a predicted soft tissue outline named "pred soft nose outline1" in deep purple and a burgundy line connecting the anterior endpoints of the lines **noseprofiletoB1**,2, etc and **pred soft nose outline2**etc named "pred error1,2etc"
+If the mirror plane idea has piqued your interest, there is a way to measure the difference (prediction error) between the actual nasal outline points and the predicted nasal outline points. This method assumes `Line_B` is the mirror plane and the `nasalbonetoB` lines represent the distances from the mirror to the bony outline.
+
+This script creates:
+1.  A predicted soft tissue outline (`pred soft nose outline`) in **deep purple**, where each line starts from a mirror point and has the same length as the corresponding `nasalbonetoB` line.
+2.  A prediction error line (`pred error`) in **burgundy**, connecting the actual soft tissue point to the predicted soft tissue point.
 
 <details>
 
-<summary>Extra error code for 4-plane </summary>
+<summary>Extra error code for 4-plane</summary>
 
 ```python
-#EXTRA predictor, 4 plane forced mirror and true soft nose outline comparison#####
-
+### EXTRA: Prediction error visualization (4 planes, MSP/INB compatible) ###
 import slicer
 import numpy as np
 
-def get_line_points(line_node):
-    points = []
-    for i in range(line_node.GetNumberOfControlPoints()):
-        point = [0.0, 0.0, 0.0]
-        line_node.GetNthControlPointPosition(i, point)
-        points.append(point)
-    return points
-
-def calculate_length(start_point, end_point):
-    return np.linalg.norm(np.array(end_point) - np.array(start_point))
-
-def create_parallel_line(name, start_point, length, reference_line_points, color):
-    direction = np.array(reference_line_points[1]) - np.array(reference_line_points[0])
-    unit_direction = direction / np.linalg.norm(direction)
-    new_end_point = np.array(start_point) + unit_direction * length
-    line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
-    line_node.AddControlPoint(start_point)
-    line_node.AddControlPoint(new_end_point.tolist())
-    display_node = line_node.GetDisplayNode()
-    display_node.SetSelectedColor(color)
-    display_node.SetColor(color)
-
-def create_distance_measurement(name, start_point, end_point, color):
-    line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
-    line_node.AddControlPoint(start_point)
-    line_node.AddControlPoint(end_point)
-    display_node = line_node.GetDisplayNode()
-    display_node.SetSelectedColor(color)
-    display_node.SetColor(color)
-
+# --- Configuration ---
+# This script will find lines with either 'MSP_' or 'INB_' prefix.
+line_prefix_priority = ['MSP', 'INB']
+# This defines the mapping between the different line sets.
+# Format: (nasalbonetoB_#, noseprofiletoB_#, mirrorB_suffix, sag_line_suffix)
+# Note the non-sequential mapping.
+line_mappings = [
+    ('nasalbonetoB1', 'noseprofiletoB1', 'B', 'B'),
+    ('nasalbonetoB2', 'noseprofiletoB2', 'C', 'C'),
+    ('nasalbonetoB3', 'noseprofiletoB3', 'D', 'D'),
+    ('nasalbonetoB4', 'noseprofiletoB4', 'A', 'A'),
+]
 # Define colors
-deep_purple = [0.29, 0.0, 0.51]
-burgundy = [0.5, 0.0, 0.13]
+deep_purple = (0.29, 0.0, 0.51)
+burgundy = (0.5, 0.0, 0.13)
 
-# Get the nodes from the scene
-mirrorB_A = slicer.util.getNode('mirrorB_A')
-mirrorB_B = slicer.util.getNode('mirrorB_B')
-mirrorB_C = slicer.util.getNode('mirrorB_C')
-mirrorB_D = slicer.util.getNode('mirrorB_D')
-
-noseprofiletoB1 = slicer.util.getNode('noseprofiletoB1')
-noseprofiletoB2 = slicer.util.getNode('noseprofiletoB2')
-noseprofiletoB3 = slicer.util.getNode('noseprofiletoB3')
-noseprofiletoB4 = slicer.util.getNode('noseprofiletoB4')
-
-nasalbonetoB1 = slicer.util.getNode('nasalbonetoB1')
-nasalbonetoB2 = slicer.util.getNode('nasalbonetoB2')
-nasalbonetoB3 = slicer.util.getNode('nasalbonetoB3')
-nasalbonetoB4 = slicer.util.getNode('nasalbonetoB4')
-
-INB_A = slicer.util.getNode('INB_A')
-INB_B = slicer.util.getNode('INB_B')
-INB_C = slicer.util.getNode('INB_C')
-INB_D = slicer.util.getNode('INB_D')
-
-# Get the points of the reference lines
-INB_A_points = get_line_points(INB_A)
-INB_B_points = get_line_points(INB_B)
-INB_C_points = get_line_points(INB_C)
-INB_D_points = get_line_points(INB_D)
-
-# Calculate lengths of nasalbonetoB lines
-length1 = calculate_length(nasalbonetoB1.GetNthControlPointPosition(0), nasalbonetoB1.GetNthControlPointPosition(1))
-length2 = calculate_length(nasalbonetoB2.GetNthControlPointPosition(0), nasalbonetoB2.GetNthControlPointPosition(1))
-length3 = calculate_length(nasalbonetoB3.GetNthControlPointPosition(0), nasalbonetoB3.GetNthControlPointPosition(1))
-length4 = calculate_length(nasalbonetoB4.GetNthControlPointPosition(0), nasalbonetoB4.GetNthControlPointPosition(1))
-
-# Create new lines with parallel vectors and specified lengths
-create_parallel_line("pred soft nose outline1", mirrorB_A.GetNthControlPointPosition(0), length1, INB_A_points, deep_purple)
-create_parallel_line("pred soft nose outline2", mirrorB_B.GetNthControlPointPosition(0), length2, INB_B_points, deep_purple)
-create_parallel_line("pred soft nose outline3", mirrorB_C.GetNthControlPointPosition(0), length3, INB_C_points, deep_purple)
-create_parallel_line("pred soft nose outline4", mirrorB_D.GetNthControlPointPosition(0), length4, INB_D_points, deep_purple)
-
-# Get the new lines from the scene
-pred_soft_nose_outline1 = slicer.util.getNode('pred soft nose outline1')
-pred_soft_nose_outline2 = slicer.util.getNode('pred soft nose outline2')
-pred_soft_nose_outline3 = slicer.util.getNode('pred soft nose outline3')
-pred_soft_nose_outline4 = slicer.util.getNode('pred soft nose outline4')
-
-# Create distance measurements in burgundy
-create_distance_measurement("pred error1", noseprofiletoB1.GetNthControlPointPosition(1), pred_soft_nose_outline2.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error2", noseprofiletoB2.GetNthControlPointPosition(1), pred_soft_nose_outline3.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error3", noseprofiletoB3.GetNthControlPointPosition(1), pred_soft_nose_outline4.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error4", noseprofiletoB4.GetNthControlPointPosition(1), pred_soft_nose_outline1.GetNthControlPointPosition(1), burgundy)
-```
-
-</details>
-
-
-<details>
-
-<summary>Extra error code for 5-plane </summary>
-
-``` python
-#EXTRA predictor, 5 plane forced mirror and true soft nose outline comparison#####
-import slicer
-import numpy as np
-
+# --- Helper Functions ---
 def get_line_points(line_node):
-    points = []
-    for i in range(line_node.GetNumberOfControlPoints()):
-        point = [0.0, 0.0, 0.0]
-        line_node.GetNthControlPointPosition(i, point)
-        points.append(point)
-    return points
+    if not line_node or line_node.GetNumberOfControlPoints() < 2: return None
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return [p1, p2]
 
-def calculate_length(start_point, end_point):
-    return np.linalg.norm(np.array(end_point) - np.array(start_point))
+def calculate_length(line_node):
+    points = get_line_points(line_node)
+    if not points: return 0
+    return np.linalg.norm(points[1] - points[0])
 
-def create_parallel_line(name, start_point, length, reference_line_points, color):
-    direction = np.array(reference_line_points[1]) - np.array(reference_line_points[0])
-    unit_direction = direction / np.linalg.norm(direction)
-    new_end_point = np.array(start_point) + unit_direction * length
-    line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
-    line_node.AddControlPoint(start_point)
-    line_node.AddControlPoint(new_end_point.tolist())
-    display_node = line_node.GetDisplayNode()
-    display_node.SetSelectedColor(color)
-    display_node.SetColor(color)
+def create_line(name, p1, p2, color):
+    """Creates or updates a line node."""
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if not node:
+        node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+    node.RemoveAllControlPoints()
+    node.AddControlPoint(p1)
+    node.AddControlPoint(p2)
+    display_node = node.GetDisplayNode()
+    if display_node:
+        display_node.SetSelectedColor(color)
+        display_node.SetColor(color)
+    return node
 
-def create_distance_measurement(name, start_point, end_point, color):
-    line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
-    line_node.AddControlPoint(start_point)
-    line_node.AddControlPoint(end_point)
-    display_node = line_node.GetDisplayNode()
-    display_node.SetSelectedColor(color)
-    display_node.SetColor(color)
+# --- Main Script ---
 
-# Define colors
-deep_purple = [0.29, 0.0, 0.51]
-burgundy = [0.5, 0.0, 0.13]
+# 1. Determine which prefix is used for sagittal lines ('MSP_' or 'INB_')
+found_prefix = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{line_mappings[0][3]}"):
+        found_prefix = prefix
+        print(f"Found sagittal intersection lines with prefix: '{found_prefix}_'")
+        break
+if not found_prefix:
+    slicer.util.errorDisplay("Error: Could not find any sagittal intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Sagittal lines not found.")
 
-# Get the nodes from the scene
-mirrorB_A = slicer.util.getNode('mirrorB_A')
-mirrorB_B = slicer.util.getNode('mirrorB_B')
-mirrorB_C = slicer.util.getNode('mirrorB_C')
-mirrorB_D = slicer.util.getNode('mirrorB_D')
-mirrorB_E = slicer.util.getNode('mirrorB_E')
+# 2. Process each set of corresponding lines
+for i, (nb_name, np_name, mb_suffix, sag_suffix) in enumerate(line_mappings, 1):
+    
+    # Get all required nodes for this iteration
+    nasalbonetoB_node = slicer.util.getNode(nb_name)
+    noseprofiletoB_node = slicer.util.getNode(np_name)
+    mirrorB_node = slicer.util.getNode(f'mirrorB_{mb_suffix}')
+    sag_line_node = slicer.util.getNode(f'{found_prefix}_{sag_suffix}')
 
-noseprofiletoB1 = slicer.util.getNode('noseprofiletoB1')
-noseprofiletoB2 = slicer.util.getNode('noseprofiletoB2')
-noseprofiletoB3 = slicer.util.getNode('noseprofiletoB3')
-noseprofiletoB4 = slicer.util.getNode('noseprofiletoB4')
-noseprofiletoB5 = slicer.util.getNode('noseprofiletoB5')
+    if not all([nasalbonetoB_node, noseprofiletoB_node, mirrorB_node, sag_line_node]):
+        print(f"Warning: Skipping set {i}, one or more required nodes are missing.")
+        continue
 
-nasalbonetoB1 = slicer.util.getNode('nasalbonetoB1')
-nasalbonetoB2 = slicer.util.getNode('nasalbonetoB2')
-nasalbonetoB3 = slicer.util.getNode('nasalbonetoB3')
-nasalbonetoB4 = slicer.util.getNode('nasalbonetoB4')
-nasalbonetoB5 = slicer.util.getNode('nasalbonetoB5')
+    # A. Create the predicted soft tissue outline (purple line)
+    length = calculate_length(nasalbonetoB_node)
+    sag_line_points = get_line_points(sag_line_node)
+    direction = (sag_line_points[1] - sag_line_points[0]) / np.linalg.norm(sag_line_points[1] - sag_line_points[0])
+    
+    start_point = np.zeros(3)
+    mirrorB_node.GetNthControlPointPosition(0, start_point)
+    predicted_end_point = start_point + direction * length
+    
+    pred_line_name = f"pred soft nose outline{i}"
+    predicted_line = create_line(pred_line_name, start_point, predicted_end_point, deep_purple)
+    print(f"Created '{pred_line_name}'.")
 
-INB_A = slicer.util.getNode('INB_A')
-INB_B = slicer.util.getNode('INB_B')
-INB_C = slicer.util.getNode('INB_C')
-INB_D = slicer.util.getNode('INB_D')
-INB_E = slicer.util.getNode('INB_E')
-
-# Get the points of the reference lines
-INB_A_points = get_line_points(INB_A)
-INB_B_points = get_line_points(INB_B)
-INB_C_points = get_line_points(INB_C)
-INB_D_points = get_line_points(INB_D)
-INB_E_points = get_line_points(INB_E)
-
-# Calculate lengths of nasalbonetoB lines
-length1 = calculate_length(nasalbonetoB1.GetNthControlPointPosition(0), nasalbonetoB1.GetNthControlPointPosition(1))
-length2 = calculate_length(nasalbonetoB2.GetNthControlPointPosition(0), nasalbonetoB2.GetNthControlPointPosition(1))
-length3 = calculate_length(nasalbonetoB3.GetNthControlPointPosition(0), nasalbonetoB3.GetNthControlPointPosition(1))
-length4 = calculate_length(nasalbonetoB4.GetNthControlPointPosition(0), nasalbonetoB4.GetNthControlPointPosition(1))
-length5 = calculate_length(nasalbonetoB5.GetNthControlPointPosition(0), nasalbonetoB5.GetNthControlPointPosition(1))
-
-# Create new lines with parallel vectors and specified lengths
-create_parallel_line("pred soft nose outline1", mirrorB_A.GetNthControlPointPosition(0), length1, INB_A_points, deep_purple)
-create_parallel_line("pred soft nose outline2", mirrorB_B.GetNthControlPointPosition(0), length2, INB_B_points, deep_purple)
-create_parallel_line("pred soft nose outline3", mirrorB_C.GetNthControlPointPosition(0), length3, INB_C_points, deep_purple)
-create_parallel_line("pred soft nose outline4", mirrorB_D.GetNthControlPointPosition(0), length4, INB_D_points, deep_purple)
-create_parallel_line("pred soft nose outline5", mirrorB_E.GetNthControlPointPosition(0), length5, INB_E_points, deep_purple)
-
-# Get the new lines from the scene
-pred_soft_nose_outline1 = slicer.util.getNode('pred soft nose outline1')
-pred_soft_nose_outline2 = slicer.util.getNode('pred soft nose outline2')
-pred_soft_nose_outline3 = slicer.util.getNode('pred soft nose outline3')
-pred_soft_nose_outline4 = slicer.util.getNode('pred soft nose outline4')
-pred_soft_nose_outline5 = slicer.util.getNode('pred soft nose outline5')
-
-# Create distance measurements in burgundy
-create_distance_measurement("pred error1", noseprofiletoB1.GetNthControlPointPosition(1), pred_soft_nose_outline2.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error2", noseprofiletoB2.GetNthControlPointPosition(1), pred_soft_nose_outline3.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error3", noseprofiletoB3.GetNthControlPointPosition(1), pred_soft_nose_outline4.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error4", noseprofiletoB4.GetNthControlPointPosition(1), pred_soft_nose_outline5.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error5", noseprofiletoB5.GetNthControlPointPosition(1), pred_soft_nose_outline1.GetNthControlPointPosition(1), burgundy)
+    # B. Create the prediction error line (burgundy line)
+    actual_end_point = get_line_points(noseprofiletoB_node)[1]
+    error_line_name = f"pred error{i}"
+    create_line(error_line_name, actual_end_point, predicted_end_point, burgundy)
+    print(f"Created '{error_line_name}'.")
 
 ```
 
 </details>
 
-
-
 <details>
 
-<summary>Extra error code for 6-plane </summary>
+<summary>Extra error code for 5-plane</summary>
 
-``` python
+```python
+### EXTRA: Prediction error visualization (5 planes, MSP/INB compatible) ###
 import slicer
 import numpy as np
 
-def get_line_points(line_node):
-    points = []
-    for i in range(line_node.GetNumberOfControlPoints()):
-        point = [0.0, 0.0, 0.0]
-        line_node.GetNthControlPointPosition(i, point)
-        points.append(point)
-    return points
-
-def calculate_length(start_point, end_point):
-    return np.linalg.norm(np.array(end_point) - np.array(start_point))
-
-def create_parallel_line(name, start_point, length, reference_line_points, color):
-    direction = np.array(reference_line_points[1]) - np.array(reference_line_points[0])
-    unit_direction = direction / np.linalg.norm(direction)
-    new_end_point = np.array(start_point) + unit_direction * length
-    line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
-    line_node.AddControlPoint(start_point)
-    line_node.AddControlPoint(new_end_point.tolist())
-    display_node = line_node.GetDisplayNode()
-    display_node.SetSelectedColor(color)
-    display_node.SetColor(color)
-
-def create_distance_measurement(name, start_point, end_point, color):
-    line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
-    line_node.AddControlPoint(start_point)
-    line_node.AddControlPoint(end_point)
-    display_node = line_node.GetDisplayNode()
-    display_node.SetSelectedColor(color)
-    display_node.SetColor(color)
-
+# --- Configuration ---
+# This script will find lines with either 'MSP_' or 'INB_' prefix.
+line_prefix_priority = ['MSP', 'INB']
+# This defines the mapping between the different line sets.
+line_mappings = [
+    ('nasalbonetoB1', 'noseprofiletoB1', 'B', 'B'),
+    ('nasalbonetoB2', 'noseprofiletoB2', 'C', 'C'),
+    ('nasalbonetoB3', 'noseprofiletoB3', 'D', 'D'),
+    ('nasalbonetoB4', 'noseprofiletoB4', 'E', 'E'),
+    ('nasalbonetoB5', 'noseprofiletoB5', 'A', 'A'),
+]
 # Define colors
-deep_purple = [0.29, 0.0, 0.51]
-burgundy = [0.5, 0.0, 0.13]
+deep_purple = (0.29, 0.0, 0.51)
+burgundy = (0.5, 0.0, 0.13)
 
-# Get the nodes from the scene
-mirrorB_A = slicer.util.getNode('mirrorB_A')
-mirrorB_B = slicer.util.getNode('mirrorB_B')
-mirrorB_C = slicer.util.getNode('mirrorB_C')
-mirrorB_D = slicer.util.getNode('mirrorB_D')
-mirrorB_E = slicer.util.getNode('mirrorB_E')
-mirrorB_F = slicer.util.getNode('mirrorB_F')
+# --- Helper Functions ---
+def get_line_points(line_node):
+    if not line_node or line_node.GetNumberOfControlPoints() < 2: return None
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return [p1, p2]
 
-noseprofiletoB1 = slicer.util.getNode('noseprofiletoB1')
-noseprofiletoB2 = slicer.util.getNode('noseprofiletoB2')
-noseprofiletoB3 = slicer.util.getNode('noseprofiletoB3')
-noseprofiletoB4 = slicer.util.getNode('noseprofiletoB4')
-noseprofiletoB5 = slicer.util.getNode('noseprofiletoB5')
-noseprofiletoB6 = slicer.util.getNode('noseprofiletoB6')
+def calculate_length(line_node):
+    points = get_line_points(line_node)
+    if not points: return 0
+    return np.linalg.norm(points[1] - points[0])
 
-nasalbonetoB1 = slicer.util.getNode('nasalbonetoB1')
-nasalbonetoB2 = slicer.util.getNode('nasalbonetoB2')
-nasalbonetoB3 = slicer.util.getNode('nasalbonetoB3')
-nasalbonetoB4 = slicer.util.getNode('nasalbonetoB4')
-nasalbonetoB5 = slicer.util.getNode('nasalbonetoB5')
-nasalbonetoB6 = slicer.util.getNode('nasalbonetoB6')
+def create_line(name, p1, p2, color):
+    """Creates or updates a line node."""
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if not node:
+        node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+    node.RemoveAllControlPoints()
+    node.AddControlPoint(p1)
+    node.AddControlPoint(p2)
+    display_node = node.GetDisplayNode()
+    if display_node:
+        display_node.SetSelectedColor(color)
+        display_node.SetColor(color)
+    return node
 
-INB_A = slicer.util.getNode('INB_A')
-INB_B = slicer.util.getNode('INB_B')
-INB_C = slicer.util.getNode('INB_C')
-INB_D = slicer.util.getNode('INB_D')
-INB_E = slicer.util.getNode('INB_E')
-INB_F = slicer.util.getNode('INB_F')
+# --- Main Script ---
 
-# Get the points of the reference lines
-INB_A_points = get_line_points(INB_A)
-INB_B_points = get_line_points(INB_B)
-INB_C_points = get_line_points(INB_C)
-INB_D_points = get_line_points(INB_D)
-INB_E_points = get_line_points(INB_E)
-INB_F_points = get_line_points(INB_F)
+# 1. Determine which prefix is used for sagittal lines ('MSP_' or 'INB_')
+found_prefix = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{line_mappings[0][3]}"):
+        found_prefix = prefix
+        print(f"Found sagittal intersection lines with prefix: '{found_prefix}_'")
+        break
+if not found_prefix:
+    slicer.util.errorDisplay("Error: Could not find any sagittal intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Sagittal lines not found.")
 
-# Calculate lengths of nasalbonetoB lines
-length1 = calculate_length(nasalbonetoB1.GetNthControlPointPosition(0), nasalbonetoB1.GetNthControlPointPosition(1))
-length2 = calculate_length(nasalbonetoB2.GetNthControlPointPosition(0), nasalbonetoB2.GetNthControlPointPosition(1))
-length3 = calculate_length(nasalbonetoB3.GetNthControlPointPosition(0), nasalbonetoB3.GetNthControlPointPosition(1))
-length4 = calculate_length(nasalbonetoB4.GetNthControlPointPosition(0), nasalbonetoB4.GetNthControlPointPosition(1))
-length5 = calculate_length(nasalbonetoB5.GetNthControlPointPosition(0), nasalbonetoB5.GetNthControlPointPosition(1))
-length6 = calculate_length(nasalbonetoB6.GetNthControlPointPosition(0), nasalbonetoB6.GetNthControlPointPosition(1))
+# 2. Process each set of corresponding lines
+for i, (nb_name, np_name, mb_suffix, sag_suffix) in enumerate(line_mappings, 1):
+    
+    # Get all required nodes for this iteration
+    nasalbonetoB_node = slicer.util.getNode(nb_name)
+    noseprofiletoB_node = slicer.util.getNode(np_name)
+    mirrorB_node = slicer.util.getNode(f'mirrorB_{mb_suffix}')
+    sag_line_node = slicer.util.getNode(f'{found_prefix}_{sag_suffix}')
 
-# Create new lines with parallel vectors and specified lengths
-create_parallel_line("pred soft nose outline1", mirrorB_A.GetNthControlPointPosition(0), length1, INB_A_points, deep_purple)
-create_parallel_line("pred soft nose outline2", mirrorB_B.GetNthControlPointPosition(0), length2, INB_B_points, deep_purple)
-create_parallel_line("pred soft nose outline3", mirrorB_C.GetNthControlPointPosition(0), length3, INB_C_points, deep_purple)
-create_parallel_line("pred soft nose outline4", mirrorB_D.GetNthControlPointPosition(0), length4, INB_D_points, deep_purple)
-create_parallel_line("pred soft nose outline5", mirrorB_E.GetNthControlPointPosition(0), length5, INB_E_points, deep_purple)
-create_parallel_line("pred soft nose outline6", mirrorB_F.GetNthControlPointPosition(0), length6, INB_F_points, deep_purple)
+    if not all([nasalbonetoB_node, noseprofiletoB_node, mirrorB_node, sag_line_node]):
+        print(f"Warning: Skipping set {i}, one or more required nodes are missing.")
+        continue
 
-# Get the new lines from the scene
-pred_soft_nose_outline1 = slicer.util.getNode('pred soft nose outline1')
-pred_soft_nose_outline2 = slicer.util.getNode('pred soft nose outline2')
-pred_soft_nose_outline3 = slicer.util.getNode('pred soft nose outline3')
-pred_soft_nose_outline4 = slicer.util.getNode('pred soft nose outline4')
-pred_soft_nose_outline5 = slicer.util.getNode('pred soft nose outline5')
-pred_soft_nose_outline6 = slicer.util.getNode('pred soft nose outline6')
+    # A. Create the predicted soft tissue outline (purple line)
+    length = calculate_length(nasalbonetoB_node)
+    sag_line_points = get_line_points(sag_line_node)
+    direction = (sag_line_points[1] - sag_line_points[0]) / np.linalg.norm(sag_line_points[1] - sag_line_points[0])
+    
+    start_point = np.zeros(3)
+    mirrorB_node.GetNthControlPointPosition(0, start_point)
+    predicted_end_point = start_point + direction * length
+    
+    pred_line_name = f"pred soft nose outline{i}"
+    predicted_line = create_line(pred_line_name, start_point, predicted_end_point, deep_purple)
+    print(f"Created '{pred_line_name}'.")
 
-# Create distance measurements in burgundy
-create_distance_measurement("pred error1", noseprofiletoB1.GetNthControlPointPosition(1), pred_soft_nose_outline2.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error2", noseprofiletoB2.GetNthControlPointPosition(1), pred_soft_nose_outline3.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error3", noseprofiletoB3.GetNthControlPointPosition(1), pred_soft_nose_outline4.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error4", noseprofiletoB4.GetNthControlPointPosition(1), pred_soft_nose_outline5.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error5", noseprofiletoB5.GetNthControlPointPosition(1), pred_soft_nose_outline6.GetNthControlPointPosition(1), burgundy)
-create_distance_measurement("pred error6", noseprofiletoB6.GetNthControlPointPosition(1), pred_soft_nose_outline1.GetNthControlPointPosition(1), burgundy)
+    # B. Create the prediction error line (burgundy line)
+    actual_end_point = get_line_points(noseprofiletoB_node)[1]
+    error_line_name = f"pred error{i}"
+    create_line(error_line_name, actual_end_point, predicted_end_point, burgundy)
+    print(f"Created '{error_line_name}'.")
+```
+
+</details>
+
+<details>
+
+<summary>Extra error code for 6-plane</summary>
+
+```python
+### EXTRA: Prediction error visualization (6 planes, MSP/INB compatible) ###
+import slicer
+import numpy as np
+
+# --- Configuration ---
+# This script will find lines with either 'MSP_' or 'INB_' prefix.
+line_prefix_priority = ['MSP', 'INB']
+# This defines the mapping between the different line sets.
+line_mappings = [
+    ('nasalbonetoB1', 'noseprofiletoB1', 'B', 'B'),
+    ('nasalbonetoB2', 'noseprofiletoB2', 'C', 'C'),
+    ('nasalbonetoB3', 'noseprofiletoB3', 'D', 'D'),
+    ('nasalbonetoB4', 'noseprofiletoB4', 'E', 'E'),
+    ('nasalbonetoB5', 'noseprofiletoB5', 'F', 'F'),
+    ('nasalbonetoB6', 'noseprofiletoB6', 'A', 'A'),
+]
+# Define colors
+deep_purple = (0.29, 0.0, 0.51)
+burgundy = (0.5, 0.0, 0.13)
+
+# --- Helper Functions ---
+def get_line_points(line_node):
+    if not line_node or line_node.GetNumberOfControlPoints() < 2: return None
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return [p1, p2]
+
+def calculate_length(line_node):
+    points = get_line_points(line_node)
+    if not points: return 0
+    return np.linalg.norm(points[1] - points[0])
+
+def create_line(name, p1, p2, color):
+    """Creates or updates a line node."""
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if not node:
+        node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
+    node.RemoveAllControlPoints()
+    node.AddControlPoint(p1)
+    node.AddControlPoint(p2)
+    display_node = node.GetDisplayNode()
+    if display_node:
+        display_node.SetSelectedColor(color)
+        display_node.SetColor(color)
+    return node
+
+# --- Main Script ---
+
+# 1. Determine which prefix is used for sagittal lines ('MSP_' or 'INB_')
+found_prefix = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{line_mappings[0][3]}"):
+        found_prefix = prefix
+        print(f"Found sagittal intersection lines with prefix: '{found_prefix}_'")
+        break
+if not found_prefix:
+    slicer.util.errorDisplay("Error: Could not find any sagittal intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Sagittal lines not found.")
+
+# 2. Process each set of corresponding lines
+for i, (nb_name, np_name, mb_suffix, sag_suffix) in enumerate(line_mappings, 1):
+    
+    # Get all required nodes for this iteration
+    nasalbonetoB_node = slicer.util.getNode(nb_name)
+    noseprofiletoB_node = slicer.util.getNode(np_name)
+    mirrorB_node = slicer.util.getNode(f'mirrorB_{mb_suffix}')
+    sag_line_node = slicer.util.getNode(f'{found_prefix}_{sag_suffix}')
+
+    if not all([nasalbonetoB_node, noseprofiletoB_node, mirrorB_node, sag_line_node]):
+        print(f"Warning: Skipping set {i}, one or more required nodes are missing.")
+        continue
+
+    # A. Create the predicted soft tissue outline (purple line)
+    length = calculate_length(nasalbonetoB_node)
+    sag_line_points = get_line_points(sag_line_node)
+    direction = (sag_line_points[1] - sag_line_points[0]) / np.linalg.norm(sag_line_points[1] - sag_line_points[0])
+    
+    start_point = np.zeros(3)
+    mirrorB_node.GetNthControlPointPosition(0, start_point)
+    predicted_end_point = start_point + direction * length
+    
+    pred_line_name = f"pred soft nose outline{i}"
+    predicted_line = create_line(pred_line_name, start_point, predicted_end_point, deep_purple)
+    print(f"Created '{pred_line_name}'.")
+
+    # B. Create the prediction error line (burgundy line)
+    actual_end_point = get_line_points(noseprofiletoB_node)[1]
+    error_line_name = f"pred error{i}"
+    create_line(error_line_name, actual_end_point, predicted_end_point, burgundy)
+    print(f"Created '{error_line_name}'.")
 ```
 
 </details>
