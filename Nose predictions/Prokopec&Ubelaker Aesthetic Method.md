@@ -1709,7 +1709,8 @@ The reason for handling the soft and hard tissue differently in this case is due
 
 
 ### Measurement lines 
-This will be a 3-step process  regardless of how many planes you choose for your process. Copy, paste and run code below for your number of planes
+This will be a 3-step process regardless of how many planes you choose for your process. Copy, paste and run code below for your number of planes.
+
 #### Nasal bone outline connecting lines
  1.This step creates the lines between the nasal bone outline points R1-L1, etc. and names them “nasal outline1” etc
 
@@ -1740,21 +1741,21 @@ for index, pair in enumerate(pointPairs):
     
     if point1 is not None and point2 is not None:
         # Check if a node with the same name already exists
-        existingNode = slicer.mrmlScene.GetFirstNodeByName(f'nasal outline{index + 1}')
-        if existingNode is None:
-            # Create a new linear markup node
-            lineMarkupNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
-            lineMarkupNode.SetName(f'nasal outline{index + 1}')
-            
-            # Add points to the linear markup
-            lineMarkupNode.AddControlPoint(point1)
-            lineMarkupNode.AddControlPoint(point2)
-            
-            # Set the color to baby blue (RGB: 137, 207, 240)
-            displayNode = lineMarkupNode.GetDisplayNode()
-            displayNode.SetSelectedColor(137/255, 207/255, 240/255)
-        else:
-            print(f'Node nasal outline{index + 1} already exists.')
+        line_name = f'nasal outline{index + 1}'
+        existingNode = slicer.mrmlScene.GetFirstNodeByName(line_name)
+        if existingNode:
+            slicer.mrmlScene.RemoveNode(existingNode)
+
+        # Create a new linear markup node
+        lineMarkupNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', line_name)
+        
+        # Add points to the linear markup
+        lineMarkupNode.AddControlPoint(point1)
+        lineMarkupNode.AddControlPoint(point2)
+        
+        # Set the color to baby blue (RGB: 137, 207, 240)
+        displayNode = lineMarkupNode.GetDisplayNode()
+        displayNode.SetSelectedColor(137/255, 207/255, 240/255)
     else:
         print(f'Points for indices {pair[0]} or {pair[1]} not found.')
 ```
@@ -1790,25 +1791,24 @@ for index, pair in enumerate(pointPairs):
     
     if point1 is not None and point2 is not None:
         # Check if a node with the same name already exists
-        existingNode = slicer.mrmlScene.GetFirstNodeByName(f'nasal outline{index + 1}')
-        if existingNode is None:
-            # Create a new linear markup node
-            lineMarkupNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
-            lineMarkupNode.SetName(f'nasal outline{index + 1}')
-            
-            # Add points to the linear markup
-            lineMarkupNode.AddControlPoint(point1)
-            lineMarkupNode.AddControlPoint(point2)
-            
-            # Set the color to baby blue (RGB: 137, 207, 240)
-            displayNode = lineMarkupNode.GetDisplayNode()
-            displayNode.SetSelectedColor(137/255, 207/255, 240/255)
-        else:
-            print(f'Node nasal outline{index + 1} already exists.')
+        line_name = f'nasal outline{index + 1}'
+        existingNode = slicer.mrmlScene.GetFirstNodeByName(line_name)
+        if existingNode:
+            slicer.mrmlScene.RemoveNode(existingNode)
+
+        # Create a new linear markup node
+        lineMarkupNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', line_name)
+        
+        # Add points to the linear markup
+        lineMarkupNode.AddControlPoint(point1)
+        lineMarkupNode.AddControlPoint(point2)
+        
+        # Set the color to baby blue (RGB: 137, 207, 240)
+        displayNode = lineMarkupNode.GetDisplayNode()
+        displayNode.SetSelectedColor(137/255, 207/255, 240/255)
     else:
         print(f'Points for indices {pair[0]} or {pair[1]} not found.')
 ```
-![image](https://github.com/user-attachments/assets/5937085a-9e71-4d86-848f-7bde519f8768)
 
 <img src="https://github.com/user-attachments/assets/5937085a-9e71-4d86-848f-7bde519f8768" width="500">
 
@@ -1820,6 +1820,11 @@ for index, pair in enumerate(pointPairs):
 
 ``` python
 ###  6 nasal outline lines
+import slicer
+
+# Get the point list node
+pointListNode = slicer.util.getNode('nasal bone outline 6')
+
 def getPointCoordinatesByIndex(pointListNode, index):
     if index < pointListNode.GetNumberOfControlPoints():
         position = [0.0, 0.0, 0.0]
@@ -1836,108 +1841,107 @@ for index, pair in enumerate(pointPairs):
         
         if point1 is not None and point2 is not None:
             # Check if a node with the same name already exists
-            existingNode = slicer.mrmlScene.GetFirstNodeByName(f'nasal outline{index + 1}')
-            if existingNode is None:
-                # Create a new linear markup node
-                lineMarkupNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
-                lineMarkupNode.SetName(f'nasal outline{index + 1}')
-                
-                # Add points to the linear markup
-                lineMarkupNode.AddControlPoint(point1)
-                lineMarkupNode.AddControlPoint(point2)
-                
-                # Set the color to baby blue (RGB: 137, 207, 240)
-                displayNode = lineMarkupNode.GetDisplayNode()
-                displayNode.SetSelectedColor(137/255, 207/255, 240/255)
-            else:
-                print(f'Node nasal outline{index + 1} already exists.')
+            line_name = f'nasal outline{index + 1}'
+            existingNode = slicer.mrmlScene.GetFirstNodeByName(line_name)
+            if existingNode:
+                slicer.mrmlScene.RemoveNode(existingNode)
+
+            # Create a new linear markup node
+            lineMarkupNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', line_name)
+            
+            # Add points to the linear markup
+            lineMarkupNode.AddControlPoint(point1)
+            lineMarkupNode.AddControlPoint(point2)
+            
+            # Set the color to baby blue (RGB: 137, 207, 240)
+            displayNode = lineMarkupNode.GetDisplayNode()
+            displayNode.SetSelectedColor(137/255, 207/255, 240/255)
         else:
             print(f'Points for indices {pair[0]} or {pair[1]} not found.')
     else:
         print(f'Indices {pair[0]} or {pair[1]} are out of range.')
 ```
-![image](https://github.com/user-attachments/assets/7cb83356-6e1d-43a2-8b13-ba0973ae15db)
 
-<img src="https://github.com/user-attachments/assets/7cb83356-6e1d-43a2-8b13-ba0973ae15db" width="500"]>
+<img src="https://github.com/user-attachments/assets/7cb83356-6e1d-43a2-8b13-ba0973ae15db" width="500">
 
 </details>
 
-
-
-
-#### Nasal bone outline connecting lines & their intersections with Line B
- 2. This step finds the intersection points of these R-L nasal aperture lines and Line B in magenta, and names them “bone1” etc 
+#### Nasal bone outline connecting lines & their intersections with sagittal lines
+ 2. This step finds the intersection points of these R-L nasal aperture lines and the sagittal lines (e.g., MSP_B or INB_B) in magenta, and names them “bone1” etc.
 
 <details>
 
-<summary>Code for 4-plane nasal outline & Line B</summary>
+<summary>Code for 4-plane nasal outline intersections</summary>
 
 ``` python
-###  4 planes - nasal outline and Line B
+###  4 planes - nasal outline intersections (MSP/INB compatible)
 import slicer
 import numpy as np
 
+# --- Configuration ---
+line_prefix_priority = ['MSP', 'INB']
+# This mapping preserves the original logic: 'nasal outline1' intersects with sagittal line B, etc.
+intersection_map = [
+    ('nasal outline1', 'B'),
+    ('nasal outline2', 'C'),
+    ('nasal outline3', 'D'),
+    ('nasal outline4', 'A'),
+]
+
+# --- Helper Functions ---
 def get_line_points(line_node):
-    points = []
-    for i in range(line_node.GetNumberOfControlPoints()):
-        point = [0.0, 0.0, 0.0]
-        line_node.GetNthControlPointPosition(i, point)
-        points.append(point)
-    return points
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return p1, p2
 
 def find_intersection(line1_points, line2_points):
-    p1, p2 = np.array(line1_points[0]), np.array(line1_points[1])
-    p3, p4 = np.array(line2_points[0]), np.array(line2_points[1])
-    
-    d1 = p2 - p1
-    d2 = p4 - p3
-    
+    p1, p2 = line1_points
+    p3, p4 = line2_points
+    d1, d2 = p2 - p1, p4 - p3
+    if np.linalg.norm(d1) == 0 or np.linalg.norm(d2) == 0: return None
     A = np.array([d1, -d2]).T
     b = p3 - p1
-    t, s = np.linalg.lstsq(A, b, rcond=None)[0]
-    
-    intersection = p1 + t * d1
-    return intersection
+    try:
+        t, s = np.linalg.lstsq(A, b, rcond=None)[0]
+        return p1 + t * d1
+    except np.linalg.LinAlgError:
+        return None
 
-def create_node(name, position):
+def create_fiducial(name, position):
+    old_node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if old_node: slicer.mrmlScene.RemoveNode(old_node)
     node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', name)
     node.AddControlPoint(position)
-    # Set the color to magenta (RGB: 255, 0, 255)
     displayNode = node.GetDisplayNode()
-    displayNode.SetSelectedColor(255/255, 0/255, 255/255)
+    displayNode.SetSelectedColor(1.0, 0.0, 1.0) # Magenta
 
-# Get the line nodes from the scene
-nasal_outline1 = slicer.util.getNode('nasal outline1')
-INB_B = slicer.util.getNode('INB_B')
-nasal_outline2 = slicer.util.getNode('nasal outline2')
-INB_C = slicer.util.getNode('INB_C')
-nasal_outline3 = slicer.util.getNode('nasal outline3')
-INB_D = slicer.util.getNode('INB_D')
-nasal_outline4 = slicer.util.getNode('nasal outline4')
-INB_A = slicer.util.getNode('INB_A')
+# --- Execution ---
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{intersection_map[0][1]}"):
+        prefix_to_use = prefix
+        print(f"Found sagittal lines with prefix: '{prefix_to_use}_'")
+        break
 
-# Get the points of the lines
-nasal_outline1_points = get_line_points(nasal_outline1)
-INB_B_points = get_line_points(INB_B)
-nasal_outline2_points = get_line_points(nasal_outline2)
-INB_C_points = get_line_points(INB_C)
-nasal_outline3_points = get_line_points(nasal_outline3)
-INB_D_points = get_line_points(INB_D)
-nasal_outline4_points = get_line_points(nasal_outline4)
-INB_A_points = get_line_points(INB_A)
+if not prefix_to_use:
+    slicer.util.errorDisplay("Could not find required sagittal intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Sagittal lines not found.")
 
-# Find intersections
-bone1 = find_intersection(nasal_outline1_points, INB_B_points)
-bone2 = find_intersection(nasal_outline2_points, INB_C_points)
-bone3 = find_intersection(nasal_outline3_points, INB_D_points)
-bone4 = find_intersection(nasal_outline4_points, INB_A_points)
+for i, (outline_name, suffix) in enumerate(intersection_map):
+    outline_node = slicer.util.getNode(outline_name)
+    sagittal_line_name = f"{prefix_to_use}_{suffix}"
+    sagittal_node = slicer.util.getNode(sagittal_line_name)
 
-# Create new nodes
-create_node("bone1", bone1)
-create_node("bone2", bone2)
-create_node("bone3", bone3)
-create_node("bone4", bone4)
+    if not outline_node or not sagittal_node:
+        print(f"Warning: Missing node '{outline_name}' or '{sagittal_line_name}'. Skipping.")
+        continue
 
+    intersection = find_intersection(get_line_points(outline_node), get_line_points(sagittal_node))
+    if intersection is not None:
+        create_fiducial(f"bone{i+1}", intersection)
+    else:
+        print(f"No intersection found between {outline_name} and {sagittal_line_name}.")
 ```
 
 <img src="https://github.com/user-attachments/assets/d9f9f43d-acc8-4c64-9aa1-4595069e1caa" width="500">
@@ -1946,182 +1950,241 @@ create_node("bone4", bone4)
 
 <details>
 
-<summary>Code for 5-plane nasal outline & Line B</summary>
+<summary>Code for 5-plane nasal outline intersections</summary>
 
 ``` python
-###  5  planes - nasal outline and Line B
+###  5 planes - nasal outline intersections (MSP/INB compatible)
 import slicer
 import numpy as np
 
+# --- Configuration ---
+line_prefix_priority = ['MSP', 'INB']
+intersection_map = [
+    ('nasal outline1', 'B'),
+    ('nasal outline2', 'C'),
+    ('nasal outline3', 'D'),
+    ('nasal outline4', 'E'),
+    ('nasal outline5', 'A'),
+]
+
+# --- Helper Functions (same as 4-plane version) ---
 def get_line_points(line_node):
-    points = []
-    for i in range(line_node.GetNumberOfControlPoints()):
-        point = [0.0, 0.0, 0.0]
-        line_node.GetNthControlPointPosition(i, point)
-        points.append(point)
-    return points
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return p1, p2
 
 def find_intersection(line1_points, line2_points):
-    p1, p2 = np.array(line1_points[0]), np.array(line1_points[1])
-    p3, p4 = np.array(line2_points[0]), np.array(line2_points[1])
-    
-    d1 = p2 - p1
-    d2 = p4 - p3
-    
+    p1, p2 = line1_points
+    p3, p4 = line2_points
+    d1, d2 = p2 - p1, p4 - p3
+    if np.linalg.norm(d1) == 0 or np.linalg.norm(d2) == 0: return None
     A = np.array([d1, -d2]).T
     b = p3 - p1
-    t, s = np.linalg.lstsq(A, b, rcond=None)[0]
-    
-    intersection = p1 + t * d1
-    return intersection
+    try:
+        t, s = np.linalg.lstsq(A, b, rcond=None)[0]
+        return p1 + t * d1
+    except np.linalg.LinAlgError:
+        return None
 
-def create_node(name, position):
+def create_fiducial(name, position):
+    old_node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if old_node: slicer.mrmlScene.RemoveNode(old_node)
     node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', name)
     node.AddControlPoint(position)
-    # Set the color to magenta (RGB: 255, 0, 255)
     displayNode = node.GetDisplayNode()
-    displayNode.SetSelectedColor(255/255, 0/255, 255/255)
+    displayNode.SetSelectedColor(1.0, 0.0, 1.0) # Magenta
 
-# Get the line nodes from the scene
-nasal_outline1 = slicer.util.getNode('nasal outline1')
-INB_B = slicer.util.getNode('INB_B')
-nasal_outline2 = slicer.util.getNode('nasal outline2')
-INB_C = slicer.util.getNode('INB_C')
-nasal_outline3 = slicer.util.getNode('nasal outline3')
-INB_D = slicer.util.getNode('INB_D')
-nasal_outline4 = slicer.util.getNode('nasal outline4')
-INB_E = slicer.util.getNode('INB_E')
-nasal_outline5 = slicer.util.getNode('nasal outline5')
-INB_A = slicer.util.getNode('INB_A')
+# --- Execution ---
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{intersection_map[0][1]}"):
+        prefix_to_use = prefix
+        print(f"Found sagittal lines with prefix: '{prefix_to_use}_'")
+        break
 
-# Get the points of the lines
-nasal_outline1_points = get_line_points(nasal_outline1)
-INB_B_points = get_line_points(INB_B)
-nasal_outline2_points = get_line_points(nasal_outline2)
-INB_C_points = get_line_points(INB_C)
-nasal_outline3_points = get_line_points(nasal_outline3)
-INB_D_points = get_line_points(INB_D)
-nasal_outline4_points = get_line_points(nasal_outline4)
-INB_E_points = get_line_points(INB_E)
-nasal_outline5_points = get_line_points(nasal_outline5)
-INB_A_points = get_line_points(INB_A)
+if not prefix_to_use:
+    slicer.util.errorDisplay("Could not find required sagittal intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Sagittal lines not found.")
 
-# Find intersections
-bone1 = find_intersection(nasal_outline1_points, INB_B_points)
-bone2 = find_intersection(nasal_outline2_points, INB_C_points)
-bone3 = find_intersection(nasal_outline3_points, INB_D_points)
-bone4 = find_intersection(nasal_outline4_points, INB_E_points)
-bone5 = find_intersection(nasal_outline5_points, INB_A_points)
+for i, (outline_name, suffix) in enumerate(intersection_map):
+    outline_node = slicer.util.getNode(outline_name)
+    sagittal_line_name = f"{prefix_to_use}_{suffix}"
+    sagittal_node = slicer.util.getNode(sagittal_line_name)
 
-# Create new nodes
-create_node("bone1", bone1)
-create_node("bone2", bone2)
-create_node("bone3", bone3)
-create_node("bone4", bone4)
-create_node("bone5", bone5)
+    if not outline_node or not sagittal_node:
+        print(f"Warning: Missing node '{outline_name}' or '{sagittal_line_name}'. Skipping.")
+        continue
+
+    intersection = find_intersection(get_line_points(outline_node), get_line_points(sagittal_node))
+    if intersection is not None:
+        create_fiducial(f"bone{i+1}", intersection)
+    else:
+        print(f"No intersection found between {outline_name} and {sagittal_line_name}.")
 ```
-![image](https://github.com/user-attachments/assets/1a9695de-af58-4cb0-89c5-1dc7c1b85f2d)
 
-<img src="https://github.com/user-attachments/assets/5937085a-9e71-4d86-848f-7bde519f8768" width="500">
+<img src="https://github.com/user-attachments/assets/1a9695de-af58-4cb0-89c5-1dc7c1b85f2d" width="500">
 
 </details>
 
 <details>
 
-<summary>Code for 6-plane nasal outline & Line B</summary>
+<summary>Code for 6-plane nasal outline intersections</summary>
 
 ``` python
-###   6 planes - nasal outline and Line B
+###  6 planes - nasal outline intersections (MSP/INB compatible)
 import slicer
 import numpy as np
 
+# --- Configuration ---
+line_prefix_priority = ['MSP', 'INB']
+intersection_map = [
+    ('nasal outline1', 'B'),
+    ('nasal outline2', 'C'),
+    ('nasal outline3', 'D'),
+    ('nasal outline4', 'E'),
+    ('nasal outline5', 'F'),
+    ('nasal outline6', 'A'),
+]
+
+# --- Helper Functions (same as 4-plane version) ---
 def get_line_points(line_node):
-    points = []
-    for i in range(line_node.GetNumberOfControlPoints()):
-        point = [0.0, 0.0, 0.0]
-        line_node.GetNthControlPointPosition(i, point)
-        points.append(point)
-    return points
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return p1, p2
 
 def find_intersection(line1_points, line2_points):
-    p1, p2 = np.array(line1_points[0]), np.array(line1_points[1])
-    p3, p4 = np.array(line2_points[0]), np.array(line2_points[1])
-    
-    d1 = p2 - p1
-    d2 = p4 - p3
-    
+    p1, p2 = line1_points
+    p3, p4 = line2_points
+    d1, d2 = p2 - p1, p4 - p3
+    if np.linalg.norm(d1) == 0 or np.linalg.norm(d2) == 0: return None
     A = np.array([d1, -d2]).T
     b = p3 - p1
-    t, s = np.linalg.lstsq(A, b, rcond=None)[0]
-    
-    intersection = p1 + t * d1
-    return intersection
+    try:
+        t, s = np.linalg.lstsq(A, b, rcond=None)[0]
+        return p1 + t * d1
+    except np.linalg.LinAlgError:
+        return None
 
-def create_node(name, position):
+def create_fiducial(name, position):
+    old_node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if old_node: slicer.mrmlScene.RemoveNode(old_node)
     node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', name)
     node.AddControlPoint(position)
-    # Set the color to magenta (RGB: 255, 0, 255)
     displayNode = node.GetDisplayNode()
-    displayNode.SetSelectedColor(255/255, 0/255, 255/255)
+    displayNode.SetSelectedColor(1.0, 0.0, 1.0) # Magenta
 
-# Get the line nodes from the scene
-nasal_outline1 = slicer.util.getNode('nasal outline1')
-INB_B = slicer.util.getNode('INB_B')
-nasal_outline2 = slicer.util.getNode('nasal outline2')
-INB_C = slicer.util.getNode('INB_C')
-nasal_outline3 = slicer.util.getNode('nasal outline3')
-INB_D = slicer.util.getNode('INB_D')
-nasal_outline4 = slicer.util.getNode('nasal outline4')
-INB_E = slicer.util.getNode('INB_E')
-nasal_outline5 = slicer.util.getNode('nasal outline5')
-INB_F = slicer.util.getNode('INB_F')
-nasal_outline6 = slicer.util.getNode('nasal outline6')
-INB_A = slicer.util.getNode('INB_A')
+# --- Execution ---
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{intersection_map[0][1]}"):
+        prefix_to_use = prefix
+        print(f"Found sagittal lines with prefix: '{prefix_to_use}_'")
+        break
 
-# Get the points of the lines
-nasal_outline1_points = get_line_points(nasal_outline1)
-INB_B_points = get_line_points(INB_B)
-nasal_outline2_points = get_line_points(nasal_outline2)
-INB_C_points = get_line_points(INB_C)
-nasal_outline3_points = get_line_points(nasal_outline3)
-INB_D_points = get_line_points(INB_D)
-nasal_outline4_points = get_line_points(nasal_outline4)
-INB_E_points = get_line_points(INB_E)
-nasal_outline5_points = get_line_points(nasal_outline5)
-INB_F_points = get_line_points(INB_F)
-nasal_outline6_points = get_line_points(nasal_outline6)
-INB_A_points = get_line_points(INB_A)
+if not prefix_to_use:
+    slicer.util.errorDisplay("Could not find required sagittal intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Sagittal lines not found.")
 
-# Find intersections
-bone1 = find_intersection(nasal_outline1_points, INB_B_points)
-bone2 = find_intersection(nasal_outline2_points, INB_C_points)
-bone3 = find_intersection(nasal_outline3_points, INB_D_points)
-bone4 = find_intersection(nasal_outline4_points, INB_E_points)
-bone5 = find_intersection(nasal_outline5_points, INB_F_points)
-bone6 = find_intersection(nasal_outline6_points, INB_A_points)
+for i, (outline_name, suffix) in enumerate(intersection_map):
+    outline_node = slicer.util.getNode(outline_name)
+    sagittal_line_name = f"{prefix_to_use}_{suffix}"
+    sagittal_node = slicer.util.getNode(sagittal_line_name)
 
-# Create new nodes
-create_node("bone1", bone1)
-create_node("bone2", bone2)
-create_node("bone3", bone3)
-create_node("bone4", bone4)
-create_node("bone5", bone5)
-create_node("bone6", bone6)
+    if not outline_node or not sagittal_node:
+        print(f"Warning: Missing node '{outline_name}' or '{sagittal_line_name}'. Skipping.")
+        continue
+
+    intersection = find_intersection(get_line_points(outline_node), get_line_points(sagittal_node))
+    if intersection is not None:
+        create_fiducial(f"bone{i+1}", intersection)
+    else:
+        print(f"No intersection found between {outline_name} and {sagittal_line_name}.")
 ```
 
-<img src="https://github.com/user-attachments/assets/b9cdbbe0-c6ed-4704-9460-84574975ca0c" width="500"]>
+<img src="https://github.com/user-attachments/assets/b9cdbbe0-c6ed-4704-9460-84574975ca0c" width="500">
 
 </details>
 
 #### Optional adjusting codes
-If you want to programmatically ensure the manually placed midline points points meet the INB_A, B etc lines
+If you want to programmatically ensure the manually placed midline points meet the sagittal intersection lines.
 
 <details>
 
 <summary>Adjust midline points on 4 planes</summary>
 
 ``` python
+### Adjust midline points (4 planes, MSP/INB compatible) ###
+import slicer
+import numpy as np
+
+# --- Configuration ---
+line_prefix_priority = ['MSP', 'INB']
+# This mapping defines which points are adjusted to which lines
+adjust_map = [
+    ('bone1', 'nose profile outline 4', 0, 'B'),
+    ('bone2', 'nose profile outline 4', 1, 'C'),
+    ('bone3', 'nose profile outline 4', 2, 'D'),
+    ('bone4', 'nose profile outline 4', 3, 'A'),
+]
+
+# --- Helper Functions ---
+def get_line_points(line_node):
+    if not line_node or line_node.GetNumberOfControlPoints() < 2: return None
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return p1, p2
+
+def adjust_point_to_line(line_points, point_pos):
+    p1, p2 = line_points
+    line_vec = p2 - p1
+    point_vec = point_pos - p1
+    line_vec_normalized = line_vec / np.linalg.norm(line_vec)
+    projection_length = np.dot(point_vec, line_vec_normalized)
+    return p1 + projection_length * line_vec_normalized
+
+# --- Execution ---
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{adjust_map[0][3]}"):
+        prefix_to_use = prefix
+        print(f"Found sagittal lines with prefix: '{prefix_to_use}_'")
+        break
+
+if not prefix_to_use:
+    slicer.util.errorDisplay("Could not find required sagittal intersection lines.")
+    raise ValueError("Sagittal lines not found.")
+
+for bone_name, outline_name, outline_idx, suffix in adjust_map:
+    sagittal_line_name = f"{prefix_to_use}_{suffix}"
+    sagittal_line_node = slicer.util.getNode(sagittal_line_name)
+    bone_node = slicer.util.getNode(bone_name)
+    outline_node = slicer.util.getNode(outline_name)
+
+    if not all([sagittal_line_node, bone_node, outline_node]):
+        print(f"Warning: Skipping adjustment for {bone_name} due to missing nodes.")
+        continue
+
+    sagittal_line_points = get_line_points(sagittal_line_node)
+    if sagittal_line_points is None: continue
+
+    # Adjust 'bone' point
+    bone_pos = np.zeros(3)
+    bone_node.GetNthControlPointPosition(0, bone_pos)
+    adjusted_bone_pos = adjust_point_to_line(sagittal_line_points, bone_pos)
+    bone_node.SetNthControlPointPosition(0, adjusted_bone_pos)
+    print(f"Adjusted '{bone_name}' to line '{sagittal_line_name}'.")
+
+    # Adjust corresponding 'nose profile outline' point
+    outline_pos = np.zeros(3)
+    outline_node.GetNthControlPointPosition(outline_idx, outline_pos)
+    adjusted_outline_pos = adjust_point_to_line(sagittal_line_points, outline_pos)
+    outline_node.SetNthControlPointPosition(outline_idx, adjusted_outline_pos)
+    print(f"Adjusted point {outline_idx} of '{outline_name}' to line '{sagittal_line_name}'.")
 ```
+
 </details>
 
 <details>
@@ -2129,7 +2192,76 @@ If you want to programmatically ensure the manually placed midline points points
 <summary>Adjust midline points on 5 planes</summary>
 
 ``` python
+### Adjust midline points (5 planes, MSP/INB compatible) ###
+import slicer
+import numpy as np
+
+# --- Configuration ---
+line_prefix_priority = ['MSP', 'INB']
+adjust_map = [
+    ('bone1', 'nose profile outline 5', 0, 'B'),
+    ('bone2', 'nose profile outline 5', 1, 'C'),
+    ('bone3', 'nose profile outline 5', 2, 'D'),
+    ('bone4', 'nose profile outline 5', 3, 'E'),
+    ('bone5', 'nose profile outline 5', 4, 'A'),
+]
+
+# --- Helper Functions (same as 4-plane version) ---
+def get_line_points(line_node):
+    if not line_node or line_node.GetNumberOfControlPoints() < 2: return None
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return p1, p2
+
+def adjust_point_to_line(line_points, point_pos):
+    p1, p2 = line_points
+    line_vec = p2 - p1
+    point_vec = point_pos - p1
+    line_vec_normalized = line_vec / np.linalg.norm(line_vec)
+    projection_length = np.dot(point_vec, line_vec_normalized)
+    return p1 + projection_length * line_vec_normalized
+
+# --- Execution ---
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{adjust_map[0][3]}"):
+        prefix_to_use = prefix
+        print(f"Found sagittal lines with prefix: '{prefix_to_use}_'")
+        break
+
+if not prefix_to_use:
+    slicer.util.errorDisplay("Could not find required sagittal intersection lines.")
+    raise ValueError("Sagittal lines not found.")
+
+for bone_name, outline_name, outline_idx, suffix in adjust_map:
+    sagittal_line_name = f"{prefix_to_use}_{suffix}"
+    sagittal_line_node = slicer.util.getNode(sagittal_line_name)
+    bone_node = slicer.util.getNode(bone_name)
+    outline_node = slicer.util.getNode(outline_name)
+
+    if not all([sagittal_line_node, bone_node, outline_node]):
+        print(f"Warning: Skipping adjustment for {bone_name} due to missing nodes.")
+        continue
+
+    sagittal_line_points = get_line_points(sagittal_line_node)
+    if sagittal_line_points is None: continue
+
+    # Adjust 'bone' point
+    bone_pos = np.zeros(3)
+    bone_node.GetNthControlPointPosition(0, bone_pos)
+    adjusted_bone_pos = adjust_point_to_line(sagittal_line_points, bone_pos)
+    bone_node.SetNthControlPointPosition(0, adjusted_bone_pos)
+    print(f"Adjusted '{bone_name}' to line '{sagittal_line_name}'.")
+
+    # Adjust corresponding 'nose profile outline' point
+    outline_pos = np.zeros(3)
+    outline_node.GetNthControlPointPosition(outline_idx, outline_pos)
+    adjusted_outline_pos = adjust_point_to_line(sagittal_line_points, outline_pos)
+    outline_node.SetNthControlPointPosition(outline_idx, adjusted_outline_pos)
+    print(f"Adjusted point {outline_idx} of '{outline_name}' to line '{sagittal_line_name}'.")
 ```
+
 </details>
 
 <details>
@@ -2137,265 +2269,96 @@ If you want to programmatically ensure the manually placed midline points points
 <summary>Adjust midline points on 6 planes</summary>
 
 ``` python
+### Adjust midline points (6 planes, MSP/INB compatible) ###
 import slicer
 import numpy as np
 
-def is_point_on_line(line_points, point):
-    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
-    point = np.array(point)
+# --- Configuration ---
+line_prefix_priority = ['MSP', 'INB']
+# This mapping defines which points are adjusted to which lines
+adjust_map = [
+    ('bone1', 'nose profile outline 6', 0, 'B'),
+    ('bone2', 'nose profile outline 6', 1, 'C'),
+    ('bone3', 'nose profile outline 6', 2, 'D'),
+    ('bone4', 'nose profile outline 6', 3, 'E'),
+    ('bone5', 'nose profile outline 6', 4, 'F'),
+    ('bone6', 'nose profile outline 6', 5, 'A'),
+]
+
+# --- Helper Functions ---
+def get_line_points(line_node):
+    """Safely gets the two endpoints of a line markup."""
+    if not line_node or line_node.GetNumberOfControlPoints() < 2:
+        return None
+    p1, p2 = np.zeros(3), np.zeros(3)
+    line_node.GetNthControlPointPosition(0, p1)
+    line_node.GetNthControlPointPosition(1, p2)
+    return p1, p2
+
+def adjust_point_to_line(line_points, point_pos):
+    """Projects a point onto a line and returns the new position."""
+    p1, p2 = line_points
     line_vec = p2 - p1
-    point_vec = point - p1
-    cross_product = np.cross(line_vec, point_vec)
-    return np.allclose(cross_product, 0)
+    point_vec = point_pos - p1
+    # Handle zero-length line case
+    line_norm_sq = np.dot(line_vec, line_vec)
+    if line_norm_sq < 1e-9:
+        return p1 # Return the start point if line is degenerate
+    
+    t = np.dot(point_vec, line_vec) / line_norm_sq
+    return p1 + t * line_vec
 
-def adjust_point_to_line(line_points, point):
-    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
-    point = np.array(point)
-    line_vec = p2 - p1
-    line_vec_normalized = line_vec / np.linalg.norm(line_vec)
-    point_vec = point - p1
-    projection_length = np.dot(point_vec, line_vec_normalized)
-    adjusted_point = p1 + projection_length * line_vec_normalized
-    return adjusted_point.tolist()
+# --- Execution ---
+# 1. Find which prefix is being used in the scene (MSP or INB)
+prefix_to_use = None
+for prefix in line_prefix_priority:
+    # Check for the existence of one of the required lines
+    if slicer.mrmlScene.GetFirstNodeByName(f"{prefix}_{adjust_map[0][3]}"):
+        prefix_to_use = prefix
+        print(f"Found sagittal lines with prefix: '{prefix_to_use}_'")
+        break
 
-# Get the line nodes from the scene
-INB_B = slicer.util.getNode('INB_B')
-INB_C = slicer.util.getNode('INB_C')
-INB_D = slicer.util.getNode('INB_D')
-INB_E = slicer.util.getNode('INB_E')
-INB_F = slicer.util.getNode('INB_F')
-INB_A = slicer.util.getNode('INB_A')
+if not prefix_to_use:
+    slicer.util.errorDisplay("Could not find required sagittal intersection lines (e.g., 'MSP_A' or 'INB_A').")
+    raise ValueError("Sagittal lines not found.")
 
-# Get the points of the lines
-INB_B_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_C_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_D_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_E_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_F_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_A_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+# 2. Loop through the map and adjust points
+for bone_name, outline_name, outline_idx, suffix in adjust_map:
+    # Get all nodes for this iteration
+    sagittal_line_name = f"{prefix_to_use}_{suffix}"
+    sagittal_line_node = slicer.util.getNode(sagittal_line_name)
+    bone_node = slicer.util.getNode(bone_name)
+    outline_node = slicer.util.getNode(outline_name)
 
-for i in range(INB_B.GetNumberOfControlPoints()):
-    INB_B.GetNthControlPointPosition(i, INB_B_points[i])
+    # Check if all required nodes exist before proceeding
+    if not all([sagittal_line_node, bone_node, outline_node]):
+        print(f"Warning: Skipping adjustment for {bone_name} due to missing nodes.")
+        continue
 
-for i in range(INB_C.GetNumberOfControlPoints()):
-    INB_C.GetNthControlPointPosition(i, INB_C_points[i])
+    sagittal_line_points = get_line_points(sagittal_line_node)
+    if sagittal_line_points is None:
+        print(f"Warning: Could not get points for line '{sagittal_line_name}'.")
+        continue
 
-for i in range(INB_D.GetNumberOfControlPoints()):
-    INB_D.GetNthControlPointPosition(i, INB_D_points[i])
+    # Adjust the 'bone' point to the sagittal line
+    bone_pos = np.zeros(3)
+    bone_node.GetNthControlPointPosition(0, bone_pos)
+    adjusted_bone_pos = adjust_point_to_line(sagittal_line_points, bone_pos)
+    bone_node.SetNthControlPointPosition(0, adjusted_bone_pos)
+    print(f"Adjusted '{bone_name}' to line '{sagittal_line_name}'.")
 
-for i in range(INB_E.GetNumberOfControlPoints()):
-    INB_E.GetNthControlPointPosition(i, INB_E_points[i])
-
-for i in range(INB_F.GetNumberOfControlPoints()):
-    INB_F.GetNthControlPointPosition(i, INB_F_points[i])
-
-for i in range(INB_A.GetNumberOfControlPoints()):
-    INB_A.GetNthControlPointPosition(i, INB_A_points[i])
-
-# Get the bone nodes from the scene
-bone1 = slicer.util.getNode('bone1')
-bone2 = slicer.util.getNode('bone2')
-bone3 = slicer.util.getNode('bone3')
-bone4 = slicer.util.getNode('bone4')
-bone5 = slicer.util.getNode('bone5')
-bone6 = slicer.util.getNode('bone6')
-
-# Get the points of the bones
-bone1_point = [0.0, 0.0, 0.0]
-bone2_point = [0.0, 0.0, 0.0]
-bone3_point = [0.0, 0.0, 0.0]
-bone4_point = [0.0, 0.0, 0.0]
-bone5_point = [0.0, 0.0, 0.0]
-bone6_point = [0.0, 0.0, 0.0]
-
-bone1.GetNthControlPointPosition(0, bone1_point)
-bone2.GetNthControlPointPosition(0, bone2_point)
-bone3.GetNthControlPointPosition(0, bone3_point)
-bone4.GetNthControlPointPosition(0, bone4_point)
-bone5.GetNthControlPointPosition(0, bone5_point)
-bone6.GetNthControlPointPosition(0, bone6_point)
-
-# Get the nose profile outline node from the scene
-nose_profile_outline6 = slicer.util.getNode('nose profile outline 6')
-
-# Get the points of the nose profile outline
-nose_profile_outline6_points = [[0.0, 0.0, 0.0] for _ in range(nose_profile_outline6.GetNumberOfControlPoints())]
-
-for i in range(nose_profile_outline6.GetNumberOfControlPoints()):
-    nose_profile_outline6.GetNthControlPointPosition(i, nose_profile_outline6_points[i])
-import slicer
-import numpy as np
-
-def is_point_on_line(line_points, point):
-    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
-    point = np.array(point)
-    line_vec = p2 - p1
-    point_vec = point - p1
-    cross_product = np.cross(line_vec, point_vec)
-    return np.allclose(cross_product, 0)
-
-def adjust_point_to_line(line_points, point):
-    p1, p2 = np.array(line_points[0]), np.array(line_points[1])
-    point = np.array(point)
-    line_vec = p2 - p1
-    line_vec_normalized = line_vec / np.linalg.norm(line_vec)
-    point_vec = point - p1
-    projection_length = np.dot(point_vec, line_vec_normalized)
-    adjusted_point = p1 + projection_length * line_vec_normalized
-    return adjusted_point.tolist()
-
-# Get the line nodes from the scene
-INB_B = slicer.util.getNode('INB_B')
-INB_C = slicer.util.getNode('INB_C')
-INB_D = slicer.util.getNode('INB_D')
-INB_E = slicer.util.getNode('INB_E')
-INB_F = slicer.util.getNode('INB_F')
-INB_A = slicer.util.getNode('INB_A')
-
-# Get the points of the lines
-INB_B_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_C_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_D_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_E_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_F_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-INB_A_points = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-
-for i in range(INB_B.GetNumberOfControlPoints()):
-    INB_B.GetNthControlPointPosition(i, INB_B_points[i])
-
-for i in range(INB_C.GetNumberOfControlPoints()):
-    INB_C.GetNthControlPointPosition(i, INB_C_points[i])
-
-for i in range(INB_D.GetNumberOfControlPoints()):
-    INB_D.GetNthControlPointPosition(i, INB_D_points[i])
-
-for i in range(INB_E.GetNumberOfControlPoints()):
-    INB_E.GetNthControlPointPosition(i, INB_E_points[i])
-
-for i in range(INB_F.GetNumberOfControlPoints()):
-    INB_F.GetNthControlPointPosition(i, INB_F_points[i])
-
-for i in range(INB_A.GetNumberOfControlPoints()):
-    INB_A.GetNthControlPointPosition(i, INB_A_points[i])
-
-# Get the bone nodes from the scene
-bone1 = slicer.util.getNode('bone1')
-bone2 = slicer.util.getNode('bone2')
-bone3 = slicer.util.getNode('bone3')
-bone4 = slicer.util.getNode('bone4')
-bone5 = slicer.util.getNode('bone5')
-bone6 = slicer.util.getNode('bone6')
-
-# Get the points of the bones
-bone1_point = [0.0, 0.0, 0.0]
-bone2_point = [0.0, 0.0, 0.0]
-bone3_point = [0.0, 0.0, 0.0]
-bone4_point = [0.0, 0.0, 0.0]
-bone5_point = [0.0, 0.0, 0.0]
-bone6_point = [0.0, 0.0, 0.0]
-
-bone1.GetNthControlPointPosition(0, bone1_point)
-bone2.GetNthControlPointPosition(0, bone2_point)
-bone3.GetNthControlPointPosition(0, bone3_point)
-bone4.GetNthControlPointPosition(0, bone4_point)
-bone5.GetNthControlPointPosition(0, bone5_point)
-bone6.GetNthControlPointPosition(0, bone6_point)
-
-# Get the nose profile outline node from the scene
-nose_profile_outline6 = slicer.util.getNode('nose profile outline 6')
-
-# Get the points of the nose profile outline
-nose_profile_outline6_points = [[0.0, 0.0, 0.0] for _ in range(nose_profile_outline6.GetNumberOfControlPoints())]
-
-for i in range(nose_profile_outline6.GetNumberOfControlPoints()):
-    nose_profile_outline6.GetNthControlPointPosition(i, nose_profile_outline6_points[i])
-
-# Check if points are on the lines and adjust if necessary
-if not is_point_on_line(INB_B_points, bone1_point):
-    bone1_adjusted = adjust_point_to_line(INB_B_points, bone1_point)
-else:
-    bone1_adjusted = bone1_point
-
-if not is_point_on_line(INB_B_points, nose_profile_outline6_points[0]):
-    nose_profile_outline6_point0_adjusted = adjust_point_to_line(INB_B_points, nose_profile_outline6_points[0])
-else:
-    nose_profile_outline6_point0_adjusted = nose_profile_outline6_points[0]
-
-if not is_point_on_line(INB_C_points, bone2_point):
-    bone2_adjusted = adjust_point_to_line(INB_C_points, bone2_point)
-else:
-    bone2_adjusted = bone2_point
-
-if not is_point_on_line(INB_C_points, nose_profile_outline6_points[1]):
-    nose_profile_outline6_point1_adjusted = adjust_point_to_line(INB_C_points, nose_profile_outline6_points[1])
-else:
-    nose_profile_outline6_point1_adjusted = nose_profile_outline6_points[1]
-
-if not is_point_on_line(INB_D_points, bone3_point):
-    bone3_adjusted = adjust_point_to_line(INB_D_points, bone3_point)
-else:
-    bone3_adjusted = bone3_point
-
-if not is_point_on_line(INB_D_points, nose_profile_outline6_points[2]):
-    nose_profile_outline6_point2_adjusted = adjust_point_to_line(INB_D_points, nose_profile_outline6_points[2])
-else:
-    nose_profile_outline6_point2_adjusted = nose_profile_outline6_points[2]
-
-if not is_point_on_line(INB_E_points, bone4_point):
-    bone4_adjusted = adjust_point_to_line(INB_E_points, bone4_point)
-else:
-    bone4_adjusted = bone4_point
-
-if not is_point_on_line(INB_E_points, nose_profile_outline6_points[3]):
-    nose_profile_outline6_point3_adjusted = adjust_point_to_line(INB_E_points, nose_profile_outline6_points[3])
-else:
-    nose_profile_outline6_point3_adjusted = nose_profile_outline6_points[3]
-
-if not is_point_on_line(INB_F_points, bone5_point):
-    bone5_adjusted = adjust_point_to_line(INB_F_points, bone5_point)
-else:
-    bone5_adjusted = bone5_point
-
-if not is_point_on_line(INB_F_points, nose_profile_outline6_points[4]):
-    nose_profile_outline6_point4_adjusted = adjust_point_to_line(INB_F_points, nose_profile_outline6_points[4])
-else:
-    nose_profile_outline6_point4_adjusted = nose_profile_outline6_points[4]
-
-if not is_point_on_line(INB_A_points, bone6_point):
-    bone6_adjusted = adjust_point_to_line(INB_A_points, bone6_point)
-else:
-    bone6_adjusted = bone6_point
-
-if not is_point_on_line(INB_A_points, nose_profile_outline6_points[5]):
-    nose_profile_outline6_point5_adjusted = adjust_point_to_line(INB_A_points, nose_profile_outline6_points[5])
-else:
-    nose_profile_outline6_point5_adjusted = nose_profile_outline6_points[5]
-
-# Update the points with the adjusted positions
-bone1.SetNthControlPointPosition(0, *bone1_adjusted)
-nose_profile_outline6.SetNthControlPointPosition(0, *nose_profile_outline6_point0_adjusted)
-
-bone2.SetNthControlPointPosition(0, *bone2_adjusted)
-nose_profile_outline6.SetNthControlPointPosition(1, *nose_profile_outline6_point1_adjusted)
-
-bone3.SetNthControlPointPosition(0, *bone3_adjusted)
-nose_profile_outline6.SetNthControlPointPosition(2, *nose_profile_outline6_point2_adjusted)
-
-bone4.SetNthControlPointPosition(0, *bone4_adjusted)
-nose_profile_outline6.SetNthControlPointPosition(3, *nose_profile_outline6_point3_adjusted)
-
-bone5.SetNthControlPointPosition(0, *bone5_adjusted)
-nose_profile_outline6.SetNthControlPointPosition(4, *nose_profile_outline6_point4_adjusted)
-
-bone6.SetNthControlPointPosition(0, *bone6_adjusted)
-nose_profile_outline6.Set
+    # Adjust the corresponding 'nose profile outline' point to the same sagittal line
+    outline_pos = np.zeros(3)
+    outline_node.GetNthControlPointPosition(outline_idx, outline_pos)
+    adjusted_outline_pos = adjust_point_to_line(sagittal_line_points, outline_pos)
+    outline_node.SetNthControlPointPosition(outline_idx, adjusted_outline_pos)
+    print(f"Adjusted point {outline_idx} of '{outline_name}' to line '{sagittal_line_name}'.")
 ```
+
 </details>
 
-
-#### Distances between Line A and nose profile & Line A and nasal aperture
- 3. This step creates length measurements from the mirror point (Line B) to the a) nose profile (outside portion) coloured in orange and names them “noseprofiletoB1/2/3/4” etc; and b) to the nasal aperture in profile view  (inside portion) coloured lilac and names them “nasalbonetoB1/2/3/4” 
-
+#### Distances between mirror points and nose landmarks
+ 3. This step creates length measurements from the mirror point to the a) nose profile (outside portion) coloured in orange and names them “noseprofiletoB1/2/3/4” etc; and b) to the nasal aperture (inside portion) coloured lilac and names them “nasalbonetoB1/2/3/4”.
 
 <details>
 
@@ -2405,7 +2368,22 @@ nose_profile_outline6.Set
 ###  4 planes - inside-outside mirror point
 import slicer
 
+# --- Configuration ---
+orange = (1.0, 0.5, 0.0)
+lilac = (0.78, 0.64, 0.78)
+measurement_map = [
+    # (mirror point suffix, outline node index, bone number)
+    ('B', 0, 1),
+    ('C', 1, 2),
+    ('D', 2, 3),
+    ('A', 3, 4),
+]
+outline_node_name = "nose profile outline 4"
+
+# --- Helper Function ---
 def create_linear_measurement(name, start_point, end_point, color):
+    old_node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if old_node: slicer.mrmlScene.RemoveNode(old_node)
     line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
     line_node.AddControlPoint(start_point)
     line_node.AddControlPoint(end_point)
@@ -2413,42 +2391,36 @@ def create_linear_measurement(name, start_point, end_point, color):
     display_node.SetSelectedColor(color)
     display_node.SetColor(color)
 
-# Define colors
-orange = [1.0, 0.5, 0.0]
-lilac = [0.78, 0.64, 0.78]
+# --- Execution ---
+outline_node = slicer.util.getNode(outline_node_name)
+if not outline_node:
+    slicer.util.errorDisplay(f"Error: Outline node '{outline_node_name}' not found.")
+    raise ValueError("Outline node not found.")
 
-# Get the nodes from the scene
-mirrorB_A = slicer.util.getNode('mirrorB_A')
-mirrorB_B = slicer.util.getNode('mirrorB_B')
-mirrorB_C = slicer.util.getNode('mirrorB_C')
-mirrorB_D = slicer.util.getNode('mirrorB_D')
-nose_profile_outline4 = slicer.util.getNode('nose profile outline 4')
-bone1 = slicer.util.getNode('bone1')
-bone2 = slicer.util.getNode('bone2')
-bone3 = slicer.util.getNode('bone3')
-bone4 = slicer.util.getNode('bone4')
-
-# Get the points from the nodes
-nose_profile_outline4_points = []
-for i in range(nose_profile_outline4.GetNumberOfControlPoints()):
-    point = [0.0, 0.0, 0.0]
-    nose_profile_outline4.GetNthControlPointPosition(i, point)
-    nose_profile_outline4_points.append(point)
-
-# Create linear measurements in orange
-create_linear_measurement("noseprofiletoB1", mirrorB_B.GetNthControlPointPosition(0), nose_profile_outline4_points[0], orange)
-create_linear_measurement("noseprofiletoB2", mirrorB_C.GetNthControlPointPosition(0), nose_profile_outline4_points[1], orange)
-create_linear_measurement("noseprofiletoB3", mirrorB_D.GetNthControlPointPosition(0), nose_profile_outline4_points[2], orange)
-create_linear_measurement("noseprofiletoB4", mirrorB_A.GetNthControlPointPosition(0), nose_profile_outline4_points[3], orange)
-
-# Create linear measurements in lilac
-create_linear_measurement("nasalbonetoB1", mirrorB_B.GetNthControlPointPosition(0), bone1.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB2", mirrorB_C.GetNthControlPointPosition(0), bone2.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB3", mirrorB_D.GetNthControlPointPosition(0), bone3.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB4", mirrorB_A.GetNthControlPointPosition(0), bone4.GetNthControlPointPosition(0), lilac)
-
+for suffix, outline_idx, bone_num in measurement_map:
+    # Get required nodes
+    mirror_node = slicer.util.getNode(f'mirrorB_{suffix}')
+    bone_node = slicer.util.getNode(f'bone{bone_num}')
+    
+    if not all([mirror_node, bone_node]):
+        print(f"Warning: Skipping measurements for set {suffix} due to missing nodes.")
+        continue
+    
+    # Get positions
+    mirror_pos = np.zeros(3)
+    mirror_node.GetNthControlPointPosition(0, mirror_pos)
+    
+    bone_pos = np.zeros(3)
+    bone_node.GetNthControlPointPosition(0, bone_pos)
+    
+    outline_pos = np.zeros(3)
+    outline_node.GetNthControlPointPosition(outline_idx, outline_pos)
+    
+    # Create measurements
+    create_linear_measurement(f"noseprofiletoB{bone_num}", mirror_pos, outline_pos, orange)
+    create_linear_measurement(f"nasalbonetoB{bone_num}", mirror_pos, bone_pos, lilac)
+    print(f"Created measurements for set {bone_num}.")
 ```
-![image](https://github.com/user-attachments/assets/65e998fb-4b37-42d6-82a2-7d67b4634df5)
 
 <img src="https://github.com/user-attachments/assets/65e998fb-4b37-42d6-82a2-7d67b4634df5" width="500">
 
@@ -2461,8 +2433,25 @@ create_linear_measurement("nasalbonetoB4", mirrorB_A.GetNthControlPointPosition(
 ``` python
 ###   5 planes - inside-outside mirror point
 import slicer
+import numpy as np
 
+# --- Configuration ---
+orange = (1.0, 0.5, 0.0)
+lilac = (0.78, 0.64, 0.78)
+measurement_map = [
+    # (mirror point suffix, outline node index, bone number)
+    ('B', 0, 1),
+    ('C', 1, 2),
+    ('D', 2, 3),
+    ('E', 3, 4),
+    ('A', 4, 5),
+]
+outline_node_name = "nose profile outline 5"
+
+# --- Helper Function ---
 def create_linear_measurement(name, start_point, end_point, color):
+    old_node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if old_node: slicer.mrmlScene.RemoveNode(old_node)
     line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
     line_node.AddControlPoint(start_point)
     line_node.AddControlPoint(end_point)
@@ -2470,52 +2459,36 @@ def create_linear_measurement(name, start_point, end_point, color):
     display_node.SetSelectedColor(color)
     display_node.SetColor(color)
 
-# Define colors
-orange = [1.0, 0.5, 0.0]
-lilac = [0.78, 0.64, 0.78]
+# --- Execution ---
+outline_node = slicer.util.getNode(outline_node_name)
+if not outline_node:
+    slicer.util.errorDisplay(f"Error: Outline node '{outline_node_name}' not found.")
+    raise ValueError("Outline node not found.")
 
-# Get the nodes from the scene
-mirrorB_A = slicer.util.getNode('mirrorB_A')
-mirrorB_B = slicer.util.getNode('mirrorB_B')
-mirrorB_C = slicer.util.getNode('mirrorB_C')
-mirrorB_D = slicer.util.getNode('mirrorB_D')
-mirrorB_E = slicer.util.getNode('mirrorB_E')
-nose_profile_outline5 = slicer.util.getNode('nose profile outline 5')
-bone1 = slicer.util.getNode('bone1')
-bone2 = slicer.util.getNode('bone2')
-bone3 = slicer.util.getNode('bone3')
-bone4 = slicer.util.getNode('bone4')
-bone5 = slicer.util.getNode('bone5')
-
-# Get the points from the nodes
-nose_profile_outline5_points = []
-for i in range(nose_profile_outline5.GetNumberOfControlPoints()):
-    point = [0.0, 0.0, 0.0]
-    nose_profile_outline5.GetNthControlPointPosition(i, point)
-    nose_profile_outline5_points.append(point)
-
-nose_profile_outline5_points = []
-for i in range(nose_profile_outline5.GetNumberOfControlPoints()):
-    point = [0.0, 0.0, 0.0]
-    nose_profile_outline5.GetNthControlPointPosition(i, point)
-    nose_profile_outline5_points.append(point)
-
-# Create linear measurements in orange
-create_linear_measurement("noseprofiletoB1", mirrorB_B.GetNthControlPointPosition(0), nose_profile_outline5_points[0], orange)
-create_linear_measurement("noseprofiletoB2", mirrorB_C.GetNthControlPointPosition(0), nose_profile_outline5_points[1], orange)
-create_linear_measurement("noseprofiletoB3", mirrorB_D.GetNthControlPointPosition(0), nose_profile_outline5_points[2], orange)
-create_linear_measurement("noseprofiletoB4", mirrorB_E.GetNthControlPointPosition(0), nose_profile_outline5_points[3], orange)
-create_linear_measurement("noseprofiletoB5", mirrorB_A.GetNthControlPointPosition(0), nose_profile_outline5_points[4], orange)
-
-# Create linear measurements in lilac
-create_linear_measurement("nasalbonetoB1", mirrorB_B.GetNthControlPointPosition(0), bone1.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB2", mirrorB_C.GetNthControlPointPosition(0), bone2.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB3", mirrorB_D.GetNthControlPointPosition(0), bone3.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB4", mirrorB_E.GetNthControlPointPosition(0), bone4.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB5", mirrorB_A.GetNthControlPointPosition(0), bone5.GetNthControlPointPosition(0), lilac)
-
+for suffix, outline_idx, bone_num in measurement_map:
+    # Get required nodes
+    mirror_node = slicer.util.getNode(f'mirrorB_{suffix}')
+    bone_node = slicer.util.getNode(f'bone{bone_num}')
+    
+    if not all([mirror_node, bone_node]):
+        print(f"Warning: Skipping measurements for set {suffix} due to missing nodes.")
+        continue
+    
+    # Get positions
+    mirror_pos = np.zeros(3)
+    mirror_node.GetNthControlPointPosition(0, mirror_pos)
+    
+    bone_pos = np.zeros(3)
+    bone_node.GetNthControlPointPosition(0, bone_pos)
+    
+    outline_pos = np.zeros(3)
+    outline_node.GetNthControlPointPosition(outline_idx, outline_pos)
+    
+    # Create measurements
+    create_linear_measurement(f"noseprofiletoB{bone_num}", mirror_pos, outline_pos, orange)
+    create_linear_measurement(f"nasalbonetoB{bone_num}", mirror_pos, bone_pos, lilac)
+    print(f"Created measurements for set {bone_num}.")
 ```
-
 
 <img src="https://github.com/user-attachments/assets/ae87c073-2b4d-45e5-82cd-149c02cfdf86" width="500">
 
@@ -2528,8 +2501,26 @@ create_linear_measurement("nasalbonetoB5", mirrorB_A.GetNthControlPointPosition(
 ``` python
 ###    6 planes - inside-outside mirror point
 import slicer
+import numpy as np
 
+# --- Configuration ---
+orange = (1.0, 0.5, 0.0)
+lilac = (0.78, 0.64, 0.78)
+measurement_map = [
+    # (mirror point suffix, outline node index, bone number)
+    ('B', 0, 1),
+    ('C', 1, 2),
+    ('D', 2, 3),
+    ('E', 3, 4),
+    ('F', 4, 5),
+    ('A', 5, 6),
+]
+outline_node_name = "nose profile outline 6"
+
+# --- Helper Function ---
 def create_linear_measurement(name, start_point, end_point, color):
+    old_node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if old_node: slicer.mrmlScene.RemoveNode(old_node)
     line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
     line_node.AddControlPoint(start_point)
     line_node.AddControlPoint(end_point)
@@ -2537,50 +2528,38 @@ def create_linear_measurement(name, start_point, end_point, color):
     display_node.SetSelectedColor(color)
     display_node.SetColor(color)
 
-# Define colors
-orange = [1.0, 0.5, 0.0]
-lilac = [0.78, 0.64, 0.78]
+# --- Execution ---
+outline_node = slicer.util.getNode(outline_node_name)
+if not outline_node:
+    slicer.util.errorDisplay(f"Error: Outline node '{outline_node_name}' not found.")
+    raise ValueError("Outline node not found.")
 
-# Get the nodes from the scene
-mirrorB_A = slicer.util.getNode('mirrorB_A')
-mirrorB_B = slicer.util.getNode('mirrorB_B')
-mirrorB_C = slicer.util.getNode('mirrorB_C')
-mirrorB_D = slicer.util.getNode('mirrorB_D')
-mirrorB_E = slicer.util.getNode('mirrorB_E')
-mirrorB_F = slicer.util.getNode('mirrorB_F')
-nose_profile_outline6 = slicer.util.getNode('nose profile outline 6')
-bone1 = slicer.util.getNode('bone1')
-bone2 = slicer.util.getNode('bone2')
-bone3 = slicer.util.getNode('bone3')
-bone4 = slicer.util.getNode('bone4')
-bone5 = slicer.util.getNode('bone5')
-bone6 = slicer.util.getNode('bone6')
-
-# Get the points from the nodes
-nose_profile_outline6_points = []
-for i in range(nose_profile_outline6.GetNumberOfControlPoints()):
-    point = [0.0, 0.0, 0.0]
-    nose_profile_outline6.GetNthControlPointPosition(i, point)
-    nose_profile_outline6_points.append(point)
-
-# Create linear measurements in orange
-create_linear_measurement("noseprofiletoB1", mirrorB_B.GetNthControlPointPosition(0), nose_profile_outline6_points[0], orange)
-create_linear_measurement("noseprofiletoB2", mirrorB_C.GetNthControlPointPosition(0), nose_profile_outline6_points[1], orange)
-create_linear_measurement("noseprofiletoB3", mirrorB_D.GetNthControlPointPosition(0), nose_profile_outline6_points[2], orange)
-create_linear_measurement("noseprofiletoB4", mirrorB_E.GetNthControlPointPosition(0), nose_profile_outline6_points[3], orange)
-create_linear_measurement("noseprofiletoB5", mirrorB_F.GetNthControlPointPosition(0), nose_profile_outline6_points[4], orange)
-create_linear_measurement("noseprofiletoB6", mirrorB_A.GetNthControlPointPosition(0), nose_profile_outline6_points[5], orange)
-
-# Create linear measurements in lilac
-create_linear_measurement("nasalbonetoB1", mirrorB_B.GetNthControlPointPosition(0), bone1.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB2", mirrorB_C.GetNthControlPointPosition(0), bone2.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB3", mirrorB_D.GetNthControlPointPosition(0), bone3.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB4", mirrorB_E.GetNthControlPointPosition(0), bone4.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB5", mirrorB_F.GetNthControlPointPosition(0), bone5.GetNthControlPointPosition(0), lilac)
-create_linear_measurement("nasalbonetoB6", mirrorB_A.GetNthControlPointPosition(0), bone6.GetNthControlPointPosition(0), lilac)
+for suffix, outline_idx, bone_num in measurement_map:
+    # Get required nodes
+    mirror_node = slicer.util.getNode(f'mirrorB_{suffix}')
+    bone_node = slicer.util.getNode(f'bone{bone_num}')
+    
+    if not all([mirror_node, bone_node]):
+        print(f"Warning: Skipping measurements for set {suffix} due to missing nodes.")
+        continue
+    
+    # Get positions
+    mirror_pos = np.zeros(3)
+    mirror_node.GetNthControlPointPosition(0, mirror_pos)
+    
+    bone_pos = np.zeros(3)
+    bone_node.GetNthControlPointPosition(0, bone_pos)
+    
+    outline_pos = np.zeros(3)
+    outline_node.GetNthControlPointPosition(outline_idx, outline_pos)
+    
+    # Create measurements
+    create_linear_measurement(f"noseprofiletoB{bone_num}", mirror_pos, outline_pos, orange)
+    create_linear_measurement(f"nasalbonetoB{bone_num}", mirror_pos, bone_pos, lilac)
+    print(f"Created measurements for set {bone_num}.")
 ```
 
-<img src="https://github.com/user-attachments/assets/d64193b0-5db8-4416-94ae-c8e731a9772f" width="500"]>
+<img src="https://github.com/user-attachments/assets/d64193b0-5db8-4416-94ae-c8e731a9772f" width="500">
 
 </details>
 
