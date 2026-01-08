@@ -470,13 +470,13 @@ Example of programmatically placing mp that does not meet the bone surface
 
 Example of the manually adjusted mp
 
-### Predict Pronasale (Improved Method from GUI)
+### Predict Pronasale
 
-The following improved method uses anatomically-correct calculations based on the bone model's surface normals and the RAS (Right-Anterior-Superior) coordinate system. The default FSTT (facial soft tissue thickness) value is 11.5mm based on Hona and Stephan 2024.
+The following method is adapted from Step 7 of the GUI. It uses anatomically-correct calculations based on the bone model's surface normals and the RAS (Right-Anterior-Superior) coordinate system. The default FSTT (facial soft tissue thickness) value is 11.5mm based on [Hona and Stephan 2024](https://link.springer.com/article/10.1007/s00414-023-03087-x), and the multiplier is set to 3.0× ANS (Krogman and Iscan, 1986).
 
 <details>
 
-<summary>Predict Pronasale - Improved Logic</summary>
+<summary>Predict Pronasale - Copy-Pasteable Snippet</summary>
 
 ```python
 import numpy as np
@@ -486,18 +486,22 @@ from slicer.util import getNode
 
 # --- Configuration ---
 PERPENDICULAR_DISTANCE_MM = 11.5  # Default FSTT from Hona and Stephan 2024
-MULTIPLIER = 3.0  # 3.0x ANS (Krogman and Iscan) or 1.9x ANS (Matsuda et al.)
+MULTIPLIER = 3.0  # 3.0 × ANS (Krogman and Iscan, 1986) or 1.9 × ANS (Matsuda et al., 2023)
 SHOW_CYLINDER = True  # Set to False to hide cylinder visualization
 
 # --- Get Required Nodes ---
-hardTissueNode = getNode('KrogmanIscan_hard_tissue')
+landmarksNode = getNode('KrogmanIscan_hard_tissue')
 boneModel = slicer.util.getFirstNodeByClass('vtkMRMLModelNode')  # Gets first bone model
 vmjAcaLine = getNode('VMJ-aca')
 
+# Verify all required nodes exist
+if not all([boneModel, landmarksNode, vmjAcaLine]):
+    raise ValueError("A required node from a previous step is missing.")
+
 # Find the mp point index
 mp_index = -1
-for i in range(hardTissueNode.GetNumberOfControlPoints()):
-    if 'mp' in hardTissueNode.GetNthControlPointLabel(i).lower():
+for i in range(landmarksNode.GetNumberOfControlPoints()):
+    if 'mp' in landmarksNode.GetNthControlPointLabel(i).lower():
         mp_index = i
         break
 
@@ -506,10 +510,10 @@ if mp_index == -1:
 
 # Get mp position
 mp_pos = np.zeros(3)
-hardTissueNode.GetNthControlPointPositionWorld(mp_index, mp_pos)
+landmarksNode.GetNthControlPointPositionWorld(mp_index, mp_pos)
 
 # --- Calculate Surface Normal at mp ---
-# Use RAS coordinate system: Y-axis is typically anterior
+# Use RAS coordinate system: Y-axis is anterior
 anterior_dir = np.array([0, 1, 0])
 
 # Get surface normal from bone model
@@ -522,8 +526,8 @@ normals_filter.SetInputData(boneModel.GetPolyData())
 normals_filter.ComputePointNormalsOn()
 normals_filter.Update()
 
-closest_point_id = point_locator.FindClosestPoint(mp_pos)
-avg_normal = np.array(normals_filter.GetOutput().GetPointData().GetNormals().GetTuple(closest_point_id))
+avg_normal = np.array(normals_filter.GetOutput().GetPointData().GetNormals().GetTuple(
+    point_locator.FindClosestPoint(mp_pos)))
 
 # Ensure the normal points ANTERIORLY (in the same general direction as anterior_dir)
 if np.dot(avg_normal, anterior_dir) < 0:
@@ -543,11 +547,12 @@ fstt_line.GetDisplayNode().SetSelectedColor(0, 1, 0)  # Green
 fstt_line.GetDisplayNode().SetLineThickness(0.3)
 
 # --- Create Cylinder Visualization (Optional) ---
+cylinder_model = slicer.util.getFirstNodeByName("FSTT mp cylinder")
 if SHOW_CYLINDER:
-    cylinder_model = slicer.util.getFirstNodeByName("FSTT mp cylinder")
     if not cylinder_model:
         cylinder_model = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "FSTT mp cylinder")
     
+    # Ensure display node exists and is visible
     if not cylinder_model.GetDisplayNode():
         cylinder_model.CreateDefaultDisplayNodes()
     display_node = cylinder_model.GetDisplayNode()
@@ -575,14 +580,19 @@ if SHOW_CYLINDER:
     transform_polydata.Update()
     
     cylinder_model.SetAndObservePolyData(transform_polydata.GetOutput())
-    display_node.SetColor(1, 1, 0)  # Yellow
+    
+    # Set color
+    if display_node:
+        display_node.SetColor(1, 1, 0)  # Yellow
+elif cylinder_model:
+    # Hide cylinder if SHOW_CYLINDER is False
+    display_node = cylinder_model.GetDisplayNode()
+    if display_node:
+        display_node.SetVisibility(False)
 
 # --- Calculate Pronasale Position ---
-# Get VMJ-aca length
-vmj_aca_length = vmjAcaLine.GetLineLengthWorld()
-
-# Project in anterior direction
-pronasale_pos = end_point_perp + anterior_dir * (vmj_aca_length * MULTIPLIER)
+# Calculate pronasale position (anterior projection)
+pronasale_pos = end_point_perp + anterior_dir * (vmjAcaLine.GetLineLengthWorld() * MULTIPLIER)
 
 # Create final prediction line
 final_line = slicer.util.getFirstNodeByName("pronasale_vector")
@@ -603,14 +613,16 @@ predictedPronasaleNode.AddControlPoint(pronasale_pos, "pronasale")
 predictedPronasaleNode.GetDisplayNode().SetSelectedColor(1, 0, 0)  # Red
 predictedPronasaleNode.GetDisplayNode().SetGlyphScale(3.0)
 
+# Output results
 print(f"Pronasale prediction complete!")
-print(f"VMJ-aca length: {vmj_aca_length:.2f} mm")
+print(f"VMJ-aca length: {vmjAcaLine.GetLineLengthWorld():.2f} mm")
 print(f"FSTT distance: {PERPENDICULAR_DISTANCE_MM:.2f} mm")
 print(f"Multiplier: {MULTIPLIER}x")
 print(f"Predicted pronasale position: {pronasale_pos}")
 ```
 
 </details>
+
 
 ### Error Calculation
 
