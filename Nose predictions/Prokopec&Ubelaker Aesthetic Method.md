@@ -229,8 +229,7 @@ May be referred to as NPP - nasion-prosthion plane; defined by Rynn as
 
 To create this plane, use this code: 
 
-<summary>NPP</summary>
-
+<summary> NPP </summary>
 <details>
 	
 ```python
@@ -361,33 +360,80 @@ To create this plane, use this code:
 
 ```python
 
-#PTP#
 import numpy as np
 import slicer
 
-# Get the 'INB' and 'NPP' plane nodes
-inbPlaneNode = slicer.util.getNode('INB')
-nppPlaneNode = slicer.util.getNode('NPP')
+# --- Configuration ---
 
-# Calculate the normals of the 'INB' and 'NPP' planes
-inbNormal = np.array(inbPlaneNode.GetNormalWorld())
-nppNormal = np.array(nppPlaneNode.GetNormalWorld())
+# 1. Reference Planes Priority:
+#    The script will search for these planes in order to define the PTP.
+#    It needs one sagittal plane and one NPP plane.
+sagittal_plane_priority = ['MSP', 'INB']
+npp_plane_priority = ['NPP_bestfit', 'NPP'] # Looks for the 'bestfit' version first
 
-# Calculate the normal of the new plane 'PTP' (perpendicular to both 'INB' and 'NPP')
-ptpNormal = np.cross(inbNormal, nppNormal)
-ptpNormal /= np.linalg.norm(ptpNormal)  # Normalize the vector
+# 2. Origin Source:
+#    Which plane's origin should be used for the new PTP plane?
+#    Commonly the sagittal plane's origin is used.
+origin_source_priority = ['MSP', 'INB']
 
-# Create a new plane node and name it 'PTP'
-ptpPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'PTP')
+# 3. New Plane Name
+new_plane_name = 'PTP'
 
-# Set the origin of the new plane to the origin of 'INB' (or any other point of your choice)
-ptpPlaneNode.SetOriginWorld(inbPlaneNode.GetOriginWorld())
 
-# Set the normal of the new plane
-ptpPlaneNode.SetNormalWorld(ptpNormal)
+# --- Main Script ---
 
-print("New plane 'PTP' created successfully.")
+# 1. Housekeeping: Remove the old PTP plane if it exists
+old_ptp_node = slicer.mrmlScene.GetFirstNodeByName(new_plane_name)
+if old_ptp_node:
+    slicer.mrmlScene.RemoveNode(old_ptp_node)
 
+# 2. Find the required input planes
+def find_node_from_priority_list(priority_list):
+    """Searches for a node from a list of names and returns the first one found."""
+    for name in priority_list:
+        node = slicer.mrmlScene.GetFirstNodeByName(name)
+        if node:
+            print(f"Found required plane: '{name}'")
+            return node, name
+    return None, None
+
+sagittal_plane_node, sagittal_name = find_node_from_priority_list(sagittal_plane_priority)
+npp_plane_node, npp_name = find_node_from_priority_list(npp_plane_priority)
+origin_source_node, origin_source_name = find_node_from_priority_list(origin_source_priority)
+
+# Check if all required planes were found
+if not all([sagittal_plane_node, npp_plane_node, origin_source_node]):
+    error_msg = "Error: Could not find all required input planes in the scene. Please ensure planes exist with names from the priority lists."
+    slicer.util.errorDisplay(error_msg)
+    raise ValueError(error_msg)
+
+# 3. Perform the Geometric Calculation
+# Get the normals of the two input planes
+sagittal_normal = np.zeros(3)
+sagittal_plane_node.GetNormal(sagittal_normal)
+
+npp_normal = np.zeros(3)
+npp_plane_node.GetNormal(npp_normal)
+
+# The PTP normal is perpendicular to both input normals (the cross product)
+ptp_normal = np.cross(sagittal_normal, npp_normal)
+ptp_normal /= np.linalg.norm(ptp_normal) # Normalize to a unit vector
+
+# Get the origin from the specified source plane
+origin_pos = np.zeros(3)
+origin_source_node.GetOrigin(origin_pos)
+
+
+# 4. Create the new 'PTP' plane
+ptp_plane_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', new_plane_name)
+
+# Set the origin and normal for the new plane
+ptp_plane_node.SetOrigin(origin_pos)
+ptp_plane_node.SetNormal(ptp_normal)
+
+print(f"\nSuccessfully created '{new_plane_name}' plane.")
+print(f"  - Normal calculated from '{sagittal_name}' and '{npp_name}'.")
+print(f"  - Origin copied from '{origin_source_name}' at {np.round(origin_pos, 2)}.")
 ```
 <img src="https://github.com/user-attachments/assets/5da113b9-cd62-4fc9-b723-05df297708b9" width="500">
 
@@ -589,183 +635,318 @@ This step establishes the 4/5/6 intersection lines where the individual mirror p
 
 <summary>Code for 4 intersection lines </summary>
 
-#### Code for 4 intersection lines of 4 mirror planes
-```python
-#########making 4 intersection lines along INB and each mirror plane########
-	# Function to create intersection line between two planes
-def create_intersection_line(planeNode1, planeNode2, lineNodeName):
-    # Create a new line node for the intersection line
-    intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
+### Reference lines along the sagittal and 4/5/6 mirror planes
 
-    # Get the normal vectors and points on the planes
-    normal1 = np.array(planeNode1.GetNormalWorld())
-    point1 = np.array(planeNode1.GetOriginWorld())
-    normal2 = np.array(planeNode2.GetNormalWorld())
-    point2 = np.array(planeNode2.GetOriginWorld())
-
-    # Calculate the direction vector of the intersection line
-    direction = np.cross(normal1, normal2)
-
-    # Check if the planes are parallel
-    if np.linalg.norm(direction) == 0:
-        print(f"The planes {planeNode1.GetName()} and {planeNode2.GetName()} are parallel and do not intersect.")
-    else:
-        # Calculate a point on the intersection line
-        A = np.array([normal1, normal2, direction])
-        b = np.array([np.dot(normal1, point1), np.dot(normal2, point2), 0])
-        intersection_point = np.linalg.solve(A, b)
-
-        # Define the start and end points of the line, extending further
-        extension_factor = 1000  # Adjust this factor as needed
-        start_point = intersection_point - extension_factor * direction
-        end_point = intersection_point + extension_factor * direction
-
-        # Set the points in the line node
-        intersectionLineNode.AddControlPointWorld(start_point)
-        intersectionLineNode.AddControlPointWorld(end_point)
-
-        print(f"Extended intersection line {lineNodeName} created successfully.")
-
-# List of plane pairs and corresponding line node names
-plane_pairs = [
-    ('INB', 'Plane_A', 'INB_A'),
-    ('INB', 'Plane_B', 'INB_B'),
-    ('INB', 'Plane_C', 'INB_C'),
-    ('INB', 'Plane_D', 'INB_D')
-]
-
-# Iterate over each pair and create the intersection lines
-for plane1, plane2, lineName in plane_pairs:
-    planeNode1 = getNode(plane1)
-    planeNode2 = getNode(plane2)
-    create_intersection_line(planeNode1, planeNode2, lineName)
-```
-
-![image](https://github.com/user-attachments/assets/016c35b3-83e6-46ed-8151-ae9d48c79124)
-
-
-</details>
-
+This step establishes the intersection lines where the individual mirror planes (`Plane_A`, `Plane_B`, etc.) meet the main sagittal plane (`MSP` or `INB`).
 
 <details>
 
-<summary>Code for 5 intersection lines </summary>
+<summary>Code for 4 intersection lines</summary>
 
-#### Code for 5 intersection lines of 5 mirror planes
+#### Code for 4 intersection lines with 4 mirror planes
+
+This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_D`.
+
 ```python
-#########making intersection lines along INB and each mirror plane########
-# Function to create intersection line between two planes
+import numpy as np
+import slicer
+
+# --- Configuration ---
+# The script will look for 'MSP' first, then 'INB'.
+SAGITTAL_PLANE_PRIORITY = ['MSP', 'INB']
+# The mirror planes to intersect with.
+MIRROR_PLANES = ['Plane_A', 'Plane_B', 'Plane_C', 'Plane_D']
+
+# --- Main Script ---
+
 def create_intersection_line(planeNode1, planeNode2, lineNodeName):
-    # Create a new line node for the intersection line
-    intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
+    """Creates a vtkMRMLMarkupsLineNode at the intersection of two planes."""
+    # Clean up old line node if it exists
+    oldLineNode = slicer.mrmlScene.GetFirstNodeByName(lineNodeName)
+    if oldLineNode:
+        slicer.mrmlScene.RemoveNode(oldLineNode)
 
-    # Get the normal vectors and points on the planes
-    normal1 = np.array(planeNode1.GetNormalWorld())
-    point1 = np.array(planeNode1.GetOriginWorld())
-    normal2 = np.array(planeNode2.GetNormalWorld())
-    point2 = np.array(planeNode2.GetOriginWorld())
+    # Get normals and points from the plane nodes
+    normal1 = np.zeros(3)
+    planeNode1.GetNormal(normal1)
+    point1 = np.zeros(3)
+    planeNode1.GetOrigin(point1)
 
-    # Calculate the direction vector of the intersection line
+    normal2 = np.zeros(3)
+    planeNode2.GetNormal(normal2)
+    point2 = np.zeros(3)
+    planeNode2.GetOrigin(point2)
+
+    # Calculate direction of the intersection line (cross product of normals)
     direction = np.cross(normal1, normal2)
 
-    # Check if the planes are parallel
-    if np.linalg.norm(direction) == 0:
-        print(f"The planes {planeNode1.GetName()} and {planeNode2.GetName()} are parallel and do not intersect.")
-    else:
-        # Calculate a point on the intersection line
+    # Check if planes are parallel
+    if np.linalg.norm(direction) < 1e-6:
+        print(f"Planes {planeNode1.GetName()} and {planeNode2.GetName()} are parallel.")
+        return
+
+    # Normalize the direction vector
+    direction /= np.linalg.norm(direction)
+
+    # Calculate a point on the intersection line
+    # (solving a system of linear equations)
+    try:
         A = np.array([normal1, normal2, direction])
         b = np.array([np.dot(normal1, point1), np.dot(normal2, point2), 0])
         intersection_point = np.linalg.solve(A, b)
+    except np.linalg.LinAlgError:
+        print(f"Could not solve for a point on the intersection line for {lineNodeName}. The calculation may be unstable.")
+        return
 
-        # Define the start and end points of the line, extending further
-        extension_factor = 1000  # Adjust this factor as needed
-        start_point = intersection_point - extension_factor * direction
-        end_point = intersection_point + extension_factor * direction
+    # Create and set points for the new line node
+    intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
+    
+    # Extend the line for visualization purposes
+    extension_factor = 1000
+    start_point = intersection_point - extension_factor * direction
+    end_point = intersection_point + extension_factor * direction
+    
+    intersectionLineNode.AddControlPoint(start_point)
+    intersectionLineNode.AddControlPoint(end_point)
+    print(f"Intersection line '{lineNodeName}' created successfully.")
 
-        # Set the points in the line node
-        intersectionLineNode.AddControlPointWorld(start_point)
-        intersectionLineNode.AddControlPointWorld(end_point)
+# --- Execution ---
 
-        print(f"Extended intersection line {lineNodeName} created successfully.")
+# 1. Find the sagittal plane (MSP or INB)
+sagittal_plane_node = None
+sagittal_plane_name = ""
+for name in SAGITTAL_PLANE_PRIORITY:
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if node:
+        sagittal_plane_node = node
+        sagittal_plane_name = name
+        print(f"Found sagittal reference plane: '{sagittal_plane_name}'")
+        break
 
-# List of plane pairs and corresponding line node names
-plane_pairs = [
-    ('INB', 'Plane_A', 'INB_A'),
-    ('INB', 'Plane_B', 'INB_B'),
-    ('INB', 'Plane_C', 'INB_C'),
-    ('INB', 'Plane_D', 'INB_D'),
-    ('INB', 'Plane_E', 'INB_E')  # Add the fifth plane pair here
-]
+if not sagittal_plane_node:
+    slicer.util.errorDisplay(f"Error: Could not find a sagittal plane. Please ensure '{' or '.join(SAGITTAL_PLANE_PRIORITY)}' exists.")
+    raise ValueError("Sagittal reference plane not found.")
 
-# Iterate over each pair and create the intersection lines
-for plane1, plane2, lineName in plane_pairs:
-    create_intersection_line(slicer.util.getNode(plane1), slicer.util.getNode(plane2), lineName)
+# 2. Iterate over mirror planes and create intersection lines
+for mirror_plane_name in MIRROR_PLANES:
+    mirror_plane_node = slicer.mrmlScene.GetFirstNodeByName(mirror_plane_name)
+    if not mirror_plane_node:
+        print(f"Warning: Mirror plane '{mirror_plane_name}' not found. Skipping.")
+        continue
+    
+    line_name = f"{sagittal_plane_name}_{mirror_plane_name.split('_')[-1]}"
+    create_intersection_line(sagittal_plane_node, mirror_plane_node, line_name)
+
+```
+![image](https://github.com/user-attachments/assets/016c35b3-83e6-46ed-8151-ae9d48c79124)
+
+</details>
+
+<details>
+
+<summary>Code for 5 intersection lines</summary>
+
+#### Code for 5 intersection lines with 5 mirror planes
+
+This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_E`.
+
+```python
+import numpy as np
+import slicer
+
+# --- Configuration ---
+# The script will look for 'MSP' first, then 'INB'.
+SAGITTAL_PLANE_PRIORITY = ['MSP', 'INB']
+# The mirror planes to intersect with.
+MIRROR_PLANES = ['Plane_A', 'Plane_B', 'Plane_C', 'Plane_D', 'Plane_E']
+
+# --- Main Script ---
+
+def create_intersection_line(planeNode1, planeNode2, lineNodeName):
+    """Creates a vtkMRMLMarkupsLineNode at the intersection of two planes."""
+    # Clean up old line node if it exists
+    oldLineNode = slicer.mrmlScene.GetFirstNodeByName(lineNodeName)
+    if oldLineNode:
+        slicer.mrmlScene.RemoveNode(oldLineNode)
+
+    # Get normals and points from the plane nodes
+    normal1 = np.zeros(3)
+    planeNode1.GetNormal(normal1)
+    point1 = np.zeros(3)
+    planeNode1.GetOrigin(point1)
+
+    normal2 = np.zeros(3)
+    planeNode2.GetNormal(normal2)
+    point2 = np.zeros(3)
+    planeNode2.GetOrigin(point2)
+
+    # Calculate direction of the intersection line (cross product of normals)
+    direction = np.cross(normal1, normal2)
+
+    # Check if planes are parallel
+    if np.linalg.norm(direction) < 1e-6:
+        print(f"Planes {planeNode1.GetName()} and {planeNode2.GetName()} are parallel.")
+        return
+
+    # Normalize the direction vector
+    direction /= np.linalg.norm(direction)
+
+    # Calculate a point on the intersection line
+    # (solving a system of linear equations)
+    try:
+        A = np.array([normal1, normal2, direction])
+        b = np.array([np.dot(normal1, point1), np.dot(normal2, point2), 0])
+        intersection_point = np.linalg.solve(A, b)
+    except np.linalg.LinAlgError:
+        print(f"Could not solve for a point on the intersection line for {lineNodeName}. The calculation may be unstable.")
+        return
+
+    # Create and set points for the new line node
+    intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
+    
+    # Extend the line for visualization purposes
+    extension_factor = 1000
+    start_point = intersection_point - extension_factor * direction
+    end_point = intersection_point + extension_factor * direction
+    
+    intersectionLineNode.AddControlPoint(start_point)
+    intersectionLineNode.AddControlPoint(end_point)
+    print(f"Intersection line '{lineNodeName}' created successfully.")
+
+# --- Execution ---
+
+# 1. Find the sagittal plane (MSP or INB)
+sagittal_plane_node = None
+sagittal_plane_name = ""
+for name in SAGITTAL_PLANE_PRIORITY:
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if node:
+        sagittal_plane_node = node
+        sagittal_plane_name = name
+        print(f"Found sagittal reference plane: '{sagittal_plane_name}'")
+        break
+
+if not sagittal_plane_node:
+    slicer.util.errorDisplay(f"Error: Could not find a sagittal plane. Please ensure '{' or '.join(SAGITTAL_PLANE_PRIORITY)}' exists.")
+    raise ValueError("Sagittal reference plane not found.")
+
+# 2. Iterate over mirror planes and create intersection lines
+for mirror_plane_name in MIRROR_PLANES:
+    mirror_plane_node = slicer.mrmlScene.GetFirstNodeByName(mirror_plane_name)
+    if not mirror_plane_node:
+        print(f"Warning: Mirror plane '{mirror_plane_name}' not found. Skipping.")
+        continue
+    
+    line_name = f"{sagittal_plane_name}_{mirror_plane_name.split('_')[-1]}"
+    create_intersection_line(sagittal_plane_node, mirror_plane_node, line_name)
 ```
 Image after the 5 line code is iterated: 
 ![image](https://github.com/user-attachments/assets/3bc4b9d2-63a3-47ad-9dbe-43a81f2490c3)
 
-
 </details>
 
 <details>
 
-<summary>Code for 6 intersection lines </summary>
+<summary>Code for 6 intersection lines</summary>
 
-#### Code for 6 intersection lines of 6 mirror planes
+#### Code for 6 intersection lines with 6 mirror planes
+
+This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_F`.
+
 ```python
-#########making intersection lines along INB and each mirror plane########
-# Function to create intersection line between two planes
+import numpy as np
+import slicer
+
+# --- Configuration ---
+# The script will look for 'MSP' first, then 'INB'.
+SAGITTAL_PLANE_PRIORITY = ['MSP', 'INB']
+# The mirror planes to intersect with.
+MIRROR_PLANES = ['Plane_A', 'Plane_B', 'Plane_C', 'Plane_D', 'Plane_E', 'Plane_F']
+
+# --- Main Script ---
+
 def create_intersection_line(planeNode1, planeNode2, lineNodeName):
-    # Create a new line node for the intersection line
-    intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
+    """Creates a vtkMRMLMarkupsLineNode at the intersection of two planes."""
+    # Clean up old line node if it exists
+    oldLineNode = slicer.mrmlScene.GetFirstNodeByName(lineNodeName)
+    if oldLineNode:
+        slicer.mrmlScene.RemoveNode(oldLineNode)
 
-    # Get the normal vectors and points on the planes
-    normal1 = np.array(planeNode1.GetNormalWorld())
-    point1 = np.array(planeNode1.GetOriginWorld())
-    normal2 = np.array(planeNode2.GetNormalWorld())
-    point2 = np.array(planeNode2.GetOriginWorld())
+    # Get normals and points from the plane nodes
+    normal1 = np.zeros(3)
+    planeNode1.GetNormal(normal1)
+    point1 = np.zeros(3)
+    planeNode1.GetOrigin(point1)
 
-    # Calculate the direction vector of the intersection line
+    normal2 = np.zeros(3)
+    planeNode2.GetNormal(normal2)
+    point2 = np.zeros(3)
+    planeNode2.GetOrigin(point2)
+
+    # Calculate direction of the intersection line (cross product of normals)
     direction = np.cross(normal1, normal2)
 
-    # Check if the planes are parallel
-    if np.linalg.norm(direction) == 0:
-        print(f"The planes {planeNode1.GetName()} and {planeNode2.GetName()} are parallel and do not intersect.")
-    else:
-        # Calculate a point on the intersection line
+    # Check if planes are parallel
+    if np.linalg.norm(direction) < 1e-6:
+        print(f"Planes {planeNode1.GetName()} and {planeNode2.GetName()} are parallel.")
+        return
+
+    # Normalize the direction vector
+    direction /= np.linalg.norm(direction)
+
+    # Calculate a point on the intersection line
+    # (solving a system of linear equations)
+    try:
         A = np.array([normal1, normal2, direction])
         b = np.array([np.dot(normal1, point1), np.dot(normal2, point2), 0])
         intersection_point = np.linalg.solve(A, b)
+    except np.linalg.LinAlgError:
+        print(f"Could not solve for a point on the intersection line for {lineNodeName}. The calculation may be unstable.")
+        return
 
-        # Define the start and end points of the line, extending further
-        extension_factor = 1000  # Adjust this factor as needed
-        start_point = intersection_point - extension_factor * direction
-        end_point = intersection_point + extension_factor * direction
+    # Create and set points for the new line node
+    intersectionLineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', lineNodeName)
+    
+    # Extend the line for visualization purposes
+    extension_factor = 1000
+    start_point = intersection_point - extension_factor * direction
+    end_point = intersection_point + extension_factor * direction
+    
+    intersectionLineNode.AddControlPoint(start_point)
+    intersectionLineNode.AddControlPoint(end_point)
+    print(f"Intersection line '{lineNodeName}' created successfully.")
 
-        # Set the points in the line node
-        intersectionLineNode.AddControlPointWorld(start_point)
-        intersectionLineNode.AddControlPointWorld(end_point)
+# --- Execution ---
 
-        print(f"Extended intersection line {lineNodeName} created successfully.")
+# 1. Find the sagittal plane (MSP or INB)
+sagittal_plane_node = None
+sagittal_plane_name = ""
+for name in SAGITTAL_PLANE_PRIORITY:
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if node:
+        sagittal_plane_node = node
+        sagittal_plane_name = name
+        print(f"Found sagittal reference plane: '{sagittal_plane_name}'")
+        break
 
-# List of plane pairs and corresponding line node names
-plane_pairs = [
-    ('INB', 'Plane_A', 'INB_A'),
-    ('INB', 'Plane_B', 'INB_B'),
-    ('INB', 'Plane_C', 'INB_C'),
-    ('INB', 'Plane_D', 'INB_D'),
-    ('INB', 'Plane_E', 'INB_E'),
-    ('INB', 'Plane_F', 'INB_F')  # Add the sixth plane pair here
-]
+if not sagittal_plane_node:
+    slicer.util.errorDisplay(f"Error: Could not find a sagittal plane. Please ensure '{' or '.join(SAGITTAL_PLANE_PRIORITY)}' exists.")
+    raise ValueError("Sagittal reference plane not found.")
 
-# Iterate over each pair and create the intersection lines
-for plane1, plane2, lineName in plane_pairs:
-    create_intersection_line(slicer.util.getNode(plane1), slicer.util.getNode(plane2), lineName)
-
+# 2. Iterate over mirror planes and create intersection lines
+for mirror_plane_name in MIRROR_PLANES:
+    mirror_plane_node = slicer.mrmlScene.GetFirstNodeByName(mirror_plane_name)
+    if not mirror_plane_node:
+        print(f"Warning: Mirror plane '{mirror_plane_name}' not found. Skipping.")
+        continue
+    
+    line_name = f"{sagittal_plane_name}_{mirror_plane_name.split('_')[-1]}"
+    create_intersection_line(sagittal_plane_node, mirror_plane_node, line_name)
 ```
 Image after the 6 line code is iterated: 
 ![image](https://github.com/user-attachments/assets/2feed628-718b-4a3c-a888-fa5e4abe988d)
 
+</details>
 
 </details>
 
