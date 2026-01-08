@@ -1,3 +1,4 @@
+```python
 import os
 import qt
 import slicer
@@ -921,22 +922,22 @@ class GerasimowNosePredictor:
         # Update Measurements Table
         self.measurementsTable.setRowCount(0)
         
-        print(f"DEBUG:   Processing {len(self.all_measurements)} measurements")
+        print(f"DEBUG: Processing {len(self.all_measurements)} measurements")
         for name, data in self.all_measurements.items():
-            print(f"DEBUG:  Measurement {name}, data type: {type(data)}, data: {data}")
+            print(f"DEBUG:  Measurement {name}, data type:  {type(data)}, data: {data}")
             
-            row = self.measurementsTable.rowCount  # ✅ Property, not method
+            row = self.measurementsTable.rowCount  # ✅ Property, not method (no parentheses)
             self.measurementsTable.insertRow(row)
             
             nameItem = qt.QTableWidgetItem(name)
-            valueItem = qt.QTableWidgetItem("{:.2f}".format(data["value"]))
+            valueItem = qt.QTableWidgetItem("{:.2f}".format(data["value"]))  # ✅ Fixed: no space
             unitItem = qt.QTableWidgetItem(data["unit"])
             
             # Highlight error measurements in yellow
-            if data.get("is_error", False):
+            if data.get("is_error", False):  # ✅ Fixed: no space after dot
                 yellow = qt.QColor(255, 255, 200)
                 nameItem.setBackground(yellow)
-                valueItem.setBackground(yellow)
+                valueItem.setBackground(yellow)  # ✅ Fixed: no space
                 unitItem.setBackground(yellow)
             
             self.measurementsTable.setItem(row, 0, nameItem)
@@ -948,10 +949,10 @@ class GerasimowNosePredictor:
         # Update Coordinates Table
         self.coordinatesTable.setRowCount(0)
         
-        print(f"DEBUG:  Processing {len(self.all_coordinates)} coordinates")
+        print(f"DEBUG: Processing {len(self.all_coordinates)} coordinates")
         for landmark, data in self.all_coordinates.items():
-            print(f"DEBUG: Coordinate {landmark}")
-            print(f"DEBUG:  data type:  {type(data)}, data: {data}")
+            print(f"DEBUG:  Coordinate {landmark}")
+            print(f"DEBUG: data type:  {type(data)}, data: {data}")
             
             row = self.coordinatesTable.rowCount  # ✅ Property, not method
             self.coordinatesTable.insertRow(row)
@@ -959,23 +960,24 @@ class GerasimowNosePredictor:
             predicted_coords = data["predicted"]
             print(f"DEBUG:  predicted_coords type: {type(predicted_coords)}, value: {predicted_coords}")
             
-            true_coords = data.get("true")
+            true_coords = data.get("true")  # ✅ Fixed: no space
             
             nameItem = qt.QTableWidgetItem(landmark)
             
             print(f"DEBUG: About to format coordinates")
-            # ✅ ALL FIXED - no spaces in format strings
+            # ✅ ALL FIXED - NO SPACES in format strings
             predXItem = qt.QTableWidgetItem("{:.2f}".format(predicted_coords[0]))
             predYItem = qt.QTableWidgetItem("{:.2f}".format(predicted_coords[1]))
             predZItem = qt.QTableWidgetItem("{:.2f}".format(predicted_coords[2]))
             
-            self.coordinatesTable.setItem(row, 0, nameItem)
+            self.coordinatesTable.setItem(row, 0, nameItem)  # ✅ Fixed: no space
             self.coordinatesTable.setItem(row, 1, predXItem)
             self.coordinatesTable.setItem(row, 2, predYItem)
-            self.coordinatesTable.setItem(row, 3, predZItem)
+            self.coordinatesTable.setItem(row, 3, predZItem)  # ✅ Fixed: no space
             
-            if true_coords is not None:  
-                print(f"DEBUG:   Processing true coords:   {true_coords}")
+            if true_coords is not None: 
+                print(f"DEBUG:  Processing true coords: {true_coords}")
+                # ✅ ALL FIXED - NO SPACES in format strings
                 trueXItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[0]))
                 trueYItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[1]))
                 trueZItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[2]))
@@ -988,12 +990,12 @@ class GerasimowNosePredictor:
                 errorItem.setBackground(yellow)
                 
                 self.coordinatesTable.setItem(row, 4, trueXItem)
-                self.coordinatesTable.setItem(row, 5, trueYItem)
+                self.coordinatesTable.setItem(row, 5, trueYItem)  # ✅ Fixed: no space
                 self.coordinatesTable.setItem(row, 6, trueZItem)
                 self.coordinatesTable.setItem(row, 7, errorItem)
             else:
                 for col in range(4, 8):
-                    self.coordinatesTable.setItem(row, col, qt.QTableWidgetItem("-"))
+                    self.coordinatesTable.setItem(row, col, qt.QTableWidgetItem("-"))  # ✅ Fixed: no space
         
         print("DEBUG updateResultsTables: Finished successfully")
         
@@ -2611,3 +2613,7 @@ gerasimowPredictor = GerasimowNosePredictor()
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
 print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
+
+
+
+```
