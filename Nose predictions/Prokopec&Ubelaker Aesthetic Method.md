@@ -219,6 +219,8 @@ print(f"  - Normal Vector: {np.round(plane_normal, 2)}")
 
 ```
 
+</details>
+
 
 ### NP plane
 May be referred to as NPP - nasion-prosthion plane; defined by Rynn as 
@@ -227,108 +229,114 @@ May be referred to as NPP - nasion-prosthion plane; defined by Rynn as
 
 To create this plane, use this code: 
 
+<summary>NPP</summary>
+
+<details>
+	
 ```python
 
 import numpy as np
 import slicer
 
 # --- Configuration ---
-# The script will use these labels to find the correct points.
-# It no longer depends on the order of points.
-nasion_label = 'nasion'
-prosthion_label = 'prosthion'
 
-# The name of the node containing your landmark points.
+# 1. Reference Plane: The script will look for 'MSP' first, then 'INB'.
+reference_plane_priority = ['MSP', 'INB']
+
+# 2. NPP Direction Points: A list of point labels that define the "direction"
+#    of the NPP. The script will calculate a "best-fit" line through these points.
+#    Using more than two points makes the result more stable.
+npp_direction_points = ['nasion', 'prosthion', 'subspinale']
+
+# 3. Origin Point: The label of the point to use as the plane's origin.
+#    'Prosthion' is a common choice.
+origin_point_label = 'prosthion'
+
+# 4. Node Names
 source_points_node_name = 'hard_tissue_PU'
+new_plane_name = 'NPP_bestfit'
 
-# The name for the new plane that will be created.
-new_plane_name = 'NPP'
 
 # --- Main Script ---
 
-# 1. Housekeeping: Remove the old 'NPP' plane if it exists
+# 1. Housekeeping: Remove the old plane if it exists
 old_npp_node = slicer.mrmlScene.GetFirstNodeByName(new_plane_name)
 if old_npp_node:
     slicer.mrmlScene.RemoveNode(old_npp_node)
-    print(f"Removed existing '{new_plane_name}' plane.")
 
-# 2. Find the reference plane: Try 'MSP' first, then 'INB'
-reference_plane_node = slicer.mrmlScene.GetFirstNodeByName('MSP')
-reference_plane_name = 'MSP'
-
+# 2. Find the Reference Plane (MSP or INB)
+reference_plane_node = None
+for name in reference_plane_priority:
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if node:
+        reference_plane_node = node
+        print(f"Using '{name}' as the reference plane.")
+        break
 if not reference_plane_node:
-    print("Could not find 'MSP', trying to find 'INB' instead...")
-    reference_plane_node = slicer.mrmlScene.GetFirstNodeByName('INB')
-    reference_plane_name = 'INB'
-
-if not reference_plane_node:
-    error_msg = "Fatal Error: Could not find a reference plane. Please ensure 'MSP' or 'INB' exists in the scene."
-    slicer.util.errorDisplay(error_msg)
-    raise ValueError(error_msg)
-
-print(f"Using '{reference_plane_name}' as the reference plane.")
+    slicer.util.errorDisplay("Error: Could not find 'MSP' or 'INB'. A reference plane is required.")
+    raise ValueError("Reference plane not found.")
 
 # 3. Find the landmark points node
 try:
     hard_tissue_node = slicer.util.getNode(source_points_node_name)
 except slicer.util.MRMLNodeNotFoundException:
-    error_msg = f"Fatal Error: The points list '{source_points_node_name}' was not found."
-    slicer.util.errorDisplay(error_msg)
-    raise ValueError(error_msg)
+    slicer.util.errorDisplay(f"Error: The points list '{source_points_node_name}' was not found.")
+    raise ValueError("Points node not found.")
 
-# 4. Get the coordinates of 'prosthion' and 'nasion' by searching for their labels
-point_coordinates = {}
+# 4. Get coordinates for all required points by searching for labels
+all_required_labels = list(set(npp_direction_points + [origin_point_label]))
+points_coords = {}
 for i in range(hard_tissue_node.GetNumberOfControlPoints()):
     label = hard_tissue_node.GetNthControlPointLabel(i)
-    if label in [nasion_label, prosthion_label]:
+    if label in all_required_labels:
         pos = np.zeros(3)
         hard_tissue_node.GetNthControlPointPosition(i, pos)
-        point_coordinates[label] = pos
+        points_coords[label] = pos
 
-# Check if both points were found
-if nasion_label not in point_coordinates or prosthion_label not in point_coordinates:
-    missing = [l for l in [nasion_label, prosthion_label] if l not in point_coordinates]
-    error_msg = f"Fatal Error: Could not find required points in '{source_points_node_name}'. Missing: {missing}"
-    slicer.util.errorDisplay(error_msg)
-    raise ValueError(error_msg)
+# Check if all required points were found
+missing_labels = [label for label in all_required_labels if label not in points_coords]
+if missing_labels:
+    slicer.util.errorDisplay(f"Error: Could not find required points: {missing_labels}")
+    raise ValueError("Missing required points.")
 
-nasion_pos = point_coordinates[nasion_label]
-prosthion_pos = point_coordinates[prosthion_label]
-print(f"Found '{nasion_label}' at {np.round(nasion_pos, 2)}")
-print(f"Found '{prosthion_label}' at {np.round(prosthion_pos, 2)}")
+# 5. --- Best-Fit Direction Calculation (The New Logic) ---
+# Assemble the array of points that define the direction
+direction_points_array = np.array([points_coords[label] for label in npp_direction_points])
 
-# 5. Perform the geometric calculations
-# Get the normal of the reference plane (MSP or INB)
+# To find the best-fit line, we use PCA (via SVD).
+# The direction of the line is the first principal component, which is the
+# first eigenvector of the covariance matrix of the centered points.
+# In numpy's SVD, this corresponds to the first row of the 'vh' matrix.
+centroid = direction_points_array.mean(axis=0)
+centered_points = direction_points_array - centroid
+_, _, vh = np.linalg.svd(centered_points)
+best_fit_direction_vector = vh[0] # The first row is the principal direction
+
+print(f"Calculated best-fit direction from points: {npp_direction_points}")
+
+# 6. Perform the geometric calculations using the new best-fit vector
 ref_normal = np.zeros(3)
 reference_plane_node.GetNormal(ref_normal)
 
-# Calculate the vector between 'prosthion' and 'nasion'
-vector_pn = nasion_pos - prosthion_pos
-
 # The new plane's normal is perpendicular to both the reference plane's normal
-# and the nasion-prosthion vector. We find this using the cross product.
-new_plane_normal = np.cross(ref_normal, vector_pn)
-new_plane_normal /= np.linalg.norm(new_plane_normal) # Normalize the vector
+# and the "best-fit direction vector" we just calculated.
+new_plane_normal = np.cross(ref_normal, best_fit_direction_vector)
+new_plane_normal /= np.linalg.norm(new_plane_normal)
 
-# 6. Create the new 'NPP' plane
+# 7. Create the new 'NPP' plane
 new_plane_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', new_plane_name)
 
-# Set the origin of the new plane to 'prosthion'
-new_plane_node.SetOrigin(prosthion_pos)
-
-# Set the normal of the new plane
+# Set the origin and normal of the new plane
+origin_pos = points_coords[origin_point_label]
+new_plane_node.SetOrigin(origin_pos)
 new_plane_node.SetNormal(new_plane_normal)
 
-# Optional: Set the size of the plane for better visibility
-# This can be adjusted as needed
-bounds = hard_tissue_node.GetBounds()
-size = max(bounds[1]-bounds[0], bounds[3]-bounds[2], bounds[5]-bounds[4])
-new_plane_node.SetSize(size)
-
-
-print(f"\nNew plane '{new_plane_name}' created successfully.")
+print(f"\nSuccessfully created '{new_plane_name}'.")
+print(f"  - Origin set to '{origin_point_label}' at {np.round(origin_pos, 2)}")
+print(f"  - Orientation based on best-fit line through {len(npp_direction_points)} points.")
 ```
 
+</details>
 
 
 <img src="https://github.com/user-attachments/assets/a567ed66-7091-4934-87d4-c8b5146509fe" width="500">
