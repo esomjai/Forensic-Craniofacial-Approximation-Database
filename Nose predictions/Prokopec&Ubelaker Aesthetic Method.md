@@ -2,8 +2,6 @@
 
 The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2010)[^3].
 The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2010)[^3] also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
-[nose_profile_outline_6.mrk.json](https://github.com/user-attachments/files/23497912/nose_profile_outline_6.mrk.json)
-[hard_tissue_PU.mrk.json](https://github.com/user-attachments/files/23497911/hard_tissue_PU.mrk.json)
 
 This will be achieved by:
 
@@ -60,8 +58,11 @@ Illustration of the method:
 ### Profile plane
 
 Based on landmark availability, the module will offer two options to establish a "middle" profile plane: 
+
 a) INB used by Rynn et al. 2010[^3]
-b) MSP (midsagittal plane) based on landmark definitions - any landmark already used by the cited literature that is defined as midline
+
+
+b) MSP (midsagittal plane) based on landmark definitions - any landmark already used by the cited literature that is defined as midline - here, it is nasion, prosthion, subspinale, rhinion and acanthion.
 
 
 #### INB Plane
@@ -84,17 +85,21 @@ point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
 point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
 point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
 
+# Calculate the centroid of the three points (the average position)
+centroid = (point1 + point2 + point3) / 3.0
+
 # Calculate the normal of the plane defined by the three points
+# This part doesn't need to change
 v1 = point2 - point1
 v2 = point3 - point1
 planeNormal = np.cross(v1, v2)
-planeNormal = planeNormal / np.linalg.norm(planeNormal)  # Normalize the normal vector
+planeNormal = planeNormal / np.linalg.norm(planeNormal)
 
 # Create a new plane node
 newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'INB')
 
-# Set the origin of the new plane to the first point
-newPlaneNode.SetOrigin(point1)
+# Set the origin of the new plane to the calculated centroid
+newPlaneNode.SetOrigin(centroid)
 
 # Set the normal of the new plane
 newPlaneNode.SetNormal(planeNormal)
@@ -111,7 +116,108 @@ View of the generated INB
 INB extended via the toggles (dots)
 
 #### MSP Plane
+```python
+import numpy as np
+import slicer
 
+# --- Configuration ---
+
+# 1. List of point labels that define the Midsagittal Plane (MSP).
+#    The script will search for these labels in the source node.
+msp_point_labels = ['nasion', 'prosthion', 'subspinale', 'rhinion', 'acanthion']
+
+# 2. The name of the node containing your landmark points.
+source_node_name = 'hard_tissue_PU'
+
+# 3. The name for the new plane that will be created.
+new_plane_name = 'MSP'
+
+
+# --- Main Script ---
+
+# Get the source markup fiducials node from the Slicer scene
+try:
+    sourceNode = slicer.util.getNode(source_node_name)
+    if not sourceNode:
+        raise ValueError(f"Node '{source_node_name}' not found.")
+except ValueError as e:
+    slicer.util.errorDisplay(f"Error: {e}")
+    # Stop the script if the node doesn't exist
+    raise
+
+# Find the coordinates of the points with the specified labels
+points = []
+found_labels = []
+missing_labels = list(msp_point_labels)
+
+for i in range(sourceNode.GetNumberOfControlPoints()):
+    label = sourceNode.GetNthControlPointLabel(i)
+    if label in msp_point_labels:
+        pos = sourceNode.GetNthControlPointPosition(i)
+        points.append(list(pos))
+        found_labels.append(label)
+        if label in missing_labels:
+            missing_labels.remove(label)
+
+# Check if we found enough points
+if len(points) < 3:
+    slicer.util.errorDisplay(
+        f"Could not find at least 3 of the specified points in '{source_node_name}'.\n"
+        f"Found: {found_labels}\n"
+        f"Missing: {missing_labels}\n"
+        "Cannot calculate a plane."
+    )
+    raise ValueError("Not enough points to define a plane.")
+
+# If some points were missing, show a warning but continue
+if missing_labels:
+    slicer.util.warningDisplay(
+        f"Warning: Could not find all specified points.\n"
+        f"The plane will be calculated using the points that were found: {found_labels}\n"
+        f"Missing points: {missing_labels}"
+    )
+
+# Convert the list of points to a NumPy array for calculation
+points = np.array(points)
+
+# --- Best-Fit Plane Calculation ---
+
+# 1. Calculate the centroid of the points (this will be the plane's origin)
+centroid = points.mean(axis=0)
+
+# 2. Center the points by subtracting the centroid
+centered_points = points - centroid
+
+# 3. Use Singular Value Decomposition (SVD) to find the best-fit plane.
+#    The normal of the plane is the eigenvector corresponding to the smallest singular value.
+#    In numpy's SVD, this is the last row of the 'vh' matrix.
+_, _, vh = np.linalg.svd(centered_points)
+plane_normal = vh[-1]
+
+# --- Create the New Plane in Slicer ---
+
+# Remove the old plane if it exists, to allow running the script again
+# This uses a safer method that doesn't cause an error if the node doesn't exist.
+oldPlaneNode = slicer.mrmlScene.GetFirstNodeByName(new_plane_name)
+if oldPlaneNode:
+    slicer.mrmlScene.RemoveNode(oldPlaneNode)
+
+# Create a new plane node
+newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', new_plane_name)
+
+# Set the origin and normal for the new plane
+newPlaneNode.SetOrigin(centroid)
+newPlaneNode.SetNormal(plane_normal)
+
+# NOTE: The lines for setting the plane size have been removed for compatibility.
+# You can manually adjust the plane size in the 'Markups' module if needed.
+
+print(f"Successfully created Midsagittal Plane '{new_plane_name}'.")
+print(f"  - Calculated from {len(points)} points: {found_labels}")
+print(f"  - Origin (Centroid): {np.round(centroid, 2)}")
+print(f"  - Normal Vector: {np.round(plane_normal, 2)}")
+
+```
 
 
 ### NP plane
@@ -123,41 +229,104 @@ To create this plane, use this code:
 
 ```python
 
-#NPP#
 import numpy as np
 import slicer
 
-# Get the 'INB' plane node
-inbPlaneNode = slicer.util.getNode('INB')
+# --- Configuration ---
+# The script will use these labels to find the correct points.
+# It no longer depends on the order of points.
+nasion_label = 'nasion'
+prosthion_label = 'prosthion'
 
-# Get the 'hard_tissue_PU' point list node
-hardTissueNode = slicer.util.getNode('hard_tissue_PU')
+# The name of the node containing your landmark points.
+source_points_node_name = 'hard_tissue_PU'
 
-# Get the coordinates of 'prosthion' and 'nasion' from the point list
-prosthion = np.array(hardTissueNode.GetNthControlPointPositionWorld(0))
-nasion = np.array(hardTissueNode.GetNthControlPointPositionWorld(3))
+# The name for the new plane that will be created.
+new_plane_name = 'NPP'
 
-# Calculate the normal of the 'INB' plane
-inbNormal = np.array(inbPlaneNode.GetNormalWorld())
+# --- Main Script ---
+
+# 1. Housekeeping: Remove the old 'NPP' plane if it exists
+old_npp_node = slicer.mrmlScene.GetFirstNodeByName(new_plane_name)
+if old_npp_node:
+    slicer.mrmlScene.RemoveNode(old_npp_node)
+    print(f"Removed existing '{new_plane_name}' plane.")
+
+# 2. Find the reference plane: Try 'MSP' first, then 'INB'
+reference_plane_node = slicer.mrmlScene.GetFirstNodeByName('MSP')
+reference_plane_name = 'MSP'
+
+if not reference_plane_node:
+    print("Could not find 'MSP', trying to find 'INB' instead...")
+    reference_plane_node = slicer.mrmlScene.GetFirstNodeByName('INB')
+    reference_plane_name = 'INB'
+
+if not reference_plane_node:
+    error_msg = "Fatal Error: Could not find a reference plane. Please ensure 'MSP' or 'INB' exists in the scene."
+    slicer.util.errorDisplay(error_msg)
+    raise ValueError(error_msg)
+
+print(f"Using '{reference_plane_name}' as the reference plane.")
+
+# 3. Find the landmark points node
+try:
+    hard_tissue_node = slicer.util.getNode(source_points_node_name)
+except slicer.util.MRMLNodeNotFoundException:
+    error_msg = f"Fatal Error: The points list '{source_points_node_name}' was not found."
+    slicer.util.errorDisplay(error_msg)
+    raise ValueError(error_msg)
+
+# 4. Get the coordinates of 'prosthion' and 'nasion' by searching for their labels
+point_coordinates = {}
+for i in range(hard_tissue_node.GetNumberOfControlPoints()):
+    label = hard_tissue_node.GetNthControlPointLabel(i)
+    if label in [nasion_label, prosthion_label]:
+        pos = np.zeros(3)
+        hard_tissue_node.GetNthControlPointPosition(i, pos)
+        point_coordinates[label] = pos
+
+# Check if both points were found
+if nasion_label not in point_coordinates or prosthion_label not in point_coordinates:
+    missing = [l for l in [nasion_label, prosthion_label] if l not in point_coordinates]
+    error_msg = f"Fatal Error: Could not find required points in '{source_points_node_name}'. Missing: {missing}"
+    slicer.util.errorDisplay(error_msg)
+    raise ValueError(error_msg)
+
+nasion_pos = point_coordinates[nasion_label]
+prosthion_pos = point_coordinates[prosthion_label]
+print(f"Found '{nasion_label}' at {np.round(nasion_pos, 2)}")
+print(f"Found '{prosthion_label}' at {np.round(prosthion_pos, 2)}")
+
+# 5. Perform the geometric calculations
+# Get the normal of the reference plane (MSP or INB)
+ref_normal = np.zeros(3)
+reference_plane_node.GetNormal(ref_normal)
 
 # Calculate the vector between 'prosthion' and 'nasion'
-vectorPN = nasion - prosthion
+vector_pn = nasion_pos - prosthion_pos
 
-# Calculate the normal of the new plane (perpendicular to 'INB' and fitting 'prosthion' and 'nasion')
-newPlaneNormal = np.cross(inbNormal, vectorPN)
-newPlaneNormal /= np.linalg.norm(newPlaneNormal)  # Normalize the vector
+# The new plane's normal is perpendicular to both the reference plane's normal
+# and the nasion-prosthion vector. We find this using the cross product.
+new_plane_normal = np.cross(ref_normal, vector_pn)
+new_plane_normal /= np.linalg.norm(new_plane_normal) # Normalize the vector
 
-# Create a new plane node and name it 'NPP'
-newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'NPP')
+# 6. Create the new 'NPP' plane
+new_plane_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', new_plane_name)
 
 # Set the origin of the new plane to 'prosthion'
-newPlaneNode.SetOriginWorld(prosthion)
+new_plane_node.SetOrigin(prosthion_pos)
 
 # Set the normal of the new plane
-newPlaneNode.SetNormalWorld(newPlaneNormal)
+new_plane_node.SetNormal(new_plane_normal)
 
-print("New plane 'NPP' created successfully.")
+# Optional: Set the size of the plane for better visibility
+# This can be adjusted as needed
+bounds = hard_tissue_node.GetBounds()
+size = max(bounds[1]-bounds[0], bounds[3]-bounds[2], bounds[5]-bounds[4])
+new_plane_node.SetSize(size)
 
+
+print(f"\nNew plane '{new_plane_name}' created successfully.")
 ```
 
 
