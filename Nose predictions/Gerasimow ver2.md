@@ -10,12 +10,16 @@ import random
 
 class GerasimowNosePredictor:
     def __init__(self):
+        
+        # Debug mode toggle - set to True only when debugging
+        self.DEBUG_MODE = False  # ✅ Set to False for production
+        
         # Set this at the beginning to avoid errors
         self.minLogLevel = 1
         self.currentDialog = None
         self.intersections = {}  # Store intersections for error analysis
         
-                
+                    
         # This is a more aggressive approach if needed:
         settings = qt.QSettings()
         settings.setValue("Markups/MarkupsFidNotificationPopupEnabled", 0)
@@ -444,6 +448,10 @@ class GerasimowNosePredictor:
         # Show the widget
         self.mainWidget.show()
         
+    def debug_print(self, message):
+        """Print debug messages only if DEBUG_MODE is enabled"""
+        if self.DEBUG_MODE:
+            print(f"DEBUG: {message}")
         
     def log(self, decision, level=1):
         """Add a decision to the log if it meets the minimum log level"""
@@ -583,7 +591,7 @@ class GerasimowNosePredictor:
             found_nodes.append(f"Plane ({planeNode.GetName()})")
 
         # 3.Check for Tangent Lines
-        tangent_names = ["T1", "T2", "T3", "T4R", "T4L", "T4_Tangent"]
+        tangent_names = ["T1", "T2", "T3", "T4R", "T4L", "T4"]
         for name in tangent_names:
             node = safeGetNode(name)
             if node:
@@ -917,14 +925,14 @@ class GerasimowNosePredictor:
 
     def updateResultsTables(self):
         """Update both results tables with current data"""
-        print("DEBUG updateResultsTables: Starting")
+        self.debug_print("updateResultsTables: Starting")
         
         # Update Measurements Table
         self.measurementsTable.setRowCount(0)
         
-        print(f"DEBUG: Processing {len(self.all_measurements)} measurements")
-        for name, data in self.all_measurements.items():
-            print(f"DEBUG:  Measurement {name}, data type:  {type(data)}, data: {data}")
+        self.debug_print(f"Processing {len(self.all_measurements)} measurements")
+        for name, data in self.all_measurements. items():
+            self.debug_print(f"Measurement {name}, data type: {type(data)}, data: {data}")
             
             row = self.measurementsTable.rowCount
             self.measurementsTable.insertRow(row)
@@ -2288,25 +2296,27 @@ class GerasimowNosePredictor:
             self.log(f"Created 'prediction points' node with {len(self.intersections)} points.")
             slicer.util.showStatusMessage("Intersection points created successfully!", 4000)
             
-            print("DEBUG: About to store intersections in results")  # ADD THIS
+               
+            print("DEBUG: About to store intersections in results")
             # Store intersections in results
             for name, point in self.intersections.items():
-                print(f"DEBUG: Processing intersection {name}, point type: {type(point)}, value: {point}")  # ADD THIS
-                if point is not None: 
+                print(f"DEBUG: Processing intersection {name}, point type: {type(point)}, value: {point}")
+                if point is not None:  
                     # Convert to list if it's a numpy array, otherwise use as-is
                     point_list = point.tolist() if isinstance(point, np.ndarray) else point
-                    print(f"DEBUG: About to call storeCoordinate with {name}")  # ADD THIS
+                    print(f"DEBUG: About to call storeCoordinate with {name}")
                     self.storeCoordinate(f"Intersection {name}", point_list)
-                    print(f"DEBUG: Successfully stored {name}")  # ADD THIS
+                    print(f"DEBUG:  Successfully stored {name}")
 
-            print("DEBUG:  Function completed successfully")  # ADD THIS
-                
-        except Exception as e: 
-            print(f"DEBUG: Exception caught: {e}")  # ADD THIS
-            print(f"DEBUG: Exception type:  {type(e)}")  # ADD THIS
+            print("DEBUG: Function completed successfully")
+                    
+        except Exception as e:   # ✅ Variable 'e' is defined here
+            print(f"DEBUG:  Exception caught: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
             import traceback
             traceback.print_exc()
-        slicer.util.errorDisplay(f"An error occurred while finding intersections: {e}")
+            slicer.util.errorDisplay(f"An error occurred while finding intersections: {e}")  # ✅ Must be indented!
+            
                 
     def onCalculateErrorsClicked(self):
         """
