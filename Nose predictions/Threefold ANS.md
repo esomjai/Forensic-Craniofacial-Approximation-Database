@@ -146,8 +146,8 @@ View after only the first 3 landmarks are allocated correctly AND INB extended v
 
 <details>
 <summary>Code for MSP</summary>
+	
 ```python
-### Create Midsagittal Plane (MSP) ###
 import numpy as np
 import slicer
 
@@ -241,6 +241,7 @@ print(f"  - Calculated from points: {found_labels}")
 print(f"  - Origin (Centroid): {np.round(centroid, 2)}")
 print(f"  - Normal Vector: {np.round(plane_normal, 2)}")### Create Midsagittal Plane (MSP) ###
 ```
+
 </details>
 
 
