@@ -312,7 +312,8 @@ To establish the tangent described as in the general direction of the acanthion,
 Now, execute the **aca vector to INB/MSP** code  that projects the lines to the INB/MSP, ensures that it bisects the acanthion and elongates the line in both directions. 
 <details>
 <summary>Project 'aca vector' onto sagittal plane (MSP or INB)</summary>
-This script projects the 'aca vector' line onto the main sagittal plane. It will automatically detect whether to use 'MSP' or 'INB' as the reference plane and name the output line accordingly.
+
+```python
 ### Project 'aca vector' onto sagittal plane (MSP/INB compatible) ###
 import numpy as np
 import slicer
@@ -393,6 +394,7 @@ projected_line_node.AddControlPoint(projected_point1)
 projected_line_node.AddControlPoint(projected_point2)
 
 print(f"Successfully created '{projected_line_name}'.")
+
 ```
 <img src="https://github.com/user-attachments/assets/f792e15c-1def-482d-ac0c-8ff577017d9c" width="500">
 
