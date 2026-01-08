@@ -1,4 +1,4 @@
-``` python
+```python
 import os
 import qt
 import slicer
@@ -33,9 +33,6 @@ class GerasimowNosePredictor:
         mainLayout.setContentsMargins(10, 10, 10, 10)  # Less padding
         mainLayout.setSpacing(8)  # Reduced spacing between elements
         
-
-
-
         # Create decision log window - SIMPLIFIED
         self.logWidget = qt.QTextEdit()
         self.logWidget.setWindowTitle("Decision Log")
@@ -706,50 +703,7 @@ class GerasimowNosePredictor:
             # Calculate projection
             projection = vector - np.dot(vector, normal) * normal
             return projection
-        
-        
-    def createT4FromT4R(self, planeNormal):
-        """Create T4 based on T4R but constrained to the plane"""
-        # Get T4R
-        t4r = self.tangents["T4R"]
-        
-        # Extract start and end points
-        t4r_start = np.array(t4r['start']) if isinstance(t4r, dict) else np.array(t4r.GetPoint1())
-        t4r_end = np.array(t4r['end']) if isinstance(t4r, dict) else np.array(t4r.GetPoint2())
-        
-        # Calculate vector
-        t4r_vector = t4r_end - t4r_start
-        
-        # Project the vector onto the plane
-        t4_vector = self.projectVectorOntoPlane(t4r_vector, planeNormal)
-        
-        # Normalize the projected vector
-        t4_vector = t4_vector / np.linalg.norm(t4_vector)
-        
-        # Project the origin point onto the plane
-        planeOrigin = np.zeros(3)
-        self.planeNode.GetOrigin(planeOrigin)
-        t4_origin = self.projectPointOntoPlane(t4r_start, planeOrigin, planeNormal)
-        
-        # Create the T4 tangent
-        tangent = vtk.vtkLineSource()
-        tangent.SetPoint1(t4_origin)
-        tangent.SetPoint2(t4_origin + 30.0 * t4_vector)  # 30mm length
-        self.tangents["T4"] = tangent
-        
-        self.log("Created T4 from T4R, constrained to MSP/INB plane")
-
-    def projectPointOntoPlane(self, point, planeOrigin, planeNormal):
-        """Project a point onto a plane"""
-        # Vector from plane origin to point
-        v = point - planeOrigin
-        
-        # Calculate distance from point to plane
-        dist = np.dot(v, planeNormal)
-        
-        # Project point onto plane
-        projected = point - dist * planeNormal
-        return projected
+    
 
     def visualizeT4Tangent(self):
         """Create a visual representation of the T4 tangent as a line"""
@@ -858,7 +812,7 @@ class GerasimowNosePredictor:
             
             prn_index = self.findPointByName(self.landmarksNode, "pronasale")
             if prn_index < 0:
-                slicer.util.messageBox("Could not find 'pronasale' in landmarks. Cannot calculate error.")
+                slicer.util.messageBox("Could not find 'pronasale' in landmarks.Cannot calculate error.")
                 return
             
             actual_prn = np.zeros(3)
@@ -924,7 +878,7 @@ class GerasimowNosePredictor:
             resultsLayout.addWidget(resultsTextEdit)
 
             # Add info label
-            infoLabel = qt.QLabel("You can select and copy the text above. A red error line has been added to the 3D view.")
+            infoLabel = qt.QLabel("You can select and copy the text above.A red error line has been added to the 3D view.")
             infoLabel.setWordWrap(True)
             infoLabel.setStyleSheet("color: #666; font-style: italic;")
             resultsLayout.addWidget(infoLabel)
@@ -936,7 +890,7 @@ class GerasimowNosePredictor:
 
             resultsDialog.exec_()
 
-            self.log(f"=== T1-T2 Shortcut Complete. Error: {error_distance:.2f} mm ===")
+            self.log(f"=== T1-T2 Shortcut Complete.Error: {error_distance:.2f} mm ===")
             
             
         except Exception as e: 
@@ -963,11 +917,15 @@ class GerasimowNosePredictor:
 
     def updateResultsTables(self):
         """Update both results tables with current data"""
-        # Update Measurements Table
-        self.measurementsTable.setRowCount(0)
+        print("DEBUG updateResultsTables: Starting")
         
+        # Update Measurements Table
+        self.measurementsTable.setRowCount(0)  # ✅ CORRECT
+        
+        print(f"DEBUG:  Processing {len(self.all_measurements)} measurements")
         for name, data in self.all_measurements.items():
-            row = self.measurementsTable.rowCount()
+            print(f"DEBUG:  Measurement {name}, data type: {type(data)}, data: {data}")
+            row = self.measurementsTable.rowCount()  # ✅ This calls the method
             self.measurementsTable.insertRow(row)
             
             nameItem = qt.QTableWidgetItem(name)
@@ -985,32 +943,43 @@ class GerasimowNosePredictor:
             self.measurementsTable.setItem(row, 1, valueItem)
             self.measurementsTable.setItem(row, 2, unitItem)
         
-        # Update Coordinates Table
-        self.coordinatesTable.setRowCount(0)
+        print("DEBUG: Finished measurements table")
         
+        # Update Coordinates Table
+        self.coordinatesTable.setRowCount(0)  # ✅ CORRECT
+        
+        print(f"DEBUG: Processing {len(self.all_coordinates)} coordinates")
         for landmark, data in self.all_coordinates.items():
-            row = self.coordinatesTable.rowCount()
+            print(f"DEBUG: Coordinate {landmark}")
+            print(f"DEBUG: data type:  {type(data)}, data: {data}")
+            
+            row = self.coordinatesTable.rowCount()  # ✅ This calls the method
             self.coordinatesTable.insertRow(row)
             
-            pred = data["predicted"]
-            true = data.get("true")
+            predicted_coords = data["predicted"]
+            print(f"DEBUG: predicted_coords type: {type(predicted_coords)}, value: {predicted_coords}")
+            
+            true_coords = data.get("true")
             
             nameItem = qt.QTableWidgetItem(landmark)
-            predXItem = qt.QTableWidgetItem("{:.2f}".format(pred[0]))
-            predYItem = qt.QTableWidgetItem("{:.2f}".format(pred[1]))
-            predZItem = qt.QTableWidgetItem("{:.2f}".format(pred[2]))
+            
+            print(f"DEBUG: About to format coordinates")
+            predXItem = qt.QTableWidgetItem("{:.2f}".format(predicted_coords[0]))
+            predYItem = qt.QTableWidgetItem("{:.2f}".format(predicted_coords[1]))
+            predZItem = qt.QTableWidgetItem("{:.2f}".format(predicted_coords[2]))
             
             self.coordinatesTable.setItem(row, 0, nameItem)
             self.coordinatesTable.setItem(row, 1, predXItem)
             self.coordinatesTable.setItem(row, 2, predYItem)
             self.coordinatesTable.setItem(row, 3, predZItem)
             
-            if true is not None:
-                trueXItem = qt.QTableWidgetItem("{:.2f}".format(true[0]))
-                trueYItem = qt.QTableWidgetItem("{:.2f}".format(true[1]))
-                trueZItem = qt.QTableWidgetItem("{:.2f}".format(true[2]))
+            if true_coords is not None: 
+                print(f"DEBUG: Processing true coords:  {true_coords}")
+                trueXItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[0]))
+                trueYItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[1]))
+                trueZItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[2]))
                 
-                error_3d = np.linalg.norm(np.array(pred) - np.array(true))
+                error_3d = np.linalg.norm(np.array(predicted_coords) - np.array(true_coords))
                 errorItem = qt.QTableWidgetItem("{:.2f}".format(error_3d))
                 
                 # Highlight error in yellow
@@ -1024,6 +993,86 @@ class GerasimowNosePredictor:
             else:
                 for col in range(4, 8):
                     self.coordinatesTable.setItem(row, col, qt.QTableWidgetItem("-"))
+        
+        print("DEBUG updateResultsTables: Finished successfully")
+        
+    def onFindIntersectionsClicked(self):
+        """Calculates intersections using your proven logic."""
+        self.log("'Find Intersections' button clicked.")
+        print("DEBUG: Starting onFindIntersectionsClicked")  # ADD THIS
+
+        # A helper function from your snippet
+        def find_intersection_point(p1, v1, p2, v2):
+            print(f"DEBUG: find_intersection_point called")  # ADD THIS
+            # Solves for the intersection of two lines in 3D space
+            A = np.array([v1, -v2]).T
+            b = np.array(p2) - np.array(p1)
+            try:
+                t = np.linalg.lstsq(A, b, rcond=None)[0]
+                intersection = p1 + t[0] * v1
+                print(f"DEBUG:  Intersection calculated: {intersection}, type: {type(intersection)}")  # ADD THIS
+                return intersection
+            except np.linalg.LinAlgError:
+                self.log("Could not find intersection; lines may be parallel.", 2)
+                return None
+
+        try: 
+            print("DEBUG: Checking required tangents")  # ADD THIS
+            # Check if we have the required tangents
+            required = ["T1", "T2", "T3", "T4"]
+            for name in required:
+                if name not in self.tangents:
+                    slicer.util.messageBox(f"Missing required tangent: {name}.Please create it first.")
+                    return
+
+            print("DEBUG: Getting tangent data")  # ADD THIS
+
+            # Get tangent vectors from our stored data
+            t1_start, t1_end = self.tangents["T1"]['start'], self.tangents["T1"]['end']
+            t2_start, t2_end = self.tangents["T2"]['start'], self.tangents["T2"]['end']
+            t3_start, t3_end = self.tangents["T3"]['start'], self.tangents["T3"]['end']
+            t4_start, t4_end = self.tangents["T4"]['start'], self.tangents["T4"]['end']
+
+            t1_dir = np.array(t1_end) - np.array(t1_start)
+            t2_dir = np.array(t2_end) - np.array(t2_start)
+            t3_dir = np.array(t3_end) - np.array(t3_start)
+            t4_dir = np.array(t4_end) - np.array(t4_start)
+
+            # Find intersections
+            self.intersections = {}
+            self.intersections["T1-T2"] = find_intersection_point(t1_start, t1_dir, t2_start, t2_dir)
+            self.intersections["T1-T4"] = find_intersection_point(t1_start, t1_dir, t4_start, t4_dir)
+            self.intersections["T3-T2"] = find_intersection_point(t3_start, t3_dir, t2_start, t2_dir)
+            self.intersections["T3-T4"] = find_intersection_point(t3_start, t3_dir, t4_start, t4_dir)
+
+            # Create a new markups node for the predictions
+            prediction_points = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', 'prediction points')
+            for name, point in self.intersections.items():
+                if point is not None: 
+                    prediction_points.AddControlPoint(point, f"pred {name}")
+            
+            self.log(f"Created 'prediction points' node with {len(self.intersections)} points.")
+            slicer.util.showStatusMessage("Intersection points created successfully!", 4000)
+            
+            print("DEBUG: About to store intersections in results")  # ADD THIS
+            # Store intersections in results
+            for name, point in self.intersections.items():
+                print(f"DEBUG: Processing intersection {name}, point type: {type(point)}, value: {point}")  # ADD THIS
+                if point is not None: 
+                    # Convert to list if it's a numpy array, otherwise use as-is
+                    point_list = point.tolist() if isinstance(point, np.ndarray) else point
+                    print(f"DEBUG: About to call storeCoordinate with {name}")  # ADD THIS
+                    self.storeCoordinate(f"Intersection {name}", point_list)
+                    print(f"DEBUG: Successfully stored {name}")  # ADD THIS
+
+            print("DEBUG:  Function completed successfully")  # ADD THIS
+                
+        except Exception as e: 
+            print(f"DEBUG: Exception caught: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
+            import traceback
+            traceback.print_exc()
+            slicer.util.errorDisplay(f"An error occurred while finding intersections: {e}")
 
     def onCopyMeasurements(self):
         """Copy measurements table to clipboard in TSV format"""
@@ -1441,7 +1490,7 @@ class GerasimowNosePredictor:
                 slicer.util.errorDisplay("Please select a landmarks node first")
                 return
             
-            bundle = self.landmarkBundleCombo.currentIndex()
+            bundle = self.landmarkBundleCombo.currentIndex()  # This runs a function
             
             try:
                 # Get the landmarks based on the selected bundle
@@ -2180,66 +2229,83 @@ class GerasimowNosePredictor:
             
             return intersection
         
-
     def onFindIntersectionsClicked(self):
-            """Calculates intersections using your proven logic."""
-            self.log("'Find Intersections' button clicked.")
+        """Calculates intersections using your proven logic."""
+        self.log("'Find Intersections' button clicked.")
+        print("DEBUG: Starting onFindIntersectionsClicked")  # ADD THIS
 
-            # A helper function from your snippet
-            def find_intersection_point(p1, v1, p2, v2):
-                # Solves for the intersection of two lines in 3D space
-                A = np.array([v1, -v2]).T
-                b = np.array(p2) - np.array(p1)
-                try:
-                    t = np.linalg.lstsq(A, b, rcond=None)[0]
-                    intersection = p1 + t[0] * v1
-                    return intersection
-                except np.linalg.LinAlgError:
-                    self.log("Could not find intersection; lines may be parallel.", 2)
-                    return None
-
+        # A helper function from your snippet
+        def find_intersection_point(p1, v1, p2, v2):
+            print(f"DEBUG: find_intersection_point called")  # ADD THIS
+            # Solves for the intersection of two lines in 3D space
+            A = np.array([v1, -v2]).T
+            b = np.array(p2) - np.array(p1)
             try:
-                # Check if we have the required tangents
-                required = ["T1", "T2", "T3", "T4"]
-                for name in required:
-                    if name not in self.tangents:
-                        slicer.util.messageBox(f"Missing required tangent: {name}.Please create it first.")
-                        return
+                t = np.linalg.lstsq(A, b, rcond=None)[0]
+                intersection = p1 + t[0] * v1
+                print(f"DEBUG:  Intersection calculated: {intersection}, type: {type(intersection)}")  # ADD THIS
+                return intersection
+            except np.linalg.LinAlgError:
+                self.log("Could not find intersection; lines may be parallel.", 2)
+                return None
 
-                # Get tangent vectors from our stored data
-                t1_start, t1_end = self.tangents["T1"]['start'], self.tangents["T1"]['end']
-                t2_start, t2_end = self.tangents["T2"]['start'], self.tangents["T2"]['end']
-                t3_start, t3_end = self.tangents["T3"]['start'], self.tangents["T3"]['end']
-                t4_start, t4_end = self.tangents["T4"]['start'], self.tangents["T4"]['end']
+        try: 
+            print("DEBUG: Checking required tangents")  # ADD THIS
+            # Check if we have the required tangents
+            required = ["T1", "T2", "T3", "T4"]
+            for name in required:
+                if name not in self.tangents:
+                    slicer.util.messageBox(f"Missing required tangent: {name}.Please create it first.")
+                    return
 
-                t1_dir = np.array(t1_end) - np.array(t1_start)
-                t2_dir = np.array(t2_end) - np.array(t2_start)
-                t3_dir = np.array(t3_end) - np.array(t3_start)
-                t4_dir = np.array(t4_end) - np.array(t4_start)
+            print("DEBUG: Getting tangent data")  # ADD THIS
 
-                # Find intersections
-                self.intersections = {}
-                self.intersections["T1-T2"] = find_intersection_point(t1_start, t1_dir, t2_start, t2_dir)
-                self.intersections["T1-T4"] = find_intersection_point(t1_start, t1_dir, t4_start, t4_dir)
-                self.intersections["T3-T2"] = find_intersection_point(t3_start, t3_dir, t2_start, t2_dir)
-                self.intersections["T3-T4"] = find_intersection_point(t3_start, t3_dir, t4_start, t4_dir)
+            # Get tangent vectors from our stored data
+            t1_start, t1_end = self.tangents["T1"]['start'], self.tangents["T1"]['end']
+            t2_start, t2_end = self.tangents["T2"]['start'], self.tangents["T2"]['end']
+            t3_start, t3_end = self.tangents["T3"]['start'], self.tangents["T3"]['end']
+            t4_start, t4_end = self.tangents["T4"]['start'], self.tangents["T4"]['end']
 
-                # Create a new markups node for the predictions
-                prediction_points = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', 'prediction points')
-                for name, point in self.intersections.items():
-                    if point is not None:
-                        prediction_points.AddControlPoint(point, f"pred {name}")
+            t1_dir = np.array(t1_end) - np.array(t1_start)
+            t2_dir = np.array(t2_end) - np.array(t2_start)
+            t3_dir = np.array(t3_end) - np.array(t3_start)
+            t4_dir = np.array(t4_end) - np.array(t4_start)
+
+            # Find intersections
+            self.intersections = {}
+            self.intersections["T1-T2"] = find_intersection_point(t1_start, t1_dir, t2_start, t2_dir)
+            self.intersections["T1-T4"] = find_intersection_point(t1_start, t1_dir, t4_start, t4_dir)
+            self.intersections["T3-T2"] = find_intersection_point(t3_start, t3_dir, t2_start, t2_dir)
+            self.intersections["T3-T4"] = find_intersection_point(t3_start, t3_dir, t4_start, t4_dir)
+
+            # Create a new markups node for the predictions
+            prediction_points = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', 'prediction points')
+            for name, point in self.intersections.items():
+                if point is not None: 
+                    prediction_points.AddControlPoint(point, f"pred {name}")
+            
+            self.log(f"Created 'prediction points' node with {len(self.intersections)} points.")
+            slicer.util.showStatusMessage("Intersection points created successfully!", 4000)
+            
+            print("DEBUG: About to store intersections in results")  # ADD THIS
+            # Store intersections in results
+            for name, point in self.intersections.items():
+                print(f"DEBUG: Processing intersection {name}, point type: {type(point)}, value: {point}")  # ADD THIS
+                if point is not None: 
+                    # Convert to list if it's a numpy array, otherwise use as-is
+                    point_list = point.tolist() if isinstance(point, np.ndarray) else point
+                    print(f"DEBUG: About to call storeCoordinate with {name}")  # ADD THIS
+                    self.storeCoordinate(f"Intersection {name}", point_list)
+                    print(f"DEBUG: Successfully stored {name}")  # ADD THIS
+
+            print("DEBUG:  Function completed successfully")  # ADD THIS
                 
-                self.log(f"Created 'prediction points' node with {len(self.intersections)} points.")
-                slicer.util.showStatusMessage("Intersection points created successfully!", 4000)
-                
-                # Store intersections in results
-                for name, point in self.intersections.items():
-                    if point is not None:
-                        self.storeCoordinate(f"Intersection {name}", point.tolist())    
-
-            except Exception as e:
-                slicer.util.errorDisplay(f"An error occurred while finding intersections: {e}")
+        except Exception as e: 
+            print(f"DEBUG: Exception caught: {e}")  # ADD THIS
+            print(f"DEBUG: Exception type:  {type(e)}")  # ADD THIS
+            import traceback
+            traceback.print_exc()
+        slicer.util.errorDisplay(f"An error occurred while finding intersections: {e}")
                 
     def onCalculateErrorsClicked(self):
         """
@@ -2544,5 +2610,6 @@ gerasimowPredictor = GerasimowNosePredictor()
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
 print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
+
 
 ```
