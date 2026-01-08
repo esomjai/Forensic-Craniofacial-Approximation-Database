@@ -695,7 +695,8 @@ print(f"Error distance: {error_distance:.2f} mm")
 
 </details>
 
-
+### Outputs
+If you want to copy all linear measurements in the scene for data collection, refer to [this guide](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/7b9aaccce0aaf54cdb91d4888bd12ac06ac452c0/Start%20here%20/004_Copy%20measurements%20to%20clipboard.md)
 
 
 ## Bibliography: 
