@@ -517,14 +517,11 @@ for i, pos in enumerate(planePositions):
 ```
 Image if the code for 4 mirror planes is employed:
 ![image](https://github.com/user-attachments/assets/c684f261-e427-4d4d-8831-17dc7d7e3bbe)
-
-
 </details>
 
 
 <details>
 <summary>Code for 5 mirror planes</summary>
-
 #### Code for 5 mirror planes
 ```python
 #5 mirror planes#
@@ -564,16 +561,13 @@ for i, pos in enumerate(planePositions):
     planeNode.SetOrigin(pos)
     planeNode.SetNormal(ptpPlaneNormal)
 ```
-
 Image if the code for 5 mirror planes is employed: 
-
 ![image](https://github.com/user-attachments/assets/ea7b9888-95b6-436c-892d-ada9f77f2a6b)
 </details>
 
 
 <details>
 <summary>Code for 6 mirror planes</summary>
-
 ####Code for 6 mirror planes
 ```python
 #6 mirror planes#
@@ -617,7 +611,6 @@ for i, pos in enumerate(planePositions):
 
 Image if the code for 6 mirror planes is employed:
 ![image](https://github.com/user-attachments/assets/8f635b63-27e2-4857-ae29-1d87db13f103)
-
 </details>
 
 
