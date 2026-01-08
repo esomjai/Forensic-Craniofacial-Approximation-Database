@@ -1003,7 +1003,8 @@ The intersection points (called “mirror points” in the code) of planes A, B,
 
 <details>
 
-<summary>4 plane Line B intersection </summary>
+
+
 
 ### Line B Intersection Points
 
@@ -1012,8 +1013,6 @@ This step finds the intersection points between the reference line (`Line_B`) an
 <details>
 
 <summary>4 plane Line B intersection</summary>
-
-#### Code for Line B intersection points with 4 planes
 
 ```python
 import numpy as np
@@ -1131,8 +1130,6 @@ for i, line_name in enumerate(lines_to_intersect):
 
 <summary>5 plane Line B intersection</summary>
 
-#### Code for Line B intersection points with 5 planes
-
 ```python
 import numpy as np
 import slicer
@@ -1248,7 +1245,6 @@ for i, line_name in enumerate(lines_to_intersect):
 
 <summary>6 plane Line B intersection</summary>
 
-#### Code for Line B intersection points with 6 planes
 ```python
 import numpy as np
 import slicer
