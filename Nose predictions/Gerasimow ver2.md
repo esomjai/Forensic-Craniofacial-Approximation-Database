@@ -2219,10 +2219,10 @@ class GerasimowNosePredictor:
 
                 # Find intersections
                 self.intersections = {}
-                self.intersections["T1-T2"] = find_intersection_point(t1_start, t1_dir, t2_start, t2_dir)
-                self.intersections["T1-T4"] = find_intersection_point(t1_start, t1_dir, t4_start, t4_dir)
-                self.intersections["T3-T2"] = find_intersection_point(t3_start, t3_dir, t2_start, t2_dir)
-                self.intersections["T3-T4"] = find_intersection_point(t3_start, t3_dir, t4_start, t4_dir)
+                self.intersections["T1-T2"] = find_intersection_point(np.array(t1_start), t1_dir, np.array(t2_start), t2_dir)
+                self.intersections["T1-T4"] = find_intersection_point(np.array(t1_start), t1_dir, np.array(t4_start), t4_dir)
+                self.intersections["T3-T2"] = find_intersection_point(np.array(t3_start), t3_dir, np.array(t2_start), t2_dir)
+                self.intersections["T3-T4"] = find_intersection_point(np.array(t3_start), t3_dir, np.array(t4_start), t4_dir)
 
                 # Create a new markups node for the predictions
                 prediction_points = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', 'prediction points')
