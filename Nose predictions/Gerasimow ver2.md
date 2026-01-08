@@ -706,50 +706,6 @@ class GerasimowNosePredictor:
             # Calculate projection
             projection = vector - np.dot(vector, normal) * normal
             return projection
-        
-        
-    def createT4FromT4R(self, planeNormal):
-        """Create T4 based on T4R but constrained to the plane"""
-        # Get T4R
-        t4r = self.tangents["T4R"]
-        
-        # Extract start and end points
-        t4r_start = np.array(t4r['start']) if isinstance(t4r, dict) else np.array(t4r.GetPoint1())
-        t4r_end = np.array(t4r['end']) if isinstance(t4r, dict) else np.array(t4r.GetPoint2())
-        
-        # Calculate vector
-        t4r_vector = t4r_end - t4r_start
-        
-        # Project the vector onto the plane
-        t4_vector = self.projectVectorOntoPlane(t4r_vector, planeNormal)
-        
-        # Normalize the projected vector
-        t4_vector = t4_vector / np.linalg.norm(t4_vector)
-        
-        # Project the origin point onto the plane
-        planeOrigin = np.zeros(3)
-        self.planeNode.GetOrigin(planeOrigin)
-        t4_origin = self.projectPointOntoPlane(t4r_start, planeOrigin, planeNormal)
-        
-        # Create the T4 tangent
-        tangent = vtk.vtkLineSource()
-        tangent.SetPoint1(t4_origin)
-        tangent.SetPoint2(t4_origin + 30.0 * t4_vector)  # 30mm length
-        self.tangents["T4"] = tangent
-        
-        self.log("Created T4 from T4R, constrained to MSP/INB plane")
-
-    def projectPointOntoPlane(self, point, planeOrigin, planeNormal):
-        """Project a point onto a plane"""
-        # Vector from plane origin to point
-        v = point - planeOrigin
-        
-        # Calculate distance from point to plane
-        dist = np.dot(v, planeNormal)
-        
-        # Project point onto plane
-        projected = point - dist * planeNormal
-        return projected
 
     def visualizeT4Tangent(self):
         """Create a visual representation of the T4 tangent as a line"""
@@ -1141,42 +1097,6 @@ class GerasimowNosePredictor:
             return bounds
 
 
-    def extendTangent(self, tangentName, extensionLength):
-            """Extend a tangent line while preserving direction"""
-            try:
-                # Get the tangent data
-                tangent = self.tangents[tangentName]
-                
-                # Handle different tangent storage formats
-                if isinstance(tangent, dict):
-                    start = np.array(tangent['start'])
-                    end = np.array(tangent['end'])
-                else:  # vtkLineSource
-                    start = np.array(tangent.GetPoint1())
-                    end = np.array(tangent.GetPoint2())
-                
-                # Calculate direction vector
-                direction = end - start
-                direction = direction / np.linalg.norm(direction)
-                
-                # Extend in both directions
-                newStart = start - direction * extensionLength
-                newEnd = end + direction * extensionLength
-                
-                # Update tangent
-                if isinstance(tangent, dict):
-                    self.tangents[tangentName]['start'] = newStart.tolist()
-                    self.tangents[tangentName]['end'] = newEnd.tolist()
-                    self.tangents[tangentName]['vector'] = (newEnd - newStart).tolist()
-                else:  # vtkLineSource
-                    tangent.SetPoint1(newStart)
-                    tangent.SetPoint2(newEnd)
-                
-                self.log(f"Extended {tangentName} tangent")
-            except Exception as e:
-                self.log(f"Error extending {tangentName}: {str(e)}", 2)
-
-
     def updateTangentVisualization(self, tangentName):
         """Update the visualization of a tangent after extension, preventing warnings."""
         if tangentName in self.tangents and tangentName in self.tangentNodes:
@@ -1441,7 +1361,7 @@ class GerasimowNosePredictor:
                 slicer.util.errorDisplay("Please select a landmarks node first")
                 return
             
-            bundle = self.landmarkBundleCombo.currentIndex
+            bundle = self.landmarkBundleCombo.currentIndex()
             
             try:
                 # Get the landmarks based on the selected bundle
