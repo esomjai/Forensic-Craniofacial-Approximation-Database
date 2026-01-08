@@ -67,6 +67,8 @@ Illustration of the method:
 - [ ] The scan has to be re-aligned in the FHP
 - [ ] You should have a Bone and Skin model via segmentation (explained later)
 
+You will establish a profile plane,  INB or MSP, based on which landmarks in the hard tissue landmark file you can place. 
+
 
 
 ### INB plane
@@ -139,6 +141,110 @@ msg.exec_()
 
 View after only the first 3 landmarks are allocated correctly AND INB extended via the toggles (dots)
 
+
+### MSP (mid-sagittal plane)
+
+<details>
+<summary>Code for MSP</summary>
+```python
+### Create Midsagittal Plane (MSP) ###
+import numpy as np
+import slicer
+
+#--- Configuration ---
+#1. Name of the node containing your landmark points.
+SOURCE_NODE_NAME = "KrogmanIscan_hard_tissue"
+
+#2. List of point labels that define the Midsagittal Plane.
+MSP_POINT_LABELS = ['nasion', 'acanthion', 'prosthion', 'subspinale']
+
+#3. The name for the new plane that will be created.
+NEW_PLANE_NAME = 'MSP'
+
+#--- Main Script ---
+
+print(f"Attempting to create '{NEW_PLANE_NAME}'...")
+
+#1. Get the source landmark node from the scene
+try:
+    sourceNode = slicer.util.getNode(SOURCE_NODE_NAME)
+    if not sourceNode:
+        raise ValueError(f"Node '{SOURCE_NODE_NAME}' not found.")
+except Exception as e:
+    slicer.util.errorDisplay(f"Error: {e}")
+    raise
+
+#2. Find the coordinates of the points with the specified labels
+points = []
+found_labels = []
+missing_labels = list(MSP_POINT_LABELS)
+
+for i in range(sourceNode.GetNumberOfControlPoints()):
+    label = sourceNode.GetNthControlPointLabel(i)
+    if label in MSP_POINT_LABELS:
+        pos = np.zeros(3)
+        sourceNode.GetNthControlPointPosition(i, pos)
+        points.append(pos)
+        found_labels.append(label)
+        if label in missing_labels:
+            missing_labels.remove(label)
+
+#3. Check if we found enough points to define a plane
+if len(points) < 3:
+    slicer.util.errorDisplay(
+        f"Could not find at least 3 of the required points in '{SOURCE_NODE_NAME}'.\n"
+        f"Found: {found_labels}\n"
+        f"Missing: {missing_labels}\n"
+        "Cannot calculate a plane."
+    )
+    raise ValueError("Not enough points to define a plane.")
+
+#If some points were missing, show a warning but continue
+if missing_labels:
+    slicer.util.warningDisplay(
+        f"Warning: Could not find all specified points.\n"
+        f"The plane will be calculated using the {len(found_labels)} points that were found: {found_labels}"
+    )
+
+#4. --- Best-Fit Plane Calculation using SVD ---
+points_array = np.array(points)
+
+#a) Calculate the centroid (average position), which will be the plane's origin.
+centroid = points_array.mean(axis=0)
+
+#b) Center the points by subtracting the centroid.
+centered_points = points_array - centroid
+
+#c) Use Singular Value Decomposition (SVD) to find the plane's normal.
+#The normal vector is the one corresponding to the smallest singular value.
+#In numpy's SVD, this is the last row of the 'vh' matrix.
+_, _, vh = np.linalg.svd(centered_points)
+plane_normal = vh[-1]
+
+#--- Create the New Plane in Slicer ---
+
+#Remove the old plane if it exists to avoid duplicates
+oldPlaneNode = slicer.mrmlScene.GetFirstNodeByName(NEW_PLANE_NAME)
+if oldPlaneNode:
+    slicer.mrmlScene.RemoveNode(oldPlaneNode)
+    print(f"Removed existing '{NEW_PLANE_NAME}' plane.")
+
+#Create the new plane node
+newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', NEW_PLANE_NAME)
+
+#Set the origin and normal for the new plane
+newPlaneNode.SetOrigin(centroid)
+newPlaneNode.SetNormal(plane_normal)
+
+print(f"\nSuccessfully created Midsagittal Plane '{NEW_PLANE_NAME}'.")
+print(f"  - Calculated from points: {found_labels}")
+print(f"  - Origin (Centroid): {np.round(centroid, 2)}")
+print(f"  - Normal Vector: {np.round(plane_normal, 2)}")### Create Midsagittal Plane (MSP) ###
+```
+</details>
+
+
+
 ### Segmentation
 [link to step-by-step](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/003_Roi%20vs%20Segmentation.md)
 
@@ -163,7 +269,7 @@ You’ll see this menu on the left side of the screen:
 
 ![dynamic-modeller](https://github.com/user-attachments/assets/035ea262-8235-4665-8c4d-c3df49945944)
 
-The "INB” is established in the environment. To cut the model along this plane (technically cutting it in 2 and choosing which side to keep), choose the first button (Plane Cut).
+The "INB” or "MSP" is established in the environment. To cut the model along this plane (technically cutting it in 2 and choosing which side to keep), choose the first button (Plane Cut).
 
 
 ![image](https://github.com/user-attachments/assets/9c297c00-d350-4994-9386-1e2aea9e3e25)
@@ -171,7 +277,7 @@ The "INB” is established in the environment. To cut the model along this plane
 Make sure you create your cut model with the settings on the screenshot to cut the Bone model at the INB Plane: 
 
 - [ ] Make sure the source volume is the full model of the Bone
-- [ ] Choose INB as the plane node
+- [ ] Choose INB/MSP as the plane node
 - [ ]  Operation type should be **Intersection**
 - [ ]  You MUST chose the **Create new model as...** from the drop-down menu and type in the custom name with the side prefix - otherwise you'll override your existing models. This time, the negative output will be the right side of the cut and the positive side is the left side
 - [ ] DO NOT FORGET TO CLICK APPLY
@@ -202,62 +308,94 @@ To establish the tangent described as in the general direction of the acanthion,
 <img src="https://github.com/user-attachments/assets/57341433-009a-47cf-be85-a6fd329fa4b8" width="500">
 
 
-Now, execute the **aca vector to INB** code  that projects the lines to the INB, ensures that it bisects the acanthion and elongates the line in both directions. 
-
-
+Now, execute the **aca vector to INB/MSP** code  that projects the lines to the INB/MSP, ensures that it bisects the acanthion and elongates the line in both directions. 
 <details>
-	
-<summary>aca vector to INB</summary>
-
-```python
-
+<summary>Project 'aca vector' onto sagittal plane (MSP or INB)</summary>
+This script projects the 'aca vector' line onto the main sagittal plane. It will automatically detect whether to use 'MSP' or 'INB' as the reference plane and name the output line accordingly.
+### Project 'aca vector' onto sagittal plane (MSP/INB compatible) ###
 import numpy as np
 import slicer
-from slicer.util import getNode
 
-# Get the nodes for the line and the plane
-line = getNode('aca vector')
-plane = getNode('INB')
+# --- Configuration ---
+# The line to be projected.
+SOURCE_LINE_NAME = 'aca vector'
+# The script will look for a plane with the first name in this list,
+# then fall back to the next name if the first isn't found.
+PLANE_PRIORITY_LIST = ['MSP', 'INB']
+# How far to extend the source line for an infinite projection effect.
+EXTENSION_LENGTH_MM = 100
 
-# Get the positions of the control points of the line
-point1 = np.array(line.GetNthControlPointPositionVector(0))
-point2 = np.array(line.GetNthControlPointPositionVector(1))
+# --- Main Script ---
 
-# Calculate the direction vector and normalize it
-direction = point2 - point1
+# 1. Find the source line
+source_line_node = slicer.util.getNode(SOURCE_LINE_NAME)
+if not source_line_node:
+    slicer.util.errorDisplay(f"Error: Source line '{SOURCE_LINE_NAME}' not found.")
+    raise ValueError(f"'{SOURCE_LINE_NAME}' not found.")
+
+# 2. Find the reference plane (MSP or INB)
+reference_plane_node = None
+found_plane_name = ""
+for name in PLANE_PRIORITY_LIST:
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if node:
+        reference_plane_node = node
+        found_plane_name = name
+        print(f"Found reference plane: '{found_plane_name}'")
+        break
+
+if not reference_plane_node:
+    slicer.util.errorDisplay(f"Error: Could not find a reference plane. Please ensure one of the following exists: {PLANE_PRIORITY_LIST}")
+    raise ValueError("Reference plane not found.")
+
+# 3. Get the source line's geometry and extend it
+if source_line_node.GetNumberOfControlPoints() < 2:
+    slicer.util.errorDisplay(f"Error: Source line '{SOURCE_LINE_NAME}' has fewer than 2 points.")
+    raise ValueError("Invalid source line.")
+
+p1, p2 = np.zeros(3), np.zeros(3)
+source_line_node.GetNthControlPointPositionWorld(0, p1)
+source_line_node.GetNthControlPointPositionWorld(1, p2)
+
+direction = p2 - p1
 direction_normalized = direction / np.linalg.norm(direction)
 
-# Extend the line by 50 mm in both directions
-extension_length = 50  # mm
-extended_point1 = point1 - extension_length * direction_normalized
-extended_point2 = point2 + extension_length * direction_normalized
+extended_point1 = p1 - EXTENSION_LENGTH_MM * direction_normalized
+extended_point2 = p2 + EXTENSION_LENGTH_MM * direction_normalized
 
-# Get the plane origin and normal
-planeOrigin = np.array(plane.GetOriginWorld())
-planeNormal = np.array(plane.GetNormalWorld())
+# 4. Get the plane's geometry
+plane_origin = np.zeros(3)
+reference_plane_node.GetOriginWorld(plane_origin)
+plane_normal = np.zeros(3)
+reference_plane_node.GetNormalWorld(plane_normal)
 
-# Function to project a point onto a plane
+# 5. Project the extended points onto the plane
 def project_point_onto_plane(point, planeOrigin, planeNormal):
     vector = point - planeOrigin
     distance = np.dot(vector, planeNormal)
-    projected_point = point - distance * planeNormal
-    return projected_point
+    return point - distance * planeNormal
 
-# Project the extended points onto the plane
-projected_point1 = project_point_onto_plane(extended_point1, planeOrigin, planeNormal)
-projected_point2 = project_point_onto_plane(extended_point2, planeOrigin, planeNormal)
+projected_point1 = project_point_onto_plane(extended_point1, plane_origin, plane_normal)
+projected_point2 = project_point_onto_plane(extended_point2, plane_origin, plane_normal)
 
-# Create a new line node for the projected line
-projected_line = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode')
-projected_line.AddControlPoint(projected_point1.tolist())
-projected_line.AddControlPoint(projected_point2.tolist())
-projected_line.SetName('aca vector projected onto INB plane')
+# 6. Create the new projected line
+projected_line_name = f'{SOURCE_LINE_NAME} projected onto {found_plane_name} plane'
+
+# Clean up old node if it exists
+old_projected_line = slicer.mrmlScene.GetFirstNodeByName(projected_line_name)
+if old_projected_line:
+    slicer.mrmlScene.RemoveNode(old_projected_line)
+
+# Create the new node
+projected_line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', projected_line_name)
+projected_line_node.AddControlPoint(projected_point1)
+projected_line_node.AddControlPoint(projected_point2)
+
+print(f"Successfully created '{projected_line_name}'.")
 ```
-</details>
-
 <img src="https://github.com/user-attachments/assets/f792e15c-1def-482d-ac0c-8ff577017d9c" width="500">
 
-
+</details>
 
 ### Mid-philtrum and reference to mp
 The hard tissue mid-philtrum is defined as the _Median point midway between subspinale and prosthion_ – therefore a line connecting the subspinale and prosthion can be established and the midline found programmatically, which is a visual guide to allocate the **mp** landmark via the script 003_lines.txt, that also creates the VMJ-acanthion distance. An issue I found is that the average soft tissue thickness measurements often do not meet the acanthion vector - to combat this, an elongated soft tissue depth line called  "soft tissue projection line" with an arbitrary length of 50 mm is established. 
