@@ -349,13 +349,13 @@ class GerasimowNosePredictor:
         mainLayout.addWidget(self.step3GroupBox)
         
         # RESULTS SECTION
-        resultsGroupBox = qt.QGroupBox("Results & Export")
+        resultsGroupBox = qt.QGroupBox("Results and Export")
         resultsLayout = qt.QVBoxLayout(resultsGroupBox)
         resultsLayout.setContentsMargins(8, 10, 8, 10)
         resultsLayout.setSpacing(8)
 
         # Measurements Table
-        measurementsLabel = qt.QLabel("<b>📏 Measurements (Distances & Angles)</b>")
+        measurementsLabel = qt.QLabel("<b>📏 Measurements (Distances and Angles)</b>")
         measurementsLabel.setStyleSheet("font-size:  14px;")
         resultsLayout.addWidget(measurementsLabel)
 
@@ -742,6 +742,7 @@ class GerasimowNosePredictor:
             
             self.log("Created T4 line tangent")
 
+    
     def onT1T2ShortcutClicked(self):
         """Run the complete T1-T2 shortcut workflow"""
         self.log("=== Starting T1-T2 Shortcut Workflow ===")
@@ -846,57 +847,8 @@ class GerasimowNosePredictor:
             error_line_node.AddControlPoint(actual_prn)
             error_line_node.AddControlPoint(intersection_point)
             
-            # 8.Show results in a copy-pasteable format
-            result_text = (
-                f"T1-T2 Shortcut Results\n"
-                f"{'='*50}\n\n"
-                f"Predicted Pronasale:\n"
-                f"  X: {intersection_point[0]:.2f} mm\n"
-                f"  Y: {intersection_point[1]:.2f} mm\n"
-                f"  Z: {intersection_point[2]:.2f} mm\n\n"
-                f"Actual Pronasale:\n"
-                f"  X: {actual_prn[0]:.2f} mm\n"
-                f"  Y: {actual_prn[1]:.2f} mm\n"
-                f"  Z: {actual_prn[2]:.2f} mm\n\n"
-                f"Prediction Error: {error_distance:.2f} mm\n"
-                f"{'='*50}\n\n"
-                f"CSV Format (for spreadsheet):\n"
-                f"Metric,X,Y,Z,Total_Error\n"
-                f"Predicted,{intersection_point[0]:.2f},{intersection_point[1]:.2f},{intersection_point[2]:.2f},-\n"
-                f"Actual,{actual_prn[0]:.2f},{actual_prn[1]:.2f},{actual_prn[2]:.2f},-\n"
-                f"Error,-,-,-,{error_distance:.2f}\n"
-            )
-
-            # Create a dialog with copy-pasteable text
-            resultsDialog = qt.QDialog(self.mainWidget)
-            resultsDialog.setWindowTitle("T1-T2 Prediction Results")
-            resultsDialog.setMinimumWidth(500)
-            resultsLayout = qt.QVBoxLayout(resultsDialog)
-
-            # Add title label
-            titleLabel = qt.QLabel("<h3>T1-T2 Shortcut Complete! </h3>")
-            titleLabel.setAlignment(qt.Qt.AlignCenter)
-            resultsLayout.addWidget(titleLabel)
-
-            # Add text edit with results (read-only but selectable)
-            resultsTextEdit = qt.QTextEdit()
-            resultsTextEdit.setPlainText(result_text)
-            resultsTextEdit.setReadOnly(True)
-            resultsTextEdit.setMinimumHeight(300)
-            resultsLayout.addWidget(resultsTextEdit)
-
-            # Add info label
-            infoLabel = qt.QLabel("You can select and copy the text above.A red error line has been added to the 3D view.")
-            infoLabel.setWordWrap(True)
-            infoLabel.setStyleSheet("color: #666; font-style: italic;")
-            resultsLayout.addWidget(infoLabel)
-
-            # Add close button
-            closeButton = qt.QPushButton("Close")
-            closeButton.clicked.connect(resultsDialog.accept)
-            resultsLayout.addWidget(closeButton)
-
-            resultsDialog.exec_()
+            # 8. The summary pop-up dialog has been removed as requested.
+            slicer.util.showStatusMessage(f"T1-T2 Shortcut Complete! Error: {error_distance:.2f} mm", 5000)
 
             self.log(f"=== T1-T2 Shortcut Complete.Error: {error_distance:.2f} mm ===")
             
@@ -906,6 +858,7 @@ class GerasimowNosePredictor:
             import traceback
             traceback.print_exc()
 
+    
     def storeMeasurement(self, name, value, unit="mm", is_error=False):
         """Store a measurement for the results table"""
         self.all_measurements[name] = {
@@ -1317,7 +1270,7 @@ class GerasimowNosePredictor:
         if checked: 
             if not hasattr(self, 't1t2ShortcutButton'):
                 # Create the shortcut button dynamically
-                self.t1t2ShortcutButton = qt.QPushButton("Run T1-T2 Prediction & Compare to Pronasale")
+                self.t1t2ShortcutButton = qt.QPushButton("Run T1-T2 Prediction and Compare to Pronasale")
                 self.t1t2ShortcutButton.setStyleSheet("background-color: #FF6B35; color: white; font-weight: bold; padding: 10px;")
                 self.t1t2ShortcutButton.setFixedWidth(350)
                 self.t1t2ShortcutButton.clicked.connect(self.onT1T2ShortcutClicked)
@@ -1673,7 +1626,7 @@ class GerasimowNosePredictor:
                 "• T1 (Yellow): Last third of the nasal bone\n"
                 "• T2 (Green): Direction of anterior nasal spine\n\n"
                 "Click on the lines to select them, then drag the control points to adjust.\n"
-                "When ready, click 'Run T1-T2 Prediction & Compare to Pronasale'."
+                "When ready, click 'Run T1-T2 Prediction and Compare to Pronasale'."
             )
         else:
             self.showGuidanceDialog(
@@ -2621,7 +2574,6 @@ gerasimowPredictor = GerasimowNosePredictor()
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
 print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
-
 
 
 ```
