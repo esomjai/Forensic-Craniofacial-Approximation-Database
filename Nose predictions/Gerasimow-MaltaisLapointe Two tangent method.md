@@ -1,22 +1,22 @@
 # The Two Tangent Method by Gerasimow, 1955[^2], its revision by Maltais-Lapointe (2016)[^14] based on Ullrich and Stephan (2011)[^7]
 # Table of Contents
 
-1. - [Literature context](#literature-context)
-   - [Summary](#summary)
-   - [Landmarks](#landmarks-in-this-guide-for-both-methods)
-2. [Profile plane](#profile-plane)
-3. [Gerasimow's method](#gerasimows-method)
-   - [Segmentation](#segmentation)
-   - [Profile view model](#profile-view-model)
-   - [Establishing the tangents](#establishing-the-tangents)
-   - [Elongating the tangents](#elongating-the-tangents)
-   - [Error rates](#error-rates)
-4. [Maltais-Lapointe (2016)`s method](#maltais-lapointe-2016s-method)
-   - [Tangents and Reference Points](#tangents-and-reference-points)
-5. [Outputs](#outputs)
-   - [Tangents1 and 2 with error](#tangents1-and-2-with-error)
-   - [Tangents1,2,3,4 with error to pronasale and R2](#tangents1234-with-error-to-pronasale-and-r2)
-6. [Bibliography](#bibliography)
+1.  [Literature context](#literature-context)
+    *   [Summary](#summary)
+    *   [Landmarks in this guide (for both methods)](#landmarks-in-this-guide-for-both-methods)
+    *   [Illustration of the landmarks](#illustration-of-the-landmarks)
+    *   [Profile plane](#profile-plane)
+    *   [Segmentation](#segmentation)
+    *   [Profile view model](#profile-view-model)
+    *   [Establishing the tangents (Gerasimow)](#establishing-the-tangents-gerasimow)
+    *   [Elongating the tangents](#elongating-the-tangents)
+    *   [Error rates](#error-rates)
+2.  [Maltais-Lapointe (2016)'s method](#maltais-lapointe-2016s-method)
+    *   [Outputs](#outputs)
+        *   [Tangents1 and 2 with error](#tangents1-and-2-with-error)
+        *   [Tangents1,2,3,4 with error to pronasale and R2](#tangents1234-with-error-to-pronasale-and-r2)
+3.  [Bibliography](#bibliography)
+
 ## Literature context
 
 Limitations occur in describing this method in detail as his works are available in English only partially, these are (i) the published translations from German (Gerassimow, 1968[^3]; Gerasimov, 1971[^4]) and the (ii) unpublished Tshernezky translation later used for the development of the Manchester protocol (Wilkinson, 2004[^5]; Stephan and Ullrich, 2011[^6]; Stephan and Ullrich, 2015[^7]). 
