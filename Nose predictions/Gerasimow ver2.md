@@ -1,4 +1,3 @@
-```python
 import os
 import qt
 import slicer
@@ -920,12 +919,13 @@ class GerasimowNosePredictor:
         print("DEBUG updateResultsTables: Starting")
         
         # Update Measurements Table
-        self.measurementsTable.setRowCount(0)  # ✅ CORRECT
+        self.measurementsTable.setRowCount(0)
         
         print(f"DEBUG:  Processing {len(self.all_measurements)} measurements")
         for name, data in self.all_measurements.items():
-            print(f"DEBUG:  Measurement {name}, data type: {type(data)}, data: {data}")
-            row = self.measurementsTable.rowCount()  # ✅ This calls the method
+            print(f"DEBUG: Measurement {name}, data type: {type(data)}, data: {data}")
+            
+            row = self.measurementsTable.rowCount  # ✅ CHANGED:  Remove () - it's a property in PythonQt
             self.measurementsTable.insertRow(row)
             
             nameItem = qt.QTableWidgetItem(name)
@@ -946,14 +946,14 @@ class GerasimowNosePredictor:
         print("DEBUG: Finished measurements table")
         
         # Update Coordinates Table
-        self.coordinatesTable.setRowCount(0)  # ✅ CORRECT
+        self.coordinatesTable.setRowCount(0)
         
-        print(f"DEBUG: Processing {len(self.all_coordinates)} coordinates")
+        print(f"DEBUG:  Processing {len(self.all_coordinates)} coordinates")
         for landmark, data in self.all_coordinates.items():
             print(f"DEBUG: Coordinate {landmark}")
-            print(f"DEBUG: data type:  {type(data)}, data: {data}")
+            print(f"DEBUG:  data type:  {type(data)}, data: {data}")
             
-            row = self.coordinatesTable.rowCount()  # ✅ This calls the method
+            row = self.coordinatesTable.rowCount  # ✅ CHANGED: Remove () - it's a property in PythonQt
             self.coordinatesTable.insertRow(row)
             
             predicted_coords = data["predicted"]
@@ -974,7 +974,7 @@ class GerasimowNosePredictor:
             self.coordinatesTable.setItem(row, 3, predZItem)
             
             if true_coords is not None: 
-                print(f"DEBUG: Processing true coords:  {true_coords}")
+                print(f"DEBUG:  Processing true coords:  {true_coords}")
                 trueXItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[0]))
                 trueYItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[1]))
                 trueZItem = qt.QTableWidgetItem("{:.2f}".format(true_coords[2]))
@@ -999,33 +999,33 @@ class GerasimowNosePredictor:
     def onFindIntersectionsClicked(self):
         """Calculates intersections using your proven logic."""
         self.log("'Find Intersections' button clicked.")
-        print("DEBUG: Starting onFindIntersectionsClicked")  # ADD THIS
+        print("DEBUG: Starting onFindIntersectionsClicked")
 
         # A helper function from your snippet
         def find_intersection_point(p1, v1, p2, v2):
-            print(f"DEBUG: find_intersection_point called")  # ADD THIS
+            print(f"DEBUG: find_intersection_point called")
             # Solves for the intersection of two lines in 3D space
             A = np.array([v1, -v2]).T
             b = np.array(p2) - np.array(p1)
             try:
                 t = np.linalg.lstsq(A, b, rcond=None)[0]
                 intersection = p1 + t[0] * v1
-                print(f"DEBUG:  Intersection calculated: {intersection}, type: {type(intersection)}")  # ADD THIS
+                print(f"DEBUG:  Intersection calculated: {intersection}, type: {type(intersection)}")
                 return intersection
             except np.linalg.LinAlgError:
                 self.log("Could not find intersection; lines may be parallel.", 2)
                 return None
 
-        try: 
-            print("DEBUG: Checking required tangents")  # ADD THIS
+        try:  # ✅ This is the main try block
+            print("DEBUG:  Checking required tangents")
             # Check if we have the required tangents
             required = ["T1", "T2", "T3", "T4"]
             for name in required:
                 if name not in self.tangents:
-                    slicer.util.messageBox(f"Missing required tangent: {name}.Please create it first.")
+                    slicer.util.messageBox(f"Missing required tangent:  {name}.Please create it first.")
                     return
 
-            print("DEBUG: Getting tangent data")  # ADD THIS
+            print("DEBUG: Getting tangent data")
 
             # Get tangent vectors from our stored data
             t1_start, t1_end = self.tangents["T1"]['start'], self.tangents["T1"]['end']
@@ -1054,25 +1054,25 @@ class GerasimowNosePredictor:
             self.log(f"Created 'prediction points' node with {len(self.intersections)} points.")
             slicer.util.showStatusMessage("Intersection points created successfully!", 4000)
             
-            print("DEBUG: About to store intersections in results")  # ADD THIS
+            print("DEBUG: About to store intersections in results")
             # Store intersections in results
             for name, point in self.intersections.items():
-                print(f"DEBUG: Processing intersection {name}, point type: {type(point)}, value: {point}")  # ADD THIS
-                if point is not None: 
+                print(f"DEBUG: Processing intersection {name}, point type: {type(point)}, value: {point}")
+                if point is not None:
                     # Convert to list if it's a numpy array, otherwise use as-is
                     point_list = point.tolist() if isinstance(point, np.ndarray) else point
-                    print(f"DEBUG: About to call storeCoordinate with {name}")  # ADD THIS
+                    print(f"DEBUG: About to call storeCoordinate with {name}")
                     self.storeCoordinate(f"Intersection {name}", point_list)
-                    print(f"DEBUG: Successfully stored {name}")  # ADD THIS
+                    print(f"DEBUG: Successfully stored {name}")
 
-            print("DEBUG:  Function completed successfully")  # ADD THIS
-                
-        except Exception as e: 
-            print(f"DEBUG: Exception caught: {e}")
-            print(f"DEBUG: Exception type: {type(e)}")
+            print("DEBUG:  Function completed successfully")
+                    
+        except Exception as error:  # ✅ FIXED - Proper indentation and renamed to 'error'
+            print(f"DEBUG: Exception caught: {error}")
+            print(f"DEBUG: Exception type: {type(error)}")
             import traceback
             traceback.print_exc()
-            slicer.util.errorDisplay(f"An error occurred while finding intersections: {e}")
+            slicer.util.errorDisplay(f"An error occurred while finding intersections: {error}")
 
     def onCopyMeasurements(self):
         """Copy measurements table to clipboard in TSV format"""
@@ -2610,6 +2610,3 @@ gerasimowPredictor = GerasimowNosePredictor()
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
 print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
-
-
-```
