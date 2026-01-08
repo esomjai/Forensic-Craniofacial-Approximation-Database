@@ -523,7 +523,6 @@ Image if the code for 4 mirror planes is employed:
 
 
 <details>
-
 <summary>Code for 5 mirror planes</summary>
 
 #### Code for 5 mirror planes
@@ -569,16 +568,13 @@ for i, pos in enumerate(planePositions):
 Image if the code for 5 mirror planes is employed: 
 
 ![image](https://github.com/user-attachments/assets/ea7b9888-95b6-436c-892d-ada9f77f2a6b)
-
-
 </details>
 
 
 <details>
-
 <summary>Code for 6 mirror planes</summary>
 
-#### Code for 6 mirror planes
+####Code for 6 mirror planes
 ```python
 #6 mirror planes#
 import slicer
