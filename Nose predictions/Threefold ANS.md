@@ -304,7 +304,7 @@ You can now allocate the remainder of the landmarks on either model - they shoul
 ### Establishing the acanthion vector
 Re-orient the view of either your left-bone model to see its right side OR your right-bone model to see its left side to look inside the cranium: 
 
-To establish the tangent described as in the general direction of the acanthion, like an arrow, manually draw a vector in the general direction of the acanthion by going to “Markups” >”line” and creating a tangent relatively in the vicinity of the INB plane. Name this line “aca vector” (by double clicking on the name automatically added to the line - likely "L"- and typing it in)
+To establish the tangent described as in the general direction of the acanthion, like an arrow, manually draw a vector in the general direction of the acanthion by going to “Markups” >”line” and creating a tangent relatively in the vicinity of the reference plane (INB or MSP). Name this line “aca vector” (by double clicking on the name automatically added to the line - likely "L"- and typing it in)
 
 <img src="https://github.com/user-attachments/assets/57341433-009a-47cf-be85-a6fd329fa4b8" width="500">
 
