@@ -1,4 +1,4 @@
-```python
+``` python
 import os
 import qt
 import slicer
@@ -104,7 +104,7 @@ class GerasimowNosePredictor:
         self.t1t2ShortcutCheckbox = qt.QCheckBox("Use T1-T2 Shortcut (hides T3, T4, R2 options)")
         self.t1t2ShortcutCheckbox.setToolTip("When enabled, only T1 and T2 tangents are used for a quick pronasale prediction")
         self.t1t2ShortcutCheckbox.setChecked(False)
-        self.t1t2ShortcutCheckbox.toggled.connect(self. onT1T2ShortcutToggled)
+        self.t1t2ShortcutCheckbox.toggled.connect(self.onT1T2ShortcutToggled)
         step1Layout.addWidget(self.t1t2ShortcutCheckbox)
         
         # Create plane button - centered, fixed width
@@ -124,7 +124,7 @@ class GerasimowNosePredictor:
         
         
         # Tangent definitions - will be updated based on mode
-        self.tangentsInfoLabel = qt. QLabel()
+        self.tangentsInfoLabel = qt.QLabel()
         self.updateTangentInfoText()  # Set initial text
         self.tangentsInfoLabel.setWordWrap(True)
         step2Layout.addWidget(self.tangentsInfoLabel)
@@ -336,7 +336,7 @@ class GerasimowNosePredictor:
         
         self.r2MethodButtonGroup.buttonClicked.connect(self.onR2MethodChanged)
         
-        self.calculateErrorsButton = qt.QPushButton("Compare True vs. Predicted Points")
+        self.calculateErrorsButton = qt.QPushButton("Compare True vs.Predicted Points")
         self.calculateErrorsButton.setToolTip("Draws lines to show the distance between true and predicted points")
         self.calculateErrorsButton.setStyleSheet("background-color: #f0ad4e; font-weight: bold; padding: 8px;")
         self.calculateErrorsButton.setFixedWidth(300)
@@ -355,7 +355,7 @@ class GerasimowNosePredictor:
 
         # Measurements Table
         measurementsLabel = qt.QLabel("<b>📏 Measurements (Distances & Angles)</b>")
-        measurementsLabel. setStyleSheet("font-size:  14px;")
+        measurementsLabel.setStyleSheet("font-size:  14px;")
         resultsLayout.addWidget(measurementsLabel)
 
         instructionsLabel = qt.QLabel(
@@ -364,14 +364,14 @@ class GerasimowNosePredictor:
         instructionsLabel.setWordWrap(True)
         resultsLayout.addWidget(instructionsLabel)
 
-        self.measurementsTable = qt. QTableWidget()
+        self.measurementsTable = qt.QTableWidget()
         self.measurementsTable.setColumnCount(3)
         self.measurementsTable.setHorizontalHeaderLabels(["Measurement", "Value", "Unit"])
         self.measurementsTable.horizontalHeader().setStretchLastSection(False)
         try:
-            self.measurementsTable.horizontalHeader().setSectionResizeMode(0, qt. QHeaderView.Stretch)
+            self.measurementsTable.horizontalHeader().setSectionResizeMode(0, qt.QHeaderView.Stretch)
         except:
-            self.measurementsTable.horizontalHeader().setResizeMode(0, qt. QHeaderView.Stretch)
+            self.measurementsTable.horizontalHeader().setResizeMode(0, qt.QHeaderView.Stretch)
         self.measurementsTable.setMinimumHeight(200)
         self.measurementsTable.setAlternatingRowColors(True)
         resultsLayout.addWidget(self.measurementsTable)
@@ -394,17 +394,17 @@ class GerasimowNosePredictor:
             "3D Error (mm)"
         ])
         try:
-            self.coordinatesTable.horizontalHeader().setSectionResizeMode(0, qt.QHeaderView. Stretch)
+            self.coordinatesTable.horizontalHeader().setSectionResizeMode(0, qt.QHeaderView.Stretch)
         except:
             self.coordinatesTable.horizontalHeader().setResizeMode(0, qt.QHeaderView.Stretch)
         self.coordinatesTable.setMinimumHeight(150)
         self.coordinatesTable.setAlternatingRowColors(True)
-        resultsLayout.addWidget(self. coordinatesTable)
+        resultsLayout.addWidget(self.coordinatesTable)
 
         # Copy Buttons
         buttonLayout = qt.QHBoxLayout()
 
-        self.copyMeasurementsButton = qt. QPushButton("📋 Copy Measurements")
+        self.copyMeasurementsButton = qt.QPushButton("📋 Copy Measurements")
         self.copyMeasurementsButton.setStyleSheet(
             "background-color: #27ae60; color:  white; padding: 8px; font-weight: bold;"
         )
@@ -551,11 +551,11 @@ class GerasimowNosePredictor:
                 self.log(f"Found and stored '{point_name}' at position {pos}.")
 
         if found_points:
-            self.log(f"Finished search. Found existing points: {', '.join(found_points)}", 1)
+            self.log(f"Finished search.Found existing points: {', '.join(found_points)}", 1)
             # We can show a popup, but for now, the log is enough.
             # slicer.util.showStatusMessage(f"Automatically used existing points: {', '.join(found_points)}", 4000)
         else:
-            self.log("Finished search. No pre-existing soft tissue points found.")
+            self.log("Finished search.No pre-existing soft tissue points found.")
 
     def syncWithScene(self):
         """
@@ -572,20 +572,20 @@ class GerasimowNosePredictor:
             except slicer.util.MRMLNodeNotFoundException:
                 return None # Return nothing if not found, instead of crashing
 
-        # 1. Check for the main Landmarks Node
+        # 1.Check for the main Landmarks Node
         landmarksNode = safeGetNode("Gerasimow_landmarks")
         if landmarksNode:
             self.landmarksNode = landmarksNode
             self.markupsSelector.setCurrentNode(landmarksNode)
             found_nodes.append("Landmarks File")
 
-        # 2. Check for the Plane (INB or MSP)
+        # 2.Check for the Plane (INB or MSP)
         planeNode = safeGetNode("INB") or safeGetNode("MSP")
         if planeNode:
             self.planeNode = planeNode
             found_nodes.append(f"Plane ({planeNode.GetName()})")
 
-        # 3. Check for Tangent Lines
+        # 3.Check for Tangent Lines
         tangent_names = ["T1", "T2", "T3", "T4R", "T4L", "T4_Tangent"]
         for name in tangent_names:
             node = safeGetNode(name)
@@ -604,7 +604,7 @@ class GerasimowNosePredictor:
         if found_nodes:
             self.log(f"Found existing items: {', '.join(found_nodes)}")
         else:
-            self.log("No existing items found. Starting fresh.")
+            self.log("No existing items found.Starting fresh.")
 
     def createT4FromGeometricMean(self, planeNormal):
         """Create T4 using geometric mean of T4R and T4L vectors"""
@@ -785,22 +785,22 @@ class GerasimowNosePredictor:
         self.log("=== Starting T1-T2 Shortcut Workflow ===")
         
         try:
-            # 1. Check prerequisites
+            # 1.Check prerequisites
             if not self.planeNode:
                 slicer.util.messageBox("Please create a plane first (Step 1).")
                 return
             
-            if "T1" not in self.tangents or "T2" not in self. tangents:
+            if "T1" not in self.tangents or "T2" not in self.tangents:
                 slicer.util.messageBox("Please ensure T1 and T2 tangents exist and are positioned correctly.")
                 return
             
-            # 2. Elongate T1 and T2 until they're long enough to intersect
-            self. log("Elongating T1 and T2 tangents...")
+            # 2.Elongate T1 and T2 until they're long enough to intersect
+            self.log("Elongating T1 and T2 tangents...")
             elongation_distance = 100  # mm
             for tangent_name in ["T1", "T2"]:
                 tangent = self.tangents[tangent_name]
                 start = np.array(tangent['start'])
-                end = np. array(tangent['end'])
+                end = np.array(tangent['end'])
                 
                 # Calculate direction and elongate
                 direction = end - start
@@ -809,7 +809,7 @@ class GerasimowNosePredictor:
                 new_end = end + elongation_distance * direction_normalized
                 
                 # Update tangent data
-                self.tangents[tangent_name]['start'] = new_start. tolist()
+                self.tangents[tangent_name]['start'] = new_start.tolist()
                 self.tangents[tangent_name]['end'] = new_end.tolist()
                 
                 # Update visualization
@@ -817,30 +817,30 @@ class GerasimowNosePredictor:
                     node = self.tangentNodes[tangent_name]
                     wasModified = node.StartModify()
                     node.SetNthControlPointPositionWorld(0, new_start)
-                    node. SetNthControlPointPositionWorld(1, new_end)
+                    node.SetNthControlPointPositionWorld(1, new_end)
                     node.EndModify(wasModified)
             
             self.log("T1 and T2 elongated")
             
-            # 3. Find intersection point
+            # 3.Find intersection point
             self.log("Finding T1-T2 intersection...")
-            t1_start = np. array(self.tangents["T1"]['start'])
+            t1_start = np.array(self.tangents["T1"]['start'])
             t1_end = np.array(self.tangents["T1"]['end'])
-            t2_start = np.array(self. tangents["T2"]['start'])
+            t2_start = np.array(self.tangents["T2"]['start'])
             t2_end = np.array(self.tangents["T2"]['end'])
             
             t1_dir = t1_end - t1_start
             t2_dir = t2_end - t2_start
             
             # Solve for intersection
-            A = np. array([t1_dir, -t2_dir]).T
+            A = np.array([t1_dir, -t2_dir]).T
             b = t2_start - t1_start
             t = np.linalg.lstsq(A, b, rcond=None)[0]
             intersection_point = t1_start + t[0] * t1_dir
             
             self.log(f"Intersection found at: {intersection_point}")
             
-            # 4. Create predicted pronasale point
+            # 4.Create predicted pronasale point
             pred_prn_node = None
             try: 
                 pred_prn_node = slicer.util.getNode('T1-T2_predicted_pronasale')
@@ -851,30 +851,30 @@ class GerasimowNosePredictor:
             
             pred_prn_node.AddControlPoint(intersection_point, 'T1-T2 pred')
             
-            # 5. Find actual pronasale from landmarks
+            # 5.Find actual pronasale from landmarks
             if not self.landmarksNode:
-                slicer. util.messageBox("Landmarks node not found. Cannot compare to actual pronasale.")
+                slicer.util.messageBox("Landmarks node not found.Cannot compare to actual pronasale.")
                 return
             
-            prn_index = self.findPointByName(self. landmarksNode, "pronasale")
+            prn_index = self.findPointByName(self.landmarksNode, "pronasale")
             if prn_index < 0:
-                slicer.util.messageBox("Could not find 'pronasale' in landmarks.  Cannot calculate error.")
+                slicer.util.messageBox("Could not find 'pronasale' in landmarks. Cannot calculate error.")
                 return
             
             actual_prn = np.zeros(3)
             self.landmarksNode.GetNthControlPointPositionWorld(prn_index, actual_prn)
             
-            # 6. Calculate error
-            error_distance = np.linalg. norm(intersection_point - actual_prn)
+            # 6.Calculate error
+            error_distance = np.linalg.norm(intersection_point - actual_prn)
             # Store in results tables
             self.storeMeasurement("T1-T2 Prediction Error", error_distance, "mm", is_error=True)
             self.storeCoordinate("Pronasale (T1-T2)", intersection_point.tolist(), actual_prn.tolist())
             self.log(f"Prediction error: {error_distance:.2f} mm")
             
-            # 7. Create error visualization line
+            # 7.Create error visualization line
             error_line_node = None
             try:
-                error_line_node = slicer. util.getNode('T1-T2_prediction_error')
+                error_line_node = slicer.util.getNode('T1-T2_prediction_error')
                 error_line_node.RemoveAllControlPoints()
             except:
                 error_line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'T1-T2_prediction_error')
@@ -884,7 +884,7 @@ class GerasimowNosePredictor:
             error_line_node.AddControlPoint(actual_prn)
             error_line_node.AddControlPoint(intersection_point)
             
-            # 8. Show results in a copy-pasteable format
+            # 8.Show results in a copy-pasteable format
             result_text = (
                 f"T1-T2 Shortcut Results\n"
                 f"{'='*50}\n\n"
@@ -906,7 +906,7 @@ class GerasimowNosePredictor:
             )
 
             # Create a dialog with copy-pasteable text
-            resultsDialog = qt.QDialog(self. mainWidget)
+            resultsDialog = qt.QDialog(self.mainWidget)
             resultsDialog.setWindowTitle("T1-T2 Prediction Results")
             resultsDialog.setMinimumWidth(500)
             resultsLayout = qt.QVBoxLayout(resultsDialog)
@@ -924,7 +924,7 @@ class GerasimowNosePredictor:
             resultsLayout.addWidget(resultsTextEdit)
 
             # Add info label
-            infoLabel = qt. QLabel("You can select and copy the text above.  A red error line has been added to the 3D view.")
+            infoLabel = qt.QLabel("You can select and copy the text above. A red error line has been added to the 3D view.")
             infoLabel.setWordWrap(True)
             infoLabel.setStyleSheet("color: #666; font-style: italic;")
             resultsLayout.addWidget(infoLabel)
@@ -936,13 +936,13 @@ class GerasimowNosePredictor:
 
             resultsDialog.exec_()
 
-            self.log(f"=== T1-T2 Shortcut Complete.  Error: {error_distance:.2f} mm ===")
+            self.log(f"=== T1-T2 Shortcut Complete. Error: {error_distance:.2f} mm ===")
             
             
         except Exception as e: 
-            slicer.util. errorDisplay(f"Error in T1-T2 shortcut:  {str(e)}")
+            slicer.util.errorDisplay(f"Error in T1-T2 shortcut:  {str(e)}")
             import traceback
-            traceback. print_exc()
+            traceback.print_exc()
 
     def storeMeasurement(self, name, value, unit="mm", is_error=False):
         """Store a measurement for the results table"""
@@ -970,8 +970,8 @@ class GerasimowNosePredictor:
             row = self.measurementsTable.rowCount()
             self.measurementsTable.insertRow(row)
             
-            nameItem = qt. QTableWidgetItem(name)
-            valueItem = qt.QTableWidgetItem("{:. 2f}".format(data["value"]))
+            nameItem = qt.QTableWidgetItem(name)
+            valueItem = qt.QTableWidgetItem("{:.2f}".format(data["value"]))
             unitItem = qt.QTableWidgetItem(data["unit"])
             
             # Highlight error measurements in yellow
@@ -995,23 +995,23 @@ class GerasimowNosePredictor:
             pred = data["predicted"]
             true = data.get("true")
             
-            nameItem = qt. QTableWidgetItem(landmark)
-            predXItem = qt. QTableWidgetItem("{:.2f}".format(pred[0]))
-            predYItem = qt.QTableWidgetItem("{:. 2f}".format(pred[1]))
+            nameItem = qt.QTableWidgetItem(landmark)
+            predXItem = qt.QTableWidgetItem("{:.2f}".format(pred[0]))
+            predYItem = qt.QTableWidgetItem("{:.2f}".format(pred[1]))
             predZItem = qt.QTableWidgetItem("{:.2f}".format(pred[2]))
             
             self.coordinatesTable.setItem(row, 0, nameItem)
-            self.coordinatesTable. setItem(row, 1, predXItem)
+            self.coordinatesTable.setItem(row, 1, predXItem)
             self.coordinatesTable.setItem(row, 2, predYItem)
-            self.coordinatesTable. setItem(row, 3, predZItem)
+            self.coordinatesTable.setItem(row, 3, predZItem)
             
             if true is not None:
                 trueXItem = qt.QTableWidgetItem("{:.2f}".format(true[0]))
-                trueYItem = qt.QTableWidgetItem("{:. 2f}".format(true[1]))
+                trueYItem = qt.QTableWidgetItem("{:.2f}".format(true[1]))
                 trueZItem = qt.QTableWidgetItem("{:.2f}".format(true[2]))
                 
                 error_3d = np.linalg.norm(np.array(pred) - np.array(true))
-                errorItem = qt.QTableWidgetItem("{:. 2f}".format(error_3d))
+                errorItem = qt.QTableWidgetItem("{:.2f}".format(error_3d))
                 
                 # Highlight error in yellow
                 yellow = qt.QColor(255, 255, 200)
@@ -1023,18 +1023,18 @@ class GerasimowNosePredictor:
                 self.coordinatesTable.setItem(row, 7, errorItem)
             else:
                 for col in range(4, 8):
-                    self. coordinatesTable.setItem(row, col, qt.QTableWidgetItem("-"))
+                    self.coordinatesTable.setItem(row, col, qt.QTableWidgetItem("-"))
 
     def onCopyMeasurements(self):
         """Copy measurements table to clipboard in TSV format"""
         text = "Measurement\tValue\tUnit\n"
         
-        for name, data in self. all_measurements.items():
+        for name, data in self.all_measurements.items():
             text += "{}\t{:.2f}\t{}\n".format(name, data["value"], data["unit"])
         
         clipboard = qt.QApplication.clipboard()
         clipboard.setText(text)
-        slicer.util. showStatusMessage("📋 Measurements copied to clipboard!", 2000)
+        slicer.util.showStatusMessage("📋 Measurements copied to clipboard!", 2000)
 
     def onCopyCoordinates(self):
         """Copy coordinates table to clipboard in TSV format"""
@@ -1044,11 +1044,11 @@ class GerasimowNosePredictor:
             pred = data["predicted"]
             true = data.get("true")
             
-            line = "{}\t{:.2f}\t{:.2f}\t{:.2f}\t". format(landmark, pred[0], pred[1], pred[2])
+            line = "{}\t{:.2f}\t{:.2f}\t{:.2f}\t".format(landmark, pred[0], pred[1], pred[2])
             
             if true is not None: 
                 error_3d = np.linalg.norm(np.array(pred) - np.array(true))
-                line += "{:. 2f}\t{:.2f}\t{:.2f}\t{:.2f}\n".format(true[0], true[1], true[2], error_3d)
+                line += "{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\n".format(true[0], true[1], true[2], error_3d)
             else:
                 line += "-\t-\t-\t-\n"
             
@@ -1186,7 +1186,7 @@ class GerasimowNosePredictor:
             if isinstance(node, slicer.vtkMRMLMarkupsLineNode):
                 try:
                     # --- THE FIX ---
-                    # 1. Get the "tracking number" when we start.
+                    # 1.Get the "tracking number" when we start.
                     wasModified = node.StartModify()
 
                     start_point = tangent_data.get('start')
@@ -1197,7 +1197,7 @@ class GerasimowNosePredictor:
                         node.SetNthControlPointPositionWorld(1, end_point)
 
                 finally:
-                    # 2. Give the "tracking number" back when we finish.
+                    # 2.Give the "tracking number" back when we finish.
                     node.EndModify(wasModified)
 
                 self.log(f"Updated visualization for {tangentName} tangent")    
@@ -1240,10 +1240,10 @@ class GerasimowNosePredictor:
         
     def onT1T2ShortcutToggled(self, checked):
         """Handle when T1-T2 shortcut mode is toggled"""
-        self. log(f"T1-T2 Shortcut mode: {'ENABLED' if checked else 'DISABLED'}")
+        self.log(f"T1-T2 Shortcut mode: {'ENABLED' if checked else 'DISABLED'}")
         
         # Update the tangent info text
-        self. updateTangentInfoText()
+        self.updateTangentInfoText()
         
         # Hide/show T3, T4, and R2 related controls
         if hasattr(self, 't4rButton'):
@@ -1251,7 +1251,7 @@ class GerasimowNosePredictor:
         if hasattr(self, 't4lButton'):
             self.t4lButton.setVisible(not checked)
         if hasattr(self, 't4lOptionsGroup'):
-            self.t4lOptionsGroup. setVisible(not checked)
+            self.t4lOptionsGroup.setVisible(not checked)
         if hasattr(self, 'step3GroupBox'):
             self.step3GroupBox.setVisible(not checked)
         
@@ -1309,7 +1309,7 @@ class GerasimowNosePredictor:
                     response = urllib.request.urlopen(urlToUse)
                 except:
                     urlToUse = qt.QInputDialog.getText(self.mainWidget, "Enter URL", 
-                        "Primary URL not working. Please enter the URL to your landmarks file:",
+                        "Primary URL not working.Please enter the URL to your landmarks file:",
                         qt.QLineEdit.Normal, "")[0]
                     if not urlToUse:
                         return
@@ -1398,7 +1398,7 @@ class GerasimowNosePredictor:
     def onUseExistingPointsClicked(self):
             """Use existing R2, LR2, RR2 points from landmarks file"""
             if not self.landmarksNode:
-                slicer.util.errorDisplay("No landmarks loaded. Please load landmarks first.")
+                slicer.util.errorDisplay("No landmarks loaded.Please load landmarks first.")
                 return
             
             self.checkAndUseExistingPoints()
@@ -1431,8 +1431,8 @@ class GerasimowNosePredictor:
             """Handle create plane button click"""
 
             if self.planeNode is not None:
-                self.log("A plane already exists. Skipping creation.")
-                slicer.util.messageBox("A plane (INB or MSP) already exists in the scene. Using that one.")
+                self.log("A plane already exists.Skipping creation.")
+                slicer.util.messageBox("A plane (INB or MSP) already exists in the scene.Using that one.")
                 return # Stop the function here
     
             markupsNode = self.markupsSelector.currentNode()
@@ -1649,18 +1649,18 @@ class GerasimowNosePredictor:
 
     def createTangentLine(self, tangentName, startPoint, endPoint, color):
         """Create a tangent line with specified start and end points"""
-        # 1. Create the line node in the scene
+        # 1.Create the line node in the scene
         lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", tangentName)
         
-        # 2. Add the start and end points
+        # 2.Add the start and end points
         lineNode.AddControlPoint(startPoint)
         lineNode.AddControlPoint(endPoint)
         
-        # 3. Set the color
+        # 3.Set the color
         lineNode.GetDisplayNode().SetSelectedColor(color)
         lineNode.GetDisplayNode().SetColor(color)
         
-        # 4. Store the node and its initial position data in our dictionaries
+        # 4.Store the node and its initial position data in our dictionaries
         self.tangentNodes[tangentName] = lineNode
         self.tangents[tangentName] = {
             'start': startPoint.tolist() if isinstance(startPoint, np.ndarray) else startPoint,
@@ -1668,7 +1668,7 @@ class GerasimowNosePredictor:
             'vector': (np.array(endPoint) - np.array(startPoint)).tolist()
         }
         
-        # 5. Define a helper function that will run whenever the user moves the line
+        # 5.Define a helper function that will run whenever the user moves the line
         def update_tangent_data(caller, event):
             """This function keeps our dictionary in sync with user edits in the GUI."""
             if caller.GetNumberOfControlPoints() >= 2:
@@ -1685,10 +1685,10 @@ class GerasimowNosePredictor:
                 }
                 self.log(f"User manually updated {tangentName} position.")
 
-        # 6. Tell the line node to run our helper function every time it's moved
+        # 6.Tell the line node to run our helper function every time it's moved
         lineNode.AddObserver(lineNode.PointModifiedEvent, update_tangent_data)
 
-        # 7. Constrain to plane if needed
+        # 7.Constrain to plane if needed
         if tangentName in ["T1", "T2", "T3"] and self.planeNode:
             self.setPlaneConstraint(lineNode, self.planeNode)
         
@@ -1699,7 +1699,7 @@ class GerasimowNosePredictor:
     def selectTangentForAdjustment(self, tangentName):
             """Select a tangent for the user to adjust"""
             if tangentName not in self.tangentNodes:
-                self.showGuidanceDialog(f"Tangent {tangentName} doesn't exist yet. Create the MSP/INB plane first.")
+                self.showGuidanceDialog(f"Tangent {tangentName} doesn't exist yet.Create the MSP/INB plane first.")
                 return
                 
             # Select the tangent in the scene
@@ -1743,7 +1743,7 @@ class GerasimowNosePredictor:
         """Handle placing a tangent with instructions inside the GUI."""
         if tangentName in self.tangentNodes:
             self.log(f"Tangent {tangentName} already exists.")
-            slicer.util.messageBox(f"The tangent '{tangentName}' already exists. If you want to re-place it, please delete it from the Data module first.")
+            slicer.util.messageBox(f"The tangent '{tangentName}' already exists.If you want to re-place it, please delete it from the Data module first.")
             return
 
         try:
@@ -1909,7 +1909,7 @@ class GerasimowNosePredictor:
             # - The Y-axis runs from Posterior (-) to Anterior (+).
             # - Therefore, the point with the LARGER Y-value is the more "anterior" point.
             
-            # 1. Let's identify which point is anterior and which is posterior.
+            # 1.Let's identify which point is anterior and which is posterior.
             #    THIS IS THE ONE-CHARACTER FIX: We change '<' to '>'
             if p1[1] > p2[1]:
                 anterior_point = p1
@@ -1918,16 +1918,16 @@ class GerasimowNosePredictor:
                 anterior_point = p2
                 posterior_point = p1
                 
-            # 2. Calculate the direction vector *always* pointing from posterior to anterior.
+            # 2.Calculate the direction vector *always* pointing from posterior to anterior.
             direction = anterior_point - posterior_point
             # Normalize the vector to have a length of 1, so we can scale it accurately.
             if np.linalg.norm(direction) > 0:
                 direction = direction / np.linalg.norm(direction)
             
-            # 3. Calculate the new anterior point by extending it forward.
+            # 3.Calculate the new anterior point by extending it forward.
             new_anterior_point = anterior_point + direction * extensionLength
             
-            # 4. Update our data with the new, correct points.
+            # 4.Update our data with the new, correct points.
             # The posterior point stays the same, and the anterior point is the new extended one.
             self.tangents[tangentName]['start'] = posterior_point.tolist()
             self.tangents[tangentName]['end'] = new_anterior_point.tolist()
@@ -2113,7 +2113,7 @@ class GerasimowNosePredictor:
 
     def onCalculateR2Clicked(self):
         """Calculates R2 and moves the existing point in the main landmarks file."""
-        self. log("'Calculate R2' button clicked.")
+        self.log("'Calculate R2' button clicked.")
 
         # --- Safety Checks ---
         if "LR2" not in self.points or "RR2" not in self.points:
@@ -2122,12 +2122,12 @@ class GerasimowNosePredictor:
 
         landmarksNode = self.landmarksNode
         if not landmarksNode:
-            slicer.util.errorDisplay("Could not find the 'Gerasimow_landmarks' node. Please load it first.")
+            slicer.util.errorDisplay("Could not find the 'Gerasimow_landmarks' node.Please load it first.")
             return
 
         try:
             lr2 = np.array(self.points["LR2"])
-            rr2 = np. array(self.points["RR2"])
+            rr2 = np.array(self.points["RR2"])
             r2_position = None
             methodName = ""
 
@@ -2135,7 +2135,7 @@ class GerasimowNosePredictor:
             if self.intersectionR2RadioButton.isChecked() and self.planeNode:
                 planeNormal, planeOrigin = np.zeros(3), np.zeros(3)
                 self.planeNode.GetNormalWorld(planeNormal)
-                self.planeNode. GetOriginWorld(planeOrigin)
+                self.planeNode.GetOriginWorld(planeOrigin)
                 r2_position = self.calculateIntersection(lr2, rr2, planeOrigin, planeNormal)
                 methodName = "intersection with plane"
             else: 
@@ -2157,7 +2157,7 @@ class GerasimowNosePredictor:
                 slicer.util.showStatusMessage("Created new R2 point successfully!", 4000)
 
             # Update our internal dictionary
-            self.points["R2"] = r2_position. tolist()
+            self.points["R2"] = r2_position.tolist()
 
         except Exception as e:
             slicer.util.errorDisplay(f"Error calculating R2: {e}")
@@ -2203,7 +2203,7 @@ class GerasimowNosePredictor:
                 required = ["T1", "T2", "T3", "T4"]
                 for name in required:
                     if name not in self.tangents:
-                        slicer.util.messageBox(f"Missing required tangent: {name}. Please create it first.")
+                        slicer.util.messageBox(f"Missing required tangent: {name}.Please create it first.")
                         return
 
                 # Get tangent vectors from our stored data
@@ -2254,7 +2254,7 @@ class GerasimowNosePredictor:
             prediction_node = slicer.util.getNode("prediction points")
 
             if not landmarks_node or not prediction_node:
-                slicer.util.messageBox("Could not find 'Gerasimow_landmarks' or 'prediction points' nodes. Please run previous steps first.")
+                slicer.util.messageBox("Could not find 'Gerasimow_landmarks' or 'prediction points' nodes.Please run previous steps first.")
                 return
 
             # A more robust way to find points: by their name!
@@ -2262,11 +2262,11 @@ class GerasimowNosePredictor:
             r2_index = self.findPointByName(landmarks_node, "R2")
 
             if prn_index == -1 or r2_index == -1:
-                slicer.util.messageBox("Could not find 'pronasale' or 'R2' in the 'Gerasimow_landmarks' file. Please ensure they are named correctly.")
+                slicer.util.messageBox("Could not find 'pronasale' or 'R2' in the 'Gerasimow_landmarks' file.Please ensure they are named correctly.")
                 return
             
             if prediction_node.GetNumberOfControlPoints() < 4:
-                slicer.util.messageBox("Not enough points found in 'prediction points'. Please run 'Find Intersections' again.")
+                slicer.util.messageBox("Not enough points found in 'prediction points'.Please run 'Find Intersections' again.")
                 return
 
         except Exception as e:
@@ -2306,7 +2306,7 @@ class GerasimowNosePredictor:
             create_line(r2_index, 2, 'R2_T3-T2_error', r2_color, landmarks_node, prediction_node)
             create_line(r2_index, 3, 'R2_T3-T4_error', r2_color, landmarks_node, prediction_node)
 
-            slicer.util. showStatusMessage("Error comparison lines created successfully!", 4000)
+            slicer.util.showStatusMessage("Error comparison lines created successfully!", 4000)
             self.log("Successfully created all error comparison lines.")
 
             # Store all prediction errors in the results tables
@@ -2319,14 +2319,14 @@ class GerasimowNosePredictor:
             for i, name in enumerate(["T1-T2", "T1-T4", "T3-T2", "T3-T4"]):
                 pred_pos = [0,0,0]
                 prediction_node.GetNthControlPointPositionWorld(i, pred_pos)
-                error = np.linalg. norm(np.array(pred_pos) - np.array(prn_pos))
+                error = np.linalg.norm(np.array(pred_pos) - np.array(prn_pos))
                 self.storeMeasurement(f"prn {name} error", error, "mm", is_error=True)
                 self.storeCoordinate(f"Pronasale ({name})", pred_pos, prn_pos)
 
             # Store R2 errors  
             for i, name in enumerate(["T1-T2", "T1-T4", "T3-T2", "T3-T4"]):
                 pred_pos = [0,0,0]
-                prediction_node. GetNthControlPointPositionWorld(i, pred_pos)
+                prediction_node.GetNthControlPointPositionWorld(i, pred_pos)
                 error = np.linalg.norm(np.array(pred_pos) - np.array(r2_pos))
                 self.storeMeasurement(f"R2 {name} error", error, "mm", is_error=True)
                 self.storeCoordinate(f"R2 ({name})", pred_pos, r2_pos)
@@ -2544,6 +2544,5 @@ gerasimowPredictor = GerasimowNosePredictor()
 print("GUI created successfully!")
 print(f"Main widget exists: {gerasimowPredictor.mainWidget is not None}")
 print(f"Main widget is visible: {gerasimowPredictor.mainWidget.isVisible()}")
-
 
 ```
