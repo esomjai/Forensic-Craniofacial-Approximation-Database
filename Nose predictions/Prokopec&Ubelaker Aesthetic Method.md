@@ -474,44 +474,41 @@ Now, your "Control Points">"Coordinates" menu should be populated by the two end
 Depending on your choosing, run the codes for the 4/5/6 mirror planes - or all three for comparison. 
 
 <details>
-
 <summary>Code for 4 mirror planes</summary>
-
-#### Code for 4 mirror planes
 ```python
 #4 mirror planes#
 import slicer
 import numpy as np
 
-# Get the PTP plane node
+#Get the PTP plane node
 ptpPlaneNode = slicer.util.getNode('PTP')
 
-# Get the MAW measurement position (assuming it's stored in a node)
-# Replace 'MAW' with the actual node name or method to get the MAW position
+#Get the MAW measurement position (assuming it's stored in a node)
+#Replace 'MAW' with the actual node name or method to get the MAW position
 mawNode = slicer.util.getNode('maximum_nasal_width_MAW')
 mawPosition = np.array(mawNode.GetNthControlPointPositionWorld(0))  # Adjust index if needed
 
-# Get the PTP plane position and normal
+#Get the PTP plane position and normal
 ptpPlanePosition = np.array(ptpPlaneNode.GetOrigin())
 ptpPlaneNormal = np.array(ptpPlaneNode.GetNormal())
 
-# Create the new plane "A" at the MAW level
+#Create the new plane "A" at the MAW level
 planeA = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'Plane_A')
 planeA.SetOrigin(mawPosition)
 planeA.SetNormal(ptpPlaneNormal)
 
-# Get the hard_tissue_PU node position
+#Get the hard_tissue_PU node position
 hardTissueNode = slicer.util.getNode('hard_tissue_PU')
 rhinionPosition = np.array(hardTissueNode.GetNthControlPointPositionWorld(5))
 
-# Calculate the distance between Plane_A and the rhinion
+#Calculate the distance between Plane_A and the rhinion
 distance = np.dot(mawPosition - rhinionPosition, ptpPlaneNormal)
 
-# Calculate the positions for the new planes B, C, D
+#Calculate the positions for the new planes B, C, D
 numPlanes = 3
 planePositions = [rhinionPosition + (i + 1) * distance / (numPlanes + 1) * ptpPlaneNormal for i in range(numPlanes)]
 
-# Create new planes with names B, C, D
+#Create new planes with names B, C, D
 planeNames = ['B', 'C', 'D']
 for i, pos in enumerate(planePositions):
     planeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', f'Plane_{planeNames[i]}')
@@ -576,6 +573,7 @@ Image if the code for 5 mirror planes is employed:
 
 </details>
 
+
 <details>
 
 <summary>Code for 6 mirror planes</summary>
@@ -633,17 +631,10 @@ This step establishes the 4/5/6 intersection lines where the individual mirror p
 
 <details>
 
-<summary>Code for 4 intersection lines </summary>
-
-### Reference lines along the sagittal and 4/5/6 mirror planes
-
-This step establishes the intersection lines where the individual mirror planes (`Plane_A`, `Plane_B`, etc.) meet the main sagittal plane (`MSP` or `INB`).
-
-<details>
 
 <summary>Code for 4 intersection lines</summary>
 
-#### Code for 4 intersection lines with 4 mirror planes
+####Code for 4 intersection lines with 4 mirror planes
 
 This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_D`.
 
@@ -746,7 +737,7 @@ for mirror_plane_name in MIRROR_PLANES:
 
 <summary>Code for 5 intersection lines</summary>
 
-#### Code for 5 intersection lines with 5 mirror planes
+####Code for 5 intersection lines with 5 mirror planes
 
 This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_E`.
 
@@ -849,7 +840,7 @@ Image after the 5 line code is iterated:
 
 <summary>Code for 6 intersection lines</summary>
 
-#### Code for 6 intersection lines with 6 mirror planes
+####Code for 6 intersection lines with 6 mirror planes
 
 This script will automatically detect `MSP` or `INB` and intersect it with `Plane_A` through `Plane_F`.
 
@@ -948,7 +939,6 @@ Image after the 6 line code is iterated:
 
 </details>
 
-</details>
 
 ### Reference lines A and B
 After this, we establish the lines of reference which are perpendicular to the mirror planes– one along the nasion-prosthion and one parallel to the nasion-prosthion bisecting the rhinion by copy-pasting code “reference lines A and B”. We are using thie same code for ALL options (4/5/6 mirror planes)!
