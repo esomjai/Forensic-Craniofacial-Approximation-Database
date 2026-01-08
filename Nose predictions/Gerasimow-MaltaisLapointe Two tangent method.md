@@ -237,9 +237,9 @@ You can now allocate the remainder of the landmarks on either model - they shoul
 
 ### Establishing the tangents (Gerasimow)
 If you want to do this by hand, you can follow the steps below. 
-Alternatively, you can use the [GUI](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/19d56a56ac868fd39836058d551f5d054fe5bf53/Nose%20predictions/GerasimowMaltaisLapointe%20GUI.md) 
+Alternatively, you can use the [GUI](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/19d56a56ac868fd39836058d551f5d054fe5bf53/Nose%20predictions/GerasimowMaltaisLapointe%20GUI.md). Just copy-paste the code into the Python Console in Slicer and amke sure you tick the box saying **Use T1-T2 Shortcut**. 
 
-If you want to just re-cerate Gerasimow's method, follow the steps creating tangent1 and tangent2, with the adjusting codes. 
+If you want to just re-create Gerasimow's method by hand, follow the steps creating tangent1 and tangent2, with the adjusting codes. 
 
 Re-orient the view of either your left-bone model to see its right side OR your right-bone model to see its left side to look inside the cranium: 
 
