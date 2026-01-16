@@ -58,14 +58,11 @@ The guide contains the following steps:
 | 7                | 8                | LL           | left lowest     | The left lowest point on the aperture border in profile view                                                               |
 | 8                | 9                | RL           | right lowest    | The right lowest point on the aperture border in profile view                                                              |
 
-Download the landmarks file 
-
-Optional soft tissue landmark file for the [error measurements step](#error-measurements) 
-[lmrks_Stephan. mrk. json](https://github.com/user-attachments/files/22662064/lmrks_Stephan.mrk.json)
+Download the landmarks (file)[lmrks_Stephan. mrk. json](https://github.com/user-attachments/files/22662064/lmrks_Stephan.mrk.json)
 
 
-[soft_tissue_Stephan.mrk.json](https://github.com/user-attachments/files/20213398/soft_tissue_Stephan.mrk.json)
-
+Optional (soft tissue)[soft_tissue_Stephan.mrk.json](https://github.com/user-attachments/files/20213398/soft_tissue_Stephan.mrk.json)
+ landmark file for the [error measurements step](#error-measurements) 
 
 | Position in code | Position in file | Name in file | Landmark name   | Definition                                                                                                                 |
 |------------------|------------------|--------------|-----------------|---------------------------------------------------------------------------------------------------------------------------|
@@ -1088,6 +1085,14 @@ Example output table:
 > DO NOT use pseudo or not true measurements in data analysis. Anything marked with "NOT a measurement" is programmatically established for a certain length for reference axes, therefore are not representing the measurement accuracy of the method!
 
 
-### Bibliography
+## Bibliography: 
 
-[^1]: Fedorov A, Beichel R, Kalpathy-Cramer J, et al. 3D Slicer as an image computing platform for the Quantitative Imaging Network.  Magn Reson Imaging.  2012;30(9):1323
+[^1]:  [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
+[^2]:  Stephan, C.N., Henneberg, M. and Sampson, W. (2003), Predicting nose projection and pronasale position in facial approximation: A test of published methods and proposal of new guidelines. Am. J. Phys. Anthropol., 122: 240-250. https://doi.org/10.1002/ajpa.10300
+[^3]: Gerasimov M. 1971. The face ﬁnder. London: Hutchinson & Co.
+[^4]:Krogman WM. 1962. The human skeleton in forensic medicine.Springﬁeld, IL: Charles C. Thomas
+[^5]: Prokopec M, Ubelaker DH. 2002. Reconstructing the shape of the nose according to the skull. Forensic Sci Commun 4. p 1– 4 (https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm)
+[^6]: George RM. 1987. The lateral craniographic method of facial reconstruction. J Forensic Sci 32:1305–1330.
+[^7]: Rynn, C., Wilkinson, C.M. & Peters, H.L. Prediction of nasal morphology from the skull. Forensic Sci Med Pathol 6, 20–34 (2010). https://doi.org/10.1007/s12024-009-9124-6
+[^8]: Mala PZ. Pronasale position: an appraisal of two recently proposed methods for predicting nasal projection in facial reconstruction. J Forensic Sci. 2013 Jul;58(4):957-63. doi: 10.1111/1556-4029.12128. Epub 2013 May 21. PMID: 23692276.
+[^9]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." Int J Legal Med 130(3): 863-879.
