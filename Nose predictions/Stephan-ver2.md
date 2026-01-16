@@ -24,10 +24,18 @@
  [Stephan et al. 2003](https://doi.org/10.1002/ajpa.10300)[^2] compared three methods on lateral cephalogram tracings:  method 1 by Gerasimov[^3] (1971); method 2 by Krogman[^4] (1962); method 3 by Stephan and colleagues; and decided that method 3 "performed the best on the basis of having more predictions within 5mm, a narrower range of prediction errors and smaller standard errors" [^2]. Their method uses linear regressions based on hard tissue measurements to produce pronasale (nose tip) predictions on 100 individuals.  
 
 
-[! NOTE]
+>[! NOTE]
 > The method is illustrated by the 3D Slicer[^1] Sample Data for Post Dental Surgery CT in screenshots.  For representing the general population, individuals without facial surgery would be chosen for reconstruction or validation studies. 
+
+
+
+>[! NOTE]
 > The performance of this  method was later compared with Rynn et al. (2010)[^7] in a validation study by Mala et al. (2016)[^8].
-> The script snippets show **INB** as the only plane, but the GUI for this method also features an option for a differently defined **MSP** (midsagittal plane) as best fit for nasion, rhinion, acanthion, point A and prosthion.
+
+
+
+>[! NOTE]
+>> The script snippets show **INB** as the only plane, but the GUI for this method also features an option for a differently defined **MSP** (midsagittal plane) as best fit for nasion, rhinion, acanthion, point A and prosthion.
 
 The guide contains the following steps:  
 
