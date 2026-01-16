@@ -90,6 +90,7 @@ This is a pre-emptive measure to facilitate the later steps:  by having the INB 
 
 <details>
 <summary>Code for INB</summary>
+
 ```python
 import numpy as np
 import slicer
