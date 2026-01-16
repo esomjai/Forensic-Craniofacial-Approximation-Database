@@ -7,6 +7,7 @@ Tedeschi-Oliveira (2016)[^2] proposed their method on lateral cephalograms and a
 
 The main goal for this guide is the easy reproducibility of the Tedeschi-Oliviera method in order to investigate its applicability to other (non-Brazilian) subjects. The predicted pronasale point will be placed onto the midsagittal plane and the actual angle will also be measured as well as the distance between the real and predicted pronasale. 
 
+The same workflow as described below can be performed using a Graphic User Interface (GUI) in the repository. Click [here](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/abb1fa667dae6f5d0e8d64b5a551005023f5dca1/Nose%20predictions/Tedeschi-Oliviera%20GUI.md) to visit the code. 
 
 ### This document contains: 
 
@@ -67,7 +68,8 @@ Expected view after creating the MSP - note that the plane was manually enlarged
 
 <img src="https://github.com/user-attachments/assets/0f5803c7-8703-400b-aa41-6a7c2ef60e44" width="500">
 
-
+> [!IMPORTANT]
+> If you use the [GUI](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/abb1fa667dae6f5d0e8d64b5a551005023f5dca1/Nose%20predictions/Tedeschi-Oliviera%20GUI.md) for this method, there is a choice to use different landmarks to create the midsagittal plane based on whether the skullcap is visible. This could be useful if you are replicating the method on a lower resolution CBCT or have otherwise compromised view of the cranial sutures and the occipital shape. 
 
 <details>
 <summary> MSP creation </summary>
