@@ -27,7 +27,7 @@ The same workflow as described below can be performed using a Graphic User Inter
 ### Landmarks in this guide 
 [Tedeschi_Oliviera_lmrks.mrk.json](https://github.com/user-attachments/files/23657831/Tedeschi_Oliviera_lmrks.mrk.json)
 
-
+Please note that the pronasale landmark in this table is only applicable if you want to compare the true vs predicted landmark. The code and GUI will run without it present (you can delete it once imported into Slicer without consequences) and will be able to tell the difference between the estimated and true landmark. 
 
 | Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
 |------------------|------------------|--------------|--------------|------------|------------|
