@@ -44,29 +44,29 @@ The guide contains the following steps:
 > This method also follows first two steps mentioned in the "Start here" section – after loading the DICOM file, please re-orient the scan in the Frankfort horizontal plane.  
 
 
-### Landmarks in this guide:  
+### Landmarks in this guide: 
 
-| Position in code | Position in file | Name in file | Landmark name   | Definition                                                                                                                 |
-|------------------|------------------|--------------|-----------------|---------------------------------------------------------------------------------------------------------------------------|
-| 0                | 1                | nasion       | nasion          | Intersection of the nasofrontal sutures in the median plane                                                               |
-| 1                | 2                | inion        | inion           | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip) |
-| 2                | 3                | bregma       | bregma          | Where the sagittal and coronal sutures meet.  Impossible to determine in juvenile skulls with anterior fontanelle, or with craniosynostosis |
-| 3                | 4                | prosthion    | prosthion       | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim                        |
-| 4                | 5                | rhinion      | rhinion         | Most rostral (end) point on the internasal suture                                                                          |
-| 5                | 6                | acanthion    | acanthion       | Most anterior tip of the anterior nasal spine                                                                              |
-| 6                | 7                | point A      | point A         | Point of most flexion on maxilla in profile/The deepest point seen in the profile view below the anterior nasal spine      |
-| 7                | 8                | LL           | left lowest     | The left lowest point on the aperture border in profile view                                                               |
-| 8                | 9                | RL           | right lowest    | The right lowest point on the aperture border in profile view                                                              |
+| Position in code | Position in file | Name in file | Landmark name   | Definition                                                                                                                     | Defined by       |
+|------------------|------------------|--------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------|------------------|
+| 0                | 1                | nasion       | nasion          | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^7] |
+| 1                | 2                | inion        | inion           | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^7] |
+| 2                | 3                | bregma       | bregma          | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^7] |
+| 3                | 4                | prosthion    | prosthion       | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim                            | Rynn et al. 2010[^7] |
+| 4                | 5                | rhinion      | rhinion         | Most rostral (end) point on the internasal suture                                                                              | Rynn et al. 2010[^7] |
+| 5                | 6                | acanthion    | acanthion       | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^7] |
+| 6                | 7                | point A      | point A         | Point of most flexion on maxilla in profile/The deepest point seen in the profile view below the anterior nasal spine          | George 1987[^6]      |
+| 7                | 8                | LL           | left lowest     | The left lowest point on the aperture border in profile view                                                                  | Somjai           |
+| 8                | 9                | RL           | right lowest    | The right lowest point on the aperture border in profile view                                                                 | Somjai           |
 
 Download the landmarks (file)[lmrks_Stephan. mrk. json](https://github.com/user-attachments/files/22662064/lmrks_Stephan.mrk.json)
 
 
 Optional (soft tissue)[soft_tissue_Stephan.mrk.json](https://github.com/user-attachments/files/20213398/soft_tissue_Stephan.mrk.json)
  landmark file for the [error measurements step](#error-measurements) 
-
-| Position in code | Position in file | Name in file | Landmark name   | Definition                                                                                                                 |
-|------------------|------------------|--------------|-----------------|---------------------------------------------------------------------------------------------------------------------------|
-| 0                | 1                | pronasale       | pronasale          | The most anteriorly protruded point of the apex nasi.  In the case of a bifid nose, the more protruding tip is chosen   |
+ 
+| Position in code | Position in file | Name in file | Landmark name   | Definition                                                                                                                     | Defined by       |
+|------------------|------------------|--------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------|------------------|
+| 0                | 1                | pronasale       | pronasale          | The most   anteriorly protruded point of the apex nasi. In the case of a bifid nose, the   more protruding tip is chosen  |  Caple and   Stephan 2016[^9] | 
 
 ### Illustration of the method:  
 
