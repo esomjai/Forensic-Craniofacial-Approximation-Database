@@ -1,5 +1,4 @@
-```python
-
+``` python
 
 import os
 import vtk
@@ -616,7 +615,69 @@ class ProkopecUbelakerGUI(qt.QWidget):
             self.createReferencePlanesButton.setEnabled(False)
             self.planesStatusLabel.setText("Please choose a plane creation method.")
 
-    # --- THIS FUNCTION IS CORRECTED ---
+    def onCopyToClipboardClicked(self):
+        try:
+            table = self.measurementsTable
+            if not table:
+                self.exportStatusLabel.setText("Results table not found.")
+                return
+
+            clipboard = qt.QApplication.clipboard()
+            if not clipboard:
+                self.exportStatusLabel.setText("Clipboard not available.")
+                return
+            
+            headers = [table.horizontalHeaderItem(c).text() for c in range(table.columnCount)]
+            data = "\t".join(headers) + "\n"
+
+            for r in range(table.rowCount):
+                row_items = []
+                for c in range(table.columnCount):
+                    item = table.item(r, c)
+                    row_items.append(item.text() if item else "")
+                data += "\t".join(row_items) + "\n"
+            
+            clipboard.setText(data)
+            self.exportStatusLabel.setText("Results copied to clipboard!")
+
+        except Exception as e:
+            self.exportStatusLabel.setText(f"Error copying: {e}")
+            slicer.util.errorDisplay(f"Could not copy to clipboard: {e}")
+
+    def onExportResultsClicked(self):
+        try:
+            table = self.measurementsTable
+            if not table:
+                self.exportStatusLabel.setText("Results table not found.")
+                return
+
+            # Ask user for a file path to save the CSV
+            file_path, _ = qt.QFileDialog.getSaveFileName(self, "Export Results as CSV", "", "CSV Files (*.csv)")
+            if not file_path:
+                self.exportStatusLabel.setText("Export canceled.")
+                return
+
+            with open(file_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # Write headers
+                headers = [table.horizontalHeaderItem(c).text() for c in range(table.columnCount)]
+                writer.writerow(headers)
+                
+                # Write data rows
+                for r in range(table.rowCount):
+                    row_items = []
+                    for c in range(table.columnCount):
+                        item = table.item(r, c)
+                        row_items.append(item.text() if item else "")
+                    writer.writerow(row_items)
+            
+            self.exportStatusLabel.setText(f"Results exported successfully to:\n{file_path}")
+
+        except Exception as e:
+            self.exportStatusLabel.setText(f"Error exporting: {e}")
+            slicer.util.errorDisplay(f"Could not export results: {e}")
+
     def onCreateReferencePlanesClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to create reference planes."):
             choice_index = self.planeChoiceComboBox.currentIndex
@@ -1354,4 +1415,5 @@ if not hasattr(slicer, 'ProkopecUbelakerGUIWidget') or not slicer.ProkopecUbelak
 
 slicer.ProkopecUbelakerGUIWidget.show()
 slicer.ProkopecUbelakerGUIWidget.raise_()
+
 ```
