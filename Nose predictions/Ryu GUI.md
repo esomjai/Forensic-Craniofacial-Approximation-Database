@@ -1,5 +1,5 @@
 ```python
-# Full corrected script for 3D Slicer Python Interactor
+
 
 import slicer
 import qt
@@ -13,7 +13,7 @@ class RyuGUI:
         self.main_widget.setWindowFlags(qt.Qt.Tool)
         self.main_widget.setObjectName("RyuGUIWidget")
         self.main_widget.setWindowTitle("Ryu et al.(2020) Nose Prediction")
-        self.main_widget.setMinimumSize(600, 1000)
+        self.main_widget.setMinimumSize(400, 600)
         self.vbox = qt.QVBoxLayout(self.main_widget)
 
         title_label = qt.QLabel("Ryu et al.(2020) Nose Prediction Workflow")
@@ -31,10 +31,29 @@ class RyuGUI:
         }
         self.last_prediction_sex = None
         self.length_prediction_dialog = None
+        self.current_stage = 1
+        self.stage_widgets = {}
+
+        # Create a stacked widget to hold different stages
+        self.stage_stack = qt.QStackedWidget()
+        self.vbox.addWidget(self.stage_stack)
 
         # STAGE 1
+        stage1_container = qt.QWidget()
+        stage1_main_layout = qt.QVBoxLayout(stage1_container)
         stage1_group = self.create_stage_group("Stage 1: Hard Tissue Setup")
         stage1_layout = stage1_group.layout()
+
+        # Add download button for hard tissue sample
+        download_hard_btn = qt.QPushButton("📥 Load Sample Hard Tissue Landmarks")
+        download_hard_btn.setStyleSheet("background-color: #E3F2FD; padding: 8px; margin-bottom: 10px;")
+        download_hard_btn.setToolTip("Download and load Ryu_hard_tissue.mrk.json with au_L and au_R landmarks directly into the scene")
+        download_hard_btn.clicked.connect(lambda: self.download_and_load_landmarks(
+            "https://github.com/user-attachments/files/24859018/Ryu_hard_tissue.mrk.json",
+            "Ryu_hard_tissue"
+        ))
+        stage1_layout.addWidget(download_hard_btn)
+
         inputs_group1 = qt.QGroupBox("Input")
         inputs_layout1 = qt.QFormLayout(inputs_group1)
         self.hard_tissue_selector = self.create_node_selector("Hard Tissue Fiducials:", "vtkMRMLMarkupsFiducialNode", "Ryu_hard_tissue")
@@ -43,53 +62,122 @@ class RyuGUI:
         workflow_group1 = self.create_step_group("Setup Workflow")
         workflow_layout1 = workflow_group1.layout()
         self.add_workflow_step(workflow_layout1, "<b>Step 1: Create Anatomical Planes</b>",
-                               "Creates Midsagittal, Orbital, Coronal, Rhinion, and Alare Sagittal planes.",
-                               self.create_anatomical_planes)
+                            "Creates Midsagittal, Orbital, Coronal, Rhinion, and Alare Sagittal planes.",
+                            self.create_anatomical_planes)
         self.add_workflow_step(workflow_layout1, "<b>Step 2: Create Hard Tissue Measurements</b>",
-                               "Creates measurement lines (N1, N4, etc.) from hard tissue landmarks to planes (Cyan).",
-                               self.create_hard_tissue_measurements, is_final_step=True)
+                            "Creates measurement lines (N1, N4, etc.) from hard tissue landmarks to planes (Cyan).",
+                            self.create_hard_tissue_measurements, is_final_step=True)
         stage1_layout.addWidget(workflow_group1)
-        self.vbox.addWidget(stage1_group)
+        stage1_main_layout.addWidget(stage1_group)
+        stage1_main_layout.addStretch()
+
+        # Navigation buttons for Stage 1
+        nav_layout1 = qt.QHBoxLayout()
+        nav_layout1.addStretch()
+        next_btn1 = qt.QPushButton("Next: Stage 2 →")
+        next_btn1.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px 20px;")
+        next_btn1.clicked.connect(lambda: self.go_to_stage(2))
+        nav_layout1.addWidget(next_btn1)
+        stage1_main_layout.addLayout(nav_layout1)
+
+        self.stage_stack.addWidget(stage1_container)
+        self.stage_widgets[1] = stage1_container
 
         # STAGE 2
+        stage2_container = qt.QWidget()
+        stage2_main_layout = qt.QVBoxLayout(stage2_container)
         stage2_group = self.create_stage_group("Stage 2: Soft Tissue Prediction")
         stage2_layout = stage2_group.layout()
         self.add_workflow_step(stage2_layout, "<b>Step 3: Predict Soft Tissue Lengths</b>",
-                               "Calculates soft tissue measurement lengths and creates 'Predicted' (blue) lines.",
-                               self.launch_length_prediction_dialog)
+                            "Calculates soft tissue measurement lengths and creates 'Predicted' (blue) lines.",
+                            self.launch_length_prediction_dialog)
         self.add_workflow_step(stage2_layout, "<b>Step 4: Create Predicted Landmarks</b>",
-                               "Uses predicted lengths to create the final soft tissue (pink) fiducial points.",
-                               self.create_predicted_landmarks, is_final_step=True)
-        self.vbox.addWidget(stage2_group)
+                            "Uses predicted lengths to create the final soft tissue (pink) fiducial points.",
+                            self.create_predicted_landmarks, is_final_step=True)
+        stage2_main_layout.addWidget(stage2_group)
+        stage2_main_layout.addStretch()
+
+        # Navigation buttons for Stage 2
+        nav_layout2 = qt.QHBoxLayout()
+        back_btn2 = qt.QPushButton("← Back: Stage 1")
+        back_btn2.setStyleSheet("padding: 10px 20px;")
+        back_btn2.clicked.connect(lambda: self.go_to_stage(1))
+        nav_layout2.addWidget(back_btn2)
+        nav_layout2.addStretch()
+        next_btn2 = qt.QPushButton("Next: Stage 3 →")
+        next_btn2.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px 20px;")
+        next_btn2.clicked.connect(lambda: self.go_to_stage(3))
+        nav_layout2.addWidget(next_btn2)
+        stage2_main_layout.addLayout(nav_layout2)
+
+        self.stage_stack.addWidget(stage2_container)
+        self.stage_widgets[2] = stage2_container
+
+        # STAGE 3 and 4 COMBINED
+        stage3_container = qt.QWidget()
+        stage3_main_layout = qt.QVBoxLayout(stage3_container)
 
         # STAGE 3
         stage3_group = self.create_stage_group("Stage 3: Ground Truth Comparison")
         stage3_layout = stage3_group.layout()
+
+        # Add download button for soft tissue sample
+        download_soft_btn = qt.QPushButton("📥 Load Sample Soft Tissue Landmarks")
+        download_soft_btn.setStyleSheet("background-color: #E8F5E9; padding: 8px; margin-bottom: 10px;")
+        download_soft_btn.setToolTip("Download and load Ryu_soft_tissue.mrk.json ground truth directly into the scene")
+        download_soft_btn.clicked.connect(lambda: self.download_and_load_landmarks(
+            "https://github.com/user-attachments/files/24859020/Ryu_soft_tissue.mrk.json",
+            "Ryu_soft_tissue"
+        ))
+        stage3_layout.addWidget(download_soft_btn)
+
         inputs_group3 = qt.QGroupBox("Input")
         inputs_layout3 = qt.QFormLayout(inputs_group3)
         self.soft_tissue_selector = self.create_node_selector("True Soft Tissue Fiducials:", "vtkMRMLMarkupsFiducialNode", "Ryu_soft_tissue")
         inputs_layout3.addRow(self.soft_tissue_selector['label'], self.soft_tissue_selector['selector'])
         stage3_layout.addWidget(inputs_group3)
         self.add_workflow_step(stage3_layout, "<b>Step 5: Create True Soft Tissue Measurements</b>",
-                               "Creates 'True' (green) measurement lines from ground truth soft tissue fiducials.",
-                               self.create_true_soft_tissue_measurements, is_final_step=True)
-        self.vbox.addWidget(stage3_group)
+                            "Creates 'True' (green) measurement lines from ground truth soft tissue fiducials.",
+                            self.create_true_soft_tissue_measurements, is_final_step=True)
+        stage3_main_layout.addWidget(stage3_group)
 
         # STAGE 4
         stage4_group = self.create_stage_group("Stage 4: Error Visualization")
         stage4_layout = stage4_group.layout()
         self.add_workflow_step(stage4_layout, "<b>Step 6: Measure Prediction Error</b>",
-                               "Creates error lines (red) between predicted and true soft tissue points.",
-                               self.measure_prediction_errors, is_final_step=True)
-        self.vbox.addWidget(stage4_group)
+                            "Creates error lines (red) between predicted and true soft tissue points.",
+                            self.measure_prediction_errors, is_final_step=True)
+        stage3_main_layout.addWidget(stage4_group)
+
+        stage3_main_layout.addStretch()
+
+        # Navigation buttons for Stage 3 and 4
+        nav_layout3 = qt.QHBoxLayout()
+        back_btn3 = qt.QPushButton("← Back: Stage 2")
+        back_btn3.setStyleSheet("padding: 10px 20px;")
+        back_btn3.clicked.connect(lambda: self.go_to_stage(2))
+        nav_layout3.addWidget(back_btn3)
+        nav_layout3.addStretch()
+        next_btn3 = qt.QPushButton("Next: Results and Visualization →")
+        next_btn3.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 10px 20px;")
+        next_btn3.clicked.connect(lambda: self.go_to_stage(4))
+        nav_layout3.addWidget(next_btn3)
+        stage3_main_layout.addLayout(nav_layout3)
+
+        self.stage_stack.addWidget(stage3_container)
+        self.stage_widgets[3] = stage3_container
+
+        # STAGE 5 and Visualization - Final view
+        stage4_container = qt.QWidget()
+        stage4_main_layout = qt.QVBoxLayout(stage4_container)
 
         # STAGE 5 - Results
         stage5_group = self.create_stage_group("Stage 5: Results and Analysis")
         stage5_layout = stage5_group.layout()
         self.add_workflow_step(stage5_layout, "<b>Step 7: Show Landmark Error Table</b>",
-                               "Displays a table with final 3D errors for each landmark.",
-                               self.show_landmark_error_table, is_final_step=True)
-        self.vbox.addWidget(stage5_group)
+                            "Displays a table with final 3D errors for each landmark.",
+                            self.show_landmark_error_table, is_final_step=True)
+        stage4_main_layout.addWidget(stage5_group)
 
         # Visualization tools
         viz_group = qt.QGroupBox("Visualization Tools")
@@ -100,10 +188,65 @@ class RyuGUI:
         self.add_toggle_button(viz_layout, "True Lengths (Green)", "True_N", "vtkMRMLMarkupsLineNode", 2)
         self.add_toggle_button(viz_layout, "Error Lines (Red)", "error_", "vtkMRMLMarkupsLineNode", 3)
         self.add_toggle_button(viz_layout, "Predicted Landmarks (Pink)", "Predicted_Soft_Tissue", "vtkMRMLMarkupsFiducialNode", 4)
-        self.vbox.addWidget(viz_group)
+        stage4_main_layout.addWidget(viz_group)
 
-        self.vbox.addStretch()
+        stage4_main_layout.addStretch()
+
+        # Navigation button for Stage 5
+        nav_layout4 = qt.QHBoxLayout()
+        back_btn4 = qt.QPushButton("← Back: Stages 3 and 4")
+        back_btn4.setStyleSheet("padding: 10px 20px;")
+        back_btn4.clicked.connect(lambda: self.go_to_stage(3))
+        nav_layout4.addWidget(back_btn4)
+        nav_layout4.addStretch()
+        stage4_main_layout.addLayout(nav_layout4)
+
+        self.stage_stack.addWidget(stage4_container)
+        self.stage_widgets[4] = stage4_container
+
+        # Set initial stage
+        self.stage_stack.setCurrentWidget(stage1_container)
+
         self.main_widget.show()
+
+        # STAGE 5 - Results
+        stage5_group = self.create_stage_group("Stage 5: Results and Analysis")
+        stage5_layout = stage5_group.layout()
+        self.add_workflow_step(stage5_layout, "<b>Step 7: Show Landmark Error Table</b>",
+                            "Displays a table with final 3D errors for each landmark.",
+                            self.show_landmark_error_table, is_final_step=True)
+        stage4_main_layout.addWidget(stage5_group)
+
+        # Visualization tools
+        viz_group = qt.QGroupBox("Visualization Tools")
+        viz_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
+        viz_layout = qt.QGridLayout(viz_group)
+        self.add_toggle_button(viz_layout, "Hard Tissue Measurements (Cyan)", "N", "vtkMRMLMarkupsLineNode", 0)
+        self.add_toggle_button(viz_layout, "Predicted Lengths (Blue)", "Predicted_N", "vtkMRMLMarkupsLineNode", 1)
+        self.add_toggle_button(viz_layout, "True Lengths (Green)", "True_N", "vtkMRMLMarkupsLineNode", 2)
+        self.add_toggle_button(viz_layout, "Error Lines (Red)", "error_", "vtkMRMLMarkupsLineNode", 3)
+        self.add_toggle_button(viz_layout, "Predicted Landmarks (Pink)", "Predicted_Soft_Tissue", "vtkMRMLMarkupsFiducialNode", 4)
+        stage4_main_layout.addWidget(viz_group)
+
+        stage4_main_layout.addStretch()
+
+        # Navigation button for Stage 4
+        nav_layout4 = qt.QHBoxLayout()
+        back_btn4 = qt.QPushButton("← Back: Stage 3")
+        back_btn4.setStyleSheet("padding: 10px 20px;")
+        back_btn4.clicked.connect(lambda: self.go_to_stage(3))
+        nav_layout4.addWidget(back_btn4)
+        nav_layout4.addStretch()
+        stage4_main_layout.addLayout(nav_layout4)
+
+        self.stage_stack.addWidget(stage4_container)
+        self.stage_widgets[4] = stage4_container
+
+        # Set initial stage
+        self.stage_stack.setCurrentWidget(stage1_container)
+
+        self.main_widget.show()    
+            
 
     def create_stage_group(self, title):
         g = qt.QGroupBox(title)
@@ -182,18 +325,67 @@ class RyuGUI:
                     continue
                 node.SetDisplayVisibility(is_visible)
 
+    def go_to_stage(self, stage_number):
+        """Navigate to a specific stage"""
+        if stage_number in self.stage_widgets:
+            self.current_stage = stage_number
+            self.stage_stack.setCurrentWidget(self.stage_widgets[stage_number])
+
+    def download_and_load_landmarks(self, url, node_name):
+        """Download landmark file from GitHub and load it directly into the scene"""
+        import urllib.request
+        import tempfile
+        import os
+        try:
+            # Show progress message
+            slicer.app.processEvents()
+            
+            # Create a temporary file
+            temp_dir = tempfile.gettempdir()
+            temp_file = os.path.join(temp_dir, node_name + ".mrk.json")
+            
+            # Download the file
+            slicer.util.showStatusMessage("Downloading {} from GitHub...".format(node_name), 2000)
+            urllib.request.urlretrieve(url, temp_file)
+            
+            # Check if node already exists and remove it
+            existing_node = slicer.mrmlScene.GetFirstNodeByName(node_name)
+            if existing_node:
+                slicer.mrmlScene.RemoveNode(existing_node)
+            
+            # Load the file into the scene
+            loaded_node = slicer.util.loadMarkups(temp_file)
+            if loaded_node:
+                loaded_node.SetName(node_name)
+                slicer.util.infoDisplay("✓ {} loaded successfully into the scene!\n\nThe landmarks are now ready to use.".format(node_name))
+                
+                # Update the selector to show the newly loaded node
+                if "hard" in node_name.lower():
+                    self.hard_tissue_selector['selector'].setCurrentNode(loaded_node)
+                elif "soft" in node_name.lower():
+                    self.soft_tissue_selector['selector'].setCurrentNode(loaded_node)
+            else:
+                slicer.util.errorDisplay("Failed to load the landmarks file.")
+            
+            # Clean up temp file
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+                
+        except Exception as e:
+            slicer.util.errorDisplay("Failed to download and load file:\n{}".format(str(e)))
+
     def create_anatomical_planes(self):
         landmarks_node = self.get_node(self.hard_tissue_selector, "Hard Tissue Fiducials")
         if not landmarks_node:
             return
 
         required = {
-            "Midsagittal": ["N", "lambda", "prosthion"],
-            "Orbital": ["O_R", "O_L", "por_R", "por_L"],
-            "Coronal": ["bregma"],
-            "Rhinion": ["R"],
-            "Alare": ["A_L", "A_R"]
-        }
+        "Midsagittal": ["N", "lambda", "prosthion"],
+        "Orbital": ["O_R", "O_L", "au_R", "au_L"],
+        "Coronal": ["bregma"],
+        "Rhinion": ["R"],
+        "Alare": ["A_L", "A_R"]
+    }
         all_landmarks = {}
         for i in range(landmarks_node.GetNumberOfControlPoints()):
             label = landmarks_node.GetNthControlPointLabel(i)
@@ -212,12 +404,26 @@ class RyuGUI:
         midsagittal_plane.SetOrigin(centroid)
         midsagittal_plane.SetNormal(midsag_normal)
 
-        orbital_pts = np.array([all_landmarks[n] for n in required["Orbital"]])
+        # Calculate auriculare midpoint
+        au_midpoint = (all_landmarks["au_L"] + all_landmarks["au_R"]) / 2.0
+
+        # Use auriculare midpoint and the two orbitale points
+        orbital_pts = np.array([
+            all_landmarks["O_R"],
+            all_landmarks["O_L"],
+            au_midpoint
+        ])
         centroid = orbital_pts.mean(axis=0)
+
+        # Calculate the plane normal using SVD
         _, _, vh = np.linalg.svd(orbital_pts - centroid)
         initial_normal = vh[2]
+
+        # Make the plane orthogonal to midsagittal plane
         orbital_normal = initial_normal - np.dot(initial_normal, midsag_normal) * midsag_normal
         orbital_normal = orbital_normal / np.linalg.norm(orbital_normal)
+
+        # Create the orbital plane
         orbital_plane = self.get_or_create_node("vtkMRMLMarkupsPlaneNode", "Orbital")
         orbital_plane.SetOrigin(centroid)
         orbital_plane.SetNormal(orbital_normal)
@@ -675,15 +881,15 @@ class LandmarkErrorTable(qt.QDialog):
     def copy_data(self):
         clipboard = qt.QApplication.clipboard()
         text = ""
-        for c in range(self.table.columnCount()):
+        for c in range(self.table.columnCount):
             hdr = self.table.horizontalHeaderItem(c)
             if hdr:
                 text += hdr.text() + "\t"
             else:
                 text += "\t"
         text = text.strip() + "\n"
-        for r in range(self.table.rowCount()):
-            for c in range(self.table.columnCount()):
+        for r in range(self.table.rowCount):
+            for c in range(self.table.columnCount):
                 item = self.table.item(r, c)
                 if item:
                     text += item.text() + "\t"
@@ -1008,6 +1214,5 @@ except:
     pass
 
 ryu_gui_instance = RyuGUI()
-
 
 ```
