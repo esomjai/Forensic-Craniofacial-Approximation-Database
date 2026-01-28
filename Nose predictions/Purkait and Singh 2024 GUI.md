@@ -1,5 +1,4 @@
-
-```python
+``` python
 
 import numpy as np
 import slicer
@@ -260,28 +259,181 @@ class PurkaitSinghGUI(qt.QWidget):
         layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
         
-        title = qt. QLabel("Step 3: Create Hard Tissue Measurements")
+        title = qt.QLabel("Step 3: Create Hard Tissue Measurements")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
         
         desc = qt.QLabel(
             "This will create all guide lines and measurements needed for prediction.\n\n"
-            "Please set the facial soft tissue thickness (FSTT) for subnasale prediction:"
+            "Please set the facial soft tissue thickness (FSTT) values for predictions:"
         )
         desc.setWordWrap(True)
         layout.addWidget(desc)
         
-        fsttForm = qt.QFormLayout()
-        self.fsttSpinBox = qt.QDoubleSpinBox()
-        self.fsttSpinBox.setRange(0.01, 30.0)
-        self.fsttSpinBox.setValue(13.50)
-        self.fsttSpinBox.setDecimals(2)
-        self.fsttSpinBox. setSingleStep(0.1)
-        self.fsttSpinBox.setSuffix(" mm")
-        fsttForm.addRow("FSTT for sn':", self.fsttSpinBox)
-        layout.addLayout(fsttForm)
-        
-        self.createMeasurementsButton = qt. QPushButton("Create All Measurements")
+        # ============= FSTT for sn' =============
+        snGroup = qt.QGroupBox("FSTT for Subnasale (sn')")
+        snLayout = qt.QVBoxLayout(snGroup)
+
+        snExplanation = qt.QLabel(
+            "The FSTT at subnasale (sn') is used to predict the soft tissue position from the hard tissue landmark 'subspinale (ss)'.\n"
+            "Values: Male = 11.61±1.6mm (Purkait & Singh 2024), Female = 10.27±10.62mm (Purkait & Singh 2024), "
+            "Not sex-specific = 13.5±3.5mm (Hona et al. 2024)"
+        )
+        snExplanation.setWordWrap(True)
+        snExplanation.setStyleSheet("font-style: italic; color: #555;")
+        snLayout.addWidget(snExplanation)
+
+        # Tickboxes for sn'
+        snSexLayout = qt.QHBoxLayout()
+        self.snMaleCheckbox = qt.QCheckBox("Male")
+        self.snFemaleCheckbox = qt.QCheckBox("Female")
+        self.snNonSexCheckbox = qt.QCheckBox("Not sex-specific")
+        self.snMaleCheckbox.setChecked(True)
+        self.snMaleCheckbox.toggled.connect(self.onSnSexChanged)
+        self.snFemaleCheckbox.toggled.connect(self.onSnSexChanged)
+        self.snNonSexCheckbox.toggled.connect(self.onSnSexChanged)
+        snSexLayout.addWidget(self.snMaleCheckbox)
+        snSexLayout.addWidget(self.snFemaleCheckbox)
+        snSexLayout.addWidget(self.snNonSexCheckbox)
+        snSexLayout.addStretch()
+        snLayout.addLayout(snSexLayout)
+
+        # Slider for sn' (Male)
+        self.snMaleSlider = qt.QSlider(qt.Qt.Horizontal)
+        self.snMaleSlider.setRange(0, 100)
+        self.snMaleSlider.setValue(50)
+        self.snMaleSlider.valueChanged.connect(self.onSnMaleSliderChanged)
+
+        self.snMaleLabel = qt.QLabel("FSTT sn' (Male): 11.61 mm")
+        self.snMaleLabel.setStyleSheet("font-weight: bold;")
+        snLayout.addWidget(self.snMaleLabel)
+        snLayout.addWidget(self.snMaleSlider)
+
+        self.snMaleRangeLabel = qt.QLabel("Range: -SD (10.01 mm) ← Mean (11.61 mm) → +SD (13.21 mm) [Adjustable beyond limits]")
+        self.snMaleRangeLabel.setStyleSheet("font-size: 9pt; color: #666;")
+        snLayout.addWidget(self.snMaleRangeLabel)
+
+        # Slider for sn' (Female)
+        self.snFemaleSlider = qt.QSlider(qt.Qt.Horizontal)
+        self.snFemaleSlider.setRange(0, 100)
+        self.snFemaleSlider.setValue(50)
+        self.snFemaleSlider.valueChanged.connect(self.onSnFemaleSliderChanged)
+        self.snFemaleSlider.setVisible(False)
+
+        self.snFemaleLabel = qt.QLabel("FSTT sn' (Female): 10.27 mm")
+        self.snFemaleLabel.setStyleSheet("font-weight: bold;")
+        self.snFemaleLabel.setVisible(False)
+        snLayout.addWidget(self.snFemaleLabel)
+        snLayout.addWidget(self.snFemaleSlider)
+
+        self.snFemaleRangeLabel = qt.QLabel("Range: -SD (-0.35 mm) ← Mean (10.27 mm) → +SD (20.89 mm) [Adjustable beyond limits]")
+        self.snFemaleRangeLabel.setStyleSheet("font-size: 9pt; color: #666;")
+        self.snFemaleRangeLabel.setVisible(False)
+        snLayout.addWidget(self.snFemaleRangeLabel)
+
+        # Slider for sn' (Non-sex-specific)
+        self.snNonSexSlider = qt.QSlider(qt.Qt.Horizontal)
+        self.snNonSexSlider.setRange(0, 100)
+        self.snNonSexSlider.setValue(50)
+        self.snNonSexSlider.valueChanged.connect(self.onSnNonSexSliderChanged)
+        self.snNonSexSlider.setVisible(False)
+
+        self.snNonSexLabel = qt.QLabel("FSTT sn' (Non-sex-specific): 13.50 mm")
+        self.snNonSexLabel.setStyleSheet("font-weight: bold;")
+        self.snNonSexLabel.setVisible(False)
+        snLayout.addWidget(self.snNonSexLabel)
+        snLayout.addWidget(self.snNonSexSlider)
+
+        self.snNonSexRangeLabel = qt.QLabel("Range: -SD (10.0 mm) ← Mean (13.5 mm) → +SD (17.0 mm) [Adjustable beyond limits]")
+        self.snNonSexRangeLabel.setStyleSheet("font-size: 9pt; color: #666;")
+        self.snNonSexRangeLabel.setVisible(False)
+        snLayout.addWidget(self.snNonSexRangeLabel)
+
+        layout.addWidget(snGroup)
+
+        # ============= FSTT for n' =============
+        nGroup = qt.QGroupBox("FSTT for Nasion (n')")
+        nLayout = qt.QVBoxLayout(nGroup)
+
+        nExplanation = qt.QLabel(
+            "The FSTT at nasion (n') is used to predict the soft tissue position from the hard tissue landmark 'nasion (n)'.\n"
+            "Values: Male = 5.02±0.99mm (Purkait & Singh 2024), Female = 3.97±0.92mm (Purkait & Singh 2024), "
+            "Not sex-specific = 6.0±1.5mm (Hona et al. 2024)"
+        )
+        nExplanation.setWordWrap(True)
+        nExplanation.setStyleSheet("font-style: italic; color: #555;")
+        nLayout.addWidget(nExplanation)
+
+        # Tickboxes for n'
+        nSexLayout = qt.QHBoxLayout()
+        self.nMaleCheckbox = qt.QCheckBox("Male")
+        self.nFemaleCheckbox = qt.QCheckBox("Female")
+        self.nNonSexCheckbox = qt.QCheckBox("Not sex-specific")
+        self.nMaleCheckbox.setChecked(True)
+        self.nMaleCheckbox.toggled.connect(self.onNSexChanged)
+        self.nFemaleCheckbox.toggled.connect(self.onNSexChanged)
+        self.nNonSexCheckbox.toggled.connect(self.onNSexChanged)
+        nSexLayout.addWidget(self.nMaleCheckbox)
+        nSexLayout.addWidget(self.nFemaleCheckbox)
+        nSexLayout.addWidget(self.nNonSexCheckbox)
+        nSexLayout.addStretch()
+        nLayout.addLayout(nSexLayout)
+
+        # Slider for n' (Male)
+        self.nMaleSlider = qt.QSlider(qt.Qt.Horizontal)
+        self.nMaleSlider.setRange(0, 100)
+        self.nMaleSlider.setValue(50)
+        self.nMaleSlider.valueChanged.connect(self.onNMaleSliderChanged)
+
+        self.nMaleLabel = qt.QLabel("FSTT n' (Male): 5.02 mm")
+        self.nMaleLabel.setStyleSheet("font-weight: bold;")
+        nLayout.addWidget(self.nMaleLabel)
+        nLayout.addWidget(self.nMaleSlider)
+
+        self.nMaleRangeLabel = qt.QLabel("Range: -SD (4.03 mm) ← Mean (5.02 mm) → +SD (6.01 mm) [Adjustable beyond limits]")
+        self.nMaleRangeLabel.setStyleSheet("font-size: 9pt; color: #666;")
+        nLayout.addWidget(self.nMaleRangeLabel)
+
+        # Slider for n' (Female)
+        self.nFemaleSlider = qt.QSlider(qt.Qt.Horizontal)
+        self.nFemaleSlider.setRange(0, 100)
+        self.nFemaleSlider.setValue(50)
+        self.nFemaleSlider.valueChanged.connect(self.onNFemaleSliderChanged)
+        self.nFemaleSlider.setVisible(False)
+
+        self.nFemaleLabel = qt.QLabel("FSTT n' (Female): 3.97 mm")
+        self.nFemaleLabel.setStyleSheet("font-weight: bold;")
+        self.nFemaleLabel.setVisible(False)
+        nLayout.addWidget(self.nFemaleLabel)
+        nLayout.addWidget(self.nFemaleSlider)
+
+        self.nFemaleRangeLabel = qt.QLabel("Range: -SD (3.05 mm) ← Mean (3.97 mm) → +SD (4.89 mm) [Adjustable beyond limits]")
+        self.nFemaleRangeLabel.setStyleSheet("font-size: 9pt; color: #666;")
+        self.nFemaleRangeLabel.setVisible(False)
+        nLayout.addWidget(self.nFemaleRangeLabel)
+
+        # Slider for n' (Non-sex-specific)
+        self.nNonSexSlider = qt.QSlider(qt.Qt.Horizontal)
+        self.nNonSexSlider.setRange(0, 100)
+        self.nNonSexSlider.setValue(50)
+        self.nNonSexSlider.valueChanged.connect(self.onNNonSexSliderChanged)
+        self.nNonSexSlider.setVisible(False)
+
+        self.nNonSexLabel = qt.QLabel("FSTT n' (Non-sex-specific): 6.00 mm")
+        self.nNonSexLabel.setStyleSheet("font-weight: bold;")
+        self.nNonSexLabel.setVisible(False)
+        nLayout.addWidget(self.nNonSexLabel)
+        nLayout.addWidget(self.nNonSexSlider)
+
+        self.nNonSexRangeLabel = qt.QLabel("Range: -SD (4.5 mm) ← Mean (6.0 mm) → +SD (7.5 mm) [Adjustable beyond limits]")
+        self.nNonSexRangeLabel.setStyleSheet("font-size: 9pt; color: #666;")
+        self.nNonSexRangeLabel.setVisible(False)
+        nLayout.addWidget(self.nNonSexRangeLabel)
+
+        layout.addWidget(nGroup)
+
+        # ============= CREATE BUTTON =============
+        self.createMeasurementsButton = qt.QPushButton("Create All Measurements")
         self.createMeasurementsButton.setStyleSheet(
             "background-color: #27ae60; color: white; padding: 10px; font-weight: bold;"
         )
@@ -292,34 +444,48 @@ class PurkaitSinghGUI(qt.QWidget):
         self.step3StatusLabel.setWordWrap(True)
         layout.addWidget(self.step3StatusLabel)
         
-        layout. addStretch(1)
+        layout.addStretch(1)
         self.stepStack.addWidget(widget)
-    
+
     def createStep4_Prediction(self):
         widget = qt.QWidget()
         layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
         
-        title = qt. QLabel("Step 4: Predict Pronasale")
+        title = qt.QLabel("Step 4: Predict Pronasale and Nasion Tip")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
         
-        desc = qt. QLabel("Select the biological sex and visualization options, then run the prediction.")
+        desc = qt.QLabel(
+            "Select the biological sex and visualization options, then run the prediction.\n\n"
+            "Note: If you used 'Not sex-specific' FSTT values in Step 3, you must choose which "
+            "prediction equation (Male or Female) to use below, as there are no sex-neutral equations available."
+        )
         desc.setWordWrap(True)
         layout.addWidget(desc)
         
-        sexGroup = qt.QGroupBox("Biological Sex")
-        sexLayout = qt.QHBoxLayout(sexGroup)
+        sexGroup = qt.QGroupBox("Prediction Equations to Use")
+        sexLayout = qt.QVBoxLayout(sexGroup)
         
+        sexButtonLayout = qt.QHBoxLayout()
         self.maleRadio = qt.QRadioButton("Male")
-        self.femaleRadio = qt. QRadioButton("Female")
+        self.femaleRadio = qt.QRadioButton("Female")
         self.bothRadio = qt.QRadioButton("Both (for comparison)")
         self.maleRadio.setChecked(True)
         
-        sexLayout.addWidget(self.maleRadio)
-        sexLayout.addWidget(self.femaleRadio)
-        sexLayout.addWidget(self.bothRadio)
-        sexLayout.addStretch()
+        sexButtonLayout.addWidget(self.maleRadio)
+        sexButtonLayout.addWidget(self.femaleRadio)
+        sexButtonLayout.addWidget(self.bothRadio)
+        sexButtonLayout.addStretch()
+        sexLayout.addLayout(sexButtonLayout)
+        
+        noteLabel = qt.QLabel(
+            "<i>These equations are used to predict pronasale (prn) and nasion tip (nt) positions. "
+            "They are independent of the FSTT values chosen in Step 3.</i>"
+        )
+        noteLabel.setWordWrap(True)
+        noteLabel.setStyleSheet("color: #666; font-size: 10pt;")
+        sexLayout.addWidget(noteLabel)
         
         layout.addWidget(sexGroup)
         
@@ -327,7 +493,7 @@ class PurkaitSinghGUI(qt.QWidget):
         self.showLinesCheckbox.setChecked(True)
         layout.addWidget(self.showLinesCheckbox)
         
-        self.predictButton = qt.QPushButton("Run Pronasale Prediction")
+        self.predictButton = qt.QPushButton("Run Predictions (Pronasale & Nasion Tip)")
         self.predictButton.setStyleSheet(
             "background-color: #e74c3c; color: white; padding: 10px; font-weight: bold;"
         )
@@ -340,7 +506,8 @@ class PurkaitSinghGUI(qt.QWidget):
         
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
-    
+
+        
     def createStep5_Validation(self):
         widget = qt.QWidget()
         layout = qt.QVBoxLayout(widget)
@@ -469,8 +636,233 @@ class PurkaitSinghGUI(qt.QWidget):
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
     
-    # ==================== ENHANCED:  SMART AUTO-DETECTION ====================
+
+
+    # ==================== SLIDER HELPER METHODS ====================
+
+    def onSnSexChanged(self):
+        """Handle sn' sex checkbox changes"""
+        maleChecked = self.snMaleCheckbox.isChecked()
+        femaleChecked = self.snFemaleCheckbox.isChecked()
+        nonSexChecked = self.snNonSexCheckbox.isChecked()
+        
+        # Show/hide male slider
+        self.snMaleSlider.setVisible(maleChecked)
+        self.snMaleLabel.setVisible(maleChecked)
+        self.snMaleRangeLabel.setVisible(maleChecked)
+        
+        # Show/hide female slider
+        self.snFemaleSlider.setVisible(femaleChecked)
+        self.snFemaleLabel.setVisible(femaleChecked)
+        self.snFemaleRangeLabel.setVisible(femaleChecked)
+        
+        # Show/hide non-sex-specific slider
+        self.snNonSexSlider.setVisible(nonSexChecked)
+        self.snNonSexLabel.setVisible(nonSexChecked)
+        self.snNonSexRangeLabel.setVisible(nonSexChecked)
+
+    def onNSexChanged(self):
+        """Handle n' sex checkbox changes"""
+        maleChecked = self.nMaleCheckbox.isChecked()
+        femaleChecked = self.nFemaleCheckbox.isChecked()
+        nonSexChecked = self.nNonSexCheckbox.isChecked()
+        
+        # Show/hide male slider
+        self.nMaleSlider.setVisible(maleChecked)
+        self.nMaleLabel.setVisible(maleChecked)
+        self.nMaleRangeLabel.setVisible(maleChecked)
+        
+        # Show/hide female slider
+        self.nFemaleSlider.setVisible(femaleChecked)
+        self.nFemaleLabel.setVisible(femaleChecked)
+        self.nFemaleRangeLabel.setVisible(femaleChecked)
+        
+        # Show/hide non-sex-specific slider
+        self.nNonSexSlider.setVisible(nonSexChecked)
+        self.nNonSexLabel.setVisible(nonSexChecked)
+        self.nNonSexRangeLabel.setVisible(nonSexChecked)
+
+    def onSnMaleSliderChanged(self, value):
+        """Update sn' male FSTT value based on slider"""
+        mean = 11.61
+        sd = 1.6
+        fstt_value = mean + ((value - 50) / 25.0) * sd
+        self.snMaleLabel.setText("FSTT sn' (Male): {:.2f} mm".format(fstt_value))
+
+    def onSnFemaleSliderChanged(self, value):
+        """Update sn' female FSTT value based on slider"""
+        mean = 10.27
+        sd = 10.62
+        fstt_value = mean + ((value - 50) / 25.0) * sd
+        self.snFemaleLabel.setText("FSTT sn' (Female): {:.2f} mm".format(fstt_value))
+
+    def onSnNonSexSliderChanged(self, value):
+        """Update sn' non-sex-specific FSTT value based on slider"""
+        mean = 13.5
+        sd = 3.5
+        fstt_value = mean + ((value - 50) / 25.0) * sd
+        self.snNonSexLabel.setText("FSTT sn' (Non-sex-specific): {:.2f} mm".format(fstt_value))
+
+    def onNMaleSliderChanged(self, value):
+        """Update n' male FSTT value based on slider"""
+        mean = 5.02
+        sd = 0.99
+        fstt_value = mean + ((value - 50) / 25.0) * sd
+        self.nMaleLabel.setText("FSTT n' (Male): {:.2f} mm".format(fstt_value))
+
+    def onNFemaleSliderChanged(self, value):
+        """Update n' female FSTT value based on slider"""
+        mean = 3.97
+        sd = 0.92
+        fstt_value = mean + ((value - 50) / 25.0) * sd
+        self.nFemaleLabel.setText("FSTT n' (Female): {:.2f} mm".format(fstt_value))
+
+    def onNNonSexSliderChanged(self, value):
+        """Update n' non-sex-specific FSTT value based on slider"""
+        mean = 6.0
+        sd = 1.5
+        fstt_value = mean + ((value - 50) / 25.0) * sd
+        self.nNonSexLabel.setText("FSTT n' (Non-sex-specific): {:.2f} mm".format(fstt_value))
+
+    def getSnFSTT(self):
+        """Get the current sn' FSTT value(s) based on checkboxes"""
+        values = {}
+        
+        if self.snMaleCheckbox.isChecked():
+            mean = 11.61
+            sd = 1.6
+            slider_value = self.snMaleSlider.value
+            values['male'] = mean + ((slider_value - 50) / 25.0) * sd
+        
+        if self.snFemaleCheckbox.isChecked():
+            mean = 10.27
+            sd = 10.62
+            slider_value = self.snFemaleSlider.value
+            values['female'] = mean + ((slider_value - 50) / 25.0) * sd
+        
+        if self.snNonSexCheckbox.isChecked():
+            mean = 13.5
+            sd = 3.5
+            slider_value = self.snNonSexSlider.value
+            values['nonsex'] = mean + ((slider_value - 50) / 25.0) * sd
+        
+        return values
+
+    def getNFSTT(self):
+        """Get the current n' FSTT value(s) based on checkboxes"""
+        values = {}
+        
+        if self.nMaleCheckbox.isChecked():
+            mean = 5.02
+            sd = 0.99
+            slider_value = self.nMaleSlider.value
+            values['male'] = mean + ((slider_value - 50) / 25.0) * sd
+        
+        if self.nFemaleCheckbox.isChecked():
+            mean = 3.97
+            sd = 0.92
+            slider_value = self.nFemaleSlider.value
+            values['female'] = mean + ((slider_value - 50) / 25.0) * sd
+        
+        if self.nNonSexCheckbox.isChecked():
+            mean = 6.0
+            sd = 1.5
+            slider_value = self.nNonSexSlider.value
+            values['nonsex'] = mean + ((slider_value - 50) / 25.0) * sd
+        
+        return values
     
+    def findCircleIntersections(self, center1, radius1, center2, radius2):
+        """
+        Find intersection points of two circles in 3D space.
+        For 3D, we need to constrain to the plane containing both centers and perpendicular to MSP.
+        Returns the two intersection points (or one if circles are tangent, or None if no intersection)
+        """
+        d = np.linalg.norm(center2 - center1)
+        
+        # Check if circles intersect
+        if d > radius1 + radius2:  # Circles too far apart
+            print("Warning: Circles don't intersect (too far). Distance: {:.2f}, Sum of radii: {:.2f}".format(d, radius1 + radius2))
+            return None
+        if d < abs(radius1 - radius2):  # One circle inside the other
+            print("Warning: One circle is inside the other")
+            return None
+        if d == 0 and radius1 == radius2:  # Same circle
+            print("Warning: Circles are identical")
+            return None
+        
+        # Calculate the intersection points
+        # Point P on the line between centers
+        a = (radius1**2 - radius2**2 + d**2) / (2 * d)
+        h = np.sqrt(radius1**2 - a**2)
+        
+        # Direction from center1 to center2
+        direction = (center2 - center1) / d
+        
+        # Point P (on line between centers)
+        P = center1 + a * direction
+        
+        # We need a perpendicular direction to find the two intersection points
+        # Get MSP normal to constrain the solution
+        if self.mspNode:
+            msp_origin, msp_normal = self.getPlaneData(self.mspNode)
+            # Perpendicular direction in the plane perpendicular to line center1-center2
+            # and considering MSP orientation
+            perp = np.cross(direction, msp_normal)
+            perp = perp / np.linalg.norm(perp)
+        else:
+            # Fallback: use arbitrary perpendicular
+            if abs(direction[2]) < 0.9:
+                perp = np.array([0, 0, 1])
+            else:
+                perp = np.array([1, 0, 0])
+            perp = np.cross(direction, perp)
+            perp = perp / np.linalg.norm(perp)
+        
+        # Two intersection points
+        intersection1 = P + h * perp
+        intersection2 = P - h * perp
+        
+        return intersection1, intersection2
+
+    def selectBestNtIntersection(self, intersection1, intersection2, n_soft):
+        """
+        Select the best nt intersection point.
+        Choose the one that is more INFERIOR (lower Z value in RAS) and more ANTERIOR (higher Y)
+        The nasion tip should be below the nasion, not above it.
+        """
+        if intersection1 is None:
+            return None
+        
+        if intersection2 is None:
+            return intersection1
+        
+        # In RAS coordinates:
+        # - Anterior is positive Y (we want this)
+        # - Superior is positive Z (we want NEGATIVE/lower for inferior)
+        
+        # Primary criterion: Choose the more inferior point (lower Z = downward)
+        # Secondary criterion: If similar Z, choose more anterior (higher Y)
+        
+        z_diff = abs(intersection1[2] - intersection2[2])
+        
+        if z_diff > 1.0:  # Significant Z difference (> 1mm)
+            # Choose the LOWER point (more inferior/downward)
+            if intersection1[2] < intersection2[2]:
+                print("Selected intersection 1 (more inferior): Z={0:.2f}".format(intersection1[2]))
+                return intersection1
+            else:
+                print("Selected intersection 2 (more inferior): Z={0:.2f}".format(intersection2[2]))
+                return intersection2
+        else:
+            # Z values are similar, use anterior position as tiebreaker
+            if intersection1[1] > intersection2[1]:  # Y coordinate (anterior)
+                print("Selected intersection 1 (more anterior): Y={0:.2f}, Z={1:.2f}".format(intersection1[1], intersection1[2]))
+                return intersection1
+            else:
+                print("Selected intersection 2 (more anterior): Y={0:.2f}, Z={1:.2f}".format(intersection2[1], intersection2[2]))
+                return intersection2
+
     def syncWithScene(self):
         """ENHANCED: Smart auto-detection with multiple name variations"""
         # Hard tissue detection
@@ -728,8 +1120,15 @@ class PurkaitSinghGUI(qt.QWidget):
                 slicer.mrmlScene.RemoveNode(pred_FSTT_sn)
             self.pred_FSTT_sn = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', 'pred_FSTT_sn')
             
-            sn_thickness = self.fsttSpinBox.value
-            
+            # Get sn' FSTT values - use male by default if available
+            sn_fstt_values = self.getSnFSTT()
+            if 'male' in sn_fstt_values:
+                sn_thickness = sn_fstt_values['male']
+            elif 'female' in sn_fstt_values:
+                sn_thickness = sn_fstt_values['female']
+            else:
+                sn_thickness = 13.5  # Default fallback
+                        
             st_sn_guide = slicer.util.getNode('st sn guide')
             sn_guide_start = self.getPoint(st_sn_guide, 0)
             sn_guide_end = self.getPoint(st_sn_guide, 1)
@@ -750,6 +1149,62 @@ class PurkaitSinghGUI(qt.QWidget):
                 displayNode.SetGlyphScale(1.8)
                 displayNode.SetTextScale(3.0)
                 displayNode.SetSliceProjection(True)
+            
+            # ============= NEW: Predict n' (nasion) points =============
+            n_fstt_values = self.getNFSTT()
+
+            # Create prediction nodes for each selected sex/type
+            for sex_key, n_thickness in n_fstt_values.items():
+                # Get the st n guide line
+                st_n_guide = slicer.util.getNode('st n guide')
+                n_guide_start = self.getPoint(st_n_guide, 0)
+                n_guide_end = self.getPoint(st_n_guide, 1)
+                
+                # Direction along the guide (anterior direction)
+                n_guide_vec = n_guide_end - n_guide_start
+                n_guide_unit_vec = n_guide_vec / np.linalg.norm(n_guide_vec)
+                
+                # Get nasion point
+                n_point = self.getPoint(self.hardTissueNode, 0)
+                
+                # Predict n' by moving anteriorly from nasion
+                pred_n_position = n_point + n_guide_unit_vec * n_thickness
+                
+                # Store in appropriate prediction node
+                pred_node_name = 'pred_soft_tissue_{0}'.format(sex_key)
+                pred_node = slicer.util.getFirstNodeByName(pred_node_name)
+                if not pred_node:
+                    pred_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', pred_node_name)
+                
+                # Add n' prediction
+                pred_node.AddControlPoint(pred_n_position.tolist(), "n'_FSTT_{0}".format(sex_key))
+                
+                # Set colors
+                displayNode = pred_node.GetDisplayNode()
+                if displayNode:
+                    if sex_key == "male":
+                        displayNode.SetColor(0.0, 0.0, 0.8)
+                        displayNode.SetSelectedColor(0.0, 0.0, 1.0)
+                    elif sex_key == "female":
+                        displayNode.SetColor(0.0, 0.8, 0.0)
+                        displayNode.SetSelectedColor(0.0, 1.0, 0.0)
+                    else:  # nonsex
+                        displayNode.SetColor(0.8, 0.0, 0.8)
+                        displayNode.SetSelectedColor(1.0, 0.0, 1.0)
+                    
+                    displayNode.SetGlyphScale(1.8)
+                    displayNode.SetTextScale(3.0)
+                    displayNode.SetSliceProjection(True)
+                
+                # Store measurement
+                self.storeMeasurement("Predicted n' FSTT ({0})".format(sex_key), n_thickness, "mm")
+                self.storeCoordinate("n' ({0})".format(sex_key), pred_n_position)
+
+            n_point = self.getPoint(self.hardTissueNode, 0)
+            self.createLine(n_point, pred_sn_position, 'n to sn FSTT', [1.0, 1.0, 1.0], [0.5, 0.5, 0.0])
+
+            n_to_sn_dist = np.linalg.norm(pred_sn_position - n_point)
+            self.storeMeasurement("n to sn FSTT", n_to_sn_dist)
             
             n_point = self.getPoint(self.hardTissueNode, 0)
             self.createLine(n_point, pred_sn_position, 'n to sn FSTT', [1.0, 1.0, 1.0], [0.5, 0.5, 0.0])
@@ -830,35 +1285,53 @@ class PurkaitSinghGUI(qt.QWidget):
             slicer. util.errorDisplay("Failed to predict: {0}".format(str(e)))
     
     def runSinglePrediction(self, sex):
+        """
+        Predict pronasale and nasion tip (nt) for given sex
+        nt is predicted as intersection of two circles:
+        - Circle 1: center at n (hard tissue), radius from bony n-ss equation
+        - Circle 2: center at n' (predicted soft tissue), radius from soft n-nt equation
+        """
         coefficients = {
-            'male': {'prn_baseline': (19.544, 0.299)},
-            'female': {'prn_baseline': (15.056, 0.622)}
+            'male': {
+                'prn_baseline': (19.544, 0.299),
+                'bony_n_ss': (4.385, 0.988),
+                'soft_n_nt': (31.76, 1.009)
+            },
+            'female': {
+                'prn_baseline': (15.056, 0.622),
+                'bony_n_ss': (7.673, 0.909),
+                'soft_n_nt': (33.23, 0.768)
+            },
         }
+        
+       # Validate that sex is valid
+        if sex not in coefficients:
+            raise ValueError("Invalid sex parameter: '{0}'. Must be 'male' or 'female'.".format(sex))
         
         coeffs = coefficients[sex]
         show_lines = self.showLinesCheckbox.isChecked()
         
-        baselineNode = slicer.util. getNode('baseline')
-        rhiToBaselineNode = slicer. util.getNode('rhi to baseline')
+        baselineNode = slicer.util.getNode('baseline')
+        rhiToBaselineNode = slicer.util.getNode('rhi to baseline')
+        nToRhiNode = slicer.util.getNode('n to rhi')
         
         if not all([self.hardTissueNode, baselineNode, rhiToBaselineNode, self.mspNode]):
-            raise ValueError("Required measurements not found.  Please run Step 3 first.")
+            raise ValueError("Required measurements not found. Please run Step 3 first.")
         
         pred_node_name = 'pred_soft_tissue_{0}'.format(sex)
         pred_node = slicer.util.getFirstNodeByName(pred_node_name)
-        if pred_node:
-            while pred_node. GetNumberOfControlPoints() > 0:
-                pred_node.RemoveNthControlPoint(0)
-        else:
+        if not pred_node:
             pred_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsFiducialNode', pred_node_name)
         
         msp_origin, msp_normal = self.getPlaneData(self.mspNode)
         ans_point = self.getPoint(self.hardTissueNode, 3)
+        n_point = self.getPoint(self.hardTissueNode, 0)
         
         baseline_start = self.getPoint(baselineNode, 0)
         baseline_end = self.getPoint(baselineNode, 1)
         baseline_vec = baseline_end - baseline_start
         baseline_unit = baseline_vec / np.linalg.norm(baseline_vec)
+        baseline_length = np.linalg.norm(baseline_vec)
         
         perp_vec = np.cross(baseline_unit, msp_normal)
         perp_vec = perp_vec / np.linalg.norm(perp_vec)
@@ -866,6 +1339,7 @@ class PurkaitSinghGUI(qt.QWidget):
         if perp_vec[1] < 0:
             perp_vec = -perp_vec
         
+        # ========== PREDICT PRONASALE ==========
         if show_lines:
             ans_perp_length = 60.0
             ans_perp_start = ans_point - (ans_perp_length / 2.0) * perp_vec
@@ -880,24 +1354,87 @@ class PurkaitSinghGUI(qt.QWidget):
         if show_lines:
             self.createLine(ans_point, pred_prn_point, "ANS to pred_prn_{0}".format(sex), [0.8, 0.8, 0.0], [1.0, 0.7, 0.0])
         
-        pred_node.AddControlPoint(pred_prn_point.tolist(), "pred_prn_{0}". format(sex))
-        pred_node.SetNthControlPointDescription(0, "Predicted pronasale ({0})".format(sex))
+        # Find or update pronasale in prediction node
+        prn_index = -1
+        for i in range(pred_node.GetNumberOfControlPoints()):
+            label = pred_node.GetNthControlPointLabel(i)
+            if 'pred_prn' in label:
+                prn_index = i
+                break
+        
+        if prn_index >= 0:
+            pred_node.SetNthControlPointPosition(prn_index, pred_prn_point.tolist())
+        else:
+            pred_node.AddControlPoint(pred_prn_point.tolist(), "pred_prn_{0}".format(sex))
         
         self.storeMeasurement("Predicted Pronasale Distance ({0})".format(sex), pred_prn_distance, "mm")
         self.storeCoordinate("Pronasale ({0})".format(sex), pred_prn_point)
         
-        displayNode = pred_node.GetDisplayNode()
-        if displayNode: 
-            if sex == "male":
-                displayNode.SetColor(0.0, 0.0, 0.8)
-                displayNode. SetSelectedColor(0.0, 0.0, 1.0)
+        # ========== PREDICT NASION TIP (nt) ==========
+        # Find predicted n' in the prediction node
+        n_soft_index = -1
+        for i in range(pred_node.GetNumberOfControlPoints()):
+            label = pred_node.GetNthControlPointLabel(i)
+            if "n'_FSTT" in label:
+                n_soft_index = i
+                break
+        
+        if n_soft_index >= 0:
+            n_soft = self.getPoint(pred_node, n_soft_index)
+            
+            # Calculate radius for circle 1 (bony n-ss)
+            intercept1, coeff1 = coeffs['bony_n_ss']
+            radius1 = intercept1 + coeff1 * baseline_length
+            
+            # Calculate radius for circle 2 (soft n-nt)
+            if nToRhiNode:
+                n_to_rhi_length = self.getLineLength(nToRhiNode)
             else:
+                rhi_point = self.getPoint(self.hardTissueNode, 1)
+                n_to_rhi_length = np.linalg.norm(rhi_point - n_point)
+            
+            intercept2, coeff2 = coeffs['soft_n_nt']
+            radius2 = intercept2 + coeff2 * n_to_rhi_length
+            
+            # Find intersection of two circles
+            intersections = self.findCircleIntersections(n_point, radius1, n_soft, radius2)
+            
+            if intersections:
+                pred_nt_point = self.selectBestNtIntersection(intersections[0], intersections[1], n_soft)
+                
+                if pred_nt_point is not None:
+                    # Add nt to prediction node
+                    pred_node.AddControlPoint(pred_nt_point.tolist(), "pred_nt_{0}".format(sex))
+                    
+                    # Store measurement
+                    self.storeMeasurement("Predicted nt radius 1 (bony n-ss) ({0})".format(sex), radius1, "mm")
+                    self.storeMeasurement("Predicted nt radius 2 (soft n-nt) ({0})".format(sex), radius2, "mm")
+                    self.storeCoordinate("nt ({0})".format(sex), pred_nt_point)
+                    
+                    # Create visualization lines if requested
+                    if show_lines:
+                        self.createLine(n_point, pred_nt_point, "n to pred_nt_{0}".format(sex), [1.0, 0.5, 0.0], [1.0, 0.3, 0.0])
+                        self.createLine(n_soft, pred_nt_point, "n' to pred_nt_{0}".format(sex), [0.5, 1.0, 0.0], [0.3, 1.0, 0.0])
+                    
+                    print("✅ Predicted nt for {0}: radius1={1:.2f}mm, radius2={2:.2f}mm".format(sex, radius1, radius2))
+        
+        # Set display properties
+        displayNode = pred_node.GetDisplayNode()
+        if displayNode:
+            # Color based on which PREDICTION NODE this is (not the FSTT used)
+            if 'male' in pred_node_name:
+                displayNode.SetColor(0.0, 0.0, 0.8)
+                displayNode.SetSelectedColor(0.0, 0.0, 1.0)
+            elif 'female' in pred_node_name:
                 displayNode.SetColor(0.0, 0.8, 0.0)
-                displayNode. SetSelectedColor(0.0, 1.0, 0.0)
+                displayNode.SetSelectedColor(0.0, 1.0, 0.0)
+            else:  # fallback
+                displayNode.SetColor(0.8, 0.0, 0.8)
+                displayNode.SetSelectedColor(1.0, 0.0, 1.0)
             
             displayNode.SetGlyphScale(1.8)
             displayNode.SetTextScale(3.0)
-            displayNode. SetGlyphType(1)
+            displayNode.SetGlyphType(1)
             displayNode.SetSliceProjection(True)
     
     def onCreateAdditionalMeasurements(self):
@@ -1059,28 +1596,34 @@ class PurkaitSinghGUI(qt.QWidget):
                 raise ValueError("No predictions found. Please run Step 4 first.")
             
             errors = []
-            true_prn = self.getPointByLabel(self.softTissueNode, "prn")
             
-            if pred_male:
-                pred_prn_male = self.getPointByLabel(pred_male, "pred_prn_male")
-                self.createLine(pred_prn_male, true_prn, "error_prn_male", [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.2)
-                error_dist = np.linalg.norm(pred_prn_male - true_prn)
-                errors.append("Male pronasale error: {0:.2f} mm".format(error_dist))
-                self.storeMeasurement("ERROR:  Pronasale (male)", error_dist, "mm", is_summary=True)
+                # ========== PRONASALE ERRORS ==========
+            try:
+                true_prn = self.getPointByLabel(self.softTissueNode, "prn")
                 
-                if "Pronasale (male)" in self.all_coordinates:
-                    self.all_coordinates["Pronasale (male)"]["true"] = true_prn
-            
-            if pred_female: 
-                pred_prn_female = self.getPointByLabel(pred_female, "pred_prn_female")
-                self.createLine(pred_prn_female, true_prn, "error_prn_female", [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.2)
-                error_dist = np.linalg.norm(pred_prn_female - true_prn)
-                errors.append("Female pronasale error: {0:.2f} mm".format(error_dist))
-                self.storeMeasurement("ERROR:  Pronasale (female)", error_dist, "mm", is_summary=True)
+                if pred_male:
+                    pred_prn_male = self.getPointByLabel(pred_male, "pred_prn_male")
+                    self.createLine(pred_prn_male, true_prn, "error_prn_male", [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.2)
+                    error_dist = np.linalg.norm(pred_prn_male - true_prn)
+                    errors.append("Male pronasale error: {0:.2f} mm".format(error_dist))
+                    self.storeMeasurement("ERROR: Pronasale (male)", error_dist, "mm", is_summary=True)
+                    
+                    if "Pronasale (male)" in self.all_coordinates:
+                        self.all_coordinates["Pronasale (male)"]["true"] = true_prn
                 
-                if "Pronasale (female)" in self.all_coordinates:
-                    self.all_coordinates["Pronasale (female)"]["true"] = true_prn
+                if pred_female: 
+                    pred_prn_female = self.getPointByLabel(pred_female, "pred_prn_female")
+                    self.createLine(pred_prn_female, true_prn, "error_prn_female", [1.0, 0.0, 0.0], [1.0, 0.0, 0.0], 0.2)
+                    error_dist = np.linalg.norm(pred_prn_female - true_prn)
+                    errors.append("Female pronasale error: {0:.2f} mm".format(error_dist))
+                    self.storeMeasurement("ERROR: Pronasale (female)", error_dist, "mm", is_summary=True)
+                    
+                    if "Pronasale (female)" in self.all_coordinates:
+                        self.all_coordinates["Pronasale (female)"]["true"] = true_prn
+            except ValueError:
+                print("⚠️ True pronasale (prn) landmark not found")
             
+            # ========== SUBNASALE (sn') FSTT ERRORS ==========
             if self.pred_FSTT_sn: 
                 try:
                     pred_sn_fstt = self.getPointByLabel(self.pred_FSTT_sn, "sn'_FSTT")
@@ -1090,20 +1633,83 @@ class PurkaitSinghGUI(qt.QWidget):
                     errors.append("FSTT sn' error: {0:.2f} mm".format(error_dist))
                     self.storeMeasurement("ERROR: FSTT sn'", error_dist, "mm", is_summary=True)
                     self.storeCoordinate("Subnasale (FSTT)", pred_sn_fstt, true_sn)
-                except: 
-                    pass
+                except ValueError:
+                    print("⚠️ True subnasale (sn') landmark not found")
+
+            # ========== NASION (n') FSTT ERRORS ==========
+            try:
+                true_n_soft = self.getPointByLabel(self.softTissueNode, "n'")
+                
+                # Check each prediction node for n' predictions
+                for sex in ['male', 'female', 'nonsex']:
+                    pred_node_name = 'pred_soft_tissue_{0}'.format(sex)
+                    pred_node = slicer.util.getFirstNodeByName(pred_node_name)
+                    
+                    if pred_node:
+                        # Find predicted n' FSTT
+                        for i in range(pred_node.GetNumberOfControlPoints()):
+                            label = pred_node.GetNthControlPointLabel(i)
+                            if "n'_FSTT" in label:
+                                pred_n_soft = self.getPoint(pred_node, i)
+                                n_error = np.linalg.norm(pred_n_soft - true_n_soft)
+                                
+                                self.storeMeasurement("ERROR: n' FSTT ({0})".format(sex), n_error, "mm", is_summary=True)
+                                
+                                # Update the stored coordinate with true value
+                                coord_key = "n' ({0})".format(sex)
+                                if coord_key in self.all_coordinates:
+                                    self.all_coordinates[coord_key]["true"] = true_n_soft
+                                
+                                errors.append("n' FSTT error ({0}): {1:.2f} mm".format(sex, n_error))
+                                print("✅ n' error for {0}: {1:.2f} mm".format(sex, n_error))
+                                break
+            except ValueError:
+                print("⚠️ True nasion soft tissue (n') landmark not found")
+
+            # ========== NASION TIP (nt) ERRORS ==========
+            try:
+                true_nt = self.getPointByLabel(self.softTissueNode, "nt")
+                
+                for sex in ['male', 'female']:
+                    pred_node_name = 'pred_soft_tissue_{0}'.format(sex)
+                    pred_node = slicer.util.getFirstNodeByName(pred_node_name)
+                    
+                    if pred_node:
+                        # Find predicted nt
+                        for i in range(pred_node.GetNumberOfControlPoints()):
+                            label = pred_node.GetNthControlPointLabel(i)
+                            if 'pred_nt' in label:
+                                pred_nt = self.getPoint(pred_node, i)
+                                nt_error = np.linalg.norm(pred_nt - true_nt)
+                                
+                                self.storeMeasurement("ERROR: nt ({0})".format(sex), nt_error, "mm", is_summary=True)
+                                
+                                # Update coordinate with true value
+                                coord_key = "nt ({0})".format(sex)
+                                if coord_key in self.all_coordinates:
+                                    self.all_coordinates[coord_key]["true"] = true_nt
+                                
+                                errors.append("nt error ({0}): {1:.2f} mm".format(sex, nt_error))
+                                print("✅ nt error for {0}: {1:.2f} mm".format(sex, nt_error))
+                                break
+            except ValueError:
+                print("⚠️ True nasion tip (nt) landmark not found")
             
             self.step5StatusLabel.setText("Status: ✅ Errors calculated!")
             self.step5StatusLabel.setStyleSheet("color: green; font-weight: bold;")
             
             self.updateResultsTables()
+
+            if errors:
+                msg = qt.QMessageBox()
+                msg.setIcon(qt.QMessageBox.Information)
+                msg.setText("Prediction Errors Calculated")
+                msg.setInformativeText("\n".join(errors))
+                msg.setWindowTitle("Validation Results")
+                msg.exec_()
+            else:
+                slicer.util.messageBox("No errors could be calculated. Check that true landmarks exist.")
             
-            msg = qt.QMessageBox()
-            msg.setIcon(qt.QMessageBox.Information)
-            msg.setText("Prediction Errors Calculated")
-            msg.setInformativeText("\n".join(errors))
-            msg.setWindowTitle("Validation Results")
-            msg.exec_()
             
         except Exception as e:
             self.step5StatusLabel.setText("Status: ❌ Error - {0}".format(str(e)))
@@ -1213,32 +1819,32 @@ class PurkaitSinghGUI(qt.QWidget):
     def onCopyCoordinates(self):
         """Copy coordinates table to clipboard"""
         try: 
-            if not self. all_coordinates:
+            if not self.all_coordinates:
                 slicer.util.warningDisplay("No coordinates available to copy. Please run the prediction first.")
                 return
             
             # Create tab-separated values (TSV) format with headers
             export_text = "Landmark\tPredicted X\tPredicted Y\tPredicted Z\tTrue X\tTrue Y\tTrue Z\t3D Error (mm)\n"
             
-            for landmark_name, coords in sorted(self. all_coordinates.items()):
+            for landmark_name, coords in sorted(self.all_coordinates.items()):
                 pred = coords["predicted"]
                 true_coords = coords.get("true", None)
                 
                 if true_coords is not None: 
                     # Calculate 3D error
                     error_3d = np.linalg.norm(pred - true_coords)
-                    # ✅ FIXED - NO SPACES in any format specifiers
-                    export_text += "{0}\t{1:. 2f}\t{2:.2f}\t{3:.2f}\t{4:.2f}\t{5:.2f}\t{6:.2f}\t{7:.2f}\n".format(
+                    # Format each value separately to avoid format specifier issues
+                    export_text += "{0}\t{1:.2f}\t{2:.2f}\t{3:.2f}\t{4:.2f}\t{5:.2f}\t{6:.2f}\t{7:.2f}\n".format(
                         landmark_name,
-                        pred[0], pred[1], pred[2],
-                        true_coords[0], true_coords[1], true_coords[2],
-                        error_3d
+                        float(pred[0]), float(pred[1]), float(pred[2]),
+                        float(true_coords[0]), float(true_coords[1]), float(true_coords[2]),
+                        float(error_3d)
                     )
                 else:
-                    # ✅ FIXED - NO SPACES here either
+                    # No true coordinates available
                     export_text += "{0}\t{1:.2f}\t{2:.2f}\t{3:.2f}\tN/A\tN/A\tN/A\tN/A\n".format(
                         landmark_name,
-                        pred[0], pred[1], pred[2]
+                        float(pred[0]), float(pred[1]), float(pred[2])
                     )
             
             # Copy to clipboard
@@ -1249,6 +1855,8 @@ class PurkaitSinghGUI(qt.QWidget):
             slicer.util.showStatusMessage("Coordinates copied!", 3000)
             
         except Exception as e: 
+            import traceback
+            traceback.print_exc()
             slicer.util.errorDisplay("Failed to copy coordinates: {0}".format(str(e)))
     
     def onPrevButtonClicked(self):
@@ -1270,4 +1878,6 @@ class PurkaitSinghGUI(qt.QWidget):
 # Create and show the widget
 widget = PurkaitSinghGUI()
 widget.show()
+
+
 ```
