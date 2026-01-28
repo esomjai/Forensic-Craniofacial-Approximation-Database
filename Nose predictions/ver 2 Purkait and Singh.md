@@ -268,11 +268,18 @@ To use the regression equations by Purkait and Singh (2024)[^2] to predict soft 
 
 Default FSTT values:
 
-sn': Male = 11.61±1.6mm, Female = 10.27±10.62mm, Non-sex = 13.5±3.5mm (Purkait & Singh 2024[^2]; Hona et al. 2024[^11])
-n': Male = 5.02±0.99mm, Female = 3.97±0.92mm, Non-sex = 6.0±1.5mm (Purkait & Singh 2024[^2]; Hona et al. 2024[^11])
+| Study | FSTT | Mean Value (in mm) | Standard deviation (in mm) |
+|------------|-------------|-------|----------------|
+| Hona et al. (2024) | n-se' | 6 | SD: ±1.5 |
+| Hona et al. (2024) | sn-ss | 13.5 | SD: ±3.5 |
+| Purkait and Singh (2024) - male | sn-ss | 11.61 | SD: ±1.6 |
+| Purkait and Singh (2024) - female | sn-ss | 10.27 | SD: ±10.62 |
+| Purkait and Singh (2024) - male | n-n'/se' | 5.02 | SD: ±0.99 |
+| Purkait and Singh (2024) - female | n-n'/se' | 3.97 | SD: ±0.92 |
 
 
-[!NOTE] This code requires the guide lines created in the previous "Hard tissue measurements" step.
+> [!IMPORTANT]  
+This code requires the guide lines created in the previous "Hard tissue measurements" step.
 
 
 <details>
@@ -1064,30 +1071,33 @@ print("\n✅ All measurements created!")
 - From the FSTT GUI: `sn'_FSTT_male/female/nonsex` in `pred_FSTT_sn` and `n'_FSTT_male/female/nonsex` in `pred_FSTT_n`
 - Visualization lines if enabled: `ANS_perp_{sex}`, `ANS_to_prn_{sex}`, `n_to_nt_{sex}`, `prn_to_nt_{sex}`
 What can you expect as the outputs from the previous codes? There are still a few pseudo-lines to ignore when copying the measurements as described in [this guide](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/004_Copy%20measurements%20to%20clipboard.md#code-to-copy-linear-measurements). 
-We will show an example: 
 
+
+
+We will show an example: 
 
 
 <details>
 <summary> Everything was enabled, both male and female predictions, with FSTT option for Non-sex specific </summary>
+
 | Patient ID | Measurement | Value | Notes/Comments |
-|--------|-------------|-------|------------|
+|------------|-------------|-------|----------------|
 | (none) | FHP guide | 70 | ❌ - not a real measurement |
-| (none) | st n guide | 70 |❌ - not a real measurement |
-| (none) | st rhi guide | 70 |❌ - not a real measurement |
-| (none) | st sn guide | 70 |❌ - not a real measurement |
+| (none) | st n guide | 70 | ❌ - not a real measurement |
+| (none) | st rhi guide | 70 | ❌ - not a real measurement |
+| (none) | st sn guide | 70 | ❌ - not a real measurement |
 | (none) | AB | 28.48 | |
 | (none) | CD | 14.24 | |
 | (none) | baseline | 49.61 | |
 | (none) | n to rhi | 19.76 | |
 | (none) | rhi to baseline | 9.33 | |
 | (none) | ANS_perp_male | 60 | ❌ - not a real measurement |
-| (none) | ANS_to_prn_male | 22.33 | 
+| (none) | ANS_to_prn_male | 22.33 | |
 | (none) | n_to_nt_male | 51.7 | |
-| (none) | prn_to_nt_male | 22.33 ||
+| (none) | prn_to_nt_male | 22.33 | |
 | (none) | ANS_perp_female | 60 | ❌ - not a real measurement |
 | (none) | ANS_to_prn_female | 20.86 | |
-| (none) | n_to_nt_female | 48.41 |  |
+| (none) | n_to_nt_female | 48.41 | |
 | (none) | prn_to_nt_female | 20.86 | |
 | (none) | error_prn_male | 9.2 | |
 | (none) | error_nt_male | 22.08 | |
