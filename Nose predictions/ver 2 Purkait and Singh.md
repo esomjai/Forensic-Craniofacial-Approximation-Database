@@ -1063,51 +1063,53 @@ print("\n✅ All measurements created!")
 - From the nasal prediction GUI: `pred_prn_male/female` and `pred_nt_male/female` in `pred_soft_tissue_male/female` nodes
 - From the FSTT GUI: `sn'_FSTT_male/female/nonsex` in `pred_FSTT_sn` and `n'_FSTT_male/female/nonsex` in `pred_FSTT_n`
 - Visualization lines if enabled: `ANS_perp_{sex}`, `ANS_to_prn_{sex}`, `n_to_nt_{sex}`, `prn_to_nt_{sex}`
-What can you expect as the outputs from the previous codes? We deleted a few extra lines with the **Remove helper lines** button, but there are still a few pseudo-lines to ignore when copying the measurements as described in [this guide](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/004_Copy%20measurements%20to%20clipboard.md#code-to-copy-linear-measurements). 
+What can you expect as the outputs from the previous codes? There are still a few pseudo-lines to ignore when copying the measurements as described in [this guide](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/004_Copy%20measurements%20to%20clipboard.md#code-to-copy-linear-measurements). 
 We will show an example: 
 
 
 
 <details>
-<summary> Everything was enabled, both male and female predictions </summary>
+<summary> Everything was enabled, both male and female predictions, with FSTT option for Non-sex specific </summary>
+| Patient ID | Measurement | Value | Notes/Comments |
+|--------|-------------|-------|------------|
+| (none) | FHP guide | 70 | ❌ - not a real measurement |
+| (none) | st n guide | 70 |❌ - not a real measurement |
+| (none) | st rhi guide | 70 |❌ - not a real measurement |
+| (none) | st sn guide | 70 |❌ - not a real measurement |
+| (none) | AB | 28.48 | |
+| (none) | CD | 14.24 | |
+| (none) | baseline | 49.61 | |
+| (none) | n to rhi | 19.76 | |
+| (none) | rhi to baseline | 9.33 | |
+| (none) | ANS_perp_male | 60 | ❌ - not a real measurement |
+| (none) | ANS_to_prn_male | 22.33 | 
+| (none) | n_to_nt_male | 51.7 | |
+| (none) | prn_to_nt_male | 22.33 ||
+| (none) | ANS_perp_female | 60 | ❌ - not a real measurement |
+| (none) | ANS_to_prn_female | 20.86 | |
+| (none) | n_to_nt_female | 48.41 |  |
+| (none) | prn_to_nt_female | 20.86 | |
+| (none) | error_prn_male | 9.2 | |
+| (none) | error_nt_male | 22.08 | |
+| (none) | error_prn_female | 9.75 | |
+| (none) | error_nt_female | 21.23 | |
+| (none) | error_sn'_FSTT_male | 27.56 | |
+| (none) | error_sn'_FSTT_female | 26.24 | |
+| (none) | error_sn'_FSTT_nonsex | 29.44 | |
+| (none) | error_n'_FSTT_male | 16.53 | |
+| (none) | error_n'_FSTT_female | 15.58 | |
+| (none) | error_n'_FSTT_nonsex | 17.43 | |
+| (none) | n-n' | 12.11 | |
+| (none) | rhi-rhi' | 19.04 | |
+| (none) | al-al | 43.76 | |
+| (none) | nb-nb | 42.16 | |
+| (none) | X-Y | 5.61 | |
+| (none) | soft n-nt | 55.83 | |
+| (none) | prn perp baseline | 25.19 | |
+| (none) | soft rhi'-prn-sn' | 128.36 | |
+| (none) | prn-sn'-nt | 21.3 | |
+| (none) | al-prn-al | 109.86 | |
 
-| Patient ID | Axis/Detail | Value | Notes/Comments |
-|------------|-------------|-------|----------------|
-|            | FHP guide | 70 | ❌ - not a real measurement |
-|            | st n guide | 70 | ❌ - not a real measurement |
-|            | st rhi guide | 70 | ❌ - not a real measurement |
-|            | st sn guide | 70 | ❌ - not a real measurement |
-|            | n to sn FSTT | 53.34 | |
-|            | AB | 27.66 | |
-|            | CD | 10.87 | |
-|            | baseline | 50.29 | |
-|            | n to rhi | 19.44 | |
-|            | rhi to baseline | 10.93 | |
-|            | ANS perpendicular_female | 60 | ❌ - not a real measurement |
-|            | n to pred_sn_female | 53.39 | result of equation bony n-sn for females |
-|            | ANS to pred_prn_female | 21.86 | result of equation baseline to prn for females |
-|            | pred_prn to pred_sn_female | 26.12 | ❌  for visualisation |
-|            | ANS perpendicular_male | 60 | ❌ - not a real measurement |
-|            | n to pred_sn_male | 54.08 | result of equation bony n-sn for males  |
-|            | ANS to pred_prn_male | 22.81 | result of equation baseline to prn for females |
-|            | pred_prn to pred_sn_male | 30.86 | ❌ for visualisation |
-|            | error_sn_male | 23.52 | |
-|            | error_prn_male | 8.38 | |
-|            | error_sn_female | 19.74 | |
-|            | error_prn_female | 9.1 | |
-|            | error_FSTT_sn | 4.65 | |
-|            | error_sn_male_to_FSTT | 19.08 | |
-|            | error_sn_female_to_FSTT | 15.29 | |
-|            | n-n' | 6.17 | |
-|            | rhi-rhi' | 2.27 | |
-|            | al-al | 34.54 | |
-|            | nb-nb | 25.52 | |
-|            | X-Y | 7.39 | |
-|            | soft n-nt | 53.15 | |
-|            | prn perp baseline | 28.99 | |
-|            | soft rhi'-prn-sn' | 83.97 | |
-|            | prn-sn'-nt | 27.18 | |
-|            | al-prn-al | 83.86 | |
 
 *the lines pred_prn to pred_sn_{sex} were left is as this line also appeared on Fig. 1 in Purkait & Singh, 2024[^2]
 
