@@ -875,6 +875,7 @@ Expected view with guiding lines visible. This view is created by adjusting the 
 ``` python
 import slicer
 import qt
+import numpy as np
 
 def getMatchingMarkupsNodes(pred_prefix, true_prefix):
     """Find all markups nodes with specified prefixes."""
@@ -891,7 +892,7 @@ def getLabelToIndexDict(markupsNode):
     """Return a dictionary mapping label to index (strips whitespace)."""
     return {markupsNode.GetNthControlPointLabel(i).strip(): i for i in range(markupsNode.GetNumberOfControlPoints())}
 
-def connectMatchingLandmarks(predNode, trueNode, optionSuffix, color):
+def connectMatchingLandmarks(predNode, trueNode, methodName, color):
     predLabels = getLabelToIndexDict(predNode)
     trueLabels = getLabelToIndexDict(trueNode)
     commonLabels = sorted(set(predLabels).intersection(trueLabels))
@@ -900,80 +901,96 @@ def connectMatchingLandmarks(predNode, trueNode, optionSuffix, color):
         slicer.util.errorDisplay("No matching labels found between the two nodes!")
         return
 
-    # Remove previous lines nodes with this suffix as part of their name
+    # Remove previous error lines for this method
     for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
-        if node.GetName().endswith(optionSuffix):
+        if f"error_{methodName}" in node.GetName():
             slicer.mrmlScene.RemoveNode(node)
 
+    total_error = 0.0
+    errors = []
+    
     for label in commonLabels:
         pred_idx = predLabels[label]
         true_idx = trueLabels[label]
-        pred_pos = [0, 0, 0]
-        true_pos = [0, 0, 0]
-        predNode.GetNthControlPointPosition(pred_idx, pred_pos)
-        trueNode.GetNthControlPointPosition(true_idx, true_pos)
+        pred_pos = np.array(predNode.GetNthControlPointPositionWorld(pred_idx))
+        true_pos = np.array(trueNode.GetNthControlPointPositionWorld(true_idx))
+        
+        # Calculate Euclidean distance
+        error = np.linalg.norm(pred_pos - true_pos)
+        errors.append((label, error))
+        total_error += error
 
-        # ----- PRESERVE SIDE INFO -----
-        # Try to extract "L" or "R" from label or node name
-        side = ""
-        # Prefer explicit _L or _R at the end of label, otherwise check node name
-        if label.endswith("_L") or label.endswith("_R"):
-            side = label[-1]
-        elif " L" in predNode.GetName() or predNode.GetName().endswith("L"):
-            side = "L"
-        elif " R" in predNode.GetName() or predNode.GetName().endswith("R"):
-            side = "R"
-        # Add side info to matching_name if found
-        matching_name = label
-        if side:
-            matching_name += f"_{side}"
-
-        custom_label = f"pred vs true {matching_name} {optionSuffix}"
-        lineNodeName = custom_label.replace(' ', '_')
+        # Create error line
+        lineNodeName = f"error_{methodName}_{label}"
         linesNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", lineNodeName)
-        startIndex = linesNode.AddControlPoint(pred_pos)
-        endIndex = linesNode.AddControlPoint(true_pos)
-        linesNode.SetNthControlPointLabel(startIndex, custom_label + " (pred)")
-        linesNode.SetNthControlPointLabel(endIndex, custom_label + " (true)")
-
+        linesNode.AddControlPointWorld(pred_pos.tolist())
+        linesNode.AddControlPointWorld(true_pos.tolist())
+        
         disp = linesNode.GetDisplayNode()
         if disp:
             disp.SetColor(color)
             disp.SetSelectedColor(color)
             disp.SetActiveColor(color)
             disp.SetOpacity(1.0)
-            disp.SetGlyphSize(6)
-            disp.SetTextScale(2)
+            disp.SetGlyphScale(0)  # Hide spheres at endpoints
+            disp.SetLineThickness(0.5)
         linesNode.SetDisplayVisibility(True)
 
-    slicer.util.infoDisplay(f"Connected {len(commonLabels)} landmark pairs with suffix: {optionSuffix}.")
+    mean_error = total_error / len(commonLabels) if commonLabels else 0
+    
+    # Display results
+    results_text = f"Method: {methodName}\n"
+    results_text += f"Total landmarks: {len(commonLabels)}\n"
+    results_text += f"Mean error: {mean_error:.2f} mm\n\n"
+    results_text += "Individual errors:\n"
+    for label, error in sorted(errors, key=lambda x: x[1], reverse=True):
+        results_text += f"  {label}: {error:.2f} mm\n"
+    
+    print(results_text)
+    slicer.util.infoDisplay(f"Connected {len(commonLabels)} landmark pairs.\nMean error: {mean_error:.2f} mm")
 
 # -------- GUI --------
 w = qt.QWidget()
-w.setWindowTitle('Connect Predicted and True Landmarks')
+w.setWindowTitle('Calculate Prediction Errors')
+w.setWindowFlags(qt.Qt.Tool | qt.Qt.WindowStaysOnTopHint)
 layout = qt.QVBoxLayout(w)
+
+# Info label
+infoLabel = qt.QLabel(
+    "<b>Calculate prediction accuracy:</b><br>"
+    "Select predicted and true soft tissue landmarks,<br>"
+    "then choose which prediction method to evaluate."
+)
+infoLabel.setWordWrap(True)
+layout.addWidget(infoLabel)
 
 # Dropdowns for selecting nodes
 predCombo = qt.QComboBox()
 trueCombo = qt.QComboBox()
-layout.addWidget(qt.QLabel("Predicted landmarks node:"))
+layout.addWidget(qt.QLabel("<b>Predicted landmarks:</b>"))
 layout.addWidget(predCombo)
-layout.addWidget(qt.QLabel("True landmarks node:"))
+layout.addWidget(qt.QLabel("<b>True landmarks:</b>"))
 layout.addWidget(trueCombo)
 
-# Option suffix dropdown
-optionCombo = qt.QComboBox()
-optionCombo.addItems(["Option 1: Side", "Option 2: Mirror", "Option 3: Replace"])
-layout.addWidget(qt.QLabel("Choose your connection option:"))
-layout.addWidget(optionCombo)
+# Method selection - ONLY Mirror and Auto-replace
+methodGroup = qt.QButtonGroup()
+mirrorRadio = qt.QRadioButton("Standard method (LEFT landmarks, mirrored RIGHT)")
+mirrorRadio.setToolTip("Uses LEFT side landmarks only, mirrors for RIGHT side.\nThis is the original validated method from the paper.")
+autoReplaceRadio = qt.QRadioButton("Auto-replace method (for damaged skulls)")
+autoReplaceRadio.setToolTip("Uses LEFT when available, mirrors RIGHT when LEFT is missing.\nUse this when left side of skull is damaged.")
+mirrorRadio.setChecked(True)
+methodGroup.addButton(mirrorRadio, 1)
+methodGroup.addButton(autoReplaceRadio, 2)
 
-# Mapping from dropdown index to suffix and color
-optionSuffixes = ["_side", "_mirror", "_replace"]
-optionColors = [
-    (128/255.0, 0, 0),        # Maroon for Side
-    (227/255.0, 0, 34/255.0), # Cadmium red for Mirror
-    (146/255.0, 0, 10/255.0)  # Sangria for Replace
-]
+layout.addWidget(qt.QLabel("<b>Prediction method used:</b>"))
+layout.addWidget(mirrorRadio)
+layout.addWidget(autoReplaceRadio)
+
+# Method names and colors
+methodInfo = {
+    1: ("Standard", (1.0, 0.0, 1.0)),      # Magenta for standard/mirror
+    2: ("AutoReplace", (0.0, 1.0, 1.0))    # Cyan for auto-replace
+}
 
 def populateDropdowns():
     predCombo.clear()
@@ -990,20 +1007,31 @@ def populateDropdowns():
 
 populateDropdowns()
 
-def onConnect():
+def onCalculate():
     if predCombo.currentIndex < 0 or trueCombo.currentIndex < 0:
-        slicer.util.errorDisplay("Please select both nodes.")
+        slicer.util.errorDisplay("Please select both predicted and true landmark nodes.")
         return
-    optionIndex = optionCombo.currentIndex
-    optionSuffix = optionSuffixes[optionIndex]
-    color = optionColors[optionIndex]
+    
+    methodId = methodGroup.checkedId()
+    if methodId not in methodInfo:
+        slicer.util.errorDisplay("Please select a prediction method.")
+        return
+    
+    methodName, color = methodInfo[methodId]
     predNode = _pred_nodes[predCombo.currentIndex]
     trueNode = _true_nodes[trueCombo.currentIndex]
-    connectMatchingLandmarks(predNode, trueNode, optionSuffix, color)
+    connectMatchingLandmarks(predNode, trueNode, methodName, color)
 
-connectButton = qt.QPushButton("Connect Matching Landmarks")
-connectButton.clicked.connect(onConnect)
-layout.addWidget(connectButton)
+calculateButton = qt.QPushButton("Calculate Errors")
+calculateButton.setStyleSheet("background-color: #E91E63; color: white; font-weight: bold; padding: 8px;")
+calculateButton.clicked.connect(onCalculate)
+layout.addWidget(calculateButton)
+
+# Separator
+separator = qt.QFrame()
+separator.setFrameShape(qt.QFrame.HLine)
+separator.setFrameShadow(qt.QFrame.Sunken)
+layout.addWidget(separator)
 
 refreshButton = qt.QPushButton("Refresh Node List")
 def onRefresh():
@@ -1033,20 +1061,6 @@ What can you expect as the outputs from the previous codes? If you implemented a
 | (unknown)| Z_axis                       | 99.99999999999999      |   ❌ - not a real measurement    |
 | (unknown)| for npp and npa              | 48.365205508381926     |   ❌ - not a real measurement     |
 | (unknown)| for nd                       | 17.179485222206786     |  ❌ - not a real measurement      |
-| (unknown)| pred_vs_true_al'L__side      | 3.581608070287812      |       |
-| (unknown)| pred_vs_true_al'R__side      | 3.6165277325799705     |       |
-| (unknown)| pred_vs_true_ali'L__side     | 29.122710367471708     |       |
-| (unknown)| pred_vs_true_ali'R__side     | 1.4134274882906677     |       |
-| (unknown)| pred_vs_true_alp'L__side     | 3.9144073140475197     |       |
-| (unknown)| pred_vs_true_alp'R__side     | 4.513410733131591      |       |
-| (unknown)| pred_vs_true_als'L__side     | 3.292136314166842      |       |
-| (unknown)| pred_vs_true_als'R__side     | 1.398075976312752      |       |
-| (unknown)| pred_vs_true_nd'__side       | 4.984704597279304      |       |
-| (unknown)| pred_vs_true_npa'__side      | 6.522551845676484      |       |
-| (unknown)| pred_vs_true_npp'__side      | 2.30888653438464       |       |
-| (unknown)| pred_vs_true_pn'__side       | 7.684299347648998      |       |
-| (unknown)| pred_vs_true_se'__side       | 6.023465730135635      |       |
-| (unknown)| pred_vs_true_sn'__side       | 5.098183807797818      |       |
 | (unknown)| pred_vs_true_al'L__mirror    | 3.581608070287812      |       |
 | (unknown)| pred_vs_true_al'R__mirror    | 3.1617959012861565     |       |
 | (unknown)| pred_vs_true_ali'L__mirror   | 29.122710367471708     |       |
