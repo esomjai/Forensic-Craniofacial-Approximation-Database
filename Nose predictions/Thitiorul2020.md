@@ -566,136 +566,12 @@ Original prediction regressions by Thitiorul et al. (2020)[^2]
 
 The pop-up widget will offer you three options: 
 
-#### Option 1 - Side specific
-Choose this option if you want the coordinates for the predictions for bilateral soft tissue landmarks to be computed specifically from the hard tissue landmarks from the same side. E.g. the "x" coordinate of **al'R** will be calculated by 8.967 + 0.125 pr_y + 0.249 iof_R_x - 0.079 zy_R_y; where **iof_R_x** is the x coordinate of the right infraorbital foramen and **zy_R_y** is the y coordinate of the right zygion
 
-<details>
-<summary>Side specific equations for bilateral landmarks</summary>
-
-<table>
-  <tr>
-    <th>Side</th>
-    <th>Landmark</th>
-    <th>Axis</th>
-    <th>Equation</th>
-  </tr>
-  <!-- Left Side -->
-  <tr>
-    <td rowspan="12" style="vertical-align:middle;text-align:center;">Left</td>
-    <td rowspan="3">al'L</td>
-    <td>x</td>
-    <td>7.101 + 0.107 pr_y + 0.316 iof_L_x - 0.076 zy_L_y</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>2.427 - 0.320 nr_z + 0.733 ss_y + 0.129 pr_z</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>2.897 - 0.218 ss_y + 0.464 ss_z + 0.305 pr_z</td>
-  </tr>
-  <tr>
-    <td rowspan="3">als'L</td>
-    <td>x</td>
-    <td>3.167 + 0.174 iof_L_x + 0.097 zy_L_x</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>3.993 + 0.453 ss_y + 0.270 pr_y + 0.072 pr_z</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>3.827 - 0.466 ss_y + 0.674 ss_z + 0.257 iof_L_y</td>
-  </tr>
-  <tr>
-    <td rowspan="3">alp'L</td>
-    <td>x</td>
-    <td>7.885 + 0.060 pr_z + 0.310 iof_L_x</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>4.199 + 0.398 ss_y + 0.224 pr_y + 0.247 iof_y</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>2.054 - 0.419 ss_y + 0.433 ss_z + 0.332 pr_z</td>
-  </tr>
-  <tr>
-    <td rowspan="3">ali'L</td>
-    <td>x</td>
-    <td>4.611 + 0.239 iof_L_x - 0.070 zy_L_y</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>-0.890 + 0.476 pr_y + 0.377 ss_y + 0.089 zy_L_x</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>0.404 + 0.499 ss_y + 0.312 pr_z - 0.119 zy_L_y</td>
-  </tr>
-  <!-- Right Side -->
-  <tr>
-    <td rowspan="12" style="vertical-align:middle;text-align:center;">Right</td>
-    <td rowspan="3">al'R</td>
-    <td>x</td>
-    <td>8.967 + 0.125 pr_y + 0.249 iof_R_x - 0.079 zy_R_y</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>0.338 - 0.264 nr_z + 0.760 ss_y + 0.151 pr_z</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>2.778 - 0.223 ss_y + 0.437 ss_z + 0.325 pr_z</td>
-  </tr>
-  <tr>
-    <td rowspan="3">als'R</td>
-    <td>x</td>
-    <td>3.244 + 0.225 iof_R_x + 0.079 zy_R_x</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>-1.183 + 0.628 pr_y + 0.151 ecm_R_z</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>3.864 - 0.499 ss_y + 0.685 ss_z + 0.350 iof_R_y</td>
-  </tr>
-  <tr>
-    <td rowspan="3">alp'R</td>
-    <td>x</td>
-    <td>12.069 + 0.045 pr_z + 0.207 iof_R_x</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>6.126 + 0.626 ss_y + 0.323 iof_R_y</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>2.578 - 0.404 ss_y + 0.403 ss_z + 0.350 pr_z</td>
-  </tr>
-  <tr>
-    <td rowspan="3">ali'R</td>
-    <td>x</td>
-    <td>6.729 + 0.100 pr_y + 0.165 iof_R_x - 0.062 zy_R_y</td>
-  </tr>
-  <tr>
-    <td>y</td>
-    <td>-2.325 + 0.504 pr_y + 0.345 ss_y + 0.112 zy_R_x</td>
-  </tr>
-  <tr>
-    <td>z</td>
-    <td>6.363 - 0.161 ss_y + 0.468 ss_z + 0.350 pr_z</td>
-  </tr>
-</table>
-
-</details>
-
-#### Option 2 - As original paper, assuming symmetry
+#### Option 1 - As original paper, assuming symmetry
 Use this option if your sample does not exhibit significant difference between the left and right. All prediction regressions are created based on the LEFT side measurements and they are then mirrored onto the right side.   
 
 
-#### Option 3 - As original paper, with missing parts
+#### Option 2 - As original paper, with missing parts
 Use this option if your sample does not have the "pair" of all the bilateral landmarks. The script tries to find the missing hard tissue landmarks and substitutes it with their other side equivalent.
 Thitiorul et al. (2020)[^2] states:
 > the left or the right bone landmarks can be used in our equations, interchangeably, if the bone landmarks on one side do not  exist
@@ -990,7 +866,7 @@ Expected view with guiding lines visible. This view is created by adjusting the 
 
 
 ##### Error GUI
-Because there are three different ways to compute the predicted soft tissue landmarks, there is a chance that these methods carry different errors. Due to this, the errors must be distinguished method by method - this is what the next GUI does. You will choose which "collection" of prediction landmarks you wish to compare with the true landmarks and name the error lines accordingly. 
+
 
 
 <details>
