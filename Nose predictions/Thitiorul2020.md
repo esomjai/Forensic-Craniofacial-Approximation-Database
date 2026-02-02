@@ -1048,50 +1048,55 @@ w.raise_()
 </details>
 
 ## Output
-What can you expect as the outputs from the previous codes? If you implemented all three ways of prediction, the method error lines should appear in the same colours and their names should reflect the method as well. There are a few pseudo-measurements that you should NOT treat as measurements in your statistical analysis!
+
+What can you expect as the outputs from the previous codes? The error lines should appear with their names reflecting the prediction method used, and measurement values represent the Euclidean distance between predicted and true landmark positions in millimeters.
 
 [Guide to copy measurements to clipboard](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/004_Copy%20measurements%20to%20clipboard.md#content-summary)
 
-| #ID      | Key                          | Value                  | Notes |
-|----------|------------------------------|------------------------|-------|
-| (unknown)| for nr                       | 19.381815578901055     |    ❌ - not a real measurement    |
-| (unknown)| for ss                       | 11.59593892357838      |  ❌ - not a real measurement      |
-| (unknown)| X_axis                       | 100.0                  |   ❌ - not a real measurement     |
-| (unknown)| Y_axis                       | 99.99999999999999      |   ❌ - not a real measurement     |
-| (unknown)| Z_axis                       | 99.99999999999999      |   ❌ - not a real measurement    |
-| (unknown)| for npp and npa              | 48.365205508381926     |   ❌ - not a real measurement     |
-| (unknown)| for nd                       | 17.179485222206786     |  ❌ - not a real measurement      |
-| (unknown)| pred_vs_true_al'L__mirror    | 3.581608070287812      |       |
-| (unknown)| pred_vs_true_al'R__mirror    | 3.1617959012861565     |       |
-| (unknown)| pred_vs_true_ali'L__mirror   | 29.122710367471708     |       |
-| (unknown)| pred_vs_true_ali'R__mirror   | 29.164215379649683     |       |
-| (unknown)| pred_vs_true_alp'L__mirror   | 3.9144073140475197     |       |
-| (unknown)| pred_vs_true_alp'R__mirror   | 2.8692068379459394     |       |
-| (unknown)| pred_vs_true_als'L__mirror   | 3.292136314166842      |       |
-| (unknown)| pred_vs_true_als'R__mirror   | 0.39251413624947973    |       |
-| (unknown)| pred_vs_true_nd'__mirror     | 4.984704597279304      |       |
-| (unknown)| pred_vs_true_npa'__mirror    | 6.522551845676484      |       |
-| (unknown)| pred_vs_true_npp'__mirror    | 2.30888653438464       |       |
-| (unknown)| pred_vs_true_pn'__mirror     | 7.684299347648998      |       |
-| (unknown)| pred_vs_true_se'__mirror     | 6.023465730135635      |       |
-| (unknown)| pred_vs_true_sn'__mirror     | 5.098183807797818      |       |
-| (unknown)| pred_vs_true_al'L__replace   | 3.581608070287812      |       |
-| (unknown)| pred_vs_true_al'R__replace   | 3.6165277325799705     |       |
-| (unknown)| pred_vs_true_ali'L__replace  | 29.122710367471708     |       |
-| (unknown)| pred_vs_true_ali'R__replace  | 1.4134274882906677     |       |
-| (unknown)| pred_vs_true_alp'L__replace  | 3.9144073140475197     |       |
-| (unknown)| pred_vs_true_alp'R__replace  | 4.513410733131591      |       |
-| (unknown)| pred_vs_true_als'L__replace  | 3.292136314166842      |       |
-| (unknown)| pred_vs_true_als'R__replace  | 1.398075976312752      |       |
-| (unknown)| pred_vs_true_nd'__replace    | 4.984704597279304      |       |
-| (unknown)| pred_vs_true_npa'__replace   | 6.522551845676484      |       |
-| (unknown)| pred_vs_true_npp'__replace   | 2.30888653438464       |       |
-| (unknown)| pred_vs_true_pn'__replace    | 7.684299347648998      |       |
-| (unknown)| pred_vs_true_se'__replace    | 6.023465730135635      |       |
-| (unknown)| pred_vs_true_sn'__replace    | 5.098183807797818      |       |
+| Measurement Type | Name | Value (mm) | Notes |
+|------------------|------|------------|-------|
+| Guide Line | for_nr | 19.6 | ❌ Not a real measurement - helper line for landmark placement |
+| Guide Line | for_ss | 17.95 | ❌ Not a real measurement - helper line for landmark placement |
+| Guide Line | for_npp_and_npa | 47.5 | ❌ Not a real measurement - helper line for landmark placement |
+| Guide Line | for_nd | 16.37 | ❌ Not a real measurement - helper line for landmark placement |
+| Axis Visualization | X_axis | 100 | ❌ Not a real measurement - coordinate system visualization |
+| Axis Visualization | Y_axis | 100 | ❌ Not a real measurement - coordinate system visualization |
+| Axis Visualization | Z_axis | 100 | ❌ Not a real measurement - coordinate system visualization |
+| **Standard Method** | error_Standard_al'L | 3.22 | Left alare prediction error |
+| **Standard Method** | error_Standard_al'R | 5.42 | Right alare prediction error |
+| **Standard Method** | error_Standard_ali'L | 24.43 | Left inferior alar groove prediction error |
+| **Standard Method** | error_Standard_ali'R | 23.43 | Right inferior alar groove prediction error |
+| **Standard Method** | error_Standard_alp'L | 4.52 | Left posterior alar groove prediction error |
+| **Standard Method** | error_Standard_alp'R | 4.87 | Right posterior alar groove prediction error |
+| **Standard Method** | error_Standard_als'L | 3.34 | Left superior alar groove prediction error |
+| **Standard Method** | error_Standard_als'R | 3.53 | Right superior alar groove prediction error |
+| **Standard Method** | error_Standard_nd' | 3.82 | Nasal drop prediction error |
+| **Standard Method** | error_Standard_npa' | 3.45 | N-prn anterior prediction error |
+| **Standard Method** | error_Standard_npp' | 11.45 | N-prn posterior prediction error |
+| **Standard Method** | error_Standard_pn' | 3.67 | Pronasale prediction error |
+| **Standard Method** | error_Standard_se' | 7.05 | Sellion prediction error |
+| **Standard Method** | error_Standard_sn' | 6.62 | Subnasale prediction error |
+| **Auto-Replace Method** | error_AutoReplace_al'L | 3.22 | Left alare prediction error |
+| **Auto-Replace Method** | error_AutoReplace_al'R | 5.42 | Right alare prediction error |
+| **Auto-Replace Method** | error_AutoReplace_ali'L | 24.43 | Left inferior alar groove prediction error |
+| **Auto-Replace Method** | error_AutoReplace_ali'R | 23.43 | Right inferior alar groove prediction error |
+| **Auto-Replace Method** | error_AutoReplace_alp'L | 4.52 | Left posterior alar groove prediction error |
+| **Auto-Replace Method** | error_AutoReplace_alp'R | 4.87 | Right posterior alar groove prediction error |
+| **Auto-Replace Method** | error_AutoReplace_als'L | 3.34 | Left superior alar groove prediction error |
+| **Auto-Replace Method** | error_AutoReplace_als'R | 3.53 | Right superior alar groove prediction error |
+| **Auto-Replace Method** | error_AutoReplace_nd' | 3.82 | Nasal drop prediction error |
+| **Auto-Replace Method** | error_AutoReplace_npa' | 3.45 | N-prn anterior prediction error |
+| **Auto-Replace Method** | error_AutoReplace_npp' | 11.45 | N-prn posterior prediction error |
+| **Auto-Replace Method** | error_AutoReplace_pn' | 3.67 | Pronasale prediction error |
+| **Auto-Replace Method** | error_AutoReplace_se' | 7.05 | Sellion prediction error |
+| **Auto-Replace Method** | error_AutoReplace_sn' | 6.62 | Subnasale prediction error |
+
+
+> [!NOTE]
+> In this example, both methods produced identical results because all LEFT side landmarks were present. You would see differences between the two methods only when LEFT side landmarks are missing and the Auto-Replace method substitutes them with mirrored RIGHT side landmarks.
 
 > [!TIP]
-> This method is to be tested in different populations among various population-affinities, ages and BMI potentially, so make sure you include these additional factors and consider them during statistical analysis.
+> This method is to be tested in different populations among various population-affinities, ages and BMI potentially, so make sure you include these additional factors and consider them during statistical analysis. The **Standard Method** uses LEFT side landmarks only (as validated in the paper), while the **Auto-Replace Method** is useful when LEFT side landmarks are unavailable due to skull damage.
 
 
 # Bibliography
