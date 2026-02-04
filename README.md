@@ -10,7 +10,6 @@ When noticing any errors, please contact me!
 
 This is a work in progress repository, so take everything with a pinch of salt :)
 
-
 > [!IMPORTANT]
 > Please note that these guidelines are the researcher’s interpretation of the cited literature. If you notice any errors or have any questions, please do not hesitate to get in touch at [e.m.somjai@dundee.ac.uk](mailto:e.m.somjai@dundee.ac.uk). 
 
