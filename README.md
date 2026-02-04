@@ -25,28 +25,15 @@ Currently available methodologies for nose approximation and their original pape
 Method name | Method reference | Step-by-step explanation | Graphic User Interface
 -- | -- | -- | --
 Two Tangent | Gerasimow, 1955 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/0b9f33b72407d2e59e15148d74327f73cfa04910/Nose%20predictions/Gerasimow-MaltaisLapointe%20Two%20tangent%20method.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/0b9f33b72407d2e59e15148d74327f73cfa04910/Nose%20predictions/Gerasimow%20Maltais-LaPointe%20GUI.md)
-Threefold ANS | Krogman & Iscan, 1986 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Threefold%20ANS.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/0b9f33b72407d2e59e15148d74327f73cfa04910/Nose%20predictions/Threefold%20ANS%20GUI.md) | 
-Aesthetic Method | Prokopec & Ubelaker, 2002 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Prokopec%26Ubelaker%20Aesthetic%20Method.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/0b9f33b72407d2e59e15148d74327f73cfa04910/Nose%20predictions/Prokopec-Ubelaker%20module.md) | 
-Stephan's Method | Stephan, 2003 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Stephan%202003.md)| [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Stephan%20et%20al%20GUI.md)| 
-The Rynn method | Rynn et al. 2010 |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Rynn's%20(2010)%20method.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Rynn%20GUI.md) | 
-The Tedeschi-Oliviera method | Tedeschi-Oliviera (2016) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Tedeschi-Oliviera%20method.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Tedeschi-Oliviera%20GUI.md) | 
-The Ridel et al. method | Ridel et al. 2018 |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20GUI.md) | 
-The Ryu method | Ryu et al. 2020 |  |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ryu2020.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ryu%20GUI.md) | 
-The Thitiorul method | Thitiorul et al. 2020 |  |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul2020.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul%20(2020)%20GUI.md) | 
-The Purkait and Singh method | Purkait & Singh (2024) |  |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Purkait%20and%20Singh%202024.md) |  [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Purkait%20and%20Singh%202024%20GUI.md) | 
- |  |  |  [link]() |  [link]() | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
- |  |  | 
+Threefold ANS | Krogman & Iscan, 1986 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Threefold%20ANS.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/0b9f33b72407d2e59e15148d74327f73cfa04910/Nose%20predictions/Threefold%20ANS%20GUI.md)
+Aesthetic Method | Prokopec & Ubelaker, 2002 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Prokopec%26Ubelaker%20Aesthetic%20Method.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/0b9f33b72407d2e59e15148d74327f73cfa04910/Nose%20predictions/Prokopec-Ubelaker%20module.md)
+Stephan's Method | Stephan, 2003 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Stephan%202003.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Stephan%20et%20al%20GUI.md)
+The Rynn method | Rynn et al. 2010 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Rynn's%20(2010)%20method.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Rynn%20GUI.md)
+The Tedeschi-Oliviera method | Tedeschi-Oliviera (2016) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Tedeschi-Oliviera%20method.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Tedeschi-Oliviera%20GUI.md)
+The Ridel et al. method | Ridel et al. 2018 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20et%20al.%202018.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ridel%20GUI.md)
+The Ryu method | Ryu et al. 2020 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ryu2020.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Ryu%20GUI.md)
+The Thitiorul method | Thitiorul et al. 2020 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul2020.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul%20(2020)%20GUI.md)
+The Purkait and Singh method | Purkait & Singh (2024) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Purkait%20and%20Singh%202024.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Purkait%20and%20Singh%202024%20GUI.md)
 
 
 
