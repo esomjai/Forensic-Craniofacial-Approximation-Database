@@ -3,7 +3,9 @@
 > [!IMPORTANT]
 > YOU MUST HAVE THE SLICERMORPH EXTENSION INSTALLED IN YOUR 3D SLICER
 
-This code opens a Graphic User Interface in 3D Slicer[^1] guiding through the process of landmark placement and the virtual FSTT cylinder creation. 
+## Contents
+
+The code below opens a Graphic User Interface in 3D Slicer[^1] guiding through the process of landmark placement and the virtual FSTT cylinder creation. 
 
 Landmark definitions are established based on the works of Caple and Stephan (2016)[^2], with additional cephalo- and capulometric pairs from Simpson and Stephan (2008)[^4]. Measurement values are from the 2023 published t-tables by Hona and Stephan (2024)[^3]. 
 
@@ -98,26 +100,33 @@ This file contains all of the aforementioned landmarks with their definitions. Y
 ## What does the code do?
 
 - FHP realignment of CT scan (optional)
+  
 As most landmarks are described with the cranium in the Frankfurt Horizontal Plane, this function re-positions the scan bassed on the left and right porions and the left zygion (probably a misnomer; the inferiormost point on the left orbital rim)
 
 - ROI cropping (optional)
+  
 If the scan includes more structures or unwanted items, this opens Slicer's own module to deal with them
 
 - Bone segmentation (optional)
+  
 In case you wish to create a model segmentation based on Hounsfield Units, this function created one between the thresholding of 300 and the scan's maximum value
 
 - Landmark placement helpers (midpoint, lateral, gonion, orbital)
+  
 For landmarks that are defined as depending on other landmarks or lines, this tool creates guidance to place them mathematically - these would STILL need to be manually adjusted onto bone surfaces.
 
 - Peg generation (model and volume modes)
+  
 The code generates cylinders of the mean reported value of the FSTT at each landmark site, projecting from the bone surface "outwards" based on the landmarks surface environment. Although perpendicularity in in the code, the orientation of these pegs are based on their location (if on the left, points left and is perpendicualr to surface)
 
 
 - Peg adjustment with sliders
+  
 The option to toggle these values between the maximum and minimum standard deviations reported in the literature
 
 
 - Export to multiple formats
+  
 For practitioners who would like to continue the work in a more familiar environment 
 
 
