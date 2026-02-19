@@ -1,5 +1,8 @@
 # Interactive Facial Soft Tissue Thickness Generation Tool
 
+> [!IMPORTANT]
+> YOU MUST HAVE THE SLICERMORPH EXTENSION INSTALLED IN YOUR 3D SLICER
+
 This code opens a Graphic User Interface in 3D Slicer[^1] guiding through the process of landmark placement and the virtual FSTT cylinder creation. 
 
 Landmark definitions are established based on the works of Caple and Stephan (2016)[^2], with additional cephalo- and capulometric pairs from Simpson and Stephan (2008)[^4]. Measurement values are from the 2023 published t-tables by Hona and Stephan (2024)[^3]. 
