@@ -1,8 +1,127 @@
+# Interactive Facial Soft Tissue Thickness Generation Tool
+
+This code opens a Graphic User Interface in 3D Slicer[^1] guiding through the process of landmark placement and the virtual FSTT cylinder creation. 
+
+Landmark definitions are established based on the works of Caple and Stephan (2016)[^2], with additional cephalo- and capulometric pairs from Simpson and Stephan (2008)[^4]. Measurement values are from the 2023 published t-tables by Hona and Stephan (2024)[^3]. 
+
+## Hard tissue (Capulometric) Landmarks
+
+| Label | Full Name | Description | Side |
+|-------|-----------|-------------|------|
+| op | Opisthocranion | Most posterior median point of the occipital bone, instrumentally determined as the greatest chord length from g. Usually above the external occipital protuberance | Midline |
+| v | Vertex | Most superior point of the skull | Midline |
+| g | Glabella | Most projecting anterior median point on lower edge of the frontal bone, on the brow ridge, in between the superciliary arches and above the nasal root. In adults, glabella usually represents the most anterior point of the frontal bone | Midline |
+| n | Nasion | Intersection of the nasofrontal sutures in the median plane | Midline |
+| mn | Midnasale | Point on internasal suture midway between nasion and rhinion | Midline |
+| rhi | Rhinion | Most rostral (end) point on the internasal suture | Midline |
+| ss | Subspinale | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A) | Midline |
+| mp | Midphiltrum | Median point midway between ss and pr | Midline |
+| pr | Prosthion | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim | Midline |
+| id | Infradentale | Median point at the superior tip of the septum between the mandibular central incisors | Midline |
+| sm | Supramentale | Deepest median point in the groove superior to the mental eminence (orthodontic point B) | Midline |
+| pg | Pogonion | Most anterior median point on the mental eminence of the mandible | Midline |
+| me | Menton | Most inferior median point of the mental symphysis (may not be the inferior point on the mandible as the chin is often clefted on the inferior margin) | Midline |
+| gn | Gnathion | Median point halfway between pg and me | Midline |
+| msoL | Mid-supraorbital | Point on the anterior aspect of the superior orbital rim, at a line that vertically bisects the left orbit (left) | Left |
+| msoR | Mid-supraorbital | Point on the anterior aspect of the superior orbital rim, at a line that vertically bisects the right orbit (right) | Right |
+| mioL | Mid-infraorbital | Point on the anterior aspect of the inferior orbital rim, at a line that vertically bisects the orbit (Left) | Left |
+| mioR | Mid-infraorbital | Point on the anterior aspect of the inferior orbital rim, at a line that vertically bisects the orbit (Right) | Right |
+| acL | Alar curvature point | Hard tissue approximation of soft tissue ac, approximately 5 mm lateral to al (Left) | Left |
+| acR | Alar curvature point | Hard tissue approximation of soft tissue ac, approximately 5 mm lateral to al (Right) | Right |
+| goL | Gonion | Point on the rounded margin of the angle of the mandible, bisecting two lines one following vertical margin of ramus and one following horizontal margin of corpus of mandible (Left) | Left |
+| goR | Gonion | Point on the rounded margin of the angle of the mandible, bisecting two lines one following vertical margin of ramus and one following horizontal margin of corpus of mandible (Right) | Right |
+| zyL | Zygion | Instrumentally determined as the most lateral point on the left zygomatic arch zygomatic arch (Left) | Left |
+| zyR | Zygion | Instrumentally determined as the most lateral point on the right zygomatic arch | Right |
+| sCL | SupraCanine | Point on superior alveolar ridge superior to the crown of the Left maxillary canine | Left |
+| sCR | SupraCanine | Point on superior alveolar ridge superior to the crown of the right maxillary canine | Right |
+| iCL | InfraCanine | Point on inferior alveolar ridge inferior to the crown of the left mandibular canine | Left |
+| iCR | InfraCanine | Point on inferior alveolar ridge inferior to the crown of the right mandibular canine | Right |
+| ecm2(s)L | Ectomolare | Most lateral point on the buccal alveolar margin on the maxilla, at the center of the left second molar position. | Left |
+| ecm2(s)R | Ectomolare | Most lateral point on the buccal alveolar margin on the maxilla, at the center of the right second molar position. | Right |
+| ecm2(i)L | Ectomolare | Most lateral point on the buccal alveolar margin on the mandible, at the center of the left second molar position. | Left |
+| ecm2(i)R | Ectomolare | Most lateral point on the buccal alveolar margin on the mandible, at the center of the right second molar position. | Right |
+| mrL | Mid-ramus | Midpoint along the shortest antero-posterior depth of the left  ramus, in the masseteric fossa, and usually close to the level of the level of the occlusal plane | Left |
+| mrR | Mid-ramus | Midpoint along the shortest antero-posterior depth of the right ramus, in the masseteric fossa, and usually close to the level of the level of the occlusal plane | Right |
+| mmbL | MidMandibular Border | Point on the inferior border of the corpus of the left mandible midway between pg and go | Left |
+| mmbR | MidMandibular Border | Point on the inferior border of the corpus of the right mandible midway between pg and go | Right |
+| alL | Alare | The most lateral point on the nasal ala on the left | Left |
+| alR | Alare | The most lateral point on the nasal ala on the right | Right |
+
+This file contains all of the aforementioned landmarks with their definitions. You can download it manually, but the code below allows for not doing that and loading them directly in the Slicer environment.
 
 [FSTT Hard tissue.mrk.json](https://github.com/user-attachments/files/25114784/FSTT.Hard.tissue.mrk.json)
 
+## FSTT Values used in the GUI
+| Landmark Pair | Hard tissue landmark | Soft tissue landmark | Total weighted mean (mm) | SD (mm) |
+|---------------|---------------------|---------------------|-------------------------|---------|
+| op–op' | op | op' | 6 | 2 |
+| v–v' | v | v' | 5 | 1.5 |
+| g–g' | g | g' | 5.5 | 1 |
+| n–se' | n | se' | 6 | 1.5 |
+| mn–mn' | mn | mn' | 4.5 | 1.5 |
+| rhi–rhi' | rhi | rhi' | 3 | 1 |
+| ss–sn' | ss | sn' | 13.5 | 3.5 |
+| mp–mp' | mp | mp' | 11.5 | 2.5 |
+| pr–ls' | pr | ls' | 12 | 3 |
+| id–li' | id | li' | 13.5 | 3 |
+| sm–sm' | sm | sm' | 11 | 2 |
+| pg–pg' | pg | pg' | 11 | 2.5 |
+| gn–gn' | gn | gn' | 7.5 | 2.5 |
+| me–me' | me | me' | 7 | 2.5 |
+| mso–mso' | msoL | mso'L | 7 | 2 |
+|  | msoR | mso'R | 7 | 2 |
+| mio–mio' | mioL | mio'L | 6.5 | 3 |
+|  | mioR | mio'R | 6.5 | 3 |
+| ac–ac' | acL | ac'L | 10 | 3 |
+|  | acR | ac'R | 10 | 3 |
+| go–go' | goL | go'L | 12.5 | 6 |
+|  | goR | go'R | 12.5 | 6 |
+| zy–zy' | zyL | zy'L | 7.5 | 3 |
+|  | zyR | zy'R | 7.5 | 3 |
+| sC–sC' | sCL | sC'L | 10.5 | 2.5 |
+|  | sCR | sC'R | 10.5 | 2.5 |
+| iC–iC' | iCL | iC'L | 11 | 2.5 |
+|  | iCR | iC'R | 11 | 2.5 |
+| ecm2–sM2' | ecm2(s)L | sM2'L | 26 | 7 |
+|  | ecm2(s)R | sM2'R | 26 | 7 |
+| ecm2–iM2' | ecm2(i)L | iM2'L | 22 | 6.5 |
+|  | ecm2(i)R | iM2'R | 22 | 6.5 |
+| mr–mr' | mrL | mr'L | 19.5 | 5 |
+|  | mrR | mr'R | 19.5 | 5 |
+| mmb–mmb' | mmbL | mmb'L | 11 | 4 |
+|  | mmbR | mmb'R | 11 | 4 |
 
-Code: 
+
+## What does the code do?
+
+- FHP realignment of CT scan (optional)
+As most landmarks are described with the cranium in the Frankfurt Horizontal Plane, this function re-positions the scan bassed on the left and right porions and the left zygion (probably a misnomer; the inferiormost point on the left orbital rim)
+
+- ROI cropping (optional)
+If the scan includes more structures or unwanted items, this opens Slicer's own module to deal with them
+
+- Bone segmentation (optional)
+In case you wish to create a model segmentation based on Hounsfield Units, this function created one between the thresholding of 300 and the scan's maximum value
+
+- Landmark placement helpers (midpoint, lateral, gonion, orbital)
+For landmarks that are defined as depending on other landmarks or lines, this tool creates guidance to place them mathematically - these would STILL need to be manually adjusted onto bone surfaces.
+
+- Peg generation (model and volume modes)
+The code generates cylinders of the mean reported value of the FSTT at each landmark site, projecting from the bone surface "outwards" based on the landmarks surface environment. Although perpendicularity in in the code, the orientation of these pegs are based on their location (if on the left, points left and is perpendicualr to surface)
+
+
+- Peg adjustment with sliders
+The option to toggle these values between the maximum and minimum standard deviations reported in the literature
+
+
+- Export to multiple formats
+For practitioners who would like to continue the work in a more familiar environment 
+
+
+
+
+<details>
+<summary> Full GUI for FSTT </summary>
 
 
 ```python
@@ -3134,5 +3253,18 @@ print("   - Peg adjustment with sliders")
 print("   - Export to multiple formats")
 
         
-
 ```
+
+
+</details>
+
+
+
+# Bibliography
+
+[^1]: 3D Slicer webpage https://www.slicer.org/
+[^2]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." International Journal of Legal Medicine 130(3): 863-879.
+[^3]: Hona, T. W. P. T. and C. N. Stephan (2024). "Global facial soft tissue thicknesses for craniofacial identification (2023): a review of 140 years of data since Welcker’s first study." International Journal of Legal Medicine 138(2): 519–535.
+[^4]:Stephan, C. N. and E. K. Simpson (2008). "Facial soft tissue depths in craniofacial identification (part I): An analytical review of the published adult data." J Forensic Sci 53(6): 1257–1272.
+
+
