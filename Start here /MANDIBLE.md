@@ -43,7 +43,7 @@ import slicer
 # ============================================================
 
 FHP_LANDMARKS_URL = "https://github.com/user-attachments/files/26058950/FHP_landmarks.json"
-ANATOMICAL_LANDMARKS_URL = "https://github.com/user-attachments/files/26084707/landmarks.json"
+ANATOMICAL_LANDMARKS_URL = "https://github.com/user-attachments/files/26087029/landmarks.mrk.json"
 
 MANUAL_TEMPLATE_URLS = {
     "L Maximum Zygomatic Thickness": "https://github.com/user-attachments/files/26058961/L.Maximum.zygomatic.thickness.Rynn.mrk.json",
