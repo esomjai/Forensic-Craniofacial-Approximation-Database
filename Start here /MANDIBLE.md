@@ -53,7 +53,6 @@ MANUAL_TEMPLATE_URLS = {
 }
 
 MANUAL_DESCRIPTIONS = {
-    "Nasal Breadth": "Maximum width of anterior nasal aperture",
     "R Maximum Zygomatic Thickness": "The thickest point of the RIGHT zygomatic arch",
     "R Minimum Zygomatic Thickness": "The narrowest point of the RIGHT zygomatic arch.",
     "L Maximum Zygomatic Thickness": "The thickest point of the LEFT zygomatic arch",
@@ -302,7 +301,7 @@ def create_linear_measurements():
             ("Biorbital breadth", "ekR", "ekL"),
             ("Left Orbital Breadth", "mfL", "ekL"),
             ("Right Orbital Breadth", "mfR", "ekR"),
-            ("Nasal height", "n", "ns"),
+            ("Nasal Height", "n", "ns"),
             ("Nasal Breadth", "alR", "alL"),
             ("Minimum cranial breadth", "itR", "itL"),
             ("Palatal length", "ol", "pns"),
