@@ -42,10 +42,9 @@ import slicer
 # ============================================================
 
 FHP_LANDMARKS_URL = "https://github.com/user-attachments/files/26058950/FHP_landmarks.json"
-ANATOMICAL_LANDMARKS_URL = "https://github.com/user-attachments/files/26058963/landmarks.json"
+ANATOMICAL_LANDMARKS_URL = "https://github.com/user-attachments/files/26084707/landmarks.json"
 
 MANUAL_TEMPLATE_URLS = {
-    "Nasal Breadth": "https://github.com/user-attachments/files/26058940/Nasal.Breadth.mrk.json",
     "L Maximum Zygomatic Thickness": "https://github.com/user-attachments/files/26058961/L.Maximum.zygomatic.thickness.Rynn.mrk.json",
     "L Minimum Zygomatic Thickness": "https://github.com/user-attachments/files/26058962/L.Minimum.zygomatic.thickness.Rynn.mrk.json",
     "R Maximum Zygomatic Thickness": "https://github.com/user-attachments/files/26058964/R.Maximum.zygomatic.thickness.Rynn.mrk.json",
@@ -259,16 +258,27 @@ def download_and_load_anatomical_landmarks():
 # ============================================================
 
 def create_linear_measurements():
+    
     try:
-        # pick fiducial list that contains some distinctive cranial labels
-        F = find_fiducial_node_with_labels(["n", "gn", "zyL", "zyR"])
+        # Prefer the node named exactly 'landmarks'
+        try:
+            F = slicer.util.getNode("landmarks")
+        except slicer.util.MRMLNodeNotFoundException:
+            F = None
+
+        # Fallback: try to find a fiducial list that looks like the anatomical list
         if not F:
-            # fallback: just first fiducial node
-            nodes = slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode")
-            F = nodes[0] if nodes else None
+            F = find_fiducial_node_with_labels(["n", "gn", "zyL", "zyR"])
 
         if not F:
-            slicer.util.errorDisplay("No anatomical landmarks fiducial node found. Load landmarks.json first.")
+            slicer.util.errorDisplay(
+                "Could not find the anatomical landmarks node.\n"
+                "Please load landmarks.json and make sure the node is named 'landmarks'."
+            )
+            return
+
+        if F.GetClassName() != "vtkMRMLMarkupsFiducialNode":
+            slicer.util.errorDisplay(f"Node 'landmarks' is not a fiducial list (it is {F.GetClassName()}).")
             return
 
         measurements = [
@@ -293,6 +303,7 @@ def create_linear_measurements():
             ("Left Orbital Breadth", "mfL", "ekL"),
             ("Right Orbital Breadth", "mfR", "ekR"),
             ("Nasal height", "n", "ns"),
+            ("Nasal Breadth", "alR", "alL"),
             ("Minimum cranial breadth", "itR", "itL"),
             ("Palatal length", "ol", "pns"),
             ("Palatal breadth", "enmR", "enmL"),
@@ -304,23 +315,40 @@ def create_linear_measurements():
         ]
 
         created = 0
+        skipped = 0
+
         for name, a, b in measurements:
             p1 = get_landmark_point(F, a)
             p2 = get_landmark_point(F, b)
             if p1 is None or p2 is None:
+                skipped += 1
                 continue
+
             lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
             lineNode.SetName(name)
             lineNode.AddControlPoint(p1)
             lineNode.AddControlPoint(p2)
+
+            # Optional usability: hide result until complete (it is complete already, but consistent with manual nodes)
+            try:
+                lineNode.GetMeasurement("length").SetEnabled(False)
+            except Exception:
+                pass
+
             created += 1
 
         # Mandibular body length: midpoint(goL, goR) to pog
         goL = get_landmark_point(F, "goL")
         goR = get_landmark_point(F, "goR")
         pog = get_landmark_point(F, "pog")
+
         if goL is not None and goR is not None and pog is not None:
-            midpoint = [(goL[0] + goR[0]) / 2, (goL[1] + goR[1]) / 2, (goL[2] + goR[2]) / 2]
+            midpoint = [
+                (goL[0] + goR[0]) / 2,
+                (goL[1] + goR[1]) / 2,
+                (goL[2] + goR[2]) / 2,
+            ]
+
             midNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
             midNode.SetName("goR goL midpoint")
             midNode.AddControlPoint(midpoint[0], midpoint[1], midpoint[2])
@@ -330,8 +358,14 @@ def create_linear_measurements():
             lineNode.AddControlPoint(pog)
             lineNode.AddControlPoint(midpoint)
             created += 1
+        else:
+            skipped += 1
 
-        slicer.util.delayDisplay(f"Created {created} automatic linear measurement line nodes.")
+        slicer.util.delayDisplay(
+            f"Created {created} automatic linear measurement line nodes.\n"
+            f"Skipped {skipped} (missing landmarks)."
+        )
+
     except Exception as e:
         slicer.util.errorDisplay(f"Failed to create linear measurements:\n{e}")
 
@@ -386,58 +420,61 @@ def create_mental_angle():
         slicer.util.errorDisplay(f"Failed to create Mental angle:\n{e}")
 
 def create_empty_manual_measurement_nodes():
+    
     try:
-        # Load templates (style presets); if they fail, we'll still create nodes
-        for nodeName, url in MANUAL_TEMPLATE_URLS.items():
-            try:
-                filename = os.path.basename(url).replace("%20", " ")
-                path = download_file(url, filename)
-                slicer.util.loadMarkups(path)
-            except Exception as inner_e:
-                print(f"Template load failed for '{nodeName}': {inner_e}")
-
-        # Ensure required nodes exist exactly with the names we want
-        required = [
-            "Nasal Breadth",
-            "R Maximum Zygomatic Thickness",
-            "R Minimum Zygomatic Thickness",
-            "L Maximum Zygomatic Thickness",
-            "L Minimum Zygomatic Thickness",
-            "Ramus Breadth",
+        manualMeasurements = [
+            ("R Maximum Zygomatic Thickness", "The thickest point of the RIGHT zygomatic arch"),
+            ("R Minimum Zygomatic Thickness", "The narrowest point of the RIGHT zygomatic arch."),
+            ("L Maximum Zygomatic Thickness", "The thickest point of the LEFT zygomatic arch"),
+            ("L Minimum Zygomatic Thickness", "The narrowest point of the LEFT zygomatic arch."),
+            ("Ramus Breadth", "The narrowest point of the LEFT ramus of the mandible."),
         ]
 
+        # Index existing line nodes by name
         existing = {n.GetName(): n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode")}
 
-        for name in required:
+        created = 0
+        reused = 0
+
+        for name, desc in manualMeasurements:
             lineNode = existing.get(name)
             if not lineNode:
                 lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
                 lineNode.SetName(name)
+                created += 1
+            else:
+                reused += 1
 
-            # Apply description
-            desc = MANUAL_DESCRIPTIONS.get(name, "")
-            if desc:
-                try:
-                    lineNode.SetDescription(desc)
-                except Exception:
-                    pass
+            # Ensure the line is EMPTY (remove any existing control points)
+            for i in range(lineNode.GetNumberOfControlPoints() - 1, -1, -1):
+                lineNode.RemoveNthControlPoint(i)
+
+            # Set description (shows in Data module, and can be used as guidance)
+            try:
+                lineNode.SetDescription(desc)
+            except Exception:
+                pass
 
             # Improve usability
             lineNode.CreateDefaultDisplayNodes()
             dn = lineNode.GetDisplayNode()
             if dn:
                 dn.SetGlyphTypeFromString("CrossDot2D")
+                dn.SetPointLabelsVisibility(False)
+                dn.SetPropertiesLabelVisibility(True)
 
-            # Hide measurement result until finished placing points
+            # Hide measurement result until 2 points are placed (optional)
             try:
                 lineNode.GetMeasurement("length").SetEnabled(False)
             except Exception:
                 pass
 
         slicer.util.delayDisplay(
-            "Manual measurement line nodes ready.\n"
-            "Select each line in the Markups module and place 2 points."
+            f"Manual measurement line nodes ready.\n"
+            f"Created: {created}, already existed: {reused}\n"
+            "Now place 2 points on each line in the Markups module."
         )
+
     except Exception as e:
         slicer.util.errorDisplay(f"Failed to create manual measurement nodes:\n{e}")
 
@@ -589,7 +626,6 @@ def build_gui():
 
     manualText = qt.QLabel(
         "Manual lines to fill (place 2 points each):\n"
-        "• Nasal Breadth\n"
         "• R Maximum Zygomatic Thickness\n"
         "• R Minimum Zygomatic Thickness\n"
         "• L Maximum Zygomatic Thickness\n"
@@ -622,4 +658,5 @@ def build_gui():
 
 # Run
 build_gui()
+
 ```
