@@ -157,6 +157,154 @@ transform2.SetAndObserveTransformNodeID(transform3.GetID())
 slicer.vtkSlicerTransformLogic().hardenTransform(V)
 
 ```
+
+Or, for a more precise re-orientation, use 4 points: 
+[FHP4.mrk.json](https://github.com/user-attachments/files/26278568/FHP4.mrk.json)
+
+
+```python
+import numpy
+import vtk
+import slicer
+
+scene = slicer.mrmlScene
+
+# Function to find landmarks by label in ANY fiducial node in the scene
+def find_landmarks_in_scene(required_labels):
+    """
+    Search through all fiducial nodes in the scene for the required landmarks.
+    Returns a dict with landmark coordinates, or raises error if not found.
+    
+    Args:
+        required_labels: list of label names to find (e.g., ['poR', 'poL', 'orR', 'orL'])
+    
+    Returns:
+        dict with structure: {'poR': [x,y,z], 'poL': [x,y,z], 'orR': [x,y,z], 'orL': [x,y,z]}
+    """
+    landmarks = {label: None for label in required_labels}
+    fiducial_node = None
+    
+    # Search through all markup fiducial nodes in the scene
+    markup_nodes = slicer.util.getNodesByClass('vtkMRMLMarkupsFiducialNode')
+    
+    if not markup_nodes:
+        raise ValueError("No fiducial markup nodes found in the scene! Please load your landmarks first.")
+    
+    for markup in markup_nodes:
+        for i in range(markup.GetNumberOfControlPoints()):
+            label = markup.GetNthControlPointLabel(i)
+            if label in required_labels:
+                coords = [0, 0, 0]
+                markup.GetNthControlPointPosition(i, coords)
+                landmarks[label] = coords
+                fiducial_node = markup
+    
+    # Check if all required landmarks were found
+    missing = [label for label in required_labels if landmarks[label] is None]
+    if missing:
+        raise ValueError(f"Could not find landmarks: {missing}. Available landmarks in scene:\n{[markup.GetNthControlPointLabel(i) for markup in markup_nodes for i in range(markup.GetNumberOfControlPoints())]}")
+    
+    return landmarks, fiducial_node
+
+# Required landmarks
+required_labels = ['poR', 'poL', 'orR', 'orL']
+
+try:
+    landmarks, F = find_landmarks_in_scene(required_labels)
+    print(f"Found landmarks: {list(landmarks.keys())}")
+except ValueError as e:
+    print(f"Error: {e}")
+    raise
+
+# Get volume to transform
+V = getNodesByClass('vtkMRMLScalarVolumeNode')
+if not V:
+    raise ValueError("No volume found in the scene!")
+V = V[0]
+
+# STEP 1: Yaw rotation - align the porions (left-right) to the LR axis
+po_R = landmarks['poR']
+po_L = landmarks['poL']
+or_R = landmarks['orR']
+or_L = landmarks['orL']
+
+po_vector = [po_R[0] - po_L[0], po_R[1] - po_L[1], po_R[2] - po_L[2]]
+yaw_angle = -numpy.arctan2(po_vector[1], po_vector[0]) * 180 / numpy.pi
+
+vTransform1 = vtk.vtkTransform()
+vTransform1.RotateZ(yaw_angle)
+
+transform1 = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode')
+transform1.SetMatrixTransformToParent(vTransform1.GetMatrix())
+
+V.SetAndObserveTransformNodeID(transform1.GetID())
+F.SetAndObserveTransformNodeID(transform1.GetID())
+
+# Get updated coordinates after yaw rotation
+po_R = vTransform1.GetMatrix().MultiplyPoint([po_R[0], po_R[1], po_R[2], 0])
+po_L = vTransform1.GetMatrix().MultiplyPoint([po_L[0], po_L[1], po_L[2], 0])
+or_R = vTransform1.GetMatrix().MultiplyPoint([or_R[0], or_R[1], or_R[2], 0])
+or_L = vTransform1.GetMatrix().MultiplyPoint([or_L[0], or_L[1], or_L[2], 0])
+
+print(f"Step 1 (Yaw): Rotated {yaw_angle:.2f}°")
+
+# STEP 2: Roll rotation - align porions in the AP (anterior-posterior) direction
+po_vector = [po_R[0] - po_L[0], po_R[1] - po_L[1], po_R[2] - po_L[2]]
+roll_angle = numpy.arctan2(po_vector[2], po_vector[0]) * 180 / numpy.pi
+
+vTransform2 = vtk.vtkTransform()
+vTransform2.RotateY(roll_angle)
+
+transform2 = slicer.vtkMRMLLinearTransformNode()
+scene.AddNode(transform2)
+transform2.SetMatrixTransformToParent(vTransform2.GetMatrix())
+transform1.SetAndObserveTransformNodeID(transform2.GetID())
+
+# Apply transforms to get updated coordinates
+po_R = vTransform2.GetMatrix().MultiplyPoint([po_R[0], po_R[1], po_R[2], 0])
+po_L = vTransform2.GetMatrix().MultiplyPoint([po_L[0], po_L[1], po_L[2], 0])
+or_R = vTransform2.GetMatrix().MultiplyPoint([or_R[0], or_R[1], or_R[2], 0])
+or_L = vTransform2.GetMatrix().MultiplyPoint([or_L[0], or_L[1], or_L[2], 0])
+
+print(f"Step 2 (Roll): Rotated {roll_angle:.2f}°")
+
+# STEP 3: Pitch rotation - use BOTH orbitales for balanced alignment
+# Calculate midpoint between both orbitales (anterior reference)
+or_midpoint = [(or_R[0] + or_L[0]) / 2, 
+               (or_R[1] + or_L[1]) / 2, 
+               (or_R[2] + or_L[2]) / 2]
+
+# Calculate midpoint between both porions (posterior reference)
+po_midpoint = [(po_R[0] + po_L[0]) / 2, 
+               (po_R[1] + po_L[1]) / 2, 
+               (po_R[2] + po_L[2]) / 2]
+
+# Vector from posterior (porions) to anterior (orbitales)
+po_or_vector = [or_midpoint[0] - po_midpoint[0], 
+                or_midpoint[1] - po_midpoint[1], 
+                or_midpoint[2] - po_midpoint[2]]
+
+pitch_angle = -numpy.arctan2(po_or_vector[2], po_or_vector[1]) * 180 / numpy.pi
+
+vTransform3 = vtk.vtkTransform()
+vTransform3.RotateX(pitch_angle)
+
+transform3 = slicer.vtkMRMLLinearTransformNode()
+scene.AddNode(transform3)
+transform3.SetMatrixTransformToParent(vTransform3.GetMatrix())
+transform2.SetAndObserveTransformNodeID(transform3.GetID())
+
+print(f"Step 3 (Pitch): Rotated {pitch_angle:.2f}°")
+
+# Harden the transform to make it permanent
+slicer.vtkSlicerTransformLogic().hardenTransform(V)
+
+print("✓ Frankfurt Horizontal Plane (FHP) re-alignment complete!")
+print(f"  - Yaw (LR alignment): {yaw_angle:.2f}°")
+print(f"  - Roll (AP alignment): {roll_angle:.2f}°")
+print(f"  - Pitch (balanced bilateral): {pitch_angle:.2f}°")
+
+```
 # FHP options
 
 You can establish the Frankfort Horizontal Plane in 2 ways: using the landmarks you used for the re-orientation of the scan refer back to the top of the document) OR you can create a bit more precise plane with 4 landmarks (adding the right most posterior orbital rim). Whichever you choose and name 'FHP' will be reflected in the prediction equation measurement. Both FHP establishing codes operate with the plane fit command. 
