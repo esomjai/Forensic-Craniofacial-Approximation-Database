@@ -22,7 +22,7 @@ The original method was carried out on clinical CTs on a population of 375 adult
 | 4 | 5 | n | nasion | The junction of the internasal suture with the nasofrontal suture | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
 | 5 | 6 | dL | left dacryion | The junction of the sutures between the frontal, maxillary, and lacrimal bones aroundthe LEFT orbit | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
 | 6 | 7 | dR | right dacryion | The junction of the sutures between the frontal, maxillary, and lacrimal bones around the RIGHT orbit | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 7 | 8 | ekL | left ectoconchion | The most lateral point of the LEFT orbital rim following a line bisecting the orbit from theleft dacryon | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 7 | 8 | ekL | left ectoconchion | The most lateral point of the LEFT orbital rim following a line bisecting the orbit from the left dacryon | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
 | 8 | 9 | ekR | right ectoconchion | The most lateral point of the RIGHT orbital rim following a line bisecting the orbit from the right dacryon | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
 | 9 | 10 | skL | left supraconchion | The highest point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
 | 10 | 11 | skR | right supraconchion | The highest point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
@@ -55,67 +55,130 @@ Illustration of the method:
 > Before you proceed, please make sure you completed the following steps: 
 
 - [ ] The scan has to be re-aligned in the FHP
-- [ ] Allocate landmarks from the https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/bf2eb2f004d371fa623e0c27fb274616083f2718/Eye%20predictions/Guyomarc'h%20lmrks.mrk.json
+- [ ] Landmarks from the [hard tissue landmark file](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/bf2eb2f004d371fa623e0c27fb274616083f2718/Eye%20predictions/Guyomarc'h%20lmrks.mrk.json) have to be allocated - EXCEPT for ekL and ekR , see below
 
 
+### Planes & Guiding lines
+
+Guyomarc'h et al. 2012 [^2] defined 3 anatomical planes as reference for the further steps in their method: The Frankfort Horizontal plane, the sagittal and frontal planes. In addition, the *ectoconchion* landmarks are defined as "The most lateral point of the orbital rim following a line bisecting the orbit from the dacryon"; therefore a helping line from the dacryions for both orbits can be drawn to aid their placement. The following code will execute the creation of the 3 planes and the guiding lines for ectoconchion placement; just copy and paste it in the Python console, then press enter. 
+
+| Plane | Full Name | Definition |
+| :--- | :--- | :--- |
+| FHP | Frankfort Horizontal | Best fit of orR, orL, porR and poL |
+| Sp | Sagittal | Perpendicular to FHP, bisecting n |
+| Fp | Frontal | Perpendicular to Sp, bisecting the dlomR and dlomL |
 
 
-### Profile plane
+| Line | Landmark | Definition | Plane for reference | Direction |
+| :--- | :--- | :--- | :--- | :--- |
+| L orbit bisecting line | dL | line bisecting dL, parallel to FHP to guide ekL placement | FHP | laterally |
+| R orbit bisecting line | dR | line bisecting dR, parallel to FHP to guide ekR placement | FHP | laterally |
 
-Based on landmark availability, the module will offer two options to establish a "middle" profile plane: 
-
-a) INB used by Rynn et al. 2010[^3]
-
-
-b) MSP (midsagittal plane) based on landmark definitions - any landmark already used by the cited literature that is defined as midline - here, it is nasion, prosthion, subspinale, rhinion and acanthion.
-
-
-#### INB Plane
-
-To help with the side profile, we will establish the “INB” plane as defined by Rynn et al. 2010[^3]. 
-
-> a midsagittal plane (INB) which bisected the inion, nasion and bregma
-
-by downloading markups file for this method, allocating the landmarks  and copying and pasting the following code: 
 
 ```python
-#INB plane#
-
-import numpy as np
 import slicer
+import numpy as np
 
-# Get the points from the "hard_tissue_PU" node
-hardTissueNode = slicer.util.getNode('hard_tissue_PU')
-point1 = np.array(hardTissueNode.GetNthControlPointPosition(0))
-point2 = np.array(hardTissueNode.GetNthControlPointPosition(1))
-point3 = np.array(hardTissueNode.GetNthControlPointPosition(2))
+def create_anatomical_references():
+    """
+    Creates all anatomical references with vibrant, contrasting colors for each element.
+    This script is based on your working version.
+    """
+    print("="*60)
+    print("Starting Anatomical Reference Creation (with Colors)")
+    print("="*60)
 
-# Calculate the centroid of the three points (the average position)
-centroid = (point1 + point2 + point3) / 3.0
+    # --- 1. Find the source landmarks node and get WORLD coordinates ---
+    source_fiducials_node = slicer.util.getNode('Guyomarc*')
+    if not source_fiducials_node:
+        slicer.util.errorDisplay("ERROR: Could not find 'Guyomarc*h lmrks'. Please load your landmarks first.")
+        return
+    print(f"✓ Found source landmark node: '{source_fiducials_node.GetName()}'")
 
-# Calculate the normal of the plane defined by the three points
-# This part doesn't need to change
-v1 = point2 - point1
-v2 = point3 - point1
-planeNormal = np.cross(v1, v2)
-planeNormal = planeNormal / np.linalg.norm(planeNormal)
+    required_labels = ['orR', 'orL', 'poR', 'poL', 'n', 'dlomR', 'dlomL', 'dL', 'dR']
+    landmarks = {}
+    for label in required_labels:
+        point_index = source_fiducials_node.GetControlPointIndexByLabel(label)
+        if point_index == -1:
+            slicer.util.errorDisplay(f"ERROR: Landmark '{label}' not found.")
+            return
+        pos = [0, 0, 0]
+        source_fiducials_node.GetNthControlPointPositionWorld(point_index, pos)
+        landmarks[label] = np.array(pos)
+    print("✓ Successfully retrieved all required landmark WORLD positions.")
 
-# Create a new plane node
-newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', 'INB')
+    # --- 2. Create Planes (FHP, Sagittal, Frontal) with Colors ---
+    # FHP - Cyan
+    fhp_points = np.array([landmarks['orR'], landmarks['orL'], landmarks['poR'], landmarks['poL']])
+    centroid = fhp_points.mean(axis=0)
+    _, _, vh = np.linalg.svd(fhp_points - centroid)
+    fhp_normal = vh[2]
+    fhp_plane_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "FHP")
+    fhp_plane_node.SetCenter(centroid)
+    fhp_plane_node.SetNormal(fhp_normal)
+    fhp_plane_node.GetDisplayNode().SetSelectedColor(0.0, 1.0, 1.0) # Cyan
+    print("\n✓ 'FHP' plane created (Color: Cyan).")
 
-# Set the origin of the new plane to the calculated centroid
-newPlaneNode.SetOrigin(centroid)
+    # Sagittal Plane - Magenta (fixed: uses AP direction from or/po midpoints)
+    or_mid = 0.5*(landmarks['orR'] + landmarks['orL'])
+    po_mid = 0.5*(landmarks['poR'] + landmarks['poL'])
 
-# Set the normal of the new plane
-newPlaneNode.SetNormal(planeNormal)
+    # AP direction projected into FHP plane
+    ap_dir = or_mid - po_mid
+    ap_dir = ap_dir - np.dot(ap_dir, fhp_normal) * fhp_normal
+    ap_dir = ap_dir / np.linalg.norm(ap_dir)
 
+    # Sagittal plane contains FHP normal and AP direction => normal is LR-ish
+    sp_normal = np.cross(fhp_normal, ap_dir)
+    sp_normal = sp_normal / np.linalg.norm(sp_normal)
 
+    sagittal_plane_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "Sagittal")
+    sagittal_plane_node.SetCenter(landmarks['n'])
+    sagittal_plane_node.SetNormal(sp_normal)
+    sagittal_plane_node.GetDisplayNode().SetSelectedColor(1.0, 0.0, 1.0) # Magenta
+    print("✓ 'Sagittal' plane created (Color: Magenta).")
+    
+    # Frontal Plane - Yellow
+    midpoint_dlom = (landmarks['dlomR'] + landmarks['dlomL']) / 2.0
+    fp_normal = np.cross(fhp_normal, sp_normal)
+    frontal_plane_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "Frontal")
+    frontal_plane_node.SetCenter(midpoint_dlom)
+    frontal_plane_node.SetNormal(fp_normal)
+    frontal_plane_node.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0) # Yellow
+    print("✓ 'Frontal' plane created (Color: Yellow).")
+
+    # --- 3. Create Orbit Bisecting Lines with Colors ---
+    print("\nCreating orbit bisecting lines with correct lateral orientation and colors...")
+    
+    porion_vector = landmarks['poR'] - landmarks['poL']
+    line_direction = porion_vector - np.dot(porion_vector, fhp_normal) * fhp_normal
+    line_direction /= np.linalg.norm(line_direction)
+
+    # Create L orbit bisecting line - Bright Green
+    line_node_l = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "L orbit bisecting line")
+    line_node_l.AddControlPoint(landmarks['dL'] - line_direction * 50)
+    line_node_l.AddControlPoint(landmarks['dL'] + line_direction * 50)
+    line_node_l.GetDisplayNode().SetSelectedColor(0.0, 1.0, 0.0) # Bright Green
+    print("✓ 'L orbit bisecting line' created (Color: Bright Green).")
+    
+    # Create R orbit bisecting line - Bright Orange
+    line_node_r = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "R orbit bisecting line")
+    line_node_r.AddControlPoint(landmarks['dR'] - line_direction * 50)
+    line_node_r.AddControlPoint(landmarks['dR'] + line_direction * 50)
+    line_node_r.GetDisplayNode().SetSelectedColor(1.0, 0.5, 0.0) # Bright Orange
+    print("✓ 'R orbit bisecting line' created (Color: Bright Orange).")
+    
+    print("\n" + "="*60)
+    print("✓ Script finished. All elements are colored.")
+    print("="*60)
+
+# --- Run the main function ---
+try:
+    create_anatomical_references()
+except Exception as e:
+    slicer.util.errorDisplay(f"An unexpected error occurred: {e}\n\nCheck the Python Console for traceback.")
+    raise e
 ```
-<img src="https://github.com/user-attachments/assets/e651bf90-5d0b-4502-b26a-a53b19de2b9b" width="500">
-
-
-View of the generated INB 
-<img src="https://github.com/user-attachments/assets/5c525822-9a71-4c2b-9b22-18bbd3ef6936" width="500">
 
 
 INB extended via the toggles (dots)
