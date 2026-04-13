@@ -30,18 +30,32 @@ The original method was carried out on clinical CTs on a population of 375 adult
 | 12 | 13 | fmoL | left frontomalare orbitale | The point on the LEFT orbital rim at the junction ofthe sutures between the frontal and zygomatic bones | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
 | 13 | 14 | dlomR | deepest point of the right lateral orbital margin | The deepest point on the LEFT lateral orbital rim | Stephan, 2008 [^5] | hard tissue |
 | 14 | 15 | dlomL | deepest point of the left lateral orbital margin | The deepest point on the RIGHT lateral orbital rim | Stephan, 2008 [^5] | hard tissue |
+| 15 | 16 | 🟦 oaR | right oculus anterius | The most anterior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 16 | 17 | 🟦 oaL | left oculus anterius | The most anterior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 17 | 18 | 🟦 opR | right oculus posterius | The most posterior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 18 | 19 | 🟦 opL | left oculus posterius | The most posterior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 19 | 20 | 🟦 osR | right oculus superius | The most superior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 20 | 21 | 🟦 osL | left oculus superius | The most superior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 21 | 22 | 🟦 oiR | right oculus inferius | The most inferior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 22 | 23 | 🟦 oiL | left oculus inferius | The most inferior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 23 | 24 | 🟦 omL | left oculus mediale | The most medial point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 24 | 25 | 🟦 omR | right oculus mediale | The most medial point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 25 | 26 | 🟦 olL | left oculus laterale | The most lateral point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 26 | 27 | 🟦 olR | right oculus laterale | The most lateral point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
+| 27 | 28 | 🟦 pL | if available, left pupulare | IF DISTINGUISHABLE, Centre of the LEFT pupil | ADDITIONAL | soft tissue |
+| 28 | 29 | 🟦 pR | if available, right pupulare | IF DISTINGUISHABLE, Centre of the RIGHT pupil | ADDITIONAL | soft tissue |
 
-
-
+> [!IMPORTANT]
+> The landmarks with the 🟦 symbol are for reproducing the entire method for validation and not essential to place for applying the eyeball placement for facial approximation.
 
 Illustration of the method: 
+
 
 > [!WARNING]
 > Before you proceed, please make sure you completed the following steps: 
 
 - [ ] The scan has to be re-aligned in the FHP
-- [ ] You should have a Bone and Skin model via segmentation (explained later)
-- [ ] Allocate ALL landmarks from the [hard_tissue_PU.mrk.json](https://github.com/user-attachments/files/22872691/hard_tissue_PU.mrk.json)
+- [ ] Allocate landmarks from the https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/bf2eb2f004d371fa623e0c27fb274616083f2718/Eye%20predictions/Guyomarc'h%20lmrks.mrk.json
 
 
 
