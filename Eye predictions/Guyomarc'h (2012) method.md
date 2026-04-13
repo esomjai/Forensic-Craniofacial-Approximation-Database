@@ -1,32 +1,11 @@
-# The Guyomarc'h et al. (2012) method[^2] 
+# The Guyomarc'h et al. (2012) method [^2] 
 
-The following guide is constructed by the available original study by [Prokopec and Ubelaker, 2002](https://archives.fbi.gov/archives/about-us/lab/forensic-science-communications/fsc/jan2002/prokopec.htm) and its interpretation by Rynn et al, (2010)[^3].
-The original method seems to be done in 2 dimensions on the bony and soft tissue profiles, but Rynn et al. (2010)[^3] also applied it in 3D. This approach is also applied in three dimensions with adjustments to accommodate to such, for example using planes instead of lines and supplementary lines for precision. 
+The following guide is constructed by the available original study by Guyomarc'h et al.(2012)[^2].  
+
+The original method was carried out on clinical CTs on a population of 375 adults. It devised linear regressions to place the most anterior point of the eyeball in 3 dimensions in relation to the bony orbit. 
 
 ## Table of Contents
-*   [Landmarks in this guide](#landmarks-in-this-guide)
-*   [Illustration of the method](#illustration-of-the-method)
-*   [Profile plane](#profile-plane)
-    *   [INB Plane](#inb-plane)
-    *   [MSP Plane](#msp-plane)
-*   [NP plane](#np-plane)
-*   [PT plane](#pt-plane)
-*   [Maximum aperture width](#maximum-aperture-width)
-*   [Choose a number of Planes](#choose-a-number-of-planes)
-*   [Reference lines along the INB and 4/5/6 mirror planes](#reference-lines-along-the-inb-and-456-mirror-planes)
-*   [Reference lines A and B](#reference-lines-a-and-b)
-*   [Intersection points between Line B and the intersection lines](#intersection-points-between-line-b-and-the-intersection-lines)
-*   [Line B Intersection Points](#line-b-intersection-points)
-*   [Optional: Line A Intersections](#optional-line-a-intersections)
-*   [Nasal bone outline landmarks](#nasal-bone-outline-landmarks)
-*   [Soft tissue nose outline landmarks](#soft-tissue-nose-outline-landmarks)
-*   [Optional: Adjusting soft tissue landmarks to profile plane](#optional-adjusting-soft-tissue-landmarks-to-profile-plane)
-*   [Measurement lines](#measurement-lines)
-*   [Nasal bone outline connecting lines & their intersections with Line B](#nasal-bone-outline-connecting-lines--their-intersections-with-line-b)
-*   [Distances between Line A and nose profile & Line A and nasal aperture](#distances-between-line-a-and-nose-profile--line-a-and-nasal-aperture)
-*   [Output](#output)
-*   [Extra codes for more ideas](#extra-codes-for-more-ideas)
-*   [Bibliography](#bibliography)
+
 
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
@@ -34,16 +13,23 @@ The original method seems to be done in 2 dimensions on the bony and soft tissue
 
 
 ## Landmarks in this guide: 
-| Position in code | Position in file | Name in file | Landmark name | Definition                                                                                                                     | Defined by            |
-|------------------|------------------|--------------|---------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------|
-| 0                | 1                | nasion       | nasion        | Intersection of the nasofrontal sutures in the median plane                                                                    | Rynn et al. 2010[^3]      |
-| 1                | 2                | inion        | inion         | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance (not the tip of the protuberance) | Rynn et al. 2010[^3]      |
-| 2                | 3                | bregma       | bregma        | Where the sagittal and coronal sutures meet. Impossible to determine in juvenile skulls with anterior fontanelle, or with complete suture obliteration | Rynn et al. 2010[^3]      |
-| 3                | 4                | prosthion     | prosthion       | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim | Rynn et al. 2010[^3]      |
-| 4                | 5                | subspinale      | subspinale       | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A) | Caple and Stephan 2016 [^6]     |
-| 5                | 6                | rhinion   | rhinion   | Most rostral (end) point on the internasal suture.          |  Rynn et al. 2010[^3] |
-| 6                | 7                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^3]     |
-
+ | Position in code | Position in file | Name in file | Landmark name | Definition | Defined by | Type |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 0 | 1 | poR | right porion | The highest point on the superior margin of the RIGHT external auditory meatus | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 1 | 2 | poL | left porion | The highest point on the superior margin of the LEFT external auditory meatus | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 2 | 3 | orL | left orbitale | The lowest point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 3 | 4 | orR | right orbitale | The lowest point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 4 | 5 | n | nasion | The junction of the internasal suture with the nasofrontal suture | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 5 | 6 | dL | left dacryion | The junction of the sutures between the frontal, maxillary, and lacrimal bones aroundthe LEFT orbit | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 6 | 7 | dR | right dacryion | The junction of the sutures between the frontal, maxillary, and lacrimal bones around the RIGHT orbit | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 7 | 8 | ekL | left ectoconchion | The most lateral point of the LEFT orbital rim following a line bisecting the orbit from theleft dacryon | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 8 | 9 | ekR | right ectoconchion | The most lateral point of the RIGHT orbital rim following a line bisecting the orbit from the right dacryon | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 9 | 10 | skL | left supraconchion | The highest point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 10 | 11 | skR | right supraconchion | The highest point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 11 | 12 | fmoR | right frontomalare orbitale | The point on the RIGHT orbital rim at the junction ofthe sutures between the frontal and zygomatic bones | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 12 | 13 | fmoL | left frontomalare orbitale | The point on the LEFT orbital rim at the junction ofthe sutures between the frontal and zygomatic bones | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
+| 13 | 14 | dlomR | deepest point of the right lateral orbital margin | The deepest point on the LEFT lateral orbital rim | Stephan, 2008 [^5] | hard tissue |
+| 14 | 15 | dlomL | deepest point of the left lateral orbital margin | The deepest point on the RIGHT lateral orbital rim | Stephan, 2008 [^5] | hard tissue |
 
 
 
