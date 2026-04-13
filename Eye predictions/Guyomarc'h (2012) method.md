@@ -2883,9 +2883,11 @@ for i, (nb_name, np_name, mb_suffix, sag_suffix) in enumerate(line_mappings, 1):
 
 ## Bibliography
 
+## Bibliography
+
 [^1]: [Slicer Script Repository](https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html)
-[^2]: 
-[^3]: 
-[^4]: 
-[^5]: 
+[^2]: Guyomarc'h, P., et al. (2012). "Anatomical Placement of the Human Eyeball in the Orbit-Validation Using CT Scans of Living Adults and Prediction for Facial Approximation." Journal of Forensic Sciences 57(5): 1271–1275.
+[^3]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.
+[^4]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
+[^5]: Stephan, C. N. and P. L. Davidson (2008). "The placement of the human eyeball and canthi in craniofacial identification." Journal of Forensic Sciences 53(3): 612–619.
 [^6]: 
