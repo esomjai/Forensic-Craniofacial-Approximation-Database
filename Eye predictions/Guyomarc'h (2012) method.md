@@ -57,6 +57,11 @@ Illustration of the method:
 - [ ] The scan has to be re-aligned in the FHP
 - [ ] Landmarks from the [hard tissue landmark file](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/bf2eb2f004d371fa623e0c27fb274616083f2718/Eye%20predictions/Guyomarc'h%20lmrks.mrk.json) have to be allocated - EXCEPT for ekL and ekR , see below
 
+<img src="https://github.com/user-attachments/assets/195491a5-56b7-40e0-a259-a8cc7f606ff2" width="500">
+
+
+Example of scene when landmarks are allocated (except ekL/R)
+
 
 ### Planes & Guiding lines
 
@@ -74,7 +79,15 @@ Guyomarc'h et al. 2012 [^2] defined 3 anatomical planes as reference for the fur
 | L orbit bisecting line | dL | line bisecting dL, parallel to FHP to guide ekL placement | FHP | laterally |
 | R orbit bisecting line | dR | line bisecting dR, parallel to FHP to guide ekR placement | FHP | laterally |
 
+<img src="https://github.com/user-attachments/assets/45b1d384-5cc9-4432-b5d3-add46fd65fd4" width="500">
 
+Example of how the scene appears after runing the code below. Pleasse note that the ekL/R landmarks were placed on the R/L orbit bisecting lines after the code was executed. 
+
+
+<summary> Plane and orbit bisecting linnes code </summary>
+
+<details>
+	
 ```python
 import slicer
 import numpy as np
@@ -180,8 +193,10 @@ except Exception as e:
     raise e
 ```
 
+</details>
 
-INB extended via the toggles (dots)
+
+### Planes & Guiding lines
 
 #### MSP Plane
 ```python
