@@ -86,7 +86,6 @@ Example of how the scene appears after runing the code below. Pleasse note that 
 
 
 <summary> Plane and orbit bisecting lines code </summary>
-
 <details>
 	
 ```python
@@ -225,11 +224,11 @@ Below are the definitions of all the lines/measurements created via the code bel
 
 
 <img src="https://github.com/user-attachments/assets/6a281256-ee46-4a2a-b631-c2e3de31e991" width="500">
+
 Screenshot after the code below was run, allother lines/planes/landmarks were hidden from visibility. Note the orbital height line positions - as these are defined as the shortest perpendicular distance, their positions may look as if they are not in the orbit. They are still measureing the "correct" length between the superior and inferior orbital margins (marginal lines).
 
 
 <summary> Marginal and OBB/OBH lines code </summary>
-
 <details>
 	
 ```python
@@ -382,12 +381,27 @@ create_lines_and_measurements()
 
 
 ### Applying the regressions of Guyomarc'h et al. (2012)[^2]
+Guyomarc'h et al. (2012)[^2] devised regressions to predict the position of the oa (oculare anterior), which they converted into proportions of the OBB and OBH. Although their research did not differentiate beftween the sides for the regressions, they reported significant differences between the bony orbits, therefore the regressions in the code are side-specific. When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. 
+
+
 
 | Direction of eyeball | Left orbit | Right orbit |
 | :--- | :--- | :--- |
 | Superoinferior | 44.1% of OBH from skL | 44.1% of OBH from skR |
 | Mediolateral | 57.6% of OBB from dL | 57.6% of OBB from dR |
 | Anteroposterior | 51.3% of OBH from dlomL | 51.3% of OBH from dlomR |
+
+
+<summary> Eye model placement code </summary>
+<details>
+	
+```python
+
+
+```
+
+</details>
+
 
 ### NP plane
 May be referred to as NPP - nasion-prosthion plane; defined by Rynn as 
