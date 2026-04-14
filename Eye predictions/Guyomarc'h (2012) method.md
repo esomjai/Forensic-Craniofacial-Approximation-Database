@@ -383,9 +383,18 @@ create_lines_and_measurements()
 
 
 ### Applying the regressions of Guyomarc'h et al. (2012)[^2]
-Guyomarc'h et al. (2012)[^2] devised regressions to predict the position of the oa (oculare anterior), which they converted into proportions of the OBB and OBH. Although their research did not differentiate beftween the sides for the regressions, they reported significant differences between the bony orbits, therefore the regressions in the code are side-specific. When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. 
+Guyomarc'h et al. (2012)[^2] devised regressions to predict the position of the oa (oculare anterior), which they converted into proportions of the OBB and OBH. Although their research did not differentiate beftween the sides for the regressions, they reported significant differences between the bony orbits, therefore the regressions in the code are side-specific. When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
+
+<img width="1393" height="786" alt="image" src="https://github.com/user-attachments/assets/dbe41aab-09e6-4d7e-80cb-ca305e33c9a7" />
+
+Expect this additional window on the right. 
+
+<img width="658" height="288" alt="image" src="https://github.com/user-attachments/assets/547c0cef-daab-4144-a003-433f58fd51ae" />
+
+Illustrating the drop-down menu
 
 
+Sumary of the lengths and directions of the regressions adjusted for side-specific coding: 
 
 | Direction of eyeball | Left orbit | Right orbit |
 | :--- | :--- | :--- |
