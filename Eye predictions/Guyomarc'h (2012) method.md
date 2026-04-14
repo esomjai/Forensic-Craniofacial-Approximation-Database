@@ -86,7 +86,9 @@ Example of how the scene appears after runing the code below. Pleasse note that 
 
 
 <summary> Plane and orbit bisecting lines code </summary>
-<details>	
+
+<details>
+	
 ```python
 import slicer
 import numpy as np
@@ -228,7 +230,9 @@ Screenshot after the code below was run, allother lines/planes/landmarks were hi
 
 
 <summary> Marginal and OBB/OBH lines code </summary>
+
 <details>	
+	
 ```python
 import slicer
 import numpy as np
@@ -391,9 +395,164 @@ Guyomarc'h et al. (2012)[^2] devised regressions to predict the position of the 
 
 
 <summary> Eye model placement code </summary>
-<details>	
-```python
 
+<details>	
+	
+```python
+import slicer
+import numpy as np
+import os
+import urllib.request
+import vtk
+
+# ==============================================================================
+# Bulletproof Eyeball Placement Script
+# ==============================================================================
+#
+# INSTRUCTIONS:
+# 1. Run setup scripts (reorient, planes, lines with OBH/OBB).
+# 2. Choose the eyeball model to place below.
+# 3. Copy and paste this into the Slicer Python console.
+#
+# ==============================================================================
+
+# --- CHOOSE YOUR MODEL HERE ---
+# Options: "Female Left", "Female Right", "Male Left", "Male Right"
+model_to_place = "Female Left"
+
+# ==============================================================================
+
+def unit(v):
+    v = np.array(v, dtype=float)
+    norm = np.linalg.norm(v)
+    if norm < 1e-9: raise ValueError("Cannot normalize a zero-length vector.")
+    return v / norm
+
+def place_eyeball_bulletproof():
+    print("="*60)
+    print(f"Starting Bulletproof Placement for: '{model_to_place}'")
+    print("="*60)
+
+    try:
+        all_models = {
+            "Female Left": "https://drive.google.com/uc?export=download&id=1315fB3yptQpw4TV38re_1oIe4o5k4zQ0",
+            "Female Right": "https://drive.google.com/uc?export=download&id=1wAS1MfkkqEJ_Atj77ByUTs5XIs7zL4pL",
+            "Male Left": "https://drive.google.com/uc?export=download&id=1xksF3VZO-6g2DW-MF5i1LO9ND3wjvWa6",
+            "Male Right": "https://drive.google.com/uc?export=download&id=1RFCfMzDovXy-sxsFAvkm76jgHePj6-ae"
+        }
+        
+        if model_to_place not in all_models:
+            raise ValueError(f"Model key '{model_to_place}' not found.")
+
+        side = '_L' if 'Left' in model_to_place else '_R'
+        side_label = side.replace('_', '')
+        model_url = all_models[model_to_place]
+        eyeball_landmark_to_align = f"oa{side_label}"
+
+        # --- 1. Find Reference Nodes ---
+        print("\n1. Finding reference nodes...")
+        lmk_node = slicer.util.getNode("Guyomarc*")
+        obh_node = slicer.util.getNode(f"OBH{side}")
+        obb_node = slicer.util.getNode(f"OBB{side}")
+        
+        if not all([lmk_node, obh_node, obb_node]):
+            raise ValueError(f"Missing required nodes (Guyomarc*, OBH{side}, OBB{side}).")
+
+        def get_pos(label):
+            idx = lmk_node.GetControlPointIndexByLabel(label)
+            if idx == -1: raise ValueError(f"Landmark '{label}' not found!")
+            pos = [0.0, 0.0, 0.0]
+            lmk_node.GetNthControlPointPositionWorld(idx, pos)
+            return np.array(pos)
+
+        # --- 2. Download and Load Model ---
+        print(f"\n2. Downloading and loading '{model_to_place}'...")
+        scene_path = os.path.join(slicer.app.temporaryPath, f"{model_to_place.replace(' ','_')}.mrb")
+        urllib.request.urlretrieve(model_url, scene_path)
+        
+        nodes_before_load = set(slicer.util.getNodes().values())
+        slicer.util.loadScene(scene_path, {"clear": False})
+        newly_loaded_nodes = list(set(slicer.util.getNodes().values()) - nodes_before_load)
+
+        # --- 3. Find Initial State ---
+        print(f"\n3. Finding model's initial state...")
+        initial_oa_pos, transform_to_modify = None, None
+        for node in newly_loaded_nodes:
+            if node.IsA("vtkMRMLLinearTransformNode") and "EyeTransform" in node.GetName():
+                transform_to_modify = node
+            elif node.IsA("vtkMRMLMarkupsFiducialNode"):
+                idx = node.GetControlPointIndexByLabel(eyeball_landmark_to_align)
+                if idx != -1:
+                    pos = [0.0, 0.0, 0.0]; node.GetNthControlPointPositionWorld(idx, pos)
+                    initial_oa_pos = np.array(pos)
+        
+        if not transform_to_modify: raise ValueError("Could not find 'EyeTransform' in model.")
+        if initial_oa_pos is None: raise ValueError(f"Could not find '{eyeball_landmark_to_align}' in model.")
+
+        # --- 4. Define Deterministic Anatomical Vectors ---
+        print("\n4. Calculating Strict Anatomical Directions...")
+        poR, poL, n = get_pos('poR'), get_pos('poL'), get_pos('n')
+        
+        # Anatomical Right (from Left Porion to Right Porion)
+        vec_right = unit(poR - poL)
+        
+        # Anatomical Anterior (from Mid-Porion to Nasion)
+        vec_anterior = unit(n - (poR + poL)/2.0)
+        vec_anterior = unit(vec_anterior - np.dot(vec_anterior, vec_right) * vec_right) # Make orthogonal
+        
+        # Anatomical Superior (Right cross Anterior = Superior)
+        vec_superior = unit(np.cross(vec_right, vec_anterior))
+
+        # --- 5. Calculate Target via Offset Planes ---
+        print("   Calculating target intersection point...")
+        obh = obh_node.GetLineLengthWorld()
+        obb = obb_node.GetLineLengthWorld()
+
+        # Plane 1: SI. Offset 44.1% OBH DOWNWARDS (Inferior = -Superior) from SK
+        plane_si_normal = vec_superior
+        plane_si_point = get_pos(f'sk{side_label}') - vec_superior * (0.441 * obh)
+
+        # Plane 2: ML. Offset 57.6% OBB LATERALLY from D
+        lateral_dir = -vec_right if side == '_L' else vec_right # Lateral is Left for L, Right for R
+        plane_ml_normal = vec_right
+        plane_ml_point = get_pos(f'd{side_label}') + lateral_dir * (0.576 * obb)
+
+        # Plane 3: AP. Offset 51.3% OBH ANTERIORLY from DLOM
+        plane_ap_normal = vec_anterior
+        plane_ap_point = get_pos(f'dlom{side_label}') + vec_anterior * (0.513 * obh)
+
+        # Solve Intersection
+        A = np.array([plane_si_normal, plane_ml_normal, plane_ap_normal])
+        b = np.array([
+            np.dot(plane_si_normal, plane_si_point),
+            np.dot(plane_ml_normal, plane_ml_point),
+            np.dot(plane_ap_normal, plane_ap_point)
+        ])
+        target_oa_pos = np.linalg.solve(A, b)
+        
+        # --- 6. Apply Translation ---
+        print("\n5. Applying placement transform...")
+        translation_vector = target_oa_pos - initial_oa_pos
+        
+        existing_matrix = vtk.vtkMatrix4x4()
+        transform_to_modify.GetMatrixTransformToParent(existing_matrix)
+        
+        translation_matrix = vtk.vtkMatrix4x4()
+        for i in range(3): translation_matrix.SetElement(i, 3, translation_vector[i])
+        
+        vtk.vtkMatrix4x4.Multiply4x4(translation_matrix, existing_matrix, existing_matrix)
+        transform_to_modify.SetMatrixTransformToParent(existing_matrix)
+
+        slicer.app.layoutManager().threeDWidget(0).threeDView().resetFocalPoint()
+        print(f"\n✓ SUCCESS! '{model_to_place}' placed perfectly.")
+        print("="*60)
+
+    except Exception as e:
+        slicer.util.errorDisplay(f"An unexpected critical error occurred: {e}", 30)
+        raise e
+
+# --- Run ---
+place_eyeball_bulletproof()
 
 ```
 
