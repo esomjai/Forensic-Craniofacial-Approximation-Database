@@ -84,10 +84,9 @@ Guyomarc'h et al. 2012 [^2] defined 3 anatomical planes as reference for the fur
 
 Example of how the scene appears after runing the code below. Pleasse note that the ekL/R landmarks were placed on the R/L orbit bisecting lines after the code was executed. 
 
-
-<summary> Plane and orbit bisecting lines code </summary>
-
 <details>
+<summary>Plane and orbit bisecting lines code</summary>
+
 	
 ```python
 import slicer
