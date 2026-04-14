@@ -85,7 +85,7 @@ Guyomarc'h et al. 2012 [^2] defined 3 anatomical planes as reference for the fur
 Example of how the scene appears after runing the code below. Pleasse note that the ekL/R landmarks were placed on the R/L orbit bisecting lines after the code was executed. 
 
 
-<summary> Plane and orbit bisecting linnes code </summary>
+<summary> Plane and orbit bisecting lines code </summary>
 
 <details>
 	
@@ -197,114 +197,197 @@ except Exception as e:
 </details>
 
 
-### Planes & Guiding lines
+### Marginal lines and bony measurements
 
-#### MSP Plane
+Now that the ectoconchions (ekL/R) have also been placed, the reference lines bisecting the most extreme landmarks can be programmatically created. These are techinically infinite lines, but will be uniformly 75 mm to visualise them - please note that these are NOT measurements. The true measurments will also be created via this code snippet - the OBH (orbital height) and OBB (orbital breadth); which are consequently used in the linear regression to place the "artificial" eye. (LINK)
+Below are the definitions of all the lines/measurements created via the code below:
+
+| Line | Landmark to Bisect | Definition | Plane for Reference | Direction | Defined by |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| SOM_L | skL | superior orbital margin on the left | parallel to FHP | laterally | Stephan, 2008 [^5] |
+| MOM_L | dL | medial orbital margin on the left | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
+| LOM_L | ekL | lateral-most point on the lateral orbital margin on the left | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
+| IOM_L | orL | inferior-most point on the infraorbital margin (orbitale) on the left | parallel to FHP | laterally | Stephan, 2008 [^5] |
+| SOM_R | skR | superior orbital margin on the right | parallel to FHP | laterally | Stephan, 2008 [^5] |
+| MOM_R | dR | medial orbital margin on the right | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
+| LOM_R | ekR | lateral-most point on the lateral orbital margin on the right | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
+| IOM_R | orR | inferior-most point on the infraorbital margin (orbitale) on the right | parallel to FHP | laterally | Stephan, 2008 [^5] |
+| DLOM_L | dlomL | deepest or most posterior margin on the LEFT orbit | parallel to Fp | superoinferiorly | Stephan, 2008 [^5] |
+| DLOM_R | dlomR | deepest or most posterior margin on the RIGHT orbit | parallel to Fp | superoinferiorly | Stephan, 2008 [^5] |
+
+| Abbreviation | Measurement | Original definition | Slicer definition |
+| :--- | :--- | :--- | :--- |
+| OBH_L | left orbital height | Projected vertical distance between skL and orL | perpendicular (shortest) distance between the SOM_L and IOM_L |
+| OBH_R | right orbital height | Projected vertical distance between skR and orR | perpendicular (shortest) distance between the SOM_R and IOM_R |
+| OBB_L | left orbital breadth | Direct distance between ekL and dL, bisecting the LEFT orbit | ekL to dL |
+| OBB_R | right orbital breadth | Direct distance between ekR and dR, bisecting the RIGHT orbit | ekR to dR |
+
+
+
+<img src="https://github.com/user-attachments/assets/6a281256-ee46-4a2a-b631-c2e3de31e991" width="500">
+Screenshot after the code below was run, allother lines/planes/landmarks were hidden from visibility. Note the orbital height line positions - as these are defined as the shortest perpendicular distance, their positions may look as if they are not in the orbit. They are still measureing the "correct" length between the superior and inferior orbital margins (marginal lines).
+
+
+<summary> Marginal and OBB/OBH lines code </summary>
+
+<details>
+	
 ```python
-import numpy as np
 import slicer
+import numpy as np
 
-# --- Configuration ---
+# --- Helper Functions ---
 
-# 1. List of point labels that define the Midsagittal Plane (MSP).
-#    The script will search for these labels in the source node.
-msp_point_labels = ['nasion', 'prosthion', 'subspinale', 'rhinion', 'acanthion']
+def unit(v):
+    """Returns a normalized (unit) vector."""
+    v = np.array(v, dtype=float)
+    norm = np.linalg.norm(v)
+    if norm == 0:
+        raise ValueError("Cannot normalize a zero-length vector.")
+    return v / norm
 
-# 2. The name of the node containing your landmark points.
-source_node_name = 'hard_tissue_PU'
+def get_or_create_line(name):
+    """Finds a line by name or creates a new one, ensuring it's empty."""
+    node = slicer.util.getFirstNodeByName(name, "vtkMRMLMarkupsLineNode")
+    if node is None:
+        node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+    else:
+        node.RemoveAllControlPoints()
+    return node
 
-# 3. The name for the new plane that will be created.
-new_plane_name = 'MSP'
+def line_endpoints_world(lineNode):
+    """Gets the two control points of a line node in world coordinates."""
+    if lineNode.GetNumberOfControlPoints() < 2:
+        raise ValueError(f"Line '{lineNode.GetName()}' does not have 2 control points.")
+    p0, p1 = np.zeros(3), np.zeros(3)
+    lineNode.GetNthControlPointPositionWorld(0, p0)
+    lineNode.GetNthControlPointPositionWorld(1, p1)
+    return p0, p1
 
+def closest_points_between_lines(P0, u, Q0, v):
+    """Calculates the closest points between two infinite lines."""
+    w0 = P0 - Q0
+    a, b, c = np.dot(u,u), np.dot(u,v), np.dot(v,v)
+    d, e = np.dot(u,w0), np.dot(v,w0)
+    denom = a*c - b*b
+    s, t = (b*e - c*d)/denom if abs(denom) > 1e-9 else (-d, 0.0)
+    return P0 + s*u, Q0 + t*v
 
-# --- Main Script ---
+# --- Main Function ---
 
-# Get the source markup fiducials node from the Slicer scene
-try:
-    sourceNode = slicer.util.getNode(source_node_name)
-    if not sourceNode:
-        raise ValueError(f"Node '{source_node_name}' not found.")
-except ValueError as e:
-    slicer.util.errorDisplay(f"Error: {e}")
-    # Stop the script if the node doesn't exist
-    raise
+def create_lines_and_measurements():
+    """
+    Creates all guidance and measurement lines with corrected orientations.
+    - Guidance: SOM, IOM, MOM, LOM, DLOM
+    - Measurement: OBB (ek->d), OBH (shortest dist SOM<->IOM)
+    """
+    print("="*60)
+    print("Creating All Orbital Lines (Guidance + Measurements) - CORRECTED ORIENTATIONS")
+    print("="*60)
 
-# Find the coordinates of the points with the specified labels
-points = []
-found_labels = []
-missing_labels = list(msp_point_labels)
+    try:
+        # --- 1. Find References ---
+        fhp_plane = slicer.util.getNode('FHP')
+        sagittal_plane = slicer.util.getNode('Sagittal')
+        source_fiducials_node = slicer.util.getNode('Guyomarc*')
 
-for i in range(sourceNode.GetNumberOfControlPoints()):
-    label = sourceNode.GetNthControlPointLabel(i)
-    if label in msp_point_labels:
-        pos = sourceNode.GetNthControlPointPosition(i)
-        points.append(list(pos))
-        found_labels.append(label)
-        if label in missing_labels:
-            missing_labels.remove(label)
+        if not all([fhp_plane, sagittal_plane, source_fiducials_node]):
+            raise ValueError("Missing a required reference node (FHP, Sagittal, or Guyomarc*). Run previous script.")
 
-# Check if we found enough points
-if len(points) < 3:
-    slicer.util.errorDisplay(
-        f"Could not find at least 3 of the specified points in '{source_node_name}'.\n"
-        f"Found: {found_labels}\n"
-        f"Missing: {missing_labels}\n"
-        "Cannot calculate a plane."
-    )
-    raise ValueError("Not enough points to define a plane.")
+        # --- 2. Define Correct Anatomical Directions ---
+        print("Defining anatomical direction vectors...")
+        si_direction = unit(np.array(fhp_plane.GetNormal()))
+        lr_direction = unit(np.array(sagittal_plane.GetNormal()))
+        # AP direction must be perpendicular to both SI and LR
+        ap_direction = unit(np.cross(si_direction, lr_direction))
 
-# If some points were missing, show a warning but continue
-if missing_labels:
-    slicer.util.warningDisplay(
-        f"Warning: Could not find all specified points.\n"
-        f"The plane will be calculated using the points that were found: {found_labels}\n"
-        f"Missing points: {missing_labels}"
-    )
+        print(f"  - SI (Up/Down) Direction: {np.round(si_direction, 2)}")
+        print(f"  - LR (Left/Right) Direction: {np.round(lr_direction, 2)}")
+        print(f"  - AP (Front/Back) Direction: {np.round(ap_direction, 2)}")
 
-# Convert the list of points to a NumPy array for calculation
-points = np.array(points)
+        def landmark_world(label):
+            idx = source_fiducials_node.GetControlPointIndexByLabel(label)
+            if idx == -1: raise ValueError(f"Landmark '{label}' not found.")
+            pos = np.zeros(3)
+            source_fiducials_node.GetNthControlPointPositionWorld(idx, pos)
+            return pos
 
-# --- Best-Fit Plane Calculation ---
+        # --- 3. Create Guidance Lines with Corrected Orientations ---
+        print("\nCreating 10 guidance lines with corrected orientations...")
+        lines_to_create = [
+            # Name,  Landmark,  Direction Vector,  Side
+            ('SOM_L', 'skL',   lr_direction, 'L'), # Runs Laterally
+            ('IOM_L', 'orL',   lr_direction, 'L'), # Runs Laterally
+            ('MOM_L', 'dL',    si_direction, 'L'), # Runs Superoinferiorly
+            ('LOM_L', 'ekL',   si_direction, 'L'), # Runs Superoinferiorly
+            ('DLOM_L','dlomL', ap_direction, 'L'), # Runs Anteroposteriorly
 
-# 1. Calculate the centroid of the points (this will be the plane's origin)
-centroid = points.mean(axis=0)
+            ('SOM_R', 'skR',   lr_direction, 'R'), # Runs Laterally
+            ('IOM_R', 'orR',   lr_direction, 'R'), # Runs Laterally
+            ('MOM_R', 'dR',    si_direction, 'R'), # Runs Superoinferiorly
+            ('LOM_R', 'ekR',   si_direction, 'R'), # Runs Superoinferiorly
+            ('DLOM_R','dlomR', ap_direction, 'R'), # Runs Anteroposteriorly
+        ]
+        color_L, color_R, line_len = [1.0, 0.7, 0.2], [0.2, 0.7, 1.0], 75.0
 
-# 2. Center the points by subtracting the centroid
-centered_points = points - centroid
+        for name, lm_label, direction, side in lines_to_create:
+            line_node = get_or_create_line(name)
+            center = landmark_world(lm_label)
+            line_node.AddControlPoint(center - direction * (line_len / 2.0))
+            line_node.AddControlPoint(center + direction * (line_len / 2.0))
+            color = color_L if side == 'L' else color_R
+            line_node.GetDisplayNode().SetSelectedColor(color)
+            line_node.GetDisplayNode().SetColor(color)
+            print(f"  - ✓ Created '{name}'")
 
-# 3. Use Singular Value Decomposition (SVD) to find the best-fit plane.
-#    The normal of the plane is the eigenvector corresponding to the smallest singular value.
-#    In numpy's SVD, this is the last row of the 'vh' matrix.
-_, _, vh = np.linalg.svd(centered_points)
-plane_normal = vh[-1]
+        # --- 4. Create OBB Measurement Lines ---
+        print("\nCreating OBB measurement lines...")
+        obb_l = get_or_create_line("OBB_L")
+        obb_l.AddControlPoint(landmark_world("ekL"))
+        obb_l.AddControlPoint(landmark_world("dL"))
+        print(f"  - ✓ Created 'OBB_L', length = {obb_l.GetLineLengthWorld():.2f} mm")
 
-# --- Create the New Plane in Slicer ---
+        obb_r = get_or_create_line("OBB_R")
+        obb_r.AddControlPoint(landmark_world("ekR"))
+        obb_r.AddControlPoint(landmark_world("dR"))
+        print(f"  - ✓ Created 'OBB_R', length = {obb_r.GetLineLengthWorld():.2f} mm")
 
-# Remove the old plane if it exists, to allow running the script again
-# This uses a safer method that doesn't cause an error if the node doesn't exist.
-oldPlaneNode = slicer.mrmlScene.GetFirstNodeByName(new_plane_name)
-if oldPlaneNode:
-    slicer.mrmlScene.RemoveNode(oldPlaneNode)
+        # --- 5. Create OBH Measurement Lines ---
+        print("\nCreating OBH measurement lines...")
+        for side in ["L", "R"]:
+            som_node, iom_node = slicer.util.getNode(f"SOM_{side}"), slicer.util.getNode(f"IOM_{side}")
+            S0, S1 = line_endpoints_world(som_node)
+            I0, I1 = line_endpoints_world(iom_node)
+            pt_on_som, pt_on_iom = closest_points_between_lines(S0, unit(S1-S0), I0, unit(I1-I0))
+            obh_node = get_or_create_line(f"OBH_{side}")
+            obh_node.AddControlPoint(pt_on_som)
+            obh_node.AddControlPoint(pt_on_iom)
+            print(f"  - ✓ Created 'OBH_{side}', length = {obh_node.GetLineLengthWorld():.2f} mm")
 
-# Create a new plane node
-newPlaneNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', new_plane_name)
+        print("\n" + "="*60)
+        print("✓ Script finished. All lines and measurements created.")
+        print("="*60)
 
-# Set the origin and normal for the new plane
-newPlaneNode.SetOrigin(centroid)
-newPlaneNode.SetNormal(plane_normal)
+    except Exception as e:
+        slicer.util.errorDisplay(f"An error occurred: {e}", 30)
+        raise e
 
-# NOTE: The lines for setting the plane size have been removed for compatibility.
-# You can manually adjust the plane size in the 'Markups' module if needed.
+# --- Run the script ---
+create_lines_and_measurements()
 
-print(f"Successfully created Midsagittal Plane '{new_plane_name}'.")
-print(f"  - Calculated from {len(points)} points: {found_labels}")
-print(f"  - Origin (Centroid): {np.round(centroid, 2)}")
-print(f"  - Normal Vector: {np.round(plane_normal, 2)}")
 
 ```
 
 </details>
 
+
+### Applying the regressions of Guyomarc'h et al. (2012)[^2]
+
+| Direction of eyeball | Left orbit | Right orbit |
+| :--- | :--- | :--- |
+| Superoinferior | 44.1% of OBH from skL | 44.1% of OBH from skR |
+| Mediolateral | 57.6% of OBB from dL | 57.6% of OBB from dR |
+| Anteroposterior | 51.3% of OBH from dlomL | 51.3% of OBH from dlomR |
 
 ### NP plane
 May be referred to as NPP - nasion-prosthion plane; defined by Rynn as 
@@ -2974,7 +3057,7 @@ for i, (nb_name, np_name, mb_suffix, sag_suffix) in enumerate(line_mappings, 1):
 </details>
 
 
-## Bibliography
+
 
 ## Bibliography
 
