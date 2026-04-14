@@ -400,159 +400,164 @@ Guyomarc'h et al. (2012)[^2] devised regressions to predict the position of the 
 	
 ```python
 import slicer
+import qt
 import numpy as np
 import os
 import urllib.request
 import vtk
 
 # ==============================================================================
-# Bulletproof Eyeball Placement Script
-# ==============================================================================
-#
-# INSTRUCTIONS:
-# 1. Run setup scripts (reorient, planes, lines with OBH/OBB).
-# 2. Choose the eyeball model to place below.
-# 3. Copy and paste this into the Slicer Python console.
-#
+# Eyeball Placement Tool GUI (FINAL, GUI Bugs Fixed)
 # ==============================================================================
 
-# --- CHOOSE YOUR MODEL HERE ---
-# Options: "Female Left", "Female Right", "Male Left", "Male Right"
-model_to_place = "Female Left"
+class EyeballPlacementWidget(qt.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Eyeball Placement Tool")
 
-# ==============================================================================
-
-def unit(v):
-    v = np.array(v, dtype=float)
-    norm = np.linalg.norm(v)
-    if norm < 1e-9: raise ValueError("Cannot normalize a zero-length vector.")
-    return v / norm
-
-def place_eyeball_bulletproof():
-    print("="*60)
-    print(f"Starting Bulletproof Placement for: '{model_to_place}'")
-    print("="*60)
-
-    try:
-        all_models = {
+        # --- Data ---
+        self.model_urls = {
             "Female Left": "https://drive.google.com/uc?export=download&id=1315fB3yptQpw4TV38re_1oIe4o5k4zQ0",
             "Female Right": "https://drive.google.com/uc?export=download&id=1wAS1MfkkqEJ_Atj77ByUTs5XIs7zL4pL",
             "Male Left": "https://drive.google.com/uc?export=download&id=1xksF3VZO-6g2DW-MF5i1LO9ND3wjvWa6",
             "Male Right": "https://drive.google.com/uc?export=download&id=1RFCfMzDovXy-sxsFAvkm76jgHePj6-ae"
         }
+
+        # --- UI Layout ---
+        self.mainLayout = qt.QFormLayout(self)
+        self.infoLabel = qt.QLabel("This tool places an eyeball model based on previously created orbital measurements.")
+        self.infoLabel.setWordWrap(True)
         
-        if model_to_place not in all_models:
-            raise ValueError(f"Model key '{model_to_place}' not found.")
-
-        side = '_L' if 'Left' in model_to_place else '_R'
-        side_label = side.replace('_', '')
-        model_url = all_models[model_to_place]
-        eyeball_landmark_to_align = f"oa{side_label}"
-
-        # --- 1. Find Reference Nodes ---
-        print("\n1. Finding reference nodes...")
-        lmk_node = slicer.util.getNode("Guyomarc*")
-        obh_node = slicer.util.getNode(f"OBH{side}")
-        obb_node = slicer.util.getNode(f"OBB{side}")
+        self.modelSelector = qt.QComboBox()
+        # BUG FIX: Convert dict_keys to a list for addItems()
+        self.modelSelector.addItems(list(self.model_urls.keys()))
         
-        if not all([lmk_node, obh_node, obb_node]):
-            raise ValueError(f"Missing required nodes (Guyomarc*, OBH{side}, OBB{side}).")
+        self.placeButton = qt.QPushButton("Download and Place Eyeball")
+        self.statusLabel = qt.QLabel("Ready.")
+        self.statusLabel.setWordWrap(True)
 
-        def get_pos(label):
-            idx = lmk_node.GetControlPointIndexByLabel(label)
-            if idx == -1: raise ValueError(f"Landmark '{label}' not found!")
-            pos = [0.0, 0.0, 0.0]
-            lmk_node.GetNthControlPointPositionWorld(idx, pos)
-            return np.array(pos)
+        self.mainLayout.addRow(self.infoLabel)
+        self.mainLayout.addRow("Select Eyeball Model:", self.modelSelector)
+        self.mainLayout.addRow(self.placeButton)
+        self.mainLayout.addRow("Status:", self.statusLabel)
 
-        # --- 2. Download and Load Model ---
-        print(f"\n2. Downloading and loading '{model_to_place}'...")
-        scene_path = os.path.join(slicer.app.temporaryPath, f"{model_to_place.replace(' ','_')}.mrb")
-        urllib.request.urlretrieve(model_url, scene_path)
+        # --- Connections ---
+        self.placeButton.clicked.connect(self.runPlacement)
+
+    def unit(self, v):
+        v = np.array(v, dtype=float)
+        norm = np.linalg.norm(v)
+        if norm < 1e-9: raise ValueError("Cannot normalize a zero-length vector.")
+        return v / norm
+
+    def get_pos(self, lmk_node, label):
+        idx = lmk_node.GetControlPointIndexByLabel(label)
+        if idx == -1: raise ValueError(f"Anatomical landmark '{label}' not found!")
+        pos = [0.0, 0.0, 0.0]
+        lmk_node.GetNthControlPointPositionWorld(idx, pos)
+        return np.array(pos)
+
+    def runPlacement(self):
+        self.statusLabel.text = "Starting..."
+        slicer.app.processEvents()
         
-        nodes_before_load = set(slicer.util.getNodes().values())
-        slicer.util.loadScene(scene_path, {"clear": False})
-        newly_loaded_nodes = list(set(slicer.util.getNodes().values()) - nodes_before_load)
+        try:
+            model_key = self.modelSelector.currentText
+            side = '_L' if 'Left' in model_key else '_R'
+            side_label = side.replace('_', '')
+            model_url = self.model_urls[model_key]
+            eyeball_landmark_to_align = f"oa{side_label}"
+            
+            # --- 1. Find Reference Nodes ---
+            self.statusLabel.text = "1. Finding reference nodes..."
+            lmk_node = slicer.util.getNode("Guyomarc*")
+            obh_node = slicer.util.getNode(f"OBH{side}")
+            obb_node = slicer.util.getNode(f"OBB{side}")
+            if not all([lmk_node, obh_node, obb_node]):
+                raise ValueError(f"Missing required nodes (Guyomarc*, OBH{side}, OBB{side}).")
 
-        # --- 3. Find Initial State ---
-        print(f"\n3. Finding model's initial state...")
-        initial_oa_pos, transform_to_modify = None, None
-        for node in newly_loaded_nodes:
-            if node.IsA("vtkMRMLLinearTransformNode") and "EyeTransform" in node.GetName():
-                transform_to_modify = node
-            elif node.IsA("vtkMRMLMarkupsFiducialNode"):
-                idx = node.GetControlPointIndexByLabel(eyeball_landmark_to_align)
-                if idx != -1:
-                    pos = [0.0, 0.0, 0.0]; node.GetNthControlPointPositionWorld(idx, pos)
-                    initial_oa_pos = np.array(pos)
-        
-        if not transform_to_modify: raise ValueError("Could not find 'EyeTransform' in model.")
-        if initial_oa_pos is None: raise ValueError(f"Could not find '{eyeball_landmark_to_align}' in model.")
+            # --- 2. Download and Load Model (Safely) ---
+            self.statusLabel.text = "2. Downloading model..."
+            scene_path = os.path.join(slicer.app.temporaryPath, f"{model_key.replace(' ','_')}.mrb")
+            urllib.request.urlretrieve(model_url, scene_path)
+            
+            self.statusLabel.text = "   Loading model into scene..."
+            nodes_before_load = set(slicer.util.getNodes().values())
+            if not slicer.util.loadScene(scene_path, {"clear": False}):
+                raise RuntimeError("slicer.util.loadScene failed.")
+            newly_loaded_nodes = list(set(slicer.util.getNodes().values()) - nodes_before_load)
 
-        # --- 4. Define Deterministic Anatomical Vectors ---
-        print("\n4. Calculating Strict Anatomical Directions...")
-        poR, poL, n = get_pos('poR'), get_pos('poL'), get_pos('n')
-        
-        # Anatomical Right (from Left Porion to Right Porion)
-        vec_right = unit(poR - poL)
-        
-        # Anatomical Anterior (from Mid-Porion to Nasion)
-        vec_anterior = unit(n - (poR + poL)/2.0)
-        vec_anterior = unit(vec_anterior - np.dot(vec_anterior, vec_right) * vec_right) # Make orthogonal
-        
-        # Anatomical Superior (Right cross Anterior = Superior)
-        vec_superior = unit(np.cross(vec_right, vec_anterior))
+            # --- 3. Find Initial State ---
+            self.statusLabel.text = "3. Finding model's initial state..."
+            initial_oa_pos, transform_to_modify = None, None
+            for node in newly_loaded_nodes:
+                if node.IsA("vtkMRMLLinearTransformNode") and "EyeTransform" in node.GetName():
+                    transform_to_modify = node
+                elif node.IsA("vtkMRMLMarkupsFiducialNode"):
+                    idx = node.GetControlPointIndexByLabel(eyeball_landmark_to_align)
+                    if idx != -1:
+                        pos = [0.0, 0.0, 0.0]; node.GetNthControlPointPositionWorld(idx, pos)
+                        initial_oa_pos = np.array(pos)
+            if not transform_to_modify: raise ValueError("Could not find 'EyeTransform' in model.")
+            if initial_oa_pos is None: raise ValueError(f"Could not find '{eyeball_landmark_to_align}' in model.")
 
-        # --- 5. Calculate Target via Offset Planes ---
-        print("   Calculating target intersection point...")
-        obh = obh_node.GetLineLengthWorld()
-        obb = obb_node.GetLineLengthWorld()
+            # --- 4. Define Bulletproof Anatomical Vectors ---
+            self.statusLabel.text = "4. Calculating anatomical directions..."
+            poR, poL, n = self.get_pos(lmk_node, 'poR'), self.get_pos(lmk_node, 'poL'), self.get_pos(lmk_node, 'n')
+            vec_right = self.unit(poR - poL)
+            vec_anterior = self.unit(n - (poR + poL)/2.0)
+            vec_anterior = self.unit(vec_anterior - np.dot(vec_anterior, vec_right) * vec_right)
+            vec_superior = self.unit(np.cross(vec_right, vec_anterior))
 
-        # Plane 1: SI. Offset 44.1% OBH DOWNWARDS (Inferior = -Superior) from SK
-        plane_si_normal = vec_superior
-        plane_si_point = get_pos(f'sk{side_label}') - vec_superior * (0.441 * obh)
+            # --- 5. Calculate Target Position via Offset Planes ---
+            self.statusLabel.text = "   Calculating target intersection point..."
+            obh = obh_node.GetLineLengthWorld(); obb = obb_node.GetLineLengthWorld()
+            
+            plane_si_normal = vec_superior
+            plane_si_point = self.get_pos(lmk_node, f'sk{side_label}') - vec_superior * (0.441 * obh)
 
-        # Plane 2: ML. Offset 57.6% OBB LATERALLY from D
-        lateral_dir = -vec_right if side == '_L' else vec_right # Lateral is Left for L, Right for R
-        plane_ml_normal = vec_right
-        plane_ml_point = get_pos(f'd{side_label}') + lateral_dir * (0.576 * obb)
+            lateral_dir = -vec_right if side == '_L' else vec_right
+            plane_ml_normal = vec_right
+            plane_ml_point = self.get_pos(lmk_node, f'd{side_label}') + lateral_dir * (0.576 * obb)
 
-        # Plane 3: AP. Offset 51.3% OBH ANTERIORLY from DLOM
-        plane_ap_normal = vec_anterior
-        plane_ap_point = get_pos(f'dlom{side_label}') + vec_anterior * (0.513 * obh)
+            plane_ap_normal = vec_anterior
+            plane_ap_point = self.get_pos(lmk_node, f'dlom{side_label}') + vec_anterior * (0.513 * obh)
 
-        # Solve Intersection
-        A = np.array([plane_si_normal, plane_ml_normal, plane_ap_normal])
-        b = np.array([
-            np.dot(plane_si_normal, plane_si_point),
-            np.dot(plane_ml_normal, plane_ml_point),
-            np.dot(plane_ap_normal, plane_ap_point)
-        ])
-        target_oa_pos = np.linalg.solve(A, b)
-        
-        # --- 6. Apply Translation ---
-        print("\n5. Applying placement transform...")
-        translation_vector = target_oa_pos - initial_oa_pos
-        
-        existing_matrix = vtk.vtkMatrix4x4()
-        transform_to_modify.GetMatrixTransformToParent(existing_matrix)
-        
-        translation_matrix = vtk.vtkMatrix4x4()
-        for i in range(3): translation_matrix.SetElement(i, 3, translation_vector[i])
-        
-        vtk.vtkMatrix4x4.Multiply4x4(translation_matrix, existing_matrix, existing_matrix)
-        transform_to_modify.SetMatrixTransformToParent(existing_matrix)
+            A = np.array([plane_si_normal, plane_ml_normal, plane_ap_normal])
+            b = np.array([np.dot(plane_si_normal, plane_si_point), np.dot(plane_ml_normal, plane_ml_point), np.dot(plane_ap_normal, plane_ap_point)])
+            target_oa_pos = np.linalg.solve(A, b)
+            
+            # --- 6. Apply Translation ---
+            self.statusLabel.text = "5. Applying placement transform..."
+            translation_vector = target_oa_pos - initial_oa_pos
+            
+            existing_matrix = vtk.vtkMatrix4x4(); transform_to_modify.GetMatrixTransformToParent(existing_matrix)
+            translation_matrix = vtk.vtkMatrix4x4()
+            for i in range(3): translation_matrix.SetElement(i, 3, translation_vector[i])
+            
+            vtk.vtkMatrix4x4.Multiply4x4(translation_matrix, existing_matrix, existing_matrix)
+            transform_to_modify.SetMatrixTransformToParent(existing_matrix)
 
-        slicer.app.layoutManager().threeDWidget(0).threeDView().resetFocalPoint()
-        print(f"\n✓ SUCCESS! '{model_to_place}' placed perfectly.")
-        print("="*60)
+            slicer.app.layoutManager().threeDWidget(0).threeDView().resetFocalPoint()
+            self.statusLabel.text = f"SUCCESS! '{model_key}' placed."
 
-    except Exception as e:
-        slicer.util.errorDisplay(f"An unexpected critical error occurred: {e}", 30)
-        raise e
+        except Exception as e:
+            self.statusLabel.text = f"ERROR: {e}"
+            slicer.util.errorDisplay(f"An unexpected critical error occurred: {e}", 30)
+            raise e
 
-# --- Run ---
-place_eyeball_bulletproof()
+# --- Main execution: Show the GUI in Slicer's main window ---
+# This robust method ensures the widget is created, shown, and raised.
+try:
+    if 'eyeballPlacementDockWidget' in globals():
+        eyeballPlacementDockWidget.show()
+    else:
+        eyeballPlacementDockWidget = qt.QDockWidget("Eyeball Placement")
+        eyeballPlacementWidget = EyeballPlacementWidget()
+        eyeballPlacementDockWidget.setWidget(eyeballPlacementWidget)
+        slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, eyeballPlacementDockWidget)
+except Exception as e:
+    print(f"Error setting up GUI: {e}")
 
 ```
 
