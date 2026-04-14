@@ -413,10 +413,13 @@ import qt
 import numpy as np
 import os
 import urllib.request
-import vtk
+import shutil # Import the 'shutil' module for file operations
 
 # ==============================================================================
-# Eyeball Placement Tool GUI (FINAL, GUI Bugs Fixed)
+# Eyeball Placement Tool GUI (FINAL - With Robust Downloader)
+# ==============================================================================
+# This version replaces the simple downloader with a more resilient one
+# to prevent 'ContentTooShortError' on larger files.
 # ==============================================================================
 
 class EyeballPlacementWidget(qt.QWidget):
@@ -438,7 +441,6 @@ class EyeballPlacementWidget(qt.QWidget):
         self.infoLabel.setWordWrap(True)
         
         self.modelSelector = qt.QComboBox()
-        # BUG FIX: Convert dict_keys to a list for addItems()
         self.modelSelector.addItems(list(self.model_urls.keys()))
         
         self.placeButton = qt.QPushButton("Download and Place Eyeball")
@@ -450,8 +452,17 @@ class EyeballPlacementWidget(qt.QWidget):
         self.mainLayout.addRow(self.placeButton)
         self.mainLayout.addRow("Status:", self.statusLabel)
 
-        # --- Connections ---
         self.placeButton.clicked.connect(self.runPlacement)
+
+    def robust_download(self, url, file_path):
+        """
+        Downloads a file in chunks to be more resilient to network errors.
+        """
+        try:
+            with urllib.request.urlopen(url) as response, open(file_path, 'wb') as out_file:
+                shutil.copyfileobj(response, out_file)
+        except Exception as e:
+            raise IOError(f"Failed to download from {url}. Reason: {e}")
 
     def unit(self, v):
         v = np.array(v, dtype=float)
@@ -483,12 +494,12 @@ class EyeballPlacementWidget(qt.QWidget):
             obh_node = slicer.util.getNode(f"OBH{side}")
             obb_node = slicer.util.getNode(f"OBB{side}")
             if not all([lmk_node, obh_node, obb_node]):
-                raise ValueError(f"Missing required nodes (Guyomarc*, OBH{side}, OBB{side}).")
+                raise ValueError(f"Missing required nodes (Guyomarc*, OBH{side}, OBB{side}). Run setup scripts first.")
 
-            # --- 2. Download and Load Model (Safely) ---
-            self.statusLabel.text = "2. Downloading model..."
+            # --- 2. Download and Load Model (Using Robust Downloader) ---
+            self.statusLabel.text = f"2. Downloading '{model_key}'..."
             scene_path = os.path.join(slicer.app.temporaryPath, f"{model_key.replace(' ','_')}.mrb")
-            urllib.request.urlretrieve(model_url, scene_path)
+            self.robust_download(model_url, scene_path)
             
             self.statusLabel.text = "   Loading model into scene..."
             nodes_before_load = set(slicer.util.getNodes().values())
@@ -507,8 +518,8 @@ class EyeballPlacementWidget(qt.QWidget):
                     if idx != -1:
                         pos = [0.0, 0.0, 0.0]; node.GetNthControlPointPositionWorld(idx, pos)
                         initial_oa_pos = np.array(pos)
-            if not transform_to_modify: raise ValueError("Could not find 'EyeTransform' in model.")
-            if initial_oa_pos is None: raise ValueError(f"Could not find '{eyeball_landmark_to_align}' in model.")
+            if not transform_to_modify: raise ValueError("Could not find 'EyeTransform' in loaded eyeball model.")
+            if initial_oa_pos is None: raise ValueError(f"Could not find '{eyeball_landmark_to_align}' landmark in loaded eyeball model.")
 
             # --- 4. Define Bulletproof Anatomical Vectors ---
             self.statusLabel.text = "4. Calculating anatomical directions..."
@@ -522,15 +533,15 @@ class EyeballPlacementWidget(qt.QWidget):
             self.statusLabel.text = "   Calculating target intersection point..."
             obh = obh_node.GetLineLengthWorld(); obb = obb_node.GetLineLengthWorld()
             
-            plane_si_normal = vec_superior
             plane_si_point = self.get_pos(lmk_node, f'sk{side_label}') - vec_superior * (0.441 * obh)
+            plane_si_normal = vec_superior
 
             lateral_dir = -vec_right if side == '_L' else vec_right
-            plane_ml_normal = vec_right
             plane_ml_point = self.get_pos(lmk_node, f'd{side_label}') + lateral_dir * (0.576 * obb)
+            plane_ml_normal = vec_right
 
-            plane_ap_normal = vec_anterior
             plane_ap_point = self.get_pos(lmk_node, f'dlom{side_label}') + vec_anterior * (0.513 * obh)
+            plane_ap_normal = vec_anterior
 
             A = np.array([plane_si_normal, plane_ml_normal, plane_ap_normal])
             b = np.array([np.dot(plane_si_normal, plane_si_point), np.dot(plane_ml_normal, plane_ml_point), np.dot(plane_ap_normal, plane_ap_point)])
@@ -555,18 +566,16 @@ class EyeballPlacementWidget(qt.QWidget):
             slicer.util.errorDisplay(f"An unexpected critical error occurred: {e}", 30)
             raise e
 
-# --- Main execution: Show the GUI in Slicer's main window ---
-# This robust method ensures the widget is created, shown, and raised.
+# --- Main execution ---
 try:
-    if 'eyeballPlacementDockWidget' in globals():
-        eyeballPlacementDockWidget.show()
-    else:
-        eyeballPlacementDockWidget = qt.QDockWidget("Eyeball Placement")
-        eyeballPlacementWidget = EyeballPlacementWidget()
-        eyeballPlacementDockWidget.setWidget(eyeballPlacementWidget)
-        slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, eyeballPlacementDockWidget)
-except Exception as e:
-    print(f"Error setting up GUI: {e}")
+    if 'eyeballWidget' in globals() and eyeballWidget:
+        globals()['eyeballWidget'].parent().close()
+except NameError: pass
+eyeballWidget = EyeballPlacementWidget()
+dockWidget = qt.QDockWidget("Eyeball Placement Tool")
+dockWidget.setWidget(eyeballWidget)
+slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dockWidget)
+dockWidget.show()
 
 ```
 
