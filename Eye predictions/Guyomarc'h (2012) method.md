@@ -86,8 +86,7 @@ Example of how the scene appears after runing the code below. Pleasse note that 
 
 
 <summary> Plane and orbit bisecting lines code </summary>
-<details>
-	
+<details>	
 ```python
 import slicer
 import numpy as np
@@ -229,8 +228,7 @@ Screenshot after the code below was run, allother lines/planes/landmarks were hi
 
 
 <summary> Marginal and OBB/OBH lines code </summary>
-<details>
-	
+<details>	
 ```python
 import slicer
 import numpy as np
@@ -393,8 +391,7 @@ Guyomarc'h et al. (2012)[^2] devised regressions to predict the position of the 
 
 
 <summary> Eye model placement code </summary>
-<details>
-	
+<details>	
 ```python
 
 
