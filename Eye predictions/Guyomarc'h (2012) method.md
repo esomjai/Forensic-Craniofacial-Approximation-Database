@@ -587,6 +587,9 @@ View after placing both eyeballs
 ### Validating the original study
 If you wanted to use this this tool for an approximation, you're done!
 
+Additionally, we can compare the predicted and the actual eyeball positions via landmarks, by placing the soft tissue landmarks denoted with a blue square in the previous section "Landmarks in this study". 
+You can download them [here]()
+
 
 
 
