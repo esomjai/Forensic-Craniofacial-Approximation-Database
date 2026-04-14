@@ -55,7 +55,7 @@ Illustration of the method:
 > Before you proceed, please make sure you completed the following steps: 
 
 - [ ] The scan has to be re-aligned in the FHP
-- [ ] Landmarks from the [hard tissue landmark file](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/bf2eb2f004d371fa623e0c27fb274616083f2718/Eye%20predictions/Guyomarc'h%20lmrks.mrk.json) have to be allocated - EXCEPT for ekL and ekR , see below
+- [ ] Landmarks from the [hard tissue landmark file]([Guyomarc'h lmrks.mrk.json](https://github.com/user-attachments/files/26706406/Guyomarc.h.lmrks.mrk.json) have to be allocated - EXCEPT for ekL and ekR , see below
 
 <img src="https://github.com/user-attachments/assets/195491a5-56b7-40e0-a259-a8cc7f606ff2" width="500">
 
