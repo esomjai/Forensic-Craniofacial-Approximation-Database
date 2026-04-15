@@ -589,6 +589,9 @@ If you wanted to use this this tool for an approximation, you're done!
 
 Additionally, we can compare the predicted and the actual eyeball positions via landmarks, by placing the soft tissue landmarks denoted with a blue square in the previous section "Landmarks in this study". 
 You can download them [here](https://github.com/user-attachments/files/26708232/true_eyeball.mrk.json). 
+Once you placed the "ground truth" landmarks (called true_eyeball.lmrk.json) onto the scan (you'll likely have to use the red/green/yellow windows for a more precise placement), you can run the code below. 
+
+It will create two comparison tables: (1) for comparing length measurements between the "artificial" eyeball model and the true eyeball that were measured by Guyomarc'h et al. (2012)[^2] in the original studt to create the regressions; (2) for measuring the distance between the true vs artificial eyeball landmarks. 
 
 
 
