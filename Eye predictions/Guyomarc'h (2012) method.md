@@ -413,10 +413,12 @@ import urllib.request
 import shutil # Import the 'shutil' module for file operations
 
 # ==============================================================================
-# Eyeball Placement Tool GUI (FINAL - With Robust Downloader)
+# Eyeball Placement Tool GUI (FINAL - With Correct Links & Non-Destructive Load)
 # ==============================================================================
-# This version replaces the simple downloader with a more resilient one
-# to prevent 'ContentTooShortError' on larger files.
+# This script creates a user-friendly GUI to place an eyeball model.
+# - Uses the correct, user-provided Google Drive links.
+# - Uses a robust downloader to prevent errors with large files.
+# - Loads models without clearing the entire scene.
 # ==============================================================================
 
 class EyeballPlacementWidget(qt.QWidget):
@@ -425,11 +427,12 @@ class EyeballPlacementWidget(qt.QWidget):
         self.setWindowTitle("Eyeball Placement Tool")
 
         # --- Data ---
+        # The correct, direct download links for the Google Drive files.
         self.model_urls = {
-            "Female Left": "https://drive.google.com/uc?export=download&id=1315fB3yptQpw4TV38re_1oIe4o5k4zQ0",
-            "Female Right": "https://drive.google.com/uc?export=download&id=1wAS1MfkkqEJ_Atj77ByUTs5XIs7zL4pL",
-            "Male Left": "https://drive.google.com/uc?export=download&id=1xksF3VZO-6g2DW-MF5i1LO9ND3wjvWa6",
-            "Male Right": "https://drive.google.com/uc?export=download&id=1RFCfMzDovXy-sxsFAvkm76jgHePj6-ae"
+            "Female Left": "https://drive.google.com/uc?export=download&id=1ApMt78ycLZVt5tp62W7IUQ0ZVzqf-QnK",
+            "Female Right": "https://drive.google.com/uc?export=download&id=1utKsmUb7U5p1qUncfAwOhw-w0OArDiuM",
+            "Male Left": "https://drive.google.com/uc?export=download&id=1BlHyEJnM2yArDnrLmgN10v1qarrSIGjN",
+            "Male Right": "https://drive.google.com/uc?export=download&id=1__vU7jPZoDRkjVQq_lQHIJhzou7soX-m"
         }
 
         # --- UI Layout ---
@@ -453,21 +456,26 @@ class EyeballPlacementWidget(qt.QWidget):
 
     def robust_download(self, url, file_path):
         """
-        Downloads a file in chunks to be more resilient to network errors.
+        Downloads a file in chunks, which is more resilient for large files.
         """
         try:
+            self.statusLabel.text = f"Downloading... this may take a moment for large files."
+            slicer.app.processEvents()
             with urllib.request.urlopen(url) as response, open(file_path, 'wb') as out_file:
                 shutil.copyfileobj(response, out_file)
+            self.statusLabel.text = "Download complete."
         except Exception as e:
             raise IOError(f"Failed to download from {url}. Reason: {e}")
 
     def unit(self, v):
+        """Normalizes a vector to a unit length."""
         v = np.array(v, dtype=float)
         norm = np.linalg.norm(v)
         if norm < 1e-9: raise ValueError("Cannot normalize a zero-length vector.")
         return v / norm
 
     def get_pos(self, lmk_node, label):
+        """Gets the world position of a landmark by its label."""
         idx = lmk_node.GetControlPointIndexByLabel(label)
         if idx == -1: raise ValueError(f"Anatomical landmark '{label}' not found!")
         pos = [0.0, 0.0, 0.0]
@@ -493,13 +501,14 @@ class EyeballPlacementWidget(qt.QWidget):
             if not all([lmk_node, obh_node, obb_node]):
                 raise ValueError(f"Missing required nodes (Guyomarc*, OBH{side}, OBB{side}). Run setup scripts first.")
 
-            # --- 2. Download and Load Model (Using Robust Downloader) ---
-            self.statusLabel.text = f"2. Downloading '{model_key}'..."
+            # --- 2. Download and Load Model (Non-Destructive) ---
             scene_path = os.path.join(slicer.app.temporaryPath, f"{model_key.replace(' ','_')}.mrb")
             self.robust_download(model_url, scene_path)
             
             self.statusLabel.text = "   Loading model into scene..."
+            slicer.app.processEvents()
             nodes_before_load = set(slicer.util.getNodes().values())
+            # Load the scene without clearing existing nodes
             if not slicer.util.loadScene(scene_path, {"clear": False}):
                 raise RuntimeError("slicer.util.loadScene failed.")
             newly_loaded_nodes = list(set(slicer.util.getNodes().values()) - nodes_before_load)
@@ -564,10 +573,13 @@ class EyeballPlacementWidget(qt.QWidget):
             raise e
 
 # --- Main execution ---
+# This ensures the widget is created once and brought to the front on subsequent runs.
 try:
     if 'eyeballWidget' in globals() and eyeballWidget:
+        # Close the existing dock widget before creating a new one
         globals()['eyeballWidget'].parent().close()
 except NameError: pass
+
 eyeballWidget = EyeballPlacementWidget()
 dockWidget = qt.QDockWidget("Eyeball Placement Tool")
 dockWidget.setWidget(eyeballWidget)
@@ -593,122 +605,338 @@ Once you placed the "ground truth" landmarks (called true_eyeball.lmrk.json) ont
 
 It will create two comparison tables: (1) for comparing length measurements between the "artificial" eyeball model and the true eyeball that were measured by Guyomarc'h et al. (2012)[^2] in the original studt to create the regressions; (2) for measuring the distance between the true vs artificial eyeball landmarks. 
 
+(1) 
+| Landmark from `true_eyeball.mrk.json` (scan) | Landmark from artificial eyeball | Error Measurement Name |
+| :--- | :--- | :--- |
+| true_oaR | oaR | oaR_error |
+| true_oaL | oaL | oaL_error |
+| true_opR | opR | opR_error |
+| true_opL | opL | opL_error |
+| true_osR | osR | osR_error |
+| true_osL | osL | osL_error |
+| true_oiR | oiR | oiR_error |
+| true_oiL | oiL | oiL_error |
+| true_omL | omL | omL_error |
+| true_omR | omR | omR_error |
+| true_olL | olL | olL_error |
+| true_olR | olR | olR_error |
+| true_pL | pL | pL_error |
+| true_pR | pR | pR_error |
+
+(2) 
+| Line Name | Definition |
+| :--- | :--- |
+| true_DLOM-R-oaR | perpendicular (shortest) distance between DLOM_R line and true_oaR (right eyeball projection) |
+| true_DLOM-L-oaL | perpendicular (shortest) distance between DLOM_L line and true_oaL (left eyeball projection) |
+| true_SOM_L-oaL | perpendicular (shortest) distance between SOM_L line and true_oaL |
+| true_IOM_L-oaL | perpendicular (shortest) distance between IOM_L line and true_oaL |
+| true_LOM_L-oaL | perpendicular (shortest) distance between LOM_L line and true_oaL |
+| true_MOM_L-oaL | perpendicular (shortest) distance between MOM_L line and true_oaL |
+| true_SOM_R-oaR | perpendicular (shortest) distance between SOM_R line and true_oaR |
+| true_IOM_R-oaR | perpendicular (shortest) distance between IOM_R line and true_oaR |
+| true_LOM_R-oaR | perpendicular (shortest) distance between LOM_R line and true_oaR |
+| true_MOM_R-oaR | perpendicular (shortest) distance between MOM_R line and true_oaR |
+| pred_DLOM-R-oaR | perpendicular (shortest) distance between DLOM_R line and oaR |
+| pred_DLOM-L-oaL | perpendicular (shortest) distance between DLOM_L line and oaL |
+| pred_SOM_L-oaL | perpendicular (shortest) distance between SOM_L line and oaL |
+| pred_IOM_L-oaL | perpendicular (shortest) distance between IOM_L line and oaL |
+| pred_LOM_L-oaL | perpendicular (shortest) distance between LOM_L line and oaL |
+| pred_MOM_L-oaL | perpendicular (shortest) distance between MOM_L line and oaL |
+| pred_SOM_R-oaR | perpendicular (shortest) distance between SOM_R line and oaR |
+| pred_IOM_R-oaR | perpendicular (shortest) distance between IOM_R line and oaR |
+| pred_LOM_R-oaR | perpendicular (shortest) distance between LOM_R line and oaR |
+| pred_MOM_R-oaR | perpendicular (shortest) distance between MOM_R line and oaR |
 
 
 
+<details>	
+<summary> Eye model placement code </summary>
+	
+```python
+import slicer
+import numpy as np
+import vtk
+
+# ==============================================================================
+# Final Bilateral (Two-Sided) Analysis Script
+# ==============================================================================
+#
+# This script is designed to analyze BOTH the left and right eyeballs at once.
+#
+# INSTRUCTIONS:
+# 1. Run all setup scripts.
+# 2. Place BOTH the Left and Right eyeball models.
+# 3. Load your ground truth landmarks (e.g., 'true_eyeball.mrk.json').
+# 4. Copy and paste this entire script into the Slicer Python console.
+#
+# It will find all three landmark sets and generate a complete report.
+#
+# ==============================================================================
+
+def get_landmark_node(pattern, required=True):
+    """Finds a fiducial node by a wildcard pattern."""
+    node = slicer.util.getNode(pattern)
+    if not node and required:
+        raise ValueError(f"Could not find required landmark node: '{pattern}'")
+    elif not node and not required:
+        return None # It's okay if this one is missing
+    return node
+
+def get_pos(lmk_node, label):
+    """Gets the world position of a landmark by its label."""
+    if not lmk_node: return None
+    idx = lmk_node.GetControlPointIndexByLabel(label)
+    if idx == -1: return None
+    pos = np.zeros(3)
+    lmk_node.GetNthControlPointPositionWorld(idx, pos)
+    return pos
+
+def get_line(name):
+    """Finds a line node by its exact name."""
+    node = slicer.util.getNode(name)
+    if not node:
+        raise ValueError(f"Could not find line node: '{name}'")
+    return node
+
+def distance_point_to_line(point, line_node):
+    """Calculates the shortest distance from a 3D point to a line node."""
+    p1 = np.zeros(3); line_node.GetNthControlPointPositionWorld(0, p1)
+    p2 = np.zeros(3); line_node.GetNthControlPointPositionWorld(1, p2)
+    line_vec = p2 - p1
+    point_vec = point - p1
+    line_len_sq = np.dot(line_vec, line_vec)
+    if line_len_sq < 1e-9: return np.linalg.norm(point_vec)
+    t = np.dot(point_vec, line_vec) / line_len_sq
+    closest_point = p1 + t * line_vec
+    return np.linalg.norm(point - closest_point), closest_point
+
+def run_bilateral_analysis():
+    print("="*60)
+    print("Starting Bilateral (Two-Sided) Comparison Analysis")
+    print("="*60)
+    
+    try:
+        # --- 1. Find all three required landmark nodes ---
+        print("1. Finding landmark nodes...")
+        true_lmks_node = get_landmark_node("true_eyeball*")
+        pred_left_lmks_node = get_landmark_node("Left Eyeball lmrks", required=False)
+        pred_right_lmks_node = get_landmark_node("Right Eyeball lmrks", required=False)
+
+        print(f"   ✓ True landmarks: '{true_lmks_node.GetName()}'")
+        if pred_left_lmks_node: print(f"   ✓ Predicted Left: '{pred_left_lmks_node.GetName()}'")
+        else: print("   - Predicted Left: NOT FOUND")
+        if pred_right_lmks_node: print(f"   ✓ Predicted Right: '{pred_right_lmks_node.GetName()}'")
+        else: print("   - Predicted Right: NOT FOUND")
+
+        # --- 2. Landmark-to-Landmark Distance Calculation ---
+        print("\n2. Calculating landmark-to-landmark distances...")
+        landmark_pairs = ['oa', 'op', 'os', 'oi', 'om', 'ol', 'p']
+        landmark_results = []
+
+        for side_char, pred_node in [('L', pred_left_lmks_node), ('R', pred_right_lmks_node)]:
+            for lmk_type in landmark_pairs:
+                base_label = f"{lmk_type}{side_char}"
+                true_label = f"true_{base_label}"
+                
+                true_pos = get_pos(true_lmks_node, true_label)
+                pred_pos = get_pos(pred_node, base_label)
+
+                if true_pos is not None and pred_pos is not None:
+                    dist = np.linalg.norm(true_pos - pred_pos)
+                    landmark_results.append((base_label, f"{dist:.2f} mm"))
+                else:
+                    landmark_results.append((base_label, "N/A (Missing)"))
+        
+        # --- 3. Point-to-Line Projection Distance Calculation ---
+        print("\n3. Calculating point-to-line projection distances...")
+        line_prefixes = ['DLOM', 'SOM', 'IOM', 'LOM', 'MOM']
+        projection_results = []
+
+        for side_char, pred_node in [('L', pred_left_lmks_node), ('R', pred_right_lmks_node)]:
+            true_oa_pos = get_pos(true_lmks_node, f"true_oa{side_char}")
+            pred_oa_pos = get_pos(pred_node, f"oa{side_char}")
+
+            if true_oa_pos is None or pred_oa_pos is None:
+                print(f"   - Skipping projections for side '{side_char}' because 'oa' or 'true_oa' landmark is missing.")
+                for prefix in line_prefixes:
+                    projection_results.append((f"{prefix}-{side_char}-oa{side_char}", "N/A", "N/A"))
+                continue
+
+            for prefix in line_prefixes:
+                line_name = f"{prefix}_{side_char}"
+                measurement_name = f"{prefix}-{side_char}-oa{side_char}"
+                
+                try:
+                    line_node = get_line(line_name)
+                    pred_dist, _ = distance_point_to_line(pred_oa_pos, line_node)
+                    true_dist, _ = distance_point_to_line(true_oa_pos, line_node)
+                    projection_results.append((measurement_name, f"{pred_dist:.2f} mm", f"{true_dist:.2f} mm"))
+                except ValueError as e:
+                    print(f"   - WARNING: Skipping projection for '{line_name}'. Reason: {e}")
+                    projection_results.append((measurement_name, "N/A", "N/A"))
+
+        # --- 4. Print Formatted Results ---
+        print("\n\n" + "="*80)
+        print("                        FINAL BILATERAL ANALYSIS RESULTS")
+        print("="*80)
+
+        # Print Landmark Differences Table
+        print("\n### Table 1: Landmark Positional Differences\n")
+        print("| Landmark Pair | Difference (True vs. Predicted) |")
+        print("|---|---|")
+        for label, dist_str in landmark_results:
+            print(f"| `{label}` vs `true_{label}` | {dist_str} |")
+
+        # Print Projection Differences Table
+        print("\n\n### Table 2: Projection Distance Differences (Point-to-Line)\n")
+        print("| Measurement | Predicted Eyeball to Line | True Eyeball to Line |")
+        print("|---|---|---|")
+        for name, pred_dist_str, true_dist_str in projection_results:
+            print(f"| `{name}` | {pred_dist_str} | {true_dist_str} |")
+            
+        print("\n" + "="*80)
+        print("✓ Bilateral analysis complete.")
+        print("="*80)
+
+    except Exception as e:
+        slicer.util.errorDisplay(f"An error occurred during analysis: {e}", 30)
+        raise e
+
+# --- Run the Analysis ---
+run_bilateral_analysis()
+```
+
+</details>
 
 
+<img width="871" height="693" alt="{7586E9C8-BB6E-4B46-B2AA-4EE8F046E0DF}" src="https://github.com/user-attachments/assets/327f841e-fc60-4ef5-927f-65ed6b9582e7" />
 
 
+In addition, the code will print some information on the console, something like this: 
+
+```python
+============================================================
+Starting Bilateral Analysis with Visual Lines
+============================================================
+1. Finding landmark nodes...
+   ✓ True landmarks: 'true_eyeball'
+   ✓ Predicted Left: 'Left Eyeball lmrks'
+   ✓ Predicted Right: 'Right Eyeball lmrks'
+
+2. Calculating landmark-to-landmark distances and creating error lines...
+
+3. Calculating projection distances and creating measurement lines...
 
 
+================================================================================
+                        FINAL BILATERAL ANALYSIS RESULTS
+================================================================================
+
+### Table 1: Landmark Positional Differences
+
+| Landmark Pair | Difference (True vs. Predicted) |
+|---|---|
+| `oaL` vs `true_oaL` | 5.65 mm |
+| `opL` vs `true_opL` | 4.80 mm |
+| `osL` vs `true_osL` | 3.83 mm |
+| `oiL` vs `true_oiL` | 2.78 mm |
+| `omL` vs `true_omL` | 1.87 mm |
+| `olL` vs `true_olL` | 3.30 mm |
+| `pL` vs `true_pL` | 5.12 mm |
+| `oaR` vs `true_oaR` | 5.09 mm |
+| `opR` vs `true_opR` | 7.51 mm |
+| `osR` vs `true_osR` | 5.90 mm |
+| `oiR` vs `true_oiR` | 8.08 mm |
+| `omR` vs `true_omR` | 9.72 mm |
+| `olR` vs `true_olR` | 3.08 mm |
+| `pR` vs `true_pR` | 5.61 mm |
+
+
+### Table 2: Projection Distance Differences (Point-to-Line)
+
+| Measurement | Predicted Eyeball to Line | True Eyeball to Line |
+|---|---|---|
+| `DLOM-L-oaL` | 18.04 mm | 19.09 mm |
+| `SOM-L-oaL` | 16.89 mm | 19.03 mm |
+| `IOM-L-oaL` | 20.93 mm | 17.32 mm |
+| `LOM-L-oaL` | 21.38 mm | 19.34 mm |
+| `MOM-L-oaL` | 22.68 mm | 20.60 mm |
+| `DLOM-R-oaR` | 16.04 mm | 18.70 mm |
+| `SOM-R-oaR` | 15.81 mm | 17.30 mm |
+| `IOM-R-oaR` | 20.02 mm | 17.37 mm |
+| `LOM-R-oaR` | 21.80 mm | 21.94 mm |
+| `MOM-R-oaR` | 23.62 mm | 20.27 mm |
+
+================================================================================
+✓ Analysis complete. New measurement lines have been added to the scene.
+  (They are hidden by default to reduce clutter).
+================================================================================
+
+
+```
 
 
 
 ### Output
 To copy all the linear measurements to clipboard, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). 
-To make sense of the output, keep in mind that the guideline method allows for testing whether Line A and B are true mirror planes (ascertain whether the inside and outside is significantly different) and test its predictive ability with or without soft tissue measurements (facial soft tissue thickness) of your choice to add on for the “noseprofiletoB1/2/3/4” measurements anteriorly (be careful about pairing landmarks! - the original paper simply states "(a little more than 2 mm) was added").  Optionally, you can see if the 4/5 or 6 plane methods predict nasal shape better. 
-
-<details>
-
-<summary>Output for 4 planes with optional Line A measurements</summary>
-
-| Unknown             | Parameter               | Value                   |
-|---------------------|-------------------------|-------------------------|
-| (unknown)           | maximum nasal width MAW | 34.065879845058085      |
-| (unknown)           | INB_A                   | 2000.0                  |
-| (unknown)           | INB_B                   | 2000.0000000000002      |
-| (unknown)           | INB_C                   | 2000.0000000000005      |
-| (unknown)           | INB_D                   | 2000.0000000000005      |
-| (unknown)           | Line_A                  | 62.419688580150364      |
-| (unknown)           | Line_B                  | 124.83937716030069      |
-| (unknown)           | nasal outline1          | 24.366736158161636      |
-| (unknown)           | nasal outline2          | 26.81613067797216       |
-| (unknown)           | nasal outline3          | 27.80868537156018       |
-| (unknown)           | nasal outline4          | 17.38024525644104       |
-| (unknown)           | noseprofiletoB1         | 5.525673779566004       |
-| (unknown)           | noseprofiletoB2         | 9.902626067446901       |
-| (unknown)           | noseprofiletoB3         | 16.137793993929815      |
-| (unknown)           | noseprofiletoB4         | 17.09598625672042       |
-| (unknown)           | nasalbonetoB1           | 15.780117253842183      |
-| (unknown)           | nasalbonetoB2           | 16.49542889900834       |
-| (unknown)           | nasalbonetoB3           | 20.14246273809071       |
-| (unknown)           | nasalbonetoB4           | 17.749331272230933      |
-
-
-</details>
-
-<details>
-
-<summary>Output for 5 planes with optional Line A measurements</summary>
-
-| Unknown   | Parameter               | Value                   |
-|-----------|-------------------------|-------------------------|
-| (unknown) | maximum nasal width MAW | 34.065879845058085      |
-| (unknown) | INB_A                   | 2000.0                  |
-| (unknown) | INB_B                   | 2000.0000000000002      |
-| (unknown) | INB_C                   | 2000.0000000000005      |
-| (unknown) | INB_D                   | 2000.0000000000005      |
-| (unknown) | INB_E                   | 2000.0                  |
-| (unknown) | Line_A                  | 62.419688580150364      |
-| (unknown) | Line_B                  | 124.83937716030074      |
-| (unknown) | nasal outline1          | 23.09624385966932       |
-| (unknown) | nasal outline2          | 24.00250437441322       |
-| (unknown) | nasal outline3          | 26.580511864794236      |
-| (unknown) | nasal outline4          | 26.84200917751933       |
-| (unknown) | nasal outline5          | 18.885324552925304      |
-| (unknown) | noseprofiletoB1         | 4.77413457704267        |
-| (unknown) | noseprofiletoB2         | 7.7728775719345204      |
-| (unknown) | noseprofiletoB3         | 12.299803347006584      |
-| (unknown) | noseprofiletoB4         | 16.577556239891496      |
-| (unknown) | noseprofiletoB5         | 16.893884167296918      |
-| (unknown) | nasalbonetoB1           | 15.669179694093904      |
-| (unknown) | nasalbonetoB2           | 14.209577753877143      |
-| (unknown) | nasalbonetoB3           | 17.574859858633058      |
-| (unknown) | nasalbonetoB4           | 20.19372441866758       |
-| (unknown) | nasalbonetoB5           | 18.50970755626509       |
-
-</details>
-
-<details>
-
-<summary>Output for 6 planes with optional Line A measurements</summary>
-
-| Unknown   | Parameter               | Value                   |
-|-----------|-------------------------|-------------------------|
-| (unknown) | maximum nasal width MAW | 34.065879845058085      |
-| (unknown) | INB_A                   | 2000.0                  |
-| (unknown) | INB_B                   | 2000.0000000000002      |
-| (unknown) | INB_C                   | 2000.0000000000002      |
-| (unknown) | INB_D                   | 2000.0000000000005      |
-| (unknown) | INB_E                   | 2000.0000000000002      |
-| (unknown) | INB_F                   | 2000.0                  |
-| (unknown) | Line_A                  | 62.419688580150364      |
-| (unknown) | Line_B                  | 124.83937716030076      |
-| (unknown) | nasal outline1          | 22.560548604784675      |
-| (unknown) | nasal outline2          | 24.27440147938001       |
-| (unknown) | nasal outline3          | 26.689979253823722      |
-| (unknown) | nasal outline4          | 24.491972756379866      |
-| (unknown) | nasal outline5          | 26.589433476120288      |
-| (unknown) | nasal outline6          | 21.438268607642662      |
-| (unknown) | noseprofiletoB1         | 4.3806753382390555      |
-| (unknown) | noseprofiletoB2         | 6.863999026673066       |
-| (unknown) | noseprofiletoB3         | 10.403738313217593      |
-| (unknown) | noseprofiletoB4         | 14.525122003267612      |
-| (unknown) | noseprofiletoB5         | 17.048739616886586      |
-| (unknown) | noseprofiletoB6         | 16.869754556328157      |
-| (unknown) | nasalbonetoB1           | 15.844204074180183      |
-| (unknown) | nasalbonetoB2           | 14.607928382721507      |
-| (unknown) | nasalbonetoB3           | 16.55600629779354       |
-| (unknown) | nasalbonetoB4           | 17.59277552761434       |
-| (unknown) | nasalbonetoB5           | 20.59955288417588       |
-| (unknown) | nasalbonetoB6           | 19.449551948971035      |
-
-</details>
 
 > [!IMPORTANT]
-> INB_A, INB_B, INB_C, INB_D, INB_E, INB_F and Line_A, Line_B are NOT true measurements. They provide guide (Line_A and Line_B); or are programmed to be elongated to 20 cm (INB_A, etc) - DO NOT use them as measurements in your data analysis! Exercise caution with the "nasal outline1..." measurements as these are specific to the bony nose outlet and there are no comparable measurements for the soft nose. 
+> It is very important that you do not treat the pre-programmed lines with set length as measurements in your statistical analysis, therefore there is an example below. 
 
+| ID | line node name | length in mm | Note |
+| :--- | :--- | :--- | :--- |
+| (none) | L orbit bisecting line | 100 | ❌ - not a real measurement |
+| (none) | R orbit bisecting line | 100 | ❌ - not a real measurement |
+| (none) | SOM_L | 75 | ❌ - not a real measurement |
+| (none) | IOM_L | 75 | ❌ - not a real measurement |
+| (none) | MOM_L | 75 | ❌ - not a real measurement |
+| (none) | LOM_L | 75 | ❌ - not a real measurement |
+| (none) | DLOM_L | 75 | ❌ - not a real measurement |
+| (none) | SOM_R | 75 | ❌ - not a real measurement |
+| (none) | IOM_R | 75 | ❌ - not a real measurement |
+| (none) | MOM_R | 75 | ❌ - not a real measurement |
+| (none) | LOM_R | 75 | ❌ - not a real measurement |
+| (none) | DLOM_R | 75 | ❌ - not a real measurement |
+| (none) | OBB_L | 38.56 | |
+| (none) | OBB_R | 40.79 | |
+| (none) | OBH_L | 36.33 | |
+| (none) | OBH_R | 34.55 | |
+| (none) | oaL_error | 5.65 | |
+| (none) | opL_error | 4.8 | |
+| (none) | osL_error | 3.83 | |
+| (none) | oiL_error | 2.78 | |
+| (none) | omL_error | 1.87 | |
+| (none) | olL_error | 3.3 | |
+| (none) | pL_error | 5.12 | |
+| (none) | oaR_error | 5.09 | |
+| (none) | opR_error | 7.51 | |
+| (none) | osR_error | 5.9 | |
+| (none) | oiR_error | 8.08 | |
+| (none) | omR_error | 9.72 | |
+| (none) | olR_error | 3.08 | |
+| (none) | pR_error | 5.61 | |
+| (none) | pred_DLOM-L-oaL | 18.04 | |
+| (none) | true_DLOM-L-oaL | 19.09 | |
+| (none) | pred_SOM-L-oaL | 16.89 | |
+| (none) | true_SOM-L-oaL | 19.03 | |
+| (none) | pred_IOM-L-oaL | 20.93 | |
+| (none) | true_IOM-L-oaL | 17.32 | |
+| (none) | pred_LOM-L-oaL | 21.38 | |
+| (none) | true_LOM-L-oaL | 19.34 | |
+| (none) | pred_MOM-L-oaL | 22.68 | |
+| (none) | true_MOM-L-oaL | 20.6 | |
+| (none) | pred_DLOM-R-oaR | 16.04 | |
+| (none) | true_DLOM-R-oaR | 18.7 | |
+| (none) | pred_SOM-R-oaR | 15.81 | |
+| (none) | true_SOM-R-oaR | 17.3 | |
+| (none) | pred_IOM-R-oaR | 20.02 | |
+| (none) | true_IOM-R-oaR | 17.37 | |
+| (none) | pred_LOM-R-oaR | 21.8 | |
+| (none) | true_LOM-R-oaR | 21.94 | |
+| (none) | pred_MOM-R-oaR | 23.62 | |
+| (none) | true_MOM-R-oaR | 20.27 | |
+
+* IDs will return none or unknown if your data was anonymised appropriately
 
 
 
