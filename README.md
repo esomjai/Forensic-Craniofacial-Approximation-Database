@@ -18,7 +18,7 @@ For most protocols, the first step is the re-orientation of the scan in the Fran
   - For the .json file and code only, go to [this release](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/tree/001_CodeForFHPAlignment))
 If you choose to do a segmentation, follow the tutorial at [ROI vs Segmentation](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/003_Roi%20vs%20Segmentation.md)
 
-Do not forget to re-visit the [tutorial] (https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md) or [code]  (https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/releases/tag/CopyMeasurementsToClipboard) for copying measurements to the clipboard
+Do not forget to re-visit the [tutorial](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md) or [code](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/releases/tag/CopyMeasurementsToClipboard) for copying measurements to the clipboard
 
 Currently available methodologies for nose approximation and their original papers are: 
 
