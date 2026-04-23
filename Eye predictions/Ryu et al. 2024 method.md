@@ -1,11 +1,10 @@
-# The Guyomarc'h et al. (2012) method [^2] 
+# The Ryu et al. (2024)[^2] 
 
-The following guide is constructed by the available original study by Guyomarc'h et al.(2012)[^2].  
+The following guide is constructed by the available original study by Ryu et al. (2024)[^2].
 
-The original method was carried out on clinical CTs on a population of 375 adults. It devised linear regressions to place the most anterior point of the eyeball in 3 dimensions in relation to the bony orbit. 
+The original method was carried out on post-mortem CTs on a population of 171 adults. It devised multple linear regressions to place the most anterior point of the eyeball in 3 dimensions in relation to the bony orbit, with slightly different definitions for orbital breadth and height. 
 
 ## Table of Contents
-
 
 > [!WARNING]
 > The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
@@ -13,37 +12,44 @@ The original method was carried out on clinical CTs on a population of 375 adult
 
 
 ## Landmarks in this guide: 
- | Position in code | Position in file | Name in file | Landmark name | Definition | Defined by | Type |
+
+| Position in code | Position in file | Name in file | Landmark | Definition | defined by | tissue type |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 0 | 1 | poR | right porion | The highest point on the superior margin of the RIGHT external auditory meatus | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 1 | 2 | poL | left porion | The highest point on the superior margin of the LEFT external auditory meatus | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 2 | 3 | orL | left orbitale | The lowest point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 3 | 4 | orR | right orbitale | The lowest point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 4 | 5 | n | nasion | The junction of the internasal suture with the nasofrontal suture | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 5 | 6 | dL | left dacryion | The junction of the sutures between the frontal, maxillary, and lacrimal bones aroundthe LEFT orbit | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 6 | 7 | dR | right dacryion | The junction of the sutures between the frontal, maxillary, and lacrimal bones around the RIGHT orbit | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 7 | 8 | ekL | left ectoconchion | The most lateral point of the LEFT orbital rim following a line bisecting the orbit from the left dacryon | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 8 | 9 | ekR | right ectoconchion | The most lateral point of the RIGHT orbital rim following a line bisecting the orbit from the right dacryon | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 9 | 10 | skL | left supraconchion | The highest point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 10 | 11 | skR | right supraconchion | The highest point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 11 | 12 | fmoR | right frontomalare orbitale | The point on the RIGHT orbital rim at the junction ofthe sutures between the frontal and zygomatic bones | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 12 | 13 | fmoL | left frontomalare orbitale | The point on the LEFT orbital rim at the junction ofthe sutures between the frontal and zygomatic bones | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard tissue |
-| 13 | 14 | dlomR | deepest point of the right lateral orbital margin | The deepest point on the LEFT lateral orbital rim | Stephan, 2008 [^5] | hard tissue |
-| 14 | 15 | dlomL | deepest point of the left lateral orbital margin | The deepest point on the RIGHT lateral orbital rim | Stephan, 2008 [^5] | hard tissue |
-| 15 | 16 | 🟦 oaR | right oculus anterius | The most anterior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 16 | 17 | 🟦 oaL | left oculus anterius | The most anterior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 17 | 18 | 🟦 opR | right oculus posterius | The most posterior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 18 | 19 | 🟦 opL | left oculus posterius | The most posterior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 19 | 20 | 🟦 osR | right oculus superius | The most superior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 20 | 21 | 🟦 osL | left oculus superius | The most superior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 21 | 22 | 🟦 oiR | right oculus inferius | The most inferior point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 22 | 23 | 🟦 oiL | left oculus inferius | The most inferior point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 23 | 24 | 🟦 omL | left oculus mediale | The most medial point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 24 | 25 | 🟦 omR | right oculus mediale | The most medial point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 25 | 26 | 🟦 olL | left oculus laterale | The most lateral point of the LEFT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 26 | 27 | 🟦 olR | right oculus laterale | The most lateral point of the RIGHT eyeball | Guyomarc'h, 2012 [^2] | soft tissue |
-| 27 | 28 | 🟦 pL | if available, left pupulare | IF DISTINGUISHABLE, Centre of the LEFT pupil | ADDITIONAL | soft tissue |
-| 28 | 29 | 🟦 pR | if available, right pupulare | IF DISTINGUISHABLE, Centre of the RIGHT pupil | ADDITIONAL | soft tissue |
+| 0 | 1 | n | Nasion | The junction of the internasal suture with the nasofrontal suture | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 1 | 2 | pr | Prosthion | The lowermost point of the intermaxillary suture between the central incisors of the maxilla. | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 2 | 3 | auL | Auriculare (left) | On the LEFT zygomatic root, vertically above the center of the external auditory meatus | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 3 | 4 | auR | Auriculare (right) | On the RIGHT zygomatic root, vertically above the center of the external auditory meatus | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 4 | 5 | mid_au | Auriculare Midpoint | The midpoint in the 3D coordinates of both AU | Ryu et al. 2024 [^2] | hard |
+| 5 | 6 | orL | Orbitale (left) | The lowest point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 6 | 7 | orR | Orbitale (right) | The lowest point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 7 | 8 | b | Bregma | Where the sagittal and coronal sutures meet | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 8 | 9 | g | Glabella | Most projecting anterior median point on lower edge of the frontal bone, on the brow ridge, in between the superciliary arches and above the nasal root. | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 9 | 10 | lat_orL | Lateral Orbitale (left) | Most lateral point on the left orbital rim | Ryu et al. 2024 [^2] | hard |
+| 10 | 11 | lat_orR | Lateral Orbitale (right) | Most lateral point on the RIGHT orbital rim | Ryu et al. 2024 [^2] | hard |
+| 11 | 12 | dL | Median Orbitale (left) | The point where the LEFT anterior lacrimal ridge meets frontonasal suture(=dacryion) | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 12 | 13 | dR | Median Orbitale (right) | The point where the RIGHT anterior lacrimal ridge meets frontonasal suture | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 13 | 14 | skL | Supra Orbitale (left) | The most upper point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 14 | 15 | skR | Supra Orbitale (right) | The most upper point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
+| 15 | 16 | 🟦ocpR | Optic Canal Point (right) | Uppermost point of the RIGHT optic nerve canal | Ryu et al. 2024 [^2] | soft |
+| 16 | 17 | 🟦ocpL | Optic Canal Point (left) | Uppermost point of the LEFT optic nerve canal | Ryu et al. 2024 [^2] | soft |
+| 17 | 18 | 🟦lcL | Lens Centre (left) | The center of gravity of the left lens (sic!)- geometric mean | Ryu et al. 2024 [^2] | soft |
+| 18 | 19 | 🟦lcR | Lens Centre (right) | The center of gravity of the right lens (sic!)- geometric mean | Ryu et al. 2024 [^2] | soft |
+| 19 | 20 | 🟦laL | Lens Anterior (left) | The most anterior point of the LEFT lens | Ryu et al. 2024 [^2] | soft |
+| 20 | 21 | 🟦laR | Lens Anterior (right) | The most anterior point of the RIGHT lens | Ryu et al. 2024 [^2] | soft |
+| 21 | 22 | 🟦lpL | Lens Posterior (left) | The most posterior point of the LEFT lens | Ryu et al. 2024 [^2] | soft |
+| 22 | 23 | 🟦lpR | Lens Posterior (right) | The most posterior point of the RIGHT lens | Ryu et al. 2024 [^2] | soft |
+| 23 | 24 | 🟦osL | Globe Superior (left) | The uppermost point of the LEFT eyeball | Guyomarc'h, 2012 [^5] | soft |
+| 24 | 25 | 🟦osR | Globe Superior (right) | The uppermost point of the RIGHTeyeball | Guyomarc'h, 2012 [^5] | soft |
+| 25 | 26 | 🟦oiL | Globe Inferior (left) | The lowest point of the LEFT eyeball | Guyomarc'h, 2012 [^5] | soft |
+| 26 | 27 | 🟦oiR | Globe Inferior (right) | The lowest point of the RIGHT eyeball | Guyomarc'h, 2012 [^5] | soft |
+| 27 | 28 | 🟦opL | Globe Lateral (left) | The most lateral point of the LEFT eyeball | Guyomarc'h, 2012 [^5] | soft |
+| 28 | 29 | 🟦opR | Globe Lateral (right) | The most lateral point of the RIGHT eyeball | Guyomarc'h, 2012 [^5] | soft |
+| 29 | 30 | 🟦omL | Globe Medial (left) | The most medial mole (sic!) of the LEFT eyeball. | Ryu et al. 2024 [^2] | soft |
+| 30 | 31 | 🟦omR | Globe Medial (right) | The most medial mole (sic!) of the RIGHT eyeball. | Ryu et al. 2024 [^2] | soft |
+| 31 | 32 | 🟦oaL | Cornea (left) | The most anterior point of the LEFT eyeball | originally undefined! | soft |
+| 32 | 33 | 🟦oaR | Cornea (right) | The most anterior point of the RIGHT eyeball | originally undefined! | soft |
+| 33 | 34 | 🟦pL | if available, left pupulare | IF DISTINGUISHABLE, Centre of the LEFT pupil | ADDITIONAL | soft |
+| 34 | 35 | 🟦pR | if available, right pupulare | IF DISTINGUISHABLE, Centre of the RIGHT pupil | ADDITIONAL | soft |
 
 > [!IMPORTANT]
 > The landmarks with the 🟦 symbol are for reproducing the entire method for validation and not essential to place for applying the eyeball placement for facial approximation.
@@ -270,5 +276,7 @@ To copy all the linear measurements to clipboard, use the method described in [t
 [^2]: Ryu, J. Y., et al. (2024). "Developing an eyeball positioning method in the eye orbit for craniofacial identification in Korean population." Scientific Reports 14(1).
 [^3]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.
 [^4]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
+[^5]: Guyomarc'h, P., et al. (2012). "Anatomical placement of the human eyeball in the orbit--validation using CT scans of living adults and prediction for facial approximation." J Forensic Sci 57(5): 1271–1275.
+
 [^5]: Stephan, C. N. and P. L. Davidson (2008). "The placement of the human eyeball and canthi in craniofacial identification." Journal of Forensic Sciences 53(3): 612–619.
 [^6]: Guyomarc'h, P., et al. (2012). "Anatomical Placement of the Human Eyeball in the Orbit-Validation Using CT Scans of Living Adults and Prediction for Facial Approximation." Journal of Forensic Sciences 57(5): 1271–1275.
