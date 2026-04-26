@@ -650,7 +650,7 @@ It will create two comparison tables: (1) for comparing length measurements betw
 
 
 <details>	
-<summary> Eye model placement code </summary>
+<summary> Comparison code </summary>
 	
 ```python
 import slicer
