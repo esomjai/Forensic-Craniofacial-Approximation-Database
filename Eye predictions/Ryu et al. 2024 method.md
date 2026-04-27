@@ -452,7 +452,8 @@ Next, the **L/R21,22,23,27 and 33** will be calculated using the hard tissue mea
 
 When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did differentiate between the biological sexes hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
 
-<img width="1393" height="786" alt="image" src="https://github.com/user-attachments/assets/dbe41aab-09e6-4d7e-80cb-ca305e33c9a7" />
+<img width="867" height="953" alt="image" src="https://github.com/user-attachments/assets/e8bf3b33-6c96-4973-824b-bd0bb04ac154" />
+
 
 Expect this additional window on the right. 
 
