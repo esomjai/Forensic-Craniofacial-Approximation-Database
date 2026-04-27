@@ -7,7 +7,7 @@ The original method was carried out on post-mortem CTs on a population of 171 ad
 ## Table of Contents
 
 > [!WARNING]
-> The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (inion, bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
+> The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide does not have all the features (bregma) that are to be landmarked. Please refer to the illustrations in the guide for correct placement. In addition, due to the CT being taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
 
 
 
@@ -61,37 +61,27 @@ Illustration of the method:
 > Before you proceed, please make sure you completed the following steps: 
 
 - [ ] The scan has to be re-aligned in the FHP
-- [ ] Hard tissue landmarks from the [hard tissue landmark file](https://github.com/user-attachments/files/26706469/Guyomarch_lmrks.mrk.json)
- have to be allocated - EXCEPT for ekL and ekR , see below
+- [ ] Hard tissue landmarks from the [hard tissue landmark file]([Ryu_hard_tissue.mrk.json](https://github.com/user-attachments/files/27120614/Ryu_hard_tissue.mrk.json)
+have to be allocated
 
-<img src="https://github.com/user-attachments/assets/195491a5-56b7-40e0-a259-a8cc7f606ff2" width="500">
+<img width="906" height="1026" alt="image" src="https://github.com/user-attachments/assets/19d34a4f-641b-4b5e-a051-ea154bc24ac0" />
 
 
-Example of scene when landmarks are allocated (except ekL/R)
+Example of scene when hard tissue landmarks are allocated
 
 
 ### Planes & Guiding lines
 
-Guyomarc'h et al. 2012 [^2] defined 3 anatomical planes as reference for the further steps in their method: The Frankfort Horizontal plane, the sagittal and frontal planes. In addition, the *ectoconchion* landmarks are defined as "The most lateral point of the orbital rim following a line bisecting the orbit from the dacryon"; therefore a helping line from the dacryions for both orbits can be drawn to aid their placement. The following code will execute the creation of the 3 planes and the guiding lines for ectoconchion placement; just copy and paste it in the Python console, then press enter. 
-
-| Plane | Full Name | Definition |
-| :--- | :--- | :--- |
-| FHP | Frankfort Horizontal | Best fit of orR, orL, porR and poL |
-| Sp | Sagittal | Perpendicular to FHP, bisecting n |
-| Fp | Frontal | Perpendicular to Sp, bisecting the dlomR and dlomL |
+Ryu et al. (2024)[^2] defined 3 anatomical planes as reference for the further steps in their method: The Frankfort Horizontal plane, the sagittal and frontal planes. In addition, the *ectoconchion* landmarks are defined as "The most lateral point of the orbital rim following a line bisecting the orbit from the dacryon"; therefore a helping line from the dacryions for both orbits can be drawn to aid their placement. The following code will execute the creation of the 3 planes; just copy and paste it in the Python console, then press enter. 
 
 
-| Line | Landmark | Definition | Plane for reference | Direction |
-| :--- | :--- | :--- | :--- | :--- |
-| L orbit bisecting line | dL | line bisecting dL, parallel to FHP to guide ekL placement | FHP | laterally |
-| R orbit bisecting line | dR | line bisecting dR, parallel to FHP to guide ekR placement | FHP | laterally |
 
-<img src="https://github.com/user-attachments/assets/45b1d384-5cc9-4432-b5d3-add46fd65fd4" width="500">
 
-Example of how the scene appears after runing the code below. Pleasse note that the ekL/R landmarks were placed on the R/L orbit bisecting lines after the code was executed. 
+
+
 
 <details>
-<summary>Plane and orbit bisecting lines code</summary>
+<summary>Main planes code</summary>
 
 	
 ```python
