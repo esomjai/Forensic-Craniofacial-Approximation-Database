@@ -67,7 +67,7 @@ Illustration of the method:
 
 <img width="906" height="1026" alt="image" src="https://github.com/user-attachments/assets/19d34a4f-641b-4b5e-a051-ea154bc24ac0" />
 
-Aiding code to place mid-auriculare
+#### Aiding code to place mid-auriculare
 <details>
 <summary>mid-au calculation</summary>
 
@@ -331,8 +331,105 @@ except Exception as e:
 </details>
 
 
-### Applying the regressions of Guyomarc'h et al. (2012)[^2]
-Guyomarc'h et al. (2012)[^2] devised regressions to predict the position of the oa (oculare anterior), which they converted into proportions of the OBB and OBH. Although their research did not differentiate beftween the sides for the regressions, they reported significant differences between the bony orbits, therefore the regressions in the code are side-specific. When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
+### Hard tissue measurements for prediction ONLY
+Ryu et al. (2024)[^2]  devised regressions specific for biological sex to predict the position of the oa (oculare anterior/cornea by their terminology) and the lens centre, that depend on a few chosen measurement **L/R1, 8, 15, 20**. Regressions from the bony measurements predict soft tissue dimensions **L/R21,22,23,27 and 33**; whick determines the approximated position of the eyeball in 3 dimensions. The following code creates the hard tissue measurement necessary to undertake the prediction, summarised in the table below. 
+
+| Line name | Description |
+|----------------|-------------|
+| L1 | shortest perpendicular guiding_MOM_L line to guiding_LOM_L line distance |
+| R1 | shortest perpendicular guiding_MOM_R line to guiding_LOM_R line distance |
+| L8 | shortest perpendicular guiding_SOM_L line to guiding_IOM_L line distance |
+| R8 | shortest perpendicular guiding_SOM_R line to guiding_IOM_R line distance |
+| L15 | shortest perpendicular Coronal plane-guiding_LOM_L line distance |
+| R15 | shortest perpendicular Coronal plane-guiding_LOM_R line distance |
+| L20 | shortest perpendicular Coronal plane-guiding_IOM_L line distance |
+| R20 | shortest perpendicular Coronal plane-guiding_IOM_R line distance |
+
+<details>	
+<summary> Core hard tissue measurment code </summary>
+	
+```python
+import slicer
+import numpy as np
+
+print("="*60)
+print("Running Step 3: Create Hard Tissue Measurements")
+print("="*60)
+
+def unit(v):
+    n = np.linalg.norm(v); return v / n if n > 1e-9 else v
+
+def get_landmark(node, label):
+    for i in range(node.GetNumberOfControlPoints()):
+        if node.GetNthControlPointLabel(i) == label:
+            p = np.zeros(3); node.GetNthControlPointPositionWorld(i, p)
+            return p
+    raise ValueError(f"Landmark '{label}' not found.")
+
+def get_or_create(cls, name):
+    n = slicer.mrmlScene.GetFirstNodeByName(name)
+    if not n: n = slicer.mrmlScene.AddNewNodeByClass(cls, name)
+    if "Line" in cls: n.RemoveAllControlPoints()
+    return n
+
+def style_line(line, color):
+    d = line.GetDisplayNode() or line.CreateDefaultDisplayNodes()
+    d.SetColor(color); d.SetSelectedColor(color); d.SetVisibility(True)
+
+def make_line(name, p0, p1, color, value=None):
+    ln = get_or_create("vtkMRMLMarkupsLineNode", name)
+    ln.AddControlPoint(p0); ln.AddControlPoint(p1)
+    ln.GetMeasurement("length").SetEnabled(True)
+    if value is not None: ln.GetMeasurement("length").SetValue(value)
+    style_line(ln, color)
+    return ln
+
+try:
+    hard_node = slicer.util.getNode("Ryu_hard_tissue")
+    vec_superior = np.array(slicer.util.getNode("Orbitale Transverse Plane (Trial)").GetNormal())
+    vec_right = np.array(slicer.util.getNode("Median Sagittal Plane (Trial)").GetNormal())
+    vec_anterior = np.array(slicer.util.getNode("Coronal Plane (Trial)").GetNormal())
+    
+    cyan = [0,1,1]
+    
+    for s in ["L", "R"]:
+        # L1/R1
+        lom_p = get_landmark(hard_node, f"lat_or{s}")
+        mom_p = get_landmark(hard_node, f"d{s}")
+        dist = abs(np.dot(lom_p - mom_p, vec_right))
+        make_line(f"{s}1", mom_p, mom_p + vec_right * np.dot(lom_p - mom_p, vec_right), cyan, dist)
+        
+        # L8/R8
+        som_p = get_landmark(hard_node, f"sk{s}")
+        iom_p = get_landmark(hard_node, f"or{s}")
+        dist = abs(np.dot(som_p - iom_p, vec_superior))
+        make_line(f"{s}8", iom_p, iom_p + vec_superior * np.dot(som_p - iom_p, vec_superior), cyan, dist)
+        
+        # L15/R15
+        lom_p = get_landmark(hard_node, f"lat_or{s}")
+        coronal_origin = np.array(slicer.util.getNode("Coronal Plane (Trial)").GetOrigin())
+        dist = abs(np.dot(lom_p - coronal_origin, vec_anterior))
+        make_line(f"{s}15", lom_p, lom_p - vec_anterior * np.dot(lom_p - coronal_origin, vec_anterior), cyan, dist)
+
+        # L20/R20  (shortest perpendicular Coronal plane to IOM point)
+        iom_p = get_landmark(hard_node, f"or{s}")
+        dist_iom = abs(np.dot(iom_p - coronal_origin, vec_anterior))
+        make_line(f"{s}20", iom_p, iom_p - vec_anterior * np.dot(iom_p - coronal_origin, vec_anterior), cyan, dist_iom)
+    
+    print("\nStep 3 complete. Hard tissue measurement lines created.")
+    print("\nSetup is finished. You can now use the GUI for placement.")
+
+except Exception as e:
+    slicer.util.errorDisplay(f"An error occurred in Step 3: {e}")
+
+```
+
+</details>
+
+<img width="956" height="765" alt="image" src="https://github.com/user-attachments/assets/78d8dc79-522e-4673-a23d-21eae74c81ce" />
+
+
+When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
 
 <img width="1393" height="786" alt="image" src="https://github.com/user-attachments/assets/dbe41aab-09e6-4d7e-80cb-ca305e33c9a7" />
 
@@ -376,6 +473,18 @@ You can download them [here](https://github.com/user-attachments/files/26708232/
 Once you placed the "ground truth" landmarks (called true_eyeball.lmrk.json) onto the scan (you'll likely have to use the red/green/yellow windows for a more precise placement), you can run the code below. 
 
 It will create two comparison tables: (1) for comparing length measurements between the "artificial" eyeball model and the true eyeball that were measured by Guyomarc'h et al. (2012)[^2] in the original studt to create the regressions; (2) for measuring the distance between the true vs artificial eyeball landmarks. 
+
+
+<details>	
+<summary> Eye model placement code </summary>
+	
+```python
+
+
+```
+
+</details>
+
 
 (1) 
 | Landmark from `true_eyeball.mrk.json` (scan) | Landmark from artificial eyeball | Error Measurement Name |
