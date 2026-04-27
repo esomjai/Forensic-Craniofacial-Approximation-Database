@@ -165,6 +165,65 @@ Example screenshot of the scene after creating the three main reference planes (
 
 	
 ```python
+import slicer
+import numpy as np
+
+print("="*60)
+print("Running Step 1: Create Main Anatomical Planes (Corrected)")
+print("="*60)
+
+def unit(v):
+    n = np.linalg.norm(v)
+    if n < 1e-9: raise ValueError("Cannot normalize zero-length vector")
+    return v / n
+
+def get_landmark(node, label):
+    for i in range(node.GetNumberOfControlPoints()):
+        if node.GetNthControlPointLabel(i) == label:
+            p = np.zeros(3); node.GetNthControlPointPositionWorld(i, p)
+            return p
+    raise ValueError(f"Landmark '{label}' not found.")
+
+def get_or_create(cls, name):
+    n = slicer.mrmlScene.GetFirstNodeByName(name)
+    if not n: n = slicer.mrmlScene.AddNewNodeByClass(cls, name)
+    return n
+
+def style_plane(plane, color, opacity=0.8):
+    d = plane.GetDisplayNode() or plane.CreateDefaultDisplayNodes()
+    d.SetColor(color); d.SetSelectedColor(color); d.SetOpacity(opacity); d.SetVisibility(True)
+
+try:
+    hard_node = slicer.util.getNode("Ryu_hard_tissue")
+
+    # --- THIS IS THE KEY FIX: Define vectors robustly from landmarks first ---
+    auR, auL, n = get_landmark(hard_node, 'auR'), get_landmark(hard_node, 'auL'), get_landmark(hard_node, 'n')
+    vec_right = unit(auR - auL)
+    vec_anterior_initial = unit(n - (auR + auL) / 2.0)
+    vec_anterior = unit(vec_anterior_initial - np.dot(vec_anterior_initial, vec_right) * vec_right) # Orthogonalize
+    vec_superior = unit(np.cross(vec_right, vec_anterior)) # Guarantees a right-handed system
+
+    print(f"Corrected vec_superior: {np.round(vec_superior, 2)}")
+    print(f"Corrected vec_right:    {np.round(vec_right, 2)}")
+    print(f"Corrected vec_anterior: {np.round(vec_anterior, 2)}")
+
+    # Create planes from these corrected vectors
+    midsag_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Median Sagittal Plane (Trial)")
+    midsag_plane.SetOrigin(get_landmark(hard_node, 'n')); midsag_plane.SetNormal(vec_right)
+    style_plane(midsag_plane, [0.2, 0.8, 0.2])
+
+    orbital_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Orbitale Transverse Plane (Trial)")
+    orbital_plane.SetOrigin(get_landmark(hard_node, 'orL')); orbital_plane.SetNormal(vec_superior)
+    style_plane(orbital_plane, [0.8, 0.2, 0.2])
+
+    coronal_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Coronal Plane (Trial)")
+    coronal_plane.SetOrigin(get_landmark(hard_node, 'b')); coronal_plane.SetNormal(vec_anterior)
+    style_plane(coronal_plane, [0.2, 0.2, 0.8])
+
+    print("\nStep 1 complete. Main anatomical planes created with correct orientation.")
+
+except Exception as e:
+    slicer.util.errorDisplay(f"An error occurred in Step 1: {e}")
 
 ```
 
