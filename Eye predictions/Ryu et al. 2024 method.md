@@ -332,7 +332,7 @@ except Exception as e:
 
 
 ### Hard tissue measurements for prediction ONLY
-Ryu et al. (2024)[^2]  devised regressions specific for biological sex to predict the position of the oa (oculare anterior/cornea by their terminology) and the lens centre, that depend on a few chosen measurement **L/R1, 8, 15, 20**. Regressions from the bony measurements predict soft tissue dimensions **L/R21,22,23,27 and 33**; whick determines the approximated position of the eyeball in 3 dimensions. The following code creates the hard tissue measurement necessary to undertake the prediction, summarised in the table below. 
+Ryu et al. (2024)[^2]  devised regressions specific for biological sex to predict the position of the oa (oculare anterior/cornea by their terminology) and the lens centre, that depend on a few chosen measurement **L/R1, 8, 15, 20**. Regressions from the bony measurements predict soft tissue dimensions **L/R21,22,23,27 and 33**; which determine the approximated position of the eyeball in 3 dimensions. The following code creates the hard tissue measurement necessary to undertake the prediction, summarised in the table below. 
 
 | Line name | Description |
 |----------------|-------------|
@@ -428,8 +428,29 @@ except Exception as e:
 
 <img width="956" height="765" alt="image" src="https://github.com/user-attachments/assets/78d8dc79-522e-4673-a23d-21eae74c81ce" />
 
+### Eye model placement
 
-When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
+Next, the **L/R21,22,23,27 and 33** will be calculated using the hard tissue measurements from the previous step; as published by Ryu et al. (2024)[^2]. These are not visualised before the eyeball placement, but after. When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
+
+| Predictor  | Male equation | Female equation | Predicted soft tissue measurement | Definition of soft tissue measurement |
+|----------------------|---------------|-----------------|----------------------------------|----------------------------------------|
+| L1 | L23 = 0.844 × L1 - 11.224 | L23 = 0.619 × L1 - 2.175 | L23 |oaL perpendicular distance "inward/laterally" from the MOM_L |
+| L8 | L21 = 0.560 × L8 - 3.648 | L21 = 0.349 × L8 + 4.320 | L21 | oaL perpendicular distance "downward" from the SOM_L |
+| L8 | L22 = 0.439 × L8 + 3.662 | L22 = 0.652 × L8 - 4.353 | L22 | oaL perpendicular distance "upward" from the IOM_L |
+| L15 | L27 = 0.989 × L15 + 11.550 | L27 = 1.007 × L15 + 9.552 | L27 | lcL perpendicular distance "forward/anterior" from the Coronal plane |
+| L15 | L33 = 0.950 × L15 + 19.126 | L33 = 1.005 × L15 + 14.700 | L33 | oaL perpendicular distance "forward/anterior" from the Coronal plane |
+| L20 | L27 = 0.889 × L20 + 11.756 | L27 = 0.969 × L20 + 5.309 | L27 | lcL perpendicular distance "forward/anterior" from the Coronal plane |
+| L20 | L33 = 0.865 × L20 + 18.436 | L33 = 1.028 × L20 + 6.826 | L33 | oaL perpendicular distance "forward/anterior" from the Coronal plane |
+| R1 | R23 = 0.734 × R1 - 6.687 | R23 = 0.449 × R1 + 4.505 | R23 | oaR perpendicular distance "inward/laterally" from the MOM_R |
+| R8 | R21 = 0.562 × R8 - 3.923 | R21 = 0.407 × R8 + 2.082 | R21 | oaR perpendicular distance "downward" from the SOM_R |
+| R8 | R22 = 0.438 × R8 + 3.939 | R22 = 0.593 × R8 - 2.064 | R22 | oaR perpendicular distance "upward" from the IOM_R |
+| R15 | R27 = 0.978 × R15 + 12.421 | R27 = 0.951 × R15 + 12.818 | R27 | lcR perpendicular distance "forward/anterior" from the Coronal plane |
+| R15 | R33 = 0.954 × R15 + 18.983 | R33 = 0.973 × R15 + 16.707 | R33 | oaR perpendicular distance "forward/anterior" from the Coronal plane |
+| R20 | R27 = 0.867 × R20 + 13.012 | R27 = 0.905 × R20 + 9.297 | R27 | lcR perpendicular distance "forward/anterior" from the Coronal plane |
+| R20 | R33 = 0.840 × R20 + 19.843 | R33 = 0.985 × R20 + 9.354 | R33 | oaR perpendicular distance "forward/anterior" from the Coronal plane |
+
+
+When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did differentiate between the biological sexes hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
 
 <img width="1393" height="786" alt="image" src="https://github.com/user-attachments/assets/dbe41aab-09e6-4d7e-80cb-ca305e33c9a7" />
 
@@ -438,15 +459,6 @@ Expect this additional window on the right.
 <img width="658" height="288" alt="image" src="https://github.com/user-attachments/assets/547c0cef-daab-4144-a003-433f58fd51ae" />
 
 Illustrating the drop-down menu
-
-
-Summary of the lengths and directions of the regressions adjusted for side-specific coding: 
-
-| Direction of eyeball | Left orbit | Right orbit |
-| :--- | :--- | :--- |
-| Superoinferior | 44.1% of OBH from skL | 44.1% of OBH from skR |
-| Mediolateral | 57.6% of OBB from dL | 57.6% of OBB from dR |
-| Anteroposterior | 51.3% of OBH from dlomL | 51.3% of OBH from dlomR |
 
 
 <details>	
