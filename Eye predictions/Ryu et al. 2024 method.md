@@ -50,6 +50,8 @@ The original method was carried out on post-mortem CTs on a population of 171 Ko
 | 32 | 33 | 🟦oaR | Cornea (right) | The most anterior point of the RIGHT eyeball | originally undefined! | soft |
 | 33 | 34 | 🟦pL | if available, left pupulare | IF DISTINGUISHABLE, Centre of the LEFT pupil | ADDITIONAL | soft |
 | 34 | 35 | 🟦pR | if available, right pupulare | IF DISTINGUISHABLE, Centre of the RIGHT pupil | ADDITIONAL | soft |
+| 35 | 36 | 🟦gcL | left globe centre | calculated programmatically | originally undefined! | soft |
+| 36 | 37 | 🟦gcR | right globe centre | calculated programmatically | originally undefined! | soft |
 
 > [!IMPORTANT]
 > The landmarks with the 🟦 symbol are for reproducing the entire method for validation and not essential to place for applying the eyeball placement for facial approximation.
