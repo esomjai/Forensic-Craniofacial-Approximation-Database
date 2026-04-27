@@ -450,23 +450,316 @@ Next, the **L/R21,22,23,27 and 33** will be calculated using the hard tissue mea
 | R20 | R33 = 0.840 × R20 + 19.843 | R33 = 0.985 × R20 + 9.354 | R33 | oaR perpendicular distance "forward/anterior" from the Coronal plane |
 
 
-When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did differentiate between the biological sexes hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
+When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did differentiate between the biological sexes hence the option. 
+All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
+There is also an option to choose whether you want to use **L/R15 or L/R20 or their average** for calculating **L/R27 and L/R33** - this is beacuse the original authors provided multiple, equally well-performing regressions for these. 
 
-<img width="867" height="953" alt="image" src="https://github.com/user-attachments/assets/e8bf3b33-6c96-4973-824b-bd0bb04ac154" />
+> [!IMPORTANT]
+> After the left eyeball is placed, the scene may "jump". No action needed, it should be restored either after the right eye is placed, or simply clicking the "Anterior" direction in the scene view
+
+
 
 
 Expect this additional window on the right. 
 
-<img width="658" height="288" alt="image" src="https://github.com/user-attachments/assets/547c0cef-daab-4144-a003-433f58fd51ae" />
 
-Illustrating the drop-down menu
+
+Expected view after the eyeball placement for both sides is done
+
+
 
 
 <details>	
 <summary> Eye model placement code </summary>
 	
 ```python
+import slicer
+import qt
+import numpy as np
+import os
+import vtk
 
+try:
+    import gdown
+except ImportError:
+    slicer.util.showStatusMessage("Installing 'gdown' package...", 2000)
+    slicer.util.pip_install('gdown')
+    import gdown
+
+class TrialEyeballPlacementWidget(qt.QWidget):
+    def __init__(self, parent=None):
+        super(TrialEyeballPlacementWidget, self).__init__(parent)
+        self.setup()
+
+    def setup(self):
+        self.setLayout(qt.QVBoxLayout())
+        
+        infoLabel = qt.QLabel("This tool places an eyeball model based on the 'Trial' method geometry.")
+        infoLabel.setWordWrap(True)
+        self.layout().addWidget(infoLabel)
+        
+        formLayout = qt.QFormLayout()
+        self.sex_combo = qt.QComboBox()
+        self.sex_combo.addItems(["Female", "Male"])
+        formLayout.addRow("Biological Sex:", self.sex_combo)
+        
+        self.side_combo = qt.QComboBox()
+        self.side_combo.addItems(["Left", "Right"])
+        formLayout.addRow("Side:", self.side_combo)
+        self.layout().addLayout(formLayout)
+
+        # Prediction method selection (items will be side-specific)
+        self.method_group = qt.QGroupBox("Prediction method for soft tissue distances")
+        method_layout = qt.QFormLayout(self.method_group)
+        
+        self.method_L27_label = qt.QLabel("Predict measurement 27 (coronal to lc point):")
+        self.method_L33_label = qt.QLabel("Predict measurement 33 (coronal to oa point):")
+        self.method_27_combo = qt.QComboBox()
+        self.method_33_combo = qt.QComboBox()
+        
+        method_layout.addRow(self.method_L27_label, self.method_27_combo)
+        method_layout.addRow(self.method_L33_label, self.method_33_combo)
+        
+        self.layout().addWidget(self.method_group)
+
+        self.place_button = qt.QPushButton("Place Eyeball")
+        self.place_button.toolTip = "Run the placement based on the selected Sex, Side and prediction methods"
+        self.place_button.setStyleSheet("background-color: #A9DFBF; font-weight: bold; padding: 8px;")
+        self.layout().addWidget(self.place_button)
+        
+        self.status_label = qt.QLabel("Ready.")
+        self.status_label.setWordWrap(True)
+        self.layout().addWidget(self.status_label)
+        
+        self.layout().addStretch(1)
+
+        # Connections
+        self.place_button.clicked.connect(self.run_placement)
+        self.side_combo.currentIndexChanged.connect(self.update_prediction_ui)
+
+        # Initial UI update
+        self.update_prediction_ui()
+
+    def update_prediction_ui(self):
+        """Update labels and combo box items to reflect current side (L or R)."""
+        side = self.side_combo.currentText
+        side_char = side[0]  # 'L' or 'R'
+        
+        self.method_L27_label.setText(f"Predict {side_char}27 (coronal to lc point):")
+        self.method_L33_label.setText(f"Predict {side_char}33 (coronal to oa point):")
+        
+        # Store current selection to preserve choice type
+        current_27 = self.method_27_combo.currentText
+        current_33 = self.method_33_combo.currentText
+        
+        def get_choice_type(text):
+            if text.startswith("Use L") or text.startswith("Use R"):
+                return "use_L15" if "L15" in text or "R15" in text else "use_L20"
+            return "average"
+        
+        choice_27 = get_choice_type(current_27) if current_27 else "use_L15"
+        choice_33 = get_choice_type(current_33) if current_33 else "use_L15"
+        
+        new_items = [f"Use {side_char}15", f"Use {side_char}20", f"Average ({side_char}15+{side_char}20)"]
+        self.method_27_combo.clear()
+        self.method_27_combo.addItems(new_items)
+        self.method_33_combo.clear()
+        self.method_33_combo.addItems(new_items)
+        
+        # Restore selection
+        self.method_27_combo.setCurrentIndex(0 if choice_27 == "use_L15" else 1 if choice_27 == "use_L20" else 2)
+        self.method_33_combo.setCurrentIndex(0 if choice_33 == "use_L15" else 1 if choice_33 == "use_L20" else 2)
+
+    def run_placement(self):
+        self.status_label.setText("Starting placement...")
+        slicer.app.processEvents()
+        
+        try:
+            SEX = self.sex_combo.currentText
+            SIDE = self.side_combo.currentText
+            side_char = SIDE[0]
+            
+            def get_node(name, cls):
+                node = slicer.mrmlScene.GetFirstNodeByName(name)
+                if not node or not node.IsA(cls):
+                    raise ValueError(f"Required node '{name}' of type {cls} not found. Please run the setup script first.")
+                return node
+            
+            def get_line_length(name):
+                return get_node(name, "vtkMRMLMarkupsLineNode").GetMeasurement("length").GetValue()
+
+            # Read measurements
+            self.status_label.setText(f"1. Reading measurements for {SIDE} side...")
+            L1 = get_line_length(f"{side_char}1")
+            L8 = get_line_length(f"{side_char}8")
+            L15 = get_line_length(f"{side_char}15")
+            L20 = get_line_length(f"{side_char}20")
+
+            # L21, L22, L23 from L8 and L1
+            if SEX == "Female":
+                pred_L21 = 0.349 * L8 + 4.320
+                pred_L22 = 0.652 * L8 - 4.353
+                pred_L23 = 0.619 * L1 - 2.175
+            else:  # Male
+                pred_L21 = 0.560 * L8 - 3.648
+                pred_L22 = 0.439 * L8 + 3.662
+                pred_L23 = 0.844 * L1 - 11.224
+
+            # Predictions from L15 and L20 for 27 and 33
+            if SEX == "Female":
+                pred27_from_L15 = 1.007 * L15 + 9.552
+                pred27_from_L20 = 0.969 * L20 + 5.309
+                pred33_from_L15 = 1.005 * L15 + 14.700
+                pred33_from_L20 = 1.028 * L20 + 6.826
+            else:  # Male
+                pred27_from_L15 = 0.989 * L15 + 11.550
+                pred27_from_L20 = 0.889 * L20 + 11.756
+                pred33_from_L15 = 0.950 * L15 + 19.126
+                pred33_from_L20 = 0.865 * L20 + 18.436
+
+            # Apply user method
+            method_27_text = self.method_27_combo.currentText
+            if "Use R15" in method_27_text or "Use L15" in method_27_text:
+                pred27 = pred27_from_L15
+            elif "Use R20" in method_27_text or "Use L20" in method_27_text:
+                pred27 = pred27_from_L20
+            else:
+                pred27 = (pred27_from_L15 + pred27_from_L20) / 2.0
+
+            method_33_text = self.method_33_combo.currentText
+            if "Use R15" in method_33_text or "Use L15" in method_33_text:
+                pred33 = pred33_from_L15
+            elif "Use R20" in method_33_text or "Use L20" in method_33_text:
+                pred33 = pred33_from_L20
+            else:
+                pred33 = (pred33_from_L15 + pred33_from_L20) / 2.0
+
+            # Vectors and planes
+            vS = np.array(get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode").GetNormal())
+            vR = np.array(get_node("Median Sagittal Plane (Trial)", "vtkMRMLMarkupsPlaneNode").GetNormal())
+            vA = np.array(get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode").GetNormal())
+
+            p_si_1 = np.array(get_node(f"marginal_SOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) - vS * pred_L21
+            p_si_2 = np.array(get_node(f"marginal_IOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vS * pred_L22
+            d_si = 0.5 * (np.dot(vS, p_si_1) + np.dot(vS, p_si_2))
+
+            lat_dir = -vR if side_char == "L" else vR
+            p_ml = np.array(get_node(f"marginal_MOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + lat_dir * pred_L23
+            d_ml = np.dot(vR, p_ml)
+
+            p_ap = np.array(get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vA * pred33
+            d_ap = np.dot(vA, p_ap)
+
+            target_pos = np.linalg.solve(np.array([vS, vR, vA]), np.array([d_si, d_ml, d_ap]))
+
+            # --- Save current camera state ---
+            def get_camera_state():
+                view = slicer.app.layoutManager().threeDWidget(0).threeDView()
+                renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
+                cam = renderer.GetActiveCamera()
+                return (cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp())
+            
+            camera_state = get_camera_state()
+
+            # Download and place model
+            self.status_label.setText("3. Downloading model...")
+            IDS = {
+                "Female Left": "1k0VSUYA6ZM8ihOS50A69Iah-4SDr4sfu",
+                "Female Right": "1boOyC2Z_N0FZT-6F5i3p3ozjJ-8UUUIG",
+                "Male Left": "1qpSXWe3c96U0CgxJnUL6-QuSaZfhj6AC",
+                "Male Right": "1W-xeGiLqOPitoIWHFOJcjzU5UW7Uyf1s"
+            }
+            key = f"{SEX} {SIDE}"
+            mrb_path = os.path.join(slicer.app.temporaryPath, f"trial_{key.replace(' ','_')}.mrb")
+            gdown.download(id=IDS[key], output=mrb_path, quiet=False)
+            
+            nodes_before = set(slicer.util.getNodesByClass("vtkMRMLNode"))
+            slicer.util.loadScene(mrb_path, {"clear": False, "loadCamera": False})
+            new_nodes = list(set(slicer.util.getNodesByClass("vtkMRMLNode")) - nodes_before)
+
+            xform_node, oa0_pos = None, None
+            for node in new_nodes:
+                if node.IsA("vtkMRMLLinearTransformNode"):
+                    xform_node = node
+                if node.IsA("vtkMRMLMarkupsFiducialNode"):
+                    if node.GetControlPointIndexByLabel(f"oa{side_char}") >= 0:
+                        p = np.zeros(3)
+                        node.GetNthControlPointPositionWorld(node.GetControlPointIndexByLabel(f"oa{side_char}"), p)
+                        oa0_pos = p
+
+            if xform_node is None or oa0_pos is None:
+                raise ValueError("Could not find model transform or 'oa' landmark.")
+
+            translation = target_pos - oa0_pos
+            matrix = vtk.vtkMatrix4x4()
+            xform_node.GetMatrixTransformToParent(matrix)
+            for i in range(3):
+                matrix.SetElement(i, 3, matrix.GetElement(i, 3) + translation[i])
+            xform_node.SetMatrixTransformToParent(matrix)
+
+            # Create prediction lines
+            def make_pred_line(name, p0, p1, value, color=(0,0,1)):
+                ln = slicer.mrmlScene.GetFirstNodeByName(name)
+                if not ln:
+                    ln = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+                ln.RemoveAllControlPoints()
+                ln.AddControlPoint(p0)
+                ln.AddControlPoint(p1)
+                ln.GetMeasurement("length").SetEnabled(True)
+                ln.GetMeasurement("length").SetValue(value)
+                d = ln.GetDisplayNode() or ln.CreateDefaultDisplayNodes()
+                d.SetColor(color[0], color[1], color[2])
+                d.SetSelectedColor(1, 1, 0)
+                d.SetVisibility(True)
+
+            coronal_origin = np.array(get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode").GetOrigin())
+            p_on_som = target_pos - vS * np.dot(target_pos - np.array(get_node(f"marginal_SOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()), vS)
+            p_on_iom = target_pos - vS * np.dot(target_pos - np.array(get_node(f"marginal_IOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()), vS)
+            p_on_mom = target_pos - vR * np.dot(target_pos - np.array(get_node(f"marginal_MOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()), vR)
+            p_on_coronal = target_pos - vA * np.dot(target_pos - coronal_origin, vA)
+
+            make_pred_line(f"pred_{side_char}21", target_pos, p_on_som, pred_L21)
+            make_pred_line(f"pred_{side_char}22", target_pos, p_on_iom, pred_L22)
+            make_pred_line(f"pred_{side_char}23", target_pos, p_on_mom, pred_L23)
+            make_pred_line(f"pred_{side_char}33", target_pos, p_on_coronal, pred33)
+            make_pred_line(f"pred_{side_char}27", target_pos, p_on_coronal, pred27)
+
+            # --- Restore camera state ---
+            view = slicer.app.layoutManager().threeDWidget(0).threeDView()
+            renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
+            cam = renderer.GetActiveCamera()
+            pos, fp, up = camera_state
+            cam.SetPosition(pos)
+            cam.SetFocalPoint(fp)
+            cam.SetViewUp(up)
+            view.renderWindow().Render()
+
+            final_message = (f"Eyeball placement complete!\n"
+                             f"Predicted distances for {SIDE} side:\n"
+                             f"{side_char}21 = {pred_L21:.2f} mm\n"
+                             f"{side_char}22 = {pred_L22:.2f} mm\n"
+                             f"{side_char}23 = {pred_L23:.2f} mm\n"
+                             f"{side_char}27 = {pred27:.2f} mm (method: {method_27_text})\n"
+                             f"{side_char}33 = {pred33:.2f} mm (method: {method_33_text})")
+            self.status_label.setText(final_message)
+            slicer.util.infoDisplay(final_message)
+
+        except Exception as e:
+            self.status_label.setText(f"ERROR: {e}")
+            slicer.util.errorDisplay(f"An error occurred: {e}")
+            raise e
+
+# Cleanup and instantiation
+try:
+    if 'trial_placement_widget' in globals() and trial_placement_widget:
+        trial_placement_widget.parent().close()
+except NameError:
+    pass
+
+trial_placement_widget = TrialEyeballPlacementWidget()
+dock_widget = qt.QDockWidget("Trial Eyeball Placement")
+dock_widget.setWidget(trial_placement_widget)
+slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dock_widget)
 
 ```
 
