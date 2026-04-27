@@ -145,7 +145,7 @@ update_mid_auriculare_midpoint()
 Example of scene when hard tissue landmarks are allocated
 
 
-### Planes & Guiding lines
+### Main Planes
 
 Ryu et al. (2024)[^2] defined 3 anatomical planes as reference for the further steps in their method: The Frankfort Horizontal plane, the sagittal and frontal planes.  The following code will execute the creation of the 3 planes; just copy and paste it in the Python console, then press enter. 
 
@@ -230,43 +230,100 @@ except Exception as e:
 </details>
 
 
-### Marginal lines and bony measurements
+### Marginal lines and planes
 
-Now that the ectoconchions (ekL/R) have also been placed, the reference lines bisecting the most extreme landmarks can be programmatically created. These are techinically infinite lines, but will be uniformly 75 mm to visualise them - please note that these are NOT measurements. The true measurments will also be created via this code snippet - the OBH (orbital height) and OBB (orbital breadth); which are consequently used in the linear regression to place the "artificial" eye. (LINK)
-Below are the definitions of all the lines/measurements created via the code below:
+Now that the "blueprint" planes are present, the guiding lines and marginal planes bisecting the most extreme landmarks can be programmatically created. These are both techinically infinite, but  the guiding lines will be uniformly 75 mm to visualise them - please note that these are NOT measurements. 
+Below are the definitions of all the lines/planes created via the code below:
 
 | Line | Landmark to Bisect | Definition | Plane for Reference | Direction | Defined by |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| SOM_L | skL | superior orbital margin on the left | parallel to FHP | laterally | Stephan, 2008 [^5] |
-| MOM_L | dL | medial orbital margin on the left | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
-| LOM_L | ekL | lateral-most point on the lateral orbital margin on the left | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
-| IOM_L | orL | inferior-most point on the infraorbital margin (orbitale) on the left | parallel to FHP | laterally | Stephan, 2008 [^5] |
-| SOM_R | skR | superior orbital margin on the right | parallel to FHP | laterally | Stephan, 2008 [^5] |
-| MOM_R | dR | medial orbital margin on the right | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
-| LOM_R | ekR | lateral-most point on the lateral orbital margin on the right | parallel to Sp | superoinferiorly | Stephan, 2008 [^5] |
-| IOM_R | orR | inferior-most point on the infraorbital margin (orbitale) on the right | parallel to FHP | laterally | Stephan, 2008 [^5] |
-| DLOM_L | dlomL | deepest or most posterior margin on the LEFT orbit | parallel to Fp | superoinferiorly | Stephan, 2008 [^5] |
-| DLOM_R | dlomR | deepest or most posterior margin on the RIGHT orbit | parallel to Fp | superoinferiorly | Stephan, 2008 [^5] |
+|------|--------------------|------------|---------------------|-----------|-------------|
+| guiding_SOM_L/R | skL/R | superior orbital margin on the left/right | parallel to Orbitale transverse plane | laterally | Stephan, 2008[^5] |
+| guiding_MOM_L/R | dL/R | medial orbital margin on the left/right | parallel to Median sagittal plane | superoinferiorly | Stephan, 2008[^5] |
+| guiding_LOM_L | lat_orL | lateral-most point on the lateral orbital margin on the left | parallel to Median sagittal plane | superoinferiorly | Stephan, 2008[^5] |
+| guiding_LOM_R | lat_orR | lateral-most point on the lateral orbital margin on the right | parallel to Median sagittal plane | superoinferiorly | Ryu et al 2024[^2] |
+| guiding_IOM_L/R | orL/R | inferior-most point on the infraorbital margin (orbitale) on the left/right | parallel to Orbitale transverse plane | laterally | Stephan, 2008[^5] |
 
-| Abbreviation | Measurement | Original definition | Slicer definition |
-| :--- | :--- | :--- | :--- |
-| OBH_L | left orbital height | Projected vertical distance between skL and orL | perpendicular (shortest) distance between the SOM_L and IOM_L |
-| OBH_R | right orbital height | Projected vertical distance between skR and orR | perpendicular (shortest) distance between the SOM_R and IOM_R |
-| OBB_L | left orbital breadth | Direct distance between ekL and dL, bisecting the LEFT orbit | ekL to dL |
-| OBB_R | right orbital breadth | Direct distance between ekR and dR, bisecting the RIGHT orbit | ekR to dR |
+| Plane | Landmark to Bisect | Definition | Plane for Reference | Direction | Defined by |
+|-------|--------------------|------------|---------------------|-----------|-------------|
+| marginal_SOM_L/R | skL/R | superior orbital marginal plane on the left/right | parallel to Orbitale transverse plane | superoinferiorly | Stephan, 2008[^5] |
+| marginal_MOM_L/R | dL/R | medial orbital marginal plane on the left/right | parallel to Median sagittal plane | laterally | Stephan, 2008[^5] |
+| marginal_LOM_L | lat_orL | lateral-most point on the lateral orbital marginal plane on the left | parallel to Median sagittal plane | laterally | Stephan, 2008[^5] |
+| marginal_LOM_R | lat_orR | lateral-most point on the lateral orbital marginal plane on the right | parallel to Median sagittal plane | laterally | Ryu et al 2024[^2] |
+| marginal_IOM_L/R | orL/R | inferior-most point on the infraorbital marginal plane (orbitale) on the left/right | parallel to Orbitale transverse plane | superoinferiorly | Stephan, 2008[^5] |
+
+* note that the directionalities are opposite for planes and lines!
+
+<img width="947" height="791" alt="image" src="https://github.com/user-attachments/assets/f806980f-b5ea-4bab-93af-7817b06f0ef8" />
 
 
-
-<img src="https://github.com/user-attachments/assets/6a281256-ee46-4a2a-b631-c2e3de31e991" width="500">
-
-Screenshot after the code below was run, allother lines/planes/landmarks were hidden from visibility. Note the orbital height line positions - as these are defined as the shortest perpendicular distance, their positions may look as if they are not in the orbit. They are still measureing the "correct" length between the superior and inferior orbital margins (marginal lines).
+Screenshot after the code below was run, all other lines/planes/landmarks were hidden from visibility.
 
 
 <details>	
-<summary> Marginal and OBB/OBH lines code </summary>
+<summary> Marginal planes and guiding lines code </summary>
 
 ```python
+import slicer
+import numpy as np
 
+print("="*60)
+print("Running Step 2: Create Marginal Planes and Guiding Lines")
+print("="*60)
+
+def unit(v):
+    n = np.linalg.norm(v); return v / n if n > 1e-9 else v
+
+def get_landmark(node, label):
+    for i in range(node.GetNumberOfControlPoints()):
+        if node.GetNthControlPointLabel(i) == label:
+            p = np.zeros(3); node.GetNthControlPointPositionWorld(i, p)
+            return p
+    raise ValueError(f"Landmark '{label}' not found.")
+
+def get_or_create(cls, name):
+    n = slicer.mrmlScene.GetFirstNodeByName(name)
+    if not n: n = slicer.mrmlScene.AddNewNodeByClass(cls, name)
+    if "Line" in cls: n.RemoveAllControlPoints()
+    return n
+
+def style_line(line, color):
+    d = line.GetDisplayNode() or line.CreateDefaultDisplayNodes()
+    d.SetColor(color); d.SetSelectedColor(color); d.SetVisibility(True)
+
+def style_plane(plane, color, opacity=0.8):
+    d = plane.GetDisplayNode() or plane.CreateDefaultDisplayNodes()
+    d.SetColor(color); d.SetSelectedColor(color); d.SetOpacity(opacity); d.SetVisibility(True)
+
+def make_line(name, p0, p1, color):
+    ln = get_or_create("vtkMRMLMarkupsLineNode", name)
+    ln.AddControlPoint(p0); ln.AddControlPoint(p1)
+    ln.GetMeasurement("length").SetEnabled(True)
+    style_line(ln, color)
+
+try:
+    hard_node = slicer.util.getNode("Ryu_hard_tissue")
+    
+    # Get vectors from the correctly oriented main planes
+    vec_superior = np.array(slicer.util.getNode("Orbitale Transverse Plane (Trial)").GetNormal())
+    vec_right = np.array(slicer.util.getNode("Median Sagittal Plane (Trial)").GetNormal())
+
+    # Create marginal geometry
+    defs = [
+        ("SOM", "sk", vec_superior, vec_right), ("IOM", "or", vec_superior, vec_right),
+        ("MOM", "d", vec_right, vec_superior), ("LOM", "lat_or", vec_right, vec_superior)
+    ]
+    for base, lm_prefix, plane_n, line_dir in defs:
+        for s in ["L", "R"]:
+            p = get_landmark(hard_node, f"{lm_prefix}{s}")
+            c = [1,0.7,0.2] if s=="L" else [0.2,0.7,1] # Orange for Left, Purple for Right
+            pl = get_or_create("vtkMRMLMarkupsPlaneNode", f"marginal_{base}_{s}")
+            pl.SetOrigin(p); pl.SetNormal(plane_n); style_plane(pl, c)
+            make_line(f"guiding_{base}_{s}", p - line_dir*37.5, p + line_dir*37.5, c)
+
+    print("\nStep 2 complete. Marginal planes and guiding lines created.")
+
+except Exception as e:
+    slicer.util.errorDisplay(f"An error occurred in Step 2: {e}")
 
 
 ```
