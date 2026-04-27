@@ -1,8 +1,8 @@
-# The Ryu et al. (2024)[^2] 
+# The Ryu et al. (2024)[^2] method 
 
 The following guide is constructed by the available original study by Ryu et al. (2024)[^2].
 
-The original method was carried out on post-mortem CTs on a population of 171 adults. It devised multple linear regressions to place the most anterior point of the eyeball in 3 dimensions in relation to the bony orbit, with slightly different definitions for orbital breadth and height. 
+The original method was carried out on post-mortem CTs on a population of 171 Korean adults. It devised multple linear regressions to place the most anterior point of the eyeball in 3 dimensions in relation to the bony orbit, with slightly different definitions for orbital breadth and height. 
 
 ## Table of Contents
 
@@ -61,10 +61,83 @@ Illustration of the method:
 > Before you proceed, please make sure you completed the following steps: 
 
 - [ ] The scan has to be re-aligned in the FHP
-- [ ] Hard tissue landmarks from the [hard tissue landmark file]([Ryu_hard_tissue.mrk.json](https://github.com/user-attachments/files/27120614/Ryu_hard_tissue.mrk.json)
-have to be allocated
+- [ ] Hard tissue landmarks from the [hard tissue landmark file]([Ryu_hard_tissue.mrk.json](https://github.com/user-attachments/files/27120614/Ryu_hard_tissue.mrk.json); except for the mis-auriculare have to be allocated
 
 <img width="906" height="1026" alt="image" src="https://github.com/user-attachments/assets/19d34a4f-641b-4b5e-a051-ea154bc24ac0" />
+
+Aiding code to place mid-auriculare
+<details>
+<summary>mid-au calculation</summary>
+
+	
+```python
+import slicer
+import numpy as np
+
+def update_mid_auriculare_midpoint():
+    """
+    Calculates the midpoint between 'auL' and 'auR' from a loaded fiducial node
+    and updates the position of the 'mid_au' landmark within that same node.
+    """
+    
+    # --- 1. Configuration ---
+    # The name of your fiducial list node in the Slicer scene.
+    # This should match the name of the file you loaded.
+    fiducials_node_name = "Ryu_hard_tissue" 
+    
+    # --- 2. Get the Landmark Node ---
+    try:
+        landmarks_node = slicer.util.getNode(fiducials_node_name)
+    except slicer.util.MRMLNodeNotFoundException:
+        slicer.util.errorDisplay(
+            f"Landmark node '{fiducials_node_name}' not found. "
+            "Please load your 'Ryu_hard_tissue.mrk.json' file first."
+        )
+        return
+
+    # --- 3. Get Auriculare Positions ---
+    auL_pos, auR_pos = None, None
+    for i in range(landmarks_node.GetNumberOfControlPoints()):
+        label = landmarks_node.GetNthControlPointLabel(i)
+        pos = np.zeros(3)
+        landmarks_node.GetNthControlPointPosition(i, pos)
+        if label == "auL":
+            auL_pos = pos
+        elif label == "auR":
+            auR_pos = pos
+
+    # Check if both landmarks were found
+    if auL_pos is None or auR_pos is None:
+        slicer.util.errorDisplay("Could not find 'auL' and/or 'auR' in the landmark node.")
+        return
+
+    # --- 4. Calculate the Correct Midpoint ---
+    correct_mid_au_pos = (auL_pos + auR_pos) / 2.0
+    
+    # --- 5. Find and Update the 'mid_au' Landmark ---
+    mid_au_index = -1
+    for i in range(landmarks_node.GetNumberOfControlPoints()):
+        if landmarks_node.GetNthControlPointLabel(i) == "mid_au":
+            mid_au_index = i
+            break
+            
+    if mid_au_index != -1:
+        # Update the position of the existing 'mid_au' point
+        landmarks_node.SetNthControlPointPosition(mid_au_index, correct_mid_au_pos)
+        slicer.util.infoDisplay(
+            f"Successfully updated 'mid_au' landmark to its correct position: {correct_mid_au_pos}"
+        )
+    else:
+        # If 'mid_au' doesn't exist for some reason, add it
+        landmarks_node.AddControlPoint(correct_mid_au_pos, "mid_au")
+        slicer.util.warningDisplay("The 'mid_au' landmark was not found, so a new one has been added at the correct position.")
+        
+# --- Run the function ---
+update_mid_auriculare_midpoint()
+```
+
+</details>
+
 
 
 Example of scene when hard tissue landmarks are allocated
@@ -72,12 +145,17 @@ Example of scene when hard tissue landmarks are allocated
 
 ### Planes & Guiding lines
 
-Ryu et al. (2024)[^2] defined 3 anatomical planes as reference for the further steps in their method: The Frankfort Horizontal plane, the sagittal and frontal planes. In addition, the *ectoconchion* landmarks are defined as "The most lateral point of the orbital rim following a line bisecting the orbit from the dacryon"; therefore a helping line from the dacryions for both orbits can be drawn to aid their placement. The following code will execute the creation of the 3 planes; just copy and paste it in the Python console, then press enter. 
+Ryu et al. (2024)[^2] defined 3 anatomical planes as reference for the further steps in their method: The Frankfort Horizontal plane, the sagittal and frontal planes.  The following code will execute the creation of the 3 planes; just copy and paste it in the Python console, then press enter. 
 
+| Plane |  Definition |
+| :--- | :--- |
+| Median sagittal plane | Plane passing through 3 landmarks, Nasion, prosthion, auriculare midpoint |
+| Orbitale transverse plane | Plane passing through 2 landmarks, orbitale left and auriculare midpoint and orthogonal to the medial sagittal plane |
+| Coronal plane | Plane passing through 1 landmark, bregma and orthogonal to the median sagittal and orbitale transverse planes |
 
+<img width="923" height="908" alt="image" src="https://github.com/user-attachments/assets/4607a058-99dc-4cb7-9b19-5240ebfc54b0" />
 
-
-
+Example screenshot of the scene after creating the three main reference planes (note that the plane "sizes" were adjusted for visual purposes, they are technically infinite)
 
 
 <details>
