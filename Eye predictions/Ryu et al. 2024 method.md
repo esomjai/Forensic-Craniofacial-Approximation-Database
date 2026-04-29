@@ -1206,7 +1206,7 @@ There have been some soft tissue measurements (L/R21, 22, 23, 27, 33) that were 
 | E6_R | | right Globe lateral—right Globe medial | olR to omR |
 
 <details>	
-<summary> Additional soft tissue measurements </summary>
+<summary> Additional presoft tissue measurements </summary>
 	
 ```python
 import slicer
