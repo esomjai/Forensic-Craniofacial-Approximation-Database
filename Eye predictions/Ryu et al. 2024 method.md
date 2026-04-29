@@ -1164,29 +1164,167 @@ except Exception as e:
 
 There have been some soft tissue measurements (L/R21, 22, 23, 27, 33) that were predicted in the step where the artificial eyes were placed. The rest of the predicted soft tissue distances are created by the code below. 
 
+##### More Guide lines
 There will be added lines (similar to the guiding_lines previously) to ensure the parallell measurement theme in the original study. 
 
-(1)Additional lines
-| bisects (in Right/Left Eyeball lmrks) | is parallel to | Reference Plane |
-|---------------------------------------|----------------|-----------------|
-| pred_lcL line | lcL | Coronal |
-| pred_lcR line | lcR | Coronal |
-| pred_ocpR line | ocpR | Coronal |
-| pred_ocpL line | ocpL | Coronal |
-| pred_laR line | laR | Coronal |
-| pred_laL line | laL | Coronal |
-| pred_oaR line | oaR | Coronal |
-| pred_oaL line | oaL | Coronal |
-| pred_lpR line | lpR | Coronal |
-| pred_lpL line | lpL | Coronal |
-| pred_oiR line | oiR | orbital transverse |
-| pred_oiL line | oiL | orbital transverse |
-| pred_osR line | osR | orbital transverse |
-| pred_osL line | osL | orbital transverse |
-| pred_omR line | omR | Coronal |
-| pred_omL line | omL | Coronal |
-| pred_olR line | olR | Coronal |
-| pred_olL line | olL | Coronal |
+| Source | guide_line | bisects | is parallel to |
+|--------|------------|---------|----------------|
+| Predicted (Eyeball lmrks) | pred_lcL line | lcL | Coronal |
+| | pred_lcR line | lcR | Coronal |
+| | pred_ocpR line | ocpR | Coronal |
+| | pred_ocpL line | ocpL | Coronal |
+| | pred_laR line | laR | Coronal |
+| | pred_laL line | laL | Coronal |
+| | pred_oaR line | oaR | Coronal |
+| | pred_oaL line | oaL | Coronal |
+| | pred_lpR line | lpR | Coronal |
+| | pred_lpL line | lpL | Coronal |
+| | pred_oiR line | oiR | orbital transverse |
+| | pred_oiL line | oiL | orbital transverse |
+| | pred_osR line | osR | orbital transverse |
+| | pred_osL line | osL | orbital transverse |
+| | pred_omR line | omR | Coronal |
+| | pred_omL line | omL | Coronal |
+| | pred_olR line | olR | Coronal |
+| | pred_olL line | olL | Coronal |
+| True (Ryu_soft_tissue) | true_lcL line | true_lcL | Coronal |
+| | true_lcR line | true_lcR | Coronal |
+| | true_ocpR line | true_ocpR | Coronal |
+| | true_ocpL line | true_ocpL | Coronal |
+| | true_laR line | true_laR | Coronal |
+| | true_laL line | true_laL | Coronal |
+| | true_oaR line | true_oaR | Coronal |
+| | true_oaL line | true_oaL | Coronal |
+| | true_lpR line | true_lpR | Coronal |
+| | true_lpL line | true_lpL | Coronal |
+| | true_oiR line | true_oiR | orbital transverse |
+| | true_oiL line | true_oiL | orbital transverse |
+| | true_osR line | true_osR | orbital transverse |
+| | true_osL line | true_osL | orbital transverse |
+| | true_omR line | true_omR | Coronal |
+| | true_omL line | true_omL | Coronal |
+| | true_olR line | true_olR | Coronal |
+| | true_olL line | true_olL | Coronal |
+
+
+To create all of these, copy-paste the following code in the Python console. Once there is a pop-up about the success of the first batch, just click OK for the second batch to run. This could take a few minutes. 
+<details>	
+<summary> Additional soft tissue guides for soft tissue measurements </summary>
+	
+```python
+import slicer
+import numpy as np
+
+def create_parallel_guide_lines(prefix):
+    """
+    Creates a set of visible, grey 'guide lines' using the 'guide_' prefix
+    (e.g., 'guide_pred_lcL', 'guide_true_oaR').
+    :param prefix: A string, either "pred_" or "true_".
+    """
+    print("="*80)
+    print(f"Creating PARALLEL GUIDE LINES with prefix: '{prefix}'")
+    print("="*80)
+
+    if prefix not in ["pred_", "true_"]:
+        slicer.util.errorDisplay("Prefix must be either 'pred_' or 'true_'.")
+        return
+
+    # --- Helper Functions ---
+    def get_node(name, cls="vtkMRMLNode"):
+        node = slicer.mrmlScene.GetFirstNodeByName(name)
+        if not node:
+            if prefix == "pred_" and "Eyeball lmrks" in name:
+                side_full = name.split(" ")[0]
+                for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+                    if side_full in n.GetName() and "Eyeball" in n.GetName(): return n
+            raise ValueError(f"Node '{name}' ({cls}) not found.")
+        return node
+
+    def get_landmark_pos(node, label):
+        p_label = f"true_{label}" if prefix == "true_" else label
+        if prefix == "pred_" and node.GetControlPointIndexByLabel(p_label) == -1:
+            if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1:
+                p_label = f"{label[:-1]}_{label[-1]}"
+        
+        idx = node.GetControlPointIndexByLabel(p_label)
+        if idx == -1: raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
+        pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
+        return pos
+
+    def create_line(name, p1, p2, color, visible=True):
+        node = slicer.mrmlScene.GetFirstNodeByName(name)
+        if not node:
+            node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+        
+        node.RemoveAllControlPoints()
+        node.AddControlPoint(p1); node.AddControlPoint(p2)
+        
+        d = node.GetDisplayNode() or node.CreateDefaultDisplayNodes()
+        d.SetColor(color); d.SetSelectedColor([1,1,0])
+        d.SetVisibility(visible)
+        node.GetMeasurement("length").SetEnabled(False) # Guide length is not a measurement
+        return node
+
+    try:
+        # --- STAGE 0: Clean up old guide lines ---
+        print("0. Cleaning up old guide lines...")
+        guide_prefix_full = f"guide_{prefix}"
+        nodes_to_remove = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") if n.GetName().startswith(guide_prefix_full)]
+        for node in nodes_to_remove:
+            slicer.mrmlScene.RemoveNode(node)
+        print(f"   ✓ Removed {len(nodes_to_remove)} old '{guide_prefix_full}' lines.")
+
+        # --- STAGE 1: Get Anatomical Axes ---
+        print("\n1. Getting anatomical axis vectors...")
+        midsagittal_plane = get_node("Median Sagittal Plane (Trial)")
+        orbital_plane = get_node("Orbitale Transverse Plane (Trial)")
+
+        sup_inf_axis = np.array(orbital_plane.GetNormal())
+        right_left_axis = np.array(midsagittal_plane.GetNormal())
+        
+        # --- STAGE 2: Create Guide Lines ---
+        print("\n2. Creating parallel guide lines...")
+        guide_line_length = 50 
+        guide_color = [0.6, 0.6, 0.6] # Grey
+
+        sup_inf_landmarks = ['lc', 'ocp', 'la', 'oa', 'lp', 'om', 'ol']
+        right_left_landmarks = ['oi', 'os']
+        
+        created_count = 0
+        for side in ["L", "R"]:
+            side_full = "Left" if side == "L" else "Right"
+            landmark_source_node = get_node(f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue")
+
+            for lm_base in sup_inf_landmarks + right_left_landmarks:
+                lm_label = f"{lm_base}{side}"
+                start_pos = get_landmark_pos(landmark_source_node, lm_label)
+                
+                axis = sup_inf_axis if lm_base in sup_inf_landmarks else right_left_axis
+                
+                p1 = start_pos - (axis * guide_line_length / 2.0)
+                p2 = start_pos + (axis * guide_line_length / 2.0)
+                
+                line_name = f"guide_{prefix}{lm_label}"
+                create_line(line_name, p1, p2, guide_color, visible=True)
+                created_count += 1
+                
+        slicer.util.infoDisplay(f"SUCCESS: Created {created_count} parallel guide lines.")
+
+    except Exception as e:
+        slicer.util.errorDisplay(f"An error occurred in create_parallel_guide_lines: {e}")
+        import traceback
+        traceback.print_exc()
+
+# --- Example Usage ---
+create_parallel_guide_lines(prefix="pred_")
+create_parallel_guide_lines(prefix="true_")
+
+
+```
+
+</details>
+
+##### Predicted Soft tissue measurements
 
 (2) Additional Predicted measurements
 | original | Slicer abbrv | Original definition | Slicer definition |
@@ -1202,13 +1340,13 @@ There will be added lines (similar to the guiding_lines previously) to ensure th
 | 23 | pred_L23 | left Lens centre (landmark)—left Medial orbit (sagittal plane) | shortest perpendicular distance between the lcL and marginal_MOM_L plane |
 | 23 | pred_R23 | right Lens centre (landmark)—right Medial orbit (sagittal plane) | shortest perpendicular distance between the lcR and marginal_MOM_R plane |
 | 24 | pred_L24 | left Lens centre (landmark)— left Lateral orbit (sagittal plane) | shortest perpendicular distance between the lcL and marginal_LOM_L plane |
-| 24 | pred_R24 | rightLens centre (landmark)—right Lateral orbit (sagittal plane) | shortest perpendicular distance between the lcR and marginal_LOM_R plane |
+| 24 | pred_R24 | right Lens centre (landmark)—right Lateral orbit (sagittal plane) | shortest perpendicular distance between the lcR and marginal_LOM_R plane |
 | 25 | pred_L25 | left Lens centre (landmark)—left Lateral orbit (coronal plane) | shortest perpendicular distance between the lcL and guiding_LOM_L line |
 | 25 | pred_R25 | right Lens centre (landmark)—right Lateral orbit (coronal plane) | shortest perpendicular distance between the lcR and guiding_LOM_R line |
 | 26 | pred_L26 | left Lens centre (landmark)—left Optic canal point | shortest perpendicular distance between the pred_lcL line to pred_ocpL line |
 | 26 | pred_R26 | right Lens centre (landmark)—right Optic canal point | shortest perpendicular distance between the pred_lcR line and pred_ocpR line |
 | 27 | pred_L27 | left Lens centre (landmark)— Coronal plane | shortest perpendicular distance between the pred_lcL line and Coronal plane |
-| 27 | pred_R27 | rightLens centre (landmark)— Coronal plane | shortest perpendicular distance between the pred_lcR line and Coronal plane |
+| 27 | pred_R27 | right Lens centre (landmark)— Coronal plane | shortest perpendicular distance between the pred_lcR line and Coronal plane |
 | 28 | pred_L28 | left Lens anterior (landmark)—left Lens posterior | shortest perpendicular distance between pred_laL line and pred_lpL line |
 | 28 | pred_R28 | right Lens anterior (landmark)—right Lens posterior | shortest perpendicular distance between pred_laR line and pred_lpR line |
 | 29 | pred_L29 | left Cornea (landmark)—left Lens centre (coronal plane) | shortest perpendicular distance between pred_oaL line to pred_lcL line |
@@ -1242,81 +1380,66 @@ import slicer
 import numpy as np
 import vtk
 
-def create_soft_tissue_measurements(prefix):
+def create_final_measurements(prefix):
     """
-    Creates soft-tissue dependent measurements based on the robust "helper line" methodology.
-    This version corrects the API calls for point-to-plane and point-to-line distance calculations.
+    Creates the final, colored measurement lines. This script relies on the
+    'guide lines' and anatomical planes already being present in the scene.
     :param prefix: A string, either "pred_" or "true_".
     """
     print("="*80)
-    print(f"Creating SOFT TISSUE Measurements (Corrected Method v4) with prefix: '{prefix}'")
+    print(f"Creating FINAL MEASUREMENT LINES from guides with prefix: '{prefix}'")
     print("="*80)
 
     if prefix not in ["pred_", "true_"]:
         slicer.util.errorDisplay("Prefix must be either 'pred_' or 'true_'.")
         return
 
-    # --- Helper Functions ---
+    # --- Helper Functions (condensed for brevity) ---
     def get_node(name, cls="vtkMRMLNode"):
         node = slicer.mrmlScene.GetFirstNodeByName(name)
-        if not node:
-            if prefix == "pred_" and "Eyeball lmrks" in name:
-                side_full = name.split(" ")[0]
-                for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
-                    if side_full in n.GetName() and "Eyeball" in n.GetName(): return n
-            raise ValueError(f"Node '{name}' ({cls}) not found.")
+        if not node: raise ValueError(f"Node '{name}' ({cls}) not found.")
         return node
-
+        
     def get_landmark_pos(node, label):
         p_label = f"true_{label}" if prefix == "true_" else label
-        if prefix == "pred_":
-            if node.GetControlPointIndexByLabel(p_label) == -1:
-                if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1:
-                    p_label = f"{label[:-1]}_{label[-1]}"
-        
+        if prefix == "pred_" and node.GetControlPointIndexByLabel(p_label) == -1:
+            if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1: p_label = f"{label[:-1]}_{label[-1]}"
         idx = node.GetControlPointIndexByLabel(p_label)
         if idx == -1: raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
         pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
         return pos
 
-    def create_line(name, p1, p2, color=[0.8, 0.8, 0.8], visible=False, force_create=False):
-        # If node exists from previous run, remove it before creating new one
-        existing_node = slicer.mrmlScene.GetFirstNodeByName(name)
-        if existing_node:
-            slicer.mrmlScene.RemoveNode(existing_node)
-            
-        node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
-        node.AddControlPoint(p1); node.AddControlPoint(p2)
+    def create_line(name, p1, p2, color, visible=True):
+        node = slicer.mrmlScene.GetFirstNodeByName(name)
+        if not node: node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+        node.RemoveAllControlPoints(); node.AddControlPoint(p1); node.AddControlPoint(p2)
         d = node.GetDisplayNode() or node.CreateDefaultDisplayNodes();
-        d.SetColor(color); d.SetSelectedColor(color); d.SetVisibility(visible)
+        d.SetColor(color); d.SetSelectedColor([1,1,0]); d.SetVisibility(visible)
         node.GetMeasurement("length").SetEnabled(True)
         return node
-        
-    # CORRECTED Helper for point-to-plane projection
-    def project_point_to_plane_node(point, plane_node):
-        origin = np.zeros(3)
-        normal = np.zeros(3)
-        plane_node.GetOrigin(origin)
-        plane_node.GetNormal(normal)
-        
-        # Manually calculate the projection
-        v = point - origin
-        dist = np.dot(v, normal)
-        projected_point = point - dist * normal
-        return projected_point
 
-    # Helper for point-to-line projection
+    def project_point_to_plane_node(point, plane_node):
+        origin, normal = np.zeros(3), np.zeros(3)
+        plane_node.GetOrigin(origin); plane_node.GetNormal(normal)
+        return point - np.dot(point - origin, normal) * normal
+
     def project_point_to_line_node(point, line_node):
-        p1 = np.zeros(3); line_node.GetNthControlPointPositionWorld(0, p1)
-        p2 = np.zeros(3); line_node.GetNthControlPointPositionWorld(1, p2)
-        t_out = vtk.mutable(0)
-        closest_point = np.zeros(3)
+        p1, p2 = np.zeros(3), np.zeros(3)
+        line_node.GetNthControlPointPositionWorld(0, p1); line_node.GetNthControlPointPositionWorld(1, p2)
+        t_out = vtk.mutable(0); closest_point = np.zeros(3)
         vtk.vtkLine.DistanceToLine(point, p1, p2, t_out, closest_point)
         return closest_point
 
     try:
-        # --- STAGE 1: Get all required scene nodes ---
-        print("1. Finding all required nodes...")
+        # --- STAGE 0: Clean up old measurements ---
+        print("0. Cleaning up old measurement lines...")
+        measurement_prefixes = [f"{prefix}L", f"{prefix}R", f"{prefix}E"]
+        nodes_to_remove = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") if any(n.GetName().startswith(p) for p in measurement_prefixes)]
+        for node in nodes_to_remove: slicer.mrmlScene.RemoveNode(node)
+        print(f"   ✓ Removed {len(nodes_to_remove)} old '{prefix}' measurement lines.")
+
+        # --- STAGE 1: Get all required nodes ---
+        print("\n1. Finding all required nodes...")
         coronal_plane = get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
         orbital_plane = get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
 
@@ -1326,69 +1449,59 @@ def create_soft_tissue_measurements(prefix):
         final_color = [1,0,0] if prefix == "pred_" else [0,1,0]
 
         for side in ["L", "R"]:
+            print(f"   - Processing Side: {side}")
             side_full = "Left" if side == "L" else "Right"
-            eyeball_lm_node_name = f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue"
-            eyeball_lm_node = get_node(eyeball_lm_node_name, "vtkMRMLMarkupsFiducialNode")
+            eyeball_lm_node = get_node(f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue")
             
-            marginal_SOM = get_node(f"marginal_SOM_{side}", "vtkMRMLMarkupsPlaneNode")
-            marginal_MOM = get_node(f"marginal_MOM_{side}", "vtkMRMLMarkupsPlaneNode")
-            marginal_LOM = get_node(f"marginal_LOM_{side}", "vtkMRMLMarkupsPlaneNode")
-            guiding_LOM = get_node(f"guiding_LOM_{side}", "vtkMRMLMarkupsLineNode")
+            marginal_SOM, marginal_MOM, marginal_LOM = get_node(f"marginal_SOM_{side}"), get_node(f"marginal_MOM_{side}"), get_node(f"marginal_LOM_{side}")
+            guiding_LOM = get_node(f"guiding_LOM_{side}")
 
-            # Get original landmark positions
-            ocp_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}")
-            lc_pos = get_landmark_pos(eyeball_lm_node, f"lc{side}")
-            la_pos = get_landmark_pos(eyeball_lm_node, f"la{side}")
-            lp_pos = get_landmark_pos(eyeball_lm_node, f"lp{side}")
-            oa_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}")
-            os_pos = get_landmark_pos(eyeball_lm_node, f"os{side}")
-            oi_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}")
-            ol_pos = get_landmark_pos(eyeball_lm_node, f"ol{side}")
-            om_pos = get_landmark_pos(eyeball_lm_node, f"om{side}")
-            gc_pos = get_landmark_pos(eyeball_lm_node, f"gc{side}")
+            # Get landmark positions
+            ocp_pos, lc_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}"), get_landmark_pos(eyeball_lm_node, f"lc{side}")
+            la_pos, lp_pos = get_landmark_pos(eyeball_lm_node, f"la{side}"), get_landmark_pos(eyeball_lm_node, f"lp{side}")
+            oa_pos, os_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}"), get_landmark_pos(eyeball_lm_node, f"os{side}")
+            oi_pos, ol_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}"), get_landmark_pos(eyeball_lm_node, f"ol{side}")
+            om_pos, gc_pos = get_landmark_pos(eyeball_lm_node, f"om{side}"), get_landmark_pos(eyeball_lm_node, f"gc{side}")
             
-            # --- Create Measurement Lines ---
-            # L/R 17, 18
-            create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color, True)
-            create_line(f"{prefix}{side}18", ocp_pos, project_point_to_line_node(ocp_pos, guiding_LOM), final_color, True)
+            # --- Create Measurement Lines (point to plane/line) ---
+            create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color)
+            create_line(f"{prefix}{side}18", ocp_pos, project_point_to_line_node(ocp_pos, guiding_LOM), final_color)
+            create_line(f"{prefix}{side}21", lc_pos, project_point_to_plane_node(lc_pos, marginal_SOM), final_color)
+            create_line(f"{prefix}{side}22", lc_pos, project_point_to_plane_node(lc_pos, orbital_plane), final_color)
+            create_line(f"{prefix}{side}23", lc_pos, project_point_to_plane_node(lc_pos, marginal_MOM), final_color)
+            create_line(f"{prefix}{side}24", lc_pos, project_point_to_plane_node(lc_pos, marginal_LOM), final_color)
+            create_line(f"{prefix}{side}25", lc_pos, project_point_to_line_node(lc_pos, guiding_LOM), final_color)
             
-            # L/R 21-25
-            create_line(f"{prefix}{side}21", lc_pos, project_point_to_plane_node(lc_pos, marginal_SOM), final_color, True)
-            create_line(f"{prefix}{side}22", lc_pos, project_point_to_plane_node(lc_pos, orbital_plane), final_color, True)
-            create_line(f"{prefix}{side}23", lc_pos, project_point_to_plane_node(lc_pos, marginal_MOM), final_color, True)
-            create_line(f"{prefix}{side}24", lc_pos, project_point_to_plane_node(lc_pos, marginal_LOM), final_color, True)
-            create_line(f"{prefix}{side}25", lc_pos, project_point_to_line_node(lc_pos, guiding_LOM), final_color, True)
-            
-            # L/R 26-29, 30
-            create_line(f"{prefix}{side}26", lc_pos, ocp_pos, final_color, True)
-            create_line(f"{prefix}{side}27", lc_pos, project_point_to_plane_node(lc_pos, coronal_plane), final_color, True)
-            create_line(f"{prefix}{side}28", la_pos, lp_pos, final_color, True)
-            create_line(f"{prefix}{side}29", oa_pos, lc_pos, final_color, True)
-            create_line(f"{prefix}{side}30", la_pos, lp_pos, final_color, True) 
+            # --- Create Measurement Lines (point to point) ---
+            create_line(f"{prefix}{side}26", lc_pos, ocp_pos, final_color)
+            create_line(f"{prefix}{side}27", lc_pos, project_point_to_plane_node(lc_pos, coronal_plane), final_color)
+            create_line(f"{prefix}{side}28", la_pos, lp_pos, final_color)
+            create_line(f"{prefix}{side}29", oa_pos, lc_pos, final_color)
+            create_line(f"{prefix}{side}30", la_pos, lp_pos, final_color)
 
-            # L/R 31, 32, 33 (Composite measurements)
-            create_line(f"{prefix}{side}31", oa_pos, project_point_to_line_node(oa_pos, guiding_LOM), final_color, True)
-            create_line(f"{prefix}{side}32", oa_pos, ocp_pos, final_color, True)
-            create_line(f"{prefix}{side}33", oa_pos, project_point_to_plane_node(oa_pos, coronal_plane), final_color, True)
+            # --- Create Composite Measurement Lines ---
+            create_line(f"{prefix}{side}31", oa_pos, project_point_to_line_node(oa_pos, guiding_LOM), final_color)
+            create_line(f"{prefix}{side}32", oa_pos, ocp_pos, final_color)
+            create_line(f"{prefix}{side}33", oa_pos, project_point_to_plane_node(oa_pos, coronal_plane), final_color)
 
-            # E1-E6
-            create_line(f"{prefix}E1_{side}", lc_pos, os_pos, final_color, True)
-            create_line(f"{prefix}E2_{side}", lc_pos, om_pos, final_color, True)
-            create_line(f"{prefix}E3_{side}", gc_pos, os_pos, final_color, True)
-            create_line(f"{prefix}E4_{side}", gc_pos, om_pos, final_color, True)
-            create_line(f"{prefix}E5_{side}", os_pos, oi_pos, final_color, True)
-            create_line(f"{prefix}E6_{side}", ol_pos, om_pos, final_color, True)
+            # --- Create Eyeball Geometry Lines ---
+            create_line(f"{prefix}E1_{side}", lc_pos, os_pos, final_color)
+            create_line(f"{prefix}E2_{side}", lc_pos, om_pos, final_color)
+            create_line(f"{prefix}E3_{side}", gc_pos, os_pos, final_color)
+            create_line(f"{prefix}E4_{side}", gc_pos, om_pos, final_color)
+            create_line(f"{prefix}E5_{side}", os_pos, oi_pos, final_color)
+            create_line(f"{prefix}E6_{side}", ol_pos, om_pos, final_color)
             created_count += 21
 
-        print(f"\nSUCCESS: Created/updated ~{created_count} measurement lines for prefix '{prefix}'.")
+        slicer.util.infoDisplay(f"SUCCESS: Created {created_count} final measurement lines for prefix '{prefix}'.")
 
     except Exception as e:
         slicer.util.errorDisplay(f"An error occurred: {e}")
         import traceback
         traceback.print_exc()
 
-# --- Example Usage ---
-create_soft_tissue_measurements(prefix="pred_")
+# --- Example Usage (run from the console) ---
+create_final_measurements(prefix="pred_")
 
 
 ```
@@ -1398,36 +1511,15 @@ create_soft_tissue_measurements(prefix="pred_")
 #### True soft tissue distances
 
 The code below creates the soft tissue measurements related to the true eyeball landmarks. 
+There will be added lines (similar to the guiding_lines previously) to ensure the parallell measurement theme in the original study. 
 
-(1)
-| Line name  | bisects (in Ryu_soft_tissue) |is parallel to |
-|------------------------------|----------------|-----------------|
-| true_lcL line | true_lcL | Coronal |
-| true_lcR line | true_lcR | Coronal |
-| true_ocpR line | true_ocpR | Coronal |
-| true_ocpL line | true_ocpL | Coronal |
-| true_laR line | true_laR | Coronal |
-| true_laL line | true_laL | Coronal |
-| true_oaR line | true_oaR | Coronal |
-| true_oaL line | true_oaL | Coronal |
-| true_lpR line | true_lpR | Coronal |
-| true_lpL line | true_lpL | Coronal |
-| true_oiR line | true_oiR | orbital transverse |
-| true_oiL line | true_oiL | orbital transverse |
-| true_osR line | true_osR | orbital transverse |
-| true_osL line | true_osL | orbital transverse |
-| true_omR line | true_omR | Coronal |
-| true_omL line | true_omL | Coronal |
-| true_olR line | true_olR | Coronal |
-| true_olL line | true_olL | Coronal |
-
-(2)
+(2) Additional True measurements
 | original | Slicer abbrv | Original definition | Slicer definition |
 |----------|--------------|---------------------|-------------------|
-| 17 | pred_L17 | left Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpL and the coronal plane |
-| 17 | pred_R17 | right Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpR and the coronal plane |
-| 18 | pred_L18 | left Optic canal point (landmark)— left Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpL and guiding_LOM_L line |
-| 18 | pred_R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpR and guiding_LOM_R line |
+| 17 | true_L17 | left Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the true_ocpL and the coronal plane |
+| 17 | true_R17 | right Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the true_ocpR and the coronal plane |
+| 18 | true_L18 | left Optic canal point (landmark)— left Lateral orbit (coronal plane) | shortest perpendicular distance between the true_ocpL and guiding_LOM_L line |
+| 18 | true_R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the true_ocpR and guiding_LOM_R line |
 | 21 | true_L21 | left Lens centre (landmark)—left Supraorbitale (transverse plane) | shortest perpendicular distance between the true_lcL and marginal_SOM_L |
 | 21 | true_R21 | right Lens centre (landmark)—right Supraorbitale (transverse plane) | shortest perpendicular distance between the true_lcR and marginal_SOM_R |
 | 22 | true_L22 | left Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the true_lcL and orbitale transverse plane |
@@ -1475,81 +1567,66 @@ import slicer
 import numpy as np
 import vtk
 
-def create_soft_tissue_measurements(prefix):
+def create_final_measurements(prefix):
     """
-    Creates soft-tissue dependent measurements based on the robust "helper line" methodology.
-    This version corrects the API calls for point-to-plane and point-to-line distance calculations.
+    Creates the final, colored measurement lines. This script relies on the
+    'guide lines' and anatomical planes already being present in the scene.
     :param prefix: A string, either "pred_" or "true_".
     """
     print("="*80)
-    print(f"Creating SOFT TISSUE Measurements (Corrected Method v4) with prefix: '{prefix}'")
+    print(f"Creating FINAL MEASUREMENT LINES from guides with prefix: '{prefix}'")
     print("="*80)
 
     if prefix not in ["pred_", "true_"]:
         slicer.util.errorDisplay("Prefix must be either 'pred_' or 'true_'.")
         return
 
-    # --- Helper Functions ---
+    # --- Helper Functions (condensed for brevity) ---
     def get_node(name, cls="vtkMRMLNode"):
         node = slicer.mrmlScene.GetFirstNodeByName(name)
-        if not node:
-            if prefix == "pred_" and "Eyeball lmrks" in name:
-                side_full = name.split(" ")[0]
-                for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
-                    if side_full in n.GetName() and "Eyeball" in n.GetName(): return n
-            raise ValueError(f"Node '{name}' ({cls}) not found.")
+        if not node: raise ValueError(f"Node '{name}' ({cls}) not found.")
         return node
-
+        
     def get_landmark_pos(node, label):
         p_label = f"true_{label}" if prefix == "true_" else label
-        if prefix == "pred_":
-            if node.GetControlPointIndexByLabel(p_label) == -1:
-                if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1:
-                    p_label = f"{label[:-1]}_{label[-1]}"
-        
+        if prefix == "pred_" and node.GetControlPointIndexByLabel(p_label) == -1:
+            if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1: p_label = f"{label[:-1]}_{label[-1]}"
         idx = node.GetControlPointIndexByLabel(p_label)
         if idx == -1: raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
         pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
         return pos
 
-    def create_line(name, p1, p2, color=[0.8, 0.8, 0.8], visible=False, force_create=False):
-        # If node exists from previous run, remove it before creating new one
-        existing_node = slicer.mrmlScene.GetFirstNodeByName(name)
-        if existing_node:
-            slicer.mrmlScene.RemoveNode(existing_node)
-            
-        node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
-        node.AddControlPoint(p1); node.AddControlPoint(p2)
+    def create_line(name, p1, p2, color, visible=True):
+        node = slicer.mrmlScene.GetFirstNodeByName(name)
+        if not node: node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+        node.RemoveAllControlPoints(); node.AddControlPoint(p1); node.AddControlPoint(p2)
         d = node.GetDisplayNode() or node.CreateDefaultDisplayNodes();
-        d.SetColor(color); d.SetSelectedColor(color); d.SetVisibility(visible)
+        d.SetColor(color); d.SetSelectedColor([1,1,0]); d.SetVisibility(visible)
         node.GetMeasurement("length").SetEnabled(True)
         return node
-        
-    # CORRECTED Helper for point-to-plane projection
-    def project_point_to_plane_node(point, plane_node):
-        origin = np.zeros(3)
-        normal = np.zeros(3)
-        plane_node.GetOrigin(origin)
-        plane_node.GetNormal(normal)
-        
-        # Manually calculate the projection
-        v = point - origin
-        dist = np.dot(v, normal)
-        projected_point = point - dist * normal
-        return projected_point
 
-    # Helper for point-to-line projection
+    def project_point_to_plane_node(point, plane_node):
+        origin, normal = np.zeros(3), np.zeros(3)
+        plane_node.GetOrigin(origin); plane_node.GetNormal(normal)
+        return point - np.dot(point - origin, normal) * normal
+
     def project_point_to_line_node(point, line_node):
-        p1 = np.zeros(3); line_node.GetNthControlPointPositionWorld(0, p1)
-        p2 = np.zeros(3); line_node.GetNthControlPointPositionWorld(1, p2)
-        t_out = vtk.mutable(0)
-        closest_point = np.zeros(3)
+        p1, p2 = np.zeros(3), np.zeros(3)
+        line_node.GetNthControlPointPositionWorld(0, p1); line_node.GetNthControlPointPositionWorld(1, p2)
+        t_out = vtk.mutable(0); closest_point = np.zeros(3)
         vtk.vtkLine.DistanceToLine(point, p1, p2, t_out, closest_point)
         return closest_point
 
     try:
-        # --- STAGE 1: Get all required scene nodes ---
-        print("1. Finding all required nodes...")
+        # --- STAGE 0: Clean up old measurements ---
+        print("0. Cleaning up old measurement lines...")
+        measurement_prefixes = [f"{prefix}L", f"{prefix}R", f"{prefix}E"]
+        nodes_to_remove = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") if any(n.GetName().startswith(p) for p in measurement_prefixes)]
+        for node in nodes_to_remove: slicer.mrmlScene.RemoveNode(node)
+        print(f"   ✓ Removed {len(nodes_to_remove)} old '{prefix}' measurement lines.")
+
+        # --- STAGE 1: Get all required nodes ---
+        print("\n1. Finding all required nodes...")
         coronal_plane = get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
         orbital_plane = get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
 
@@ -1559,69 +1636,59 @@ def create_soft_tissue_measurements(prefix):
         final_color = [1,0,0] if prefix == "pred_" else [0,1,0]
 
         for side in ["L", "R"]:
+            print(f"   - Processing Side: {side}")
             side_full = "Left" if side == "L" else "Right"
-            eyeball_lm_node_name = f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue"
-            eyeball_lm_node = get_node(eyeball_lm_node_name, "vtkMRMLMarkupsFiducialNode")
+            eyeball_lm_node = get_node(f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue")
             
-            marginal_SOM = get_node(f"marginal_SOM_{side}", "vtkMRMLMarkupsPlaneNode")
-            marginal_MOM = get_node(f"marginal_MOM_{side}", "vtkMRMLMarkupsPlaneNode")
-            marginal_LOM = get_node(f"marginal_LOM_{side}", "vtkMRMLMarkupsPlaneNode")
-            guiding_LOM = get_node(f"guiding_LOM_{side}", "vtkMRMLMarkupsLineNode")
+            marginal_SOM, marginal_MOM, marginal_LOM = get_node(f"marginal_SOM_{side}"), get_node(f"marginal_MOM_{side}"), get_node(f"marginal_LOM_{side}")
+            guiding_LOM = get_node(f"guiding_LOM_{side}")
 
-            # Get original landmark positions
-            ocp_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}")
-            lc_pos = get_landmark_pos(eyeball_lm_node, f"lc{side}")
-            la_pos = get_landmark_pos(eyeball_lm_node, f"la{side}")
-            lp_pos = get_landmark_pos(eyeball_lm_node, f"lp{side}")
-            oa_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}")
-            os_pos = get_landmark_pos(eyeball_lm_node, f"os{side}")
-            oi_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}")
-            ol_pos = get_landmark_pos(eyeball_lm_node, f"ol{side}")
-            om_pos = get_landmark_pos(eyeball_lm_node, f"om{side}")
-            gc_pos = get_landmark_pos(eyeball_lm_node, f"gc{side}")
+            # Get landmark positions
+            ocp_pos, lc_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}"), get_landmark_pos(eyeball_lm_node, f"lc{side}")
+            la_pos, lp_pos = get_landmark_pos(eyeball_lm_node, f"la{side}"), get_landmark_pos(eyeball_lm_node, f"lp{side}")
+            oa_pos, os_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}"), get_landmark_pos(eyeball_lm_node, f"os{side}")
+            oi_pos, ol_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}"), get_landmark_pos(eyeball_lm_node, f"ol{side}")
+            om_pos, gc_pos = get_landmark_pos(eyeball_lm_node, f"om{side}"), get_landmark_pos(eyeball_lm_node, f"gc{side}")
             
-            # --- Create Measurement Lines ---
-            # L/R 17, 18
-            create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color, True)
-            create_line(f"{prefix}{side}18", ocp_pos, project_point_to_line_node(ocp_pos, guiding_LOM), final_color, True)
+            # --- Create Measurement Lines (point to plane/line) ---
+            create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color)
+            create_line(f"{prefix}{side}18", ocp_pos, project_point_to_line_node(ocp_pos, guiding_LOM), final_color)
+            create_line(f"{prefix}{side}21", lc_pos, project_point_to_plane_node(lc_pos, marginal_SOM), final_color)
+            create_line(f"{prefix}{side}22", lc_pos, project_point_to_plane_node(lc_pos, orbital_plane), final_color)
+            create_line(f"{prefix}{side}23", lc_pos, project_point_to_plane_node(lc_pos, marginal_MOM), final_color)
+            create_line(f"{prefix}{side}24", lc_pos, project_point_to_plane_node(lc_pos, marginal_LOM), final_color)
+            create_line(f"{prefix}{side}25", lc_pos, project_point_to_line_node(lc_pos, guiding_LOM), final_color)
             
-            # L/R 21-25
-            create_line(f"{prefix}{side}21", lc_pos, project_point_to_plane_node(lc_pos, marginal_SOM), final_color, True)
-            create_line(f"{prefix}{side}22", lc_pos, project_point_to_plane_node(lc_pos, orbital_plane), final_color, True)
-            create_line(f"{prefix}{side}23", lc_pos, project_point_to_plane_node(lc_pos, marginal_MOM), final_color, True)
-            create_line(f"{prefix}{side}24", lc_pos, project_point_to_plane_node(lc_pos, marginal_LOM), final_color, True)
-            create_line(f"{prefix}{side}25", lc_pos, project_point_to_line_node(lc_pos, guiding_LOM), final_color, True)
-            
-            # L/R 26-29, 30
-            create_line(f"{prefix}{side}26", lc_pos, ocp_pos, final_color, True)
-            create_line(f"{prefix}{side}27", lc_pos, project_point_to_plane_node(lc_pos, coronal_plane), final_color, True)
-            create_line(f"{prefix}{side}28", la_pos, lp_pos, final_color, True)
-            create_line(f"{prefix}{side}29", oa_pos, lc_pos, final_color, True)
-            create_line(f"{prefix}{side}30", la_pos, lp_pos, final_color, True) 
+            # --- Create Measurement Lines (point to point) ---
+            create_line(f"{prefix}{side}26", lc_pos, ocp_pos, final_color)
+            create_line(f"{prefix}{side}27", lc_pos, project_point_to_plane_node(lc_pos, coronal_plane), final_color)
+            create_line(f"{prefix}{side}28", la_pos, lp_pos, final_color)
+            create_line(f"{prefix}{side}29", oa_pos, lc_pos, final_color)
+            create_line(f"{prefix}{side}30", la_pos, lp_pos, final_color)
 
-            # L/R 31, 32, 33 (Composite measurements)
-            create_line(f"{prefix}{side}31", oa_pos, project_point_to_line_node(oa_pos, guiding_LOM), final_color, True)
-            create_line(f"{prefix}{side}32", oa_pos, ocp_pos, final_color, True)
-            create_line(f"{prefix}{side}33", oa_pos, project_point_to_plane_node(oa_pos, coronal_plane), final_color, True)
+            # --- Create Composite Measurement Lines ---
+            create_line(f"{prefix}{side}31", oa_pos, project_point_to_line_node(oa_pos, guiding_LOM), final_color)
+            create_line(f"{prefix}{side}32", oa_pos, ocp_pos, final_color)
+            create_line(f"{prefix}{side}33", oa_pos, project_point_to_plane_node(oa_pos, coronal_plane), final_color)
 
-            # E1-E6
-            create_line(f"{prefix}E1_{side}", lc_pos, os_pos, final_color, True)
-            create_line(f"{prefix}E2_{side}", lc_pos, om_pos, final_color, True)
-            create_line(f"{prefix}E3_{side}", gc_pos, os_pos, final_color, True)
-            create_line(f"{prefix}E4_{side}", gc_pos, om_pos, final_color, True)
-            create_line(f"{prefix}E5_{side}", os_pos, oi_pos, final_color, True)
-            create_line(f"{prefix}E6_{side}", ol_pos, om_pos, final_color, True)
+            # --- Create Eyeball Geometry Lines ---
+            create_line(f"{prefix}E1_{side}", lc_pos, os_pos, final_color)
+            create_line(f"{prefix}E2_{side}", lc_pos, om_pos, final_color)
+            create_line(f"{prefix}E3_{side}", gc_pos, os_pos, final_color)
+            create_line(f"{prefix}E4_{side}", gc_pos, om_pos, final_color)
+            create_line(f"{prefix}E5_{side}", os_pos, oi_pos, final_color)
+            create_line(f"{prefix}E6_{side}", ol_pos, om_pos, final_color)
             created_count += 21
 
-        print(f"\nSUCCESS: Created/updated ~{created_count} measurement lines for prefix '{prefix}'.")
+        slicer.util.infoDisplay(f"SUCCESS: Created {created_count} final measurement lines for prefix '{prefix}'.")
 
     except Exception as e:
         slicer.util.errorDisplay(f"An error occurred: {e}")
         import traceback
         traceback.print_exc()
 
-# --- Example Usage ---
-create_soft_tissue_measurements(prefix="true_")
+# --- Example Usage (run from the console) ---
+create_final_measurements(prefix="true_")
 ```
 
 </details>
