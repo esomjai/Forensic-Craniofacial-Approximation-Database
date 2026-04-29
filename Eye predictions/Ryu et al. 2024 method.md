@@ -782,10 +782,100 @@ Additionally, we can compare the predicted and the actual eyeball positions via 
 You can download them [here](https://github.com/user-attachments/files/27196663/Ryu_soft_tissue.mrk.json).
 
 Once you placed the "ground truth" landmarks (called Ryu_soft_tissue.lmrk.json) onto the scan (you'll likely have to use the red/green/yellow windows for a more precise placement), you can run the codes below. 
-It is an iterative process, first adding the extra hard tissue measurements (which were not a prerequisite for the approximation, but are present in the study); then adding the predicted soft tissue measurements based on the true hard tissue lengths, and finally, using the soft tissue landmarks to measure the "true" doft tissue lengths. 
+It is an iterative process, with an extra step for placing the central landmarks. The lens centre (lcL/R) and globe centre (gcL/R) are found by the code called "true centres placement", by calculating the midpoint between the lens anterior and lens posterior for the lens centre on both sides; and by using a triaxial ellipdoid's geometry to calculate the globe's centre based on the oa-op, oi-os, om-ol distances. Please place all the soft tissue landmarks **with the exception of lcL, lcR, gcL, gcR**, then run the code below. 
+
+<details>	
+<summary> Find true soft tissue centres </summary>
+	
+```python
+import slicer
+import numpy as np
+
+def place_true_center_landmarks():
+    """
+    Calculates and places the lens center (lc) and globe center (gc) landmarks
+    for both left and right sides within the 'Ryu_soft_tissue' fiducial list.
+    """
+    print("--- Starting programmatic placement of 'true_lc' and 'true_gc' landmarks ---")
+
+    try:
+        landmarks_node = slicer.util.getNode("Ryu_soft_tissue")
+        print("Found 'Ryu_soft_tissue' landmark node.")
+    except slicer.util.MRMLNodeNotFoundException:
+        slicer.util.errorDisplay("ERROR: 'Ryu_soft_tissue' landmark node not found in the scene. Please load it first.")
+        return
+
+    # --- Helper function to get landmark positions ---
+    def get_landmark_pos(label):
+        for i in range(landmarks_node.GetNumberOfControlPoints()):
+            if landmarks_node.GetNthControlPointLabel(i) == label:
+                pos = np.zeros(3)
+                landmarks_node.GetNthControlPointPositionWorld(i, pos)
+                return pos
+        print(f"Warning: Landmark '{label}' not found.")
+        return None
+
+    # --- Helper function to add or update a landmark ---
+    def set_or_add_landmark(label, position):
+        # Check if the point already exists
+        for i in range(landmarks_node.GetNumberOfControlPoints()):
+            if landmarks_node.GetNthControlPointLabel(i) == label:
+                landmarks_node.SetNthControlPointPositionWorld(i, position)
+                print(f"Updated existing landmark: '{label}'")
+                return
+        # If it doesn't exist, add it
+        landmarks_node.AddControlPoint(position, label)
+        print(f"Added new landmark: '{label}'")
+
+    # --- Process both Left and Right sides ---
+    for side in ["L", "R"]:
+        print(f"\nProcessing side: {side}")
+
+        # 1. Calculate and place Lens Center (lc)
+        # lc is the midpoint between la (anterior lens) and lp (posterior lens)
+        la_pos = get_landmark_pos(f"true_la{side}")
+        lp_pos = get_landmark_pos(f"true_lp{side}")
+
+        if la_pos is not None and lp_pos is not None:
+            lc_pos = (la_pos + lp_pos) / 2.0
+            set_or_add_landmark(f"true_lc{side}", lc_pos)
+        else:
+            print(f"Could not calculate 'true_lc{side}' due to missing landmarks.")
+
+        # 2. Calculate and place Globe Center (gc)
+        # gc is the geometric center of the 6 extreme eyeball points
+        oa_pos = get_landmark_pos(f"true_oa{side}") # anterior
+        op_pos = get_landmark_pos(f"true_op{side}") # posterior
+        os_pos = get_landmark_pos(f"true_os{side}") # superior
+        oi_pos = get_landmark_pos(f"true_oi{side}") # inferior
+        om_pos = get_landmark_pos(f"true_om{side}") # medial
+        ol_pos = get_landmark_pos(f"true_ol{side}") # lateral
+
+        extreme_points = [oa_pos, op_pos, os_pos, oi_pos, om_pos, ol_pos]
+        if all(p is not None for p in extreme_points):
+            # The center is the average of all 6 extreme points
+            gc_pos = np.mean(np.array(extreme_points), axis=0)
+            set_or_add_landmark(f"true_gc{side}", gc_pos)
+        else:
+            print(f"Could not calculate 'true_gc{side}' due to missing extreme landmarks.")
+
+    print("\n--- Landmark placement complete. ---")
+
+# --- Run the function ---
+place_true_center_landmarks()
+
+```
+
+</details>
+
+> [!IMPORTANT]
+>You do not need to repeat this step for the "artificial" eye models, as these have been exacuted the same way at time of the creation of the model. 
+
+After this, we can add the extra hard tissue measurements (which were not a prerequisite for the approximation, but are present in the study); then the predicted soft tissue measurements based on the true hard tissue lengths, and finally, using the true soft tissue landmarks to measure the "true" soft tissue lengths. 
 
 > [!NOTE]
 > There is a measurement that needs manual allocation for both the predicted and true lens diameter length. This is not possible by connecting any already placed landmark (lens posterior and anterior measure the thickness of the lens, not its diameter). See additional instructions below.
+
 
 
 <details>	
@@ -793,11 +883,139 @@ It is an iterative process, first adding the extra hard tissue measurements (whi
 
 You'll need to open the **Markups** module and click on the _Create Markups_ > _Line_ option. This will add an empty distance measurement called "L_1/2..." by default. Now, if you place two points on either the 3D scene view or the red/yellow/green boxes, a measurement line in mm will show up. It is important that you rename these lines accordingly, as the codes will only recognise them under specific names. These will have to be
 1) "true_ldL" and "true_ldR" for the true lens diamaters on the scans
-2) "pred_ldL" and "pred_ldR" for the diamater of the lens on hte "artificial" eye model
+2) "pred_ldL" and "pred_ldR" for the diamater of the lens on the "artificial" eye model
 
-It is easier to employ the 
+It is easier to employ the **lcL/R** points for this manual placement as the line had to connect two opposing sides of the lens in anterior/posterior view and cross the lens centre point. 
 
-This is quite challenging to see on slices
+It is quite easy to see on the artificial eye model, especially with being able to manipulate the individual parts: go to the **Models** module and hide the layers of the cornea, isris and pupil to see the lens without any other structures obscuring it. 
+
+<img width="1190" height="487" alt="{90ACE94A-49D1-4701-A86E-820667BE6675}" src="https://github.com/user-attachments/assets/efc3698f-49fd-491a-b847-cbd69b209ce5" />
+
+The left eye has the view we need - please note that all other eyeball landmarks were hidden in the **Markups** module (just click onto either the _Left Eyeball lmrks_  or the _Right Eyeball lmrks_, then open the "Control Points" submenu and hide all other landmarks). 
+
+Now, we can go back to the markups module to place the lines: 
+
+<img width="665" height="419" alt="{B1219E9A-CB47-4F17-A408-7BB27A4E17F4}" src="https://github.com/user-attachments/assets/b004d74d-c9c4-4146-9654-4f16a481eede" />
+
+And rename them "pred_ldL" and "pred_ldR" for the diamater of the lens on the "artificial" eye model. 
+
+
+This is quite challenging to see on slices - if you want to "re-slice" the scan adhering to the reference planes, use this snippet: 
+
+
+```python
+import slicer
+import numpy as np
+
+print("="*60)
+print("Re-orienting Slice Views to Custom 'Trial' Anatomical Planes")
+print("="*60)
+
+def get_node(name, cls="vtkMRMLMarkupsPlaneNode"):
+    node = slicer.mrmlScene.GetFirstNodeByName(name)
+    if not node:
+        raise ValueError(f"Required plane '{name}' not found. Please create the 'Trial' anatomical planes first.")
+    if not node.IsA(cls):
+        raise ValueError(f"Node '{name}' is not of type {cls}.")
+    return node
+
+try:
+    # 1. Get the normal vectors that will become our new anatomical axes
+    midsagittal_plane = get_node("Median Sagittal Plane (Trial)")
+    axis_x = np.array(midsagittal_plane.GetNormal())  # Right-Left axis
+    
+    coronal_plane = get_node("Coronal Plane (Trial)")
+    axis_y = np.array(coronal_plane.GetNormal())      # Anterior-Posterior axis
+    
+    orbital_plane = get_node("Orbitale Transverse Plane (Trial)")
+    axis_z = np.array(orbital_plane.GetNormal())      # Superior-Inferior axis
+
+    # 2. Normalize and ensure perfect orthogonality (create a right-handed basis)
+    axis_x /= np.linalg.norm(axis_x)
+    axis_y /= np.linalg.norm(axis_y)
+    # Recompute Z to be perfectly orthogonal to X and Y
+    axis_z = np.cross(axis_x, axis_y)
+    axis_z /= np.linalg.norm(axis_z)
+    # Recompute Y to be perfectly orthogonal to the new Z and X
+    axis_y = np.cross(axis_z, axis_x)
+    axis_y /= np.linalg.norm(axis_y)
+
+    # 3. Get the slice nodes
+    red_slice_node = slicer.mrmlScene.GetNodeByID('vtkMRMLSliceNodeRed')
+    yellow_slice_node = slicer.mrmlScene.GetNodeByID('vtkMRMLSliceNodeYellow')
+    green_slice_node = slicer.mrmlScene.GetNodeByID('vtkMRMLSliceNodeGreen')
+
+    # 4. Create and apply a unique orientation matrix for EACH slice view
+    
+    # Red Slice (Axial View): XY plane, normal is Z
+    axial_matrix = np.identity(4)
+    axial_matrix[0, 0:3] = axis_x  # Red view's X-axis is the anatomical Right-Left
+    axial_matrix[1, 0:3] = axis_y  # Red view's Y-axis is the anatomical Anterior-Posterior
+    axial_matrix[2, 0:3] = axis_z
+    vtk_axial_matrix = slicer.util.vtkMatrixFromArray(axial_matrix.T)
+    red_slice_node.GetSliceToRAS().DeepCopy(vtk_axial_matrix)
+    red_slice_node.UpdateMatrices()
+    
+    # Yellow Slice (Sagittal View): YZ plane, normal is X
+    sagittal_matrix = np.identity(4)
+    sagittal_matrix[0, 0:3] = axis_y  # Yellow view's X-axis is the anatomical Anterior-Posterior
+    sagittal_matrix[1, 0:3] = axis_z  # Yellow view's Y-axis is the anatomical Superior-Inferior
+    sagittal_matrix[2, 0:3] = axis_x
+    vtk_sagittal_matrix = slicer.util.vtkMatrixFromArray(sagittal_matrix.T)
+    yellow_slice_node.GetSliceToRAS().DeepCopy(vtk_sagittal_matrix)
+    yellow_slice_node.UpdateMatrices()
+
+    # Green Slice (Coronal View): ZX plane, normal is Y
+    # THIS IS THE KEY CORRECTION
+    coronal_matrix = np.identity(4)
+    coronal_matrix[0, 0:3] = axis_x  # Green view's X-axis is the anatomical Right-Left
+    coronal_matrix[1, 0:3] = axis_z  # Green view's Y-axis is the anatomical Superior-Inferior
+    coronal_matrix[2, 0:3] = axis_y
+    vtk_coronal_matrix = slicer.util.vtkMatrixFromArray(coronal_matrix.T)
+    green_slice_node.GetSliceToRAS().DeepCopy(vtk_coronal_matrix)
+    green_slice_node.UpdateMatrices()
+    
+    # 5. Center the views on the nasion landmark
+    try:
+        hard_tissue_node = slicer.util.getNode("Ryu_hard_tissue")
+        nasion_pos = np.zeros(3)
+        nasion_found = False
+        for i in range(hard_tissue_node.GetNumberOfControlPoints()):
+            if hard_tissue_node.GetNthControlPointLabel(i) == 'n':
+                hard_tissue_node.GetNthControlPointPositionWorld(i, nasion_pos)
+                nasion_found = True
+                break
+        
+        if nasion_found:
+            # Jump all slices to the nasion's position
+            for node in [red_slice_node, yellow_slice_node, green_slice_node]:
+                node.JumpSlice(nasion_pos[0], nasion_pos[1], nasion_pos[2])
+
+            # Reset the field of view to nicely frame the volume
+            slicer.app.layoutManager().sliceWidget('Red').sliceLogic().FitSliceToAll()
+            slicer.app.layoutManager().sliceWidget('Yellow').sliceLogic().FitSliceToAll()
+            slicer.app.layoutManager().sliceWidget('Green').sliceLogic().FitSliceToAll()
+            
+    except Exception as e:
+        print(f"Could not automatically center views, but re-orientation was successful. Error: {e}")
+
+    print("\nSUCCESS: Slice viewers have been re-oriented to your custom 'Trial' planes.")
+    print(" - Red View (Axial) is now aligned with the Orbitale Transverse Plane.")
+    print(" - Yellow View (Sagittal) is now aligned with the Median Sagittal Plane.")
+    print(" - Green View (Coronal) is now aligned with the Coronal Plane.")
+
+except Exception as e:
+    slicer.util.errorDisplay(f"An error occurred during re-orientation: {e}")
+
+
+```
+
+
+And scroll until you can see the lens on the scan, to end up with something like this: 
+
+<img width="1510" height="1005" alt="image" src="https://github.com/user-attachments/assets/fac915b0-feac-486c-98b2-3b2f9734cdb1" />
+
+Make sure you rename these lines **"true_ldL" and "true_ldR"**. 
 
 </details>
 
