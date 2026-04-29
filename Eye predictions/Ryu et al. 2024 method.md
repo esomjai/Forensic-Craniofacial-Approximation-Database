@@ -781,9 +781,29 @@ If you wanted to use this this tool for an approximation, you're done!
 Additionally, we can compare the predicted and the actual eyeball positions via landmarks, by placing the soft tissue landmarks denoted with a blue square in the previous section "Landmarks in this study". 
 You can download them [here](https://github.com/user-attachments/files/27196663/Ryu_soft_tissue.mrk.json).
 
-Once you placed the "ground truth" landmarks (called true_eyeball.lmrk.json) onto the scan (you'll likely have to use the red/green/yellow windows for a more precise placement), you can run the code below. 
+Once you placed the "ground truth" landmarks (called Ryu_soft_tissue.lmrk.json) onto the scan (you'll likely have to use the red/green/yellow windows for a more precise placement), you can run the codes below. 
+It is an iterative process, first adding the extra hard tissue measurements (which were not a prerequisite for the approximation, but are present in the study); then adding the predicted soft tissue measurements based on the true hard tissue lengths, and finally, using the soft tissue landmarks to measure the "true" doft tissue lengths. 
 
-It will create two comparison tables: (1) for comparing length measurements between the "artificial" eyeball model and the true eyeball that were measured by Guyomarc'h et al. (2012)[^2] in the original studt to create the regressions; (2) for measuring the distance between the true vs artificial eyeball landmarks. 
+> [!NOTE]
+> There is a measurement that needs manual allocation for both the predicted and true lens diameter length. This is not possible by connecting any already placed landmark (lens posterior and anterior measure the thickness of the lens, not its diameter). See additional instructions below.
+
+
+<details>	
+<summary> Linear lens diameter measurements </summary>
+
+You'll need to open the **Markups** module and click on the _Create Markups_ > _Line_ option. This will add an empty distance measurement called "L_1/2..." by default. Now, if you place two points on either the 3D scene view or the red/yellow/green boxes, a measurement line in mm will show up. It is important that you rename these lines accordingly, as the codes will only recognise them under specific names. These will have to be
+1) "true_ldL" and "true_ldR" for the true lens diamaters on the scans
+2) "pred_ldL" and "pred_ldR" for the diamater of the lens on hte "artificial" eye model
+
+It is easier to employ the 
+
+This is quite challenging to see on slices
+
+</details>
+
+
+#### Extra hard tissue measurements
+
 
 
 <details>	
@@ -797,47 +817,38 @@ It will create two comparison tables: (1) for comparing length measurements betw
 </details>
 
 
-(1) 
-| Landmark from `true_eyeball.mrk.json` (scan) | Landmark from artificial eyeball | Error Measurement Name |
-| :--- | :--- | :--- |
-| true_oaR | oaR | oaR_error |
-| true_oaL | oaL | oaL_error |
-| true_opR | opR | opR_error |
-| true_opL | opL | opL_error |
-| true_osR | osR | osR_error |
-| true_osL | osL | osL_error |
-| true_oiR | oiR | oiR_error |
-| true_oiL | oiL | oiL_error |
-| true_omL | omL | omL_error |
-| true_omR | omR | omR_error |
-| true_olL | olL | olL_error |
-| true_olR | olR | olR_error |
-| true_pL | pL | pL_error |
-| true_pR | pR | pR_error |
+#### More predicted soft tissue distances
 
-(2) 
-| Line Name | Definition |
-| :--- | :--- |
-| true_DLOM-R-oaR | perpendicular (shortest) distance between DLOM_R line and true_oaR (right eyeball projection) |
-| true_DLOM-L-oaL | perpendicular (shortest) distance between DLOM_L line and true_oaL (left eyeball projection) |
-| true_SOM_L-oaL | perpendicular (shortest) distance between SOM_L line and true_oaL |
-| true_IOM_L-oaL | perpendicular (shortest) distance between IOM_L line and true_oaL |
-| true_LOM_L-oaL | perpendicular (shortest) distance between LOM_L line and true_oaL |
-| true_MOM_L-oaL | perpendicular (shortest) distance between MOM_L line and true_oaL |
-| true_SOM_R-oaR | perpendicular (shortest) distance between SOM_R line and true_oaR |
-| true_IOM_R-oaR | perpendicular (shortest) distance between IOM_R line and true_oaR |
-| true_LOM_R-oaR | perpendicular (shortest) distance between LOM_R line and true_oaR |
-| true_MOM_R-oaR | perpendicular (shortest) distance between MOM_R line and true_oaR |
-| pred_DLOM-R-oaR | perpendicular (shortest) distance between DLOM_R line and oaR |
-| pred_DLOM-L-oaL | perpendicular (shortest) distance between DLOM_L line and oaL |
-| pred_SOM_L-oaL | perpendicular (shortest) distance between SOM_L line and oaL |
-| pred_IOM_L-oaL | perpendicular (shortest) distance between IOM_L line and oaL |
-| pred_LOM_L-oaL | perpendicular (shortest) distance between LOM_L line and oaL |
-| pred_MOM_L-oaL | perpendicular (shortest) distance between MOM_L line and oaL |
-| pred_SOM_R-oaR | perpendicular (shortest) distance between SOM_R line and oaR |
-| pred_IOM_R-oaR | perpendicular (shortest) distance between IOM_R line and oaR |
-| pred_LOM_R-oaR | perpendicular (shortest) distance between LOM_R line and oaR |
-| pred_MOM_R-oaR | perpendicular (shortest) distance between MOM_R line and oaR |
+
+
+
+<details>	
+<summary> Additional hard tissue measurements </summary>
+	
+```python
+
+
+```
+
+</details>
+
+#### True soft tissue distances
+
+It will create two comparison tables: (1) for comparing length measurements between the "artificial" eyeball model and the true eyeball that were measured by Guyomarc'h et al. (2012)[^2] in the original study to create the regressions; (2) for measuring the distance between the true vs artificial eyeball landmarks. 
+
+
+<details>	
+<summary> Additional hard tissue measurements </summary>
+	
+```python
+
+
+```
+
+</details>
+
+
+
 
 
 
@@ -851,7 +862,8 @@ It will create two comparison tables: (1) for comparing length measurements betw
 </details>
 
 
-<img width="871" height="693" alt="{7586E9C8-BB6E-4B46-B2AA-4EE8F046E0DF}" src="https://github.com/user-attachments/assets/327f841e-fc60-4ef5-927f-65ed6b9582e7" />
+
+
 
 
 In addition, the code will print some information on the console, something like this: 
