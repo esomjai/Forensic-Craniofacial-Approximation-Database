@@ -1917,11 +1917,178 @@ To copy all the linear measurements to clipboard, use the method described in [t
 > [!IMPORTANT]
 > It is very important that you do not treat the pre-programmed lines with set length as measurements in your statistical analysis, therefore there is an example below. 
 
-| ID | line node name | length in mm | Note |
-| :--- | :--- | :--- | :--- |
-| (none) | L orbit bisecting line | 100 | ❌ - not a real measurement |
 
-* IDs will return none or unknown if your data was anonymised appropriately
+| ID | line node name | length in mm | Note |
+|--------|-------------|-------|-------|
+| (none) | guiding_SOM_L | 75 | ❌ - not a real measurement |
+| | guiding_SOM_R | 75 | ❌ - not a real measurement |
+| | guiding_IOM_L | 75 | ❌ - not a real measurement |
+| | guiding_IOM_R | 75 | ❌ - not a real measurement |
+| | guiding_MOM_L | 75 | ❌ - not a real measurement |
+| | guiding_MOM_R | 75 | ❌ - not a real measurement |
+| | guiding_LOM_L | 75 | ❌ - not a real measurement |
+| | guiding_LOM_R | 75 | ❌ - not a real measurement |
+| | L1 | 35.86 | |
+| | L8 | 28.3 | |
+| | L15 | 2.49 | |
+| | L20 | 1.97 | |
+| | R1 | 34.26 | |
+| | R8 | 28.96 | |
+| | R15 | 4.35 | |
+| | R20 | 0.12 | |
+| | L2 | 17.31 | |
+| | L3 | 18.55 | |
+| | L4 | 24.99 | |
+| | L5 | 10.87 | |
+| | L6 | 8.85 | |
+| | L7 | 19.45 | |
+| | L9 | 6.48 | |
+| | L10 | 21.81 | |
+| | L11 | 23.98 | |
+| | L12 | 49.87 | |
+| | L13 | 36.73 | |
+| | L14 | 11.75 | |
+| | L16 | 17.68 | |
+| | L19 | 10.43 | |
+| | R2 | 19.59 | |
+| | R3 | 14.67 | |
+| | R4 | 25.53 | |
+| | R5 | 8.73 | |
+| | R6 | 9.04 | |
+| | R7 | 18.67 | |
+| | R9 | 5.8 | |
+| | R10 | 21.91 | |
+| | R11 | 19.36 | |
+| | R12 | 48.1 | |
+| | R13 | 35.23 | |
+| | R14 | 9.81 | |
+| | R16 | 16.99 | |
+| | R19 | 12.58 | |
+| | C1 | 91.35 | |
+| | C2 | 21.12 | |
+| | guide_pred_lcL | 50 | ❌ - not a real measurement |
+| | guide_pred_ocpL | 50 | ❌ - not a real measurement |
+| | guide_pred_laL | 50 | ❌ - not a real measurement |
+| | guide_pred_oaL | 50 | ❌ - not a real measurement |
+| | guide_pred_lpL | 50 | ❌ - not a real measurement |
+| | guide_pred_omL | 50 | ❌ - not a real measurement |
+| | guide_pred_olL | 50 | ❌ - not a real measurement |
+| | guide_pred_oiL | 50 | ❌ - not a real measurement |
+| | guide_pred_osL | 50 | ❌ - not a real measurement |
+| | guide_pred_lcR | 50 | ❌ - not a real measurement |
+| | guide_pred_ocpR | 50 | ❌ - not a real measurement |
+| | guide_pred_laR | 50 | ❌ - not a real measurement |
+| | guide_pred_oaR | 50 | ❌ - not a real measurement |
+| | guide_pred_lpR | 50 | ❌ - not a real measurement |
+| | guide_pred_omR | 50 | ❌ - not a real measurement |
+| | guide_pred_olR | 50 | ❌ - not a real measurement |
+| | guide_pred_oiR | 50 | ❌ - not a real measurement |
+| | guide_pred_osR | 50 | ❌ - not a real measurement |
+| | guide_true_lcL | 50 | ❌ - not a real measurement |
+| | guide_true_ocpL | 50 | ❌ - not a real measurement |
+| | guide_true_laL | 50 | ❌ - not a real measurement |
+| | guide_true_oaL | 50 | ❌ - not a real measurement |
+| | guide_true_lpL | 50 | ❌ - not a real measurement |
+| | guide_true_omL | 50 | ❌ - not a real measurement |
+| | guide_true_olL | 50 | ❌ - not a real measurement |
+| | guide_true_oiL | 50 | ❌ - not a real measurement |
+| | guide_true_osL | 50 | ❌ - not a real measurement |
+| | guide_true_lcR | 50 | ❌ - not a real measurement |
+| | guide_true_ocpR | 50 | ❌ - not a real measurement |
+| | guide_true_laR | 50 | ❌ - not a real measurement |
+| | guide_true_oaR | 50 | ❌ - not a real measurement |
+| | guide_true_lpR | 50 | ❌ - not a real measurement |
+| | guide_true_omR | 50 | ❌ - not a real measurement |
+| | guide_true_olR | 50 | ❌ - not a real measurement |
+| | guide_true_oiR | 50 | ❌ - not a real measurement |
+| | guide_true_osR | 50 | ❌ - not a real measurement |
+| | pred_L17 | 5.1 | |
+| | pred_L18 | 21.81 | |
+| | pred_L21 | 13.08 | |
+| | pred_L22 | 15.22 | |
+| | pred_L23 | 19.96 | |
+| | pred_L24 | 15.9 | |
+| | pred_L25 | 18.88 | |
+| | pred_L26 | 19.69 | |
+| | pred_L27 | 12.67 | |
+| | pred_L28 | 3.73 | |
+| | pred_L29 | 4.67 | |
+| | pred_L30 | 3.73 | |
+| | pred_L31 | 21.62 | |
+| | pred_L32 | 24.23 | |
+| | pred_L33 | 17.2 | |
+| | pred_E1_L | 13.81 | |
+| | pred_E2_L | 15.19 | |
+| | pred_E3_L | 11.94 | |
+| | pred_E4_L | 12.19 | |
+| | pred_E5_L | 23.98 | |
+| | pred_E6_L | 24.01 | |
+| | pred_R17 | 3.73 | |
+| | pred_R18 | 19.3 | |
+| | pred_R21 | 13.31 | |
+| | pred_R22 | 14.39 | |
+| | pred_R23 | 19.33 | |
+| | pred_R24 | 14.93 | |
+| | pred_R25 | 18.08 | |
+| | pred_R26 | 19.83 | |
+| | pred_R27 | 14.55 | |
+| | pred_R28 | 3.73 | |
+| | pred_R29 | 4.67 | |
+| | pred_R30 | 3.73 | |
+| | pred_R31 | 21.18 | |
+| | pred_R32 | 24.4 | |
+| | pred_R33 | 19.07 | |
+| | pred_E1_R | 13.81 | |
+| | pred_E2_R | 15.19 | |
+| | pred_E3_R | 11.94 | |
+| | pred_E4_R | 12.19 | |
+| | pred_E5_R | 23.98 | |
+| | pred_E6_R | 24.01 | |
+| | true_L17 | 14.18 | |
+| | true_L18 | 23.4 | |
+| | true_L21 | 16.19 | |
+| | true_L22 | 12.11 | |
+| | true_L23 | 18 | |
+| | true_L24 | 17.86 | |
+| | true_L25 | 18.16 | |
+| | true_L26 | 15.44 | |
+| | true_L27 | 0.78 | |
+| | true_L28 | 5.6 | |
+| | true_L29 | 9.49 | |
+| | true_L30 | 5.6 | |
+| | true_L31 | 17.3 | |
+| | true_L32 | 23.61 | |
+| | true_L33 | 8.51 | |
+| | true_E1_L | 20.94 | |
+| | true_E2_L | 10.72 | |
+| | true_E3_L | 16.14 | |
+| | true_E4_L | 12.03 | |
+| | true_E5_L | 30.13 | |
+| | true_E6_L | 24.74 | |
+| | true_R17 | 12.51 | |
+| | true_R18 | 19.5 | |
+| | true_R21 | 15.36 | |
+| | true_R22 | 12.35 | |
+| | true_R23 | 18.6 | |
+| | true_R24 | 15.66 | |
+| | true_R25 | 15.99 | |
+| | true_R26 | 16.78 | |
+| | true_R27 | 1.12 | |
+| | true_R28 | 6.34 | |
+| | true_R29 | 9.02 | |
+| | true_R30 | 6.34 | |
+| | true_R31 | 16.14 | |
+| | true_R32 | 24.44 | |
+| | true_R33 | 10.11 | |
+| | true_E1_R | 19.68 | |
+| | true_E2_R | 18 | |
+| | true_E3_R | 17 | |
+| | true_E4_R | 16.29 | |
+| | true_E5_R | 32.35 | |
+| | true_E6_R | 30.52 | |
+
+
+**IDs will return none or unknown if your data was anonymised appropriately**
 
 
 
