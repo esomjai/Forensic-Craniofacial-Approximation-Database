@@ -1164,69 +1164,99 @@ except Exception as e:
 
 There have been some soft tissue measurements (L/R21, 22, 23, 27, 33) that were predicted in the step where the artificial eyes were placed. The rest of the predicted soft tissue distances are created by the code below. 
 
-| original abbreviation | Slicer abbrv | Original definition | Slicer definition |
-|----------------------|--------------|---------------------|-------------------|
-| 21 | L21 | left Lens centre (landmark)—left Supraorbitale (transverse plane) | shortest perpendicular distance between the lcL and marginal_SOM_L |
-| 21 | R21 | right Lens centre (landmark)—right Supraorbitale (transverse plane) | shortest perpendicular distance between the lcR and marginal_SOM_R |
-| 22 | L22 | left Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the lcL and orbitale transverse plane |
-| 22 | R22 | right Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the lcR and orbitale transverse plane |
-| 23 | L23 | left Lens centre (landmark)—left Medial orbit (sagittal plane) | shortest perpendicular distance between the lcL and marginal_MOM_L plane |
-| 23 | R23 | right Lens centre (landmark)—right Medial orbit (sagittal plane) | shortest perpendicular distance between the lcR and marginal_MOM_R plane |
-| 24 | L24 | left Lens centre (landmark)— left Lateral orbit (sagittal plane) | shortest perpendicular distance between the lcL and marginal_LOM_L plane |
-| 24 | R24 | rightLens centre (landmark)—right Lateral orbit (sagittal plane) | shortest perpendicular distance between the lcR and marginal_LOM_R plane |
-| 25 | L25 | left Lens centre (landmark)—left Lateral orbit (coronal plane) | shortest perpendicular distance between the lcL and guiding_LOM_L line |
-| 25 | R25 | right Lens centre (landmark)—right Lateral orbit (coronal plane) | shortest perpendicular distance between the lcR and guiding_LOM_R line |
-| 26 | L26 | left Lens centre (landmark)—left Optic canal point | lcL to ocpL |
-| 26 | R26 | right Lens centre (landmark)—right Optic canal point | lcR to ocpR |
-| 27 | L27 | left Lens centre (landmark)— Coronal plane | shortest perpendicular distance between the lcL and Coronal plane |
-| 27 | R27 | rightLens centre (landmark)— Coronal plane | shortest perpendicular distance between the lcR and Coronal plane |
-| 28 | L28 | left Lens anterior (landmark)—left Lens posterior | laL to lpL |
-| 28 | R28 | right Lens anterior (landmark)—right Lens posterior | laR to lpR |
-| 29 | L29 | left Cornea (landmark)—left Lens centre (coronal plane) | oaL to lcL |
-| 29 | R29 | rightCornea (landmark)—right Lens centre (coronal plane) | oaR to lcR |
-| 30 | L30 | left Lens diameter | manual |
-| 30 | R30 | right Lens diameter | manual |
-| 31 | L31 | left Cornea (landmark)— left Lateral orbit (coronal plane) (25 + 29) | L25 + L29 |
-| 31 | R31 | right Cornea (landmark)— right Lateral orbit (coronal plane) (25 + 29) | R25 + R29 |
-| 32 | L32 | left Cornea (landmark)—left Optic canal point (26 + 29) | L26 + L29 |
-| 32 | R32 | right Cornea (landmark)—right Optic canal point (26 + 29) | R26 + R29 |
-| 33 | L33 | left Cornea (landmark)—Coronal plane (27 + 29) | L27 + L29 |
-| 33 | R33 | right Cornea (landmark)—Coronal plane (27 + 29) | R27 + R29 |
-| E1_L | | left Lens centre—left Globe superior (transverse plane) | shortest perpendicular distance between the lcL and osL |
-| E1_R | | right Lens centre—right Globe superior (transverse plane) | shortest perpendicular distance between the lcR and osR |
-| E2_L | | left Lens centre—left Globe Medial (sagittal plane) | shortest perpendicular distance between the lcL and omL |
-| E2_R | | right Lens centre—right Globe Medial (sagittal plane) | shortest perpendicular distance between the lcR and omR |
-| E3_L | | left Globe centre—left Globe superior | gcL to osL |
-| E3_R | | right Globe centre—right Globe superior | gcR to osR |
-| E4_L | | left Globe centre—left Globe medial | gcL to omL |
-| E4_R | | rightGlobe centre—right Globe medial | gcR to omR |
-| E5_L | | left Globe superior—left Globe inferior | osL to oiL |
-| E5_R | | right Globe superior—right Globe inferior | osR to oiR |
-| E6_L | | left Globe lateral—left Globe medial | olL to omL |
-| E6_R | | right Globe lateral—right Globe medial | olR to omR |
+There will be added lines (similar to the guiding_lines previously) to ensure the parallell measurement theme in the original study. 
+
+(1)Additional lines
+| bisects (in Right/Left Eyeball lmrks) | is parallel to | Reference Plane |
+|---------------------------------------|----------------|-----------------|
+| pred_lcL line | lcL | Coronal |
+| pred_lcR line | lcR | Coronal |
+| pred_ocpR line | ocpR | Coronal |
+| pred_ocpL line | ocpL | Coronal |
+| pred_laR line | laR | Coronal |
+| pred_laL line | laL | Coronal |
+| pred_oaR line | oaR | Coronal |
+| pred_oaL line | oaL | Coronal |
+| pred_lpR line | lpR | Coronal |
+| pred_lpL line | lpL | Coronal |
+| pred_oiR line | oiR | orbital transverse |
+| pred_oiL line | oiL | orbital transverse |
+| pred_osR line | osR | orbital transverse |
+| pred_osL line | osL | orbital transverse |
+| pred_omR line | omR | Coronal |
+| pred_omL line | omL | Coronal |
+| pred_olR line | olR | Coronal |
+| pred_olL line | olL | Coronal |
+
+(2) Additional Predicted measurements
+| original | Slicer abbrv | Original definition | Slicer definition |
+|----------|--------------|---------------------|-------------------|
+| 17 | pred_L17 | left Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpL and the coronal plane |
+| 17 | pred_R17 | right Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpR and the coronal plane |
+| 18 | pred_L18 | left Optic canal point (landmark)— left Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpL and guiding_LOM_L line |
+| 18 | pred_R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpR and guiding_LOM_R line |
+| 21 | pred_L21 | left Lens centre (landmark)—left Supraorbitale (transverse plane) | shortest perpendicular distance between the lcL and marginal_SOM_L |
+| 21 | pred_R21 | right Lens centre (landmark)—right Supraorbitale (transverse plane) | shortest perpendicular distance between the lcR and marginal_SOM_R |
+| 22 | pred_L22 | left Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the lcL and orbitale transverse plane |
+| 22 | pred_R22 | right Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the lcR and orbitale transverse plane |
+| 23 | pred_L23 | left Lens centre (landmark)—left Medial orbit (sagittal plane) | shortest perpendicular distance between the lcL and marginal_MOM_L plane |
+| 23 | pred_R23 | right Lens centre (landmark)—right Medial orbit (sagittal plane) | shortest perpendicular distance between the lcR and marginal_MOM_R plane |
+| 24 | pred_L24 | left Lens centre (landmark)— left Lateral orbit (sagittal plane) | shortest perpendicular distance between the lcL and marginal_LOM_L plane |
+| 24 | pred_R24 | rightLens centre (landmark)—right Lateral orbit (sagittal plane) | shortest perpendicular distance between the lcR and marginal_LOM_R plane |
+| 25 | pred_L25 | left Lens centre (landmark)—left Lateral orbit (coronal plane) | shortest perpendicular distance between the lcL and guiding_LOM_L line |
+| 25 | pred_R25 | right Lens centre (landmark)—right Lateral orbit (coronal plane) | shortest perpendicular distance between the lcR and guiding_LOM_R line |
+| 26 | pred_L26 | left Lens centre (landmark)—left Optic canal point | shortest perpendicular distance between the pred_lcL line to pred_ocpL line |
+| 26 | pred_R26 | right Lens centre (landmark)—right Optic canal point | shortest perpendicular distance between the pred_lcR line and pred_ocpR line |
+| 27 | pred_L27 | left Lens centre (landmark)— Coronal plane | shortest perpendicular distance between the pred_lcL line and Coronal plane |
+| 27 | pred_R27 | rightLens centre (landmark)— Coronal plane | shortest perpendicular distance between the pred_lcR line and Coronal plane |
+| 28 | pred_L28 | left Lens anterior (landmark)—left Lens posterior | shortest perpendicular distance between pred_laL line and pred_lpL line |
+| 28 | pred_R28 | right Lens anterior (landmark)—right Lens posterior | shortest perpendicular distance between pred_laR line and pred_lpR line |
+| 29 | pred_L29 | left Cornea (landmark)—left Lens centre (coronal plane) | shortest perpendicular distance between pred_oaL line to pred_lcL line |
+| 29 | pred_R29 | right Cornea (landmark)—right Lens centre (coronal plane) | shortest perpendicular distance between pred_oaR line to pred_lcR line |
+| 30 | pred_L30 | left Lens diameter | manual |
+| 30 | pred_R30 | right Lens diameter | manual |
+| 31 | pred_L31 | left Cornea (landmark)— left Lateral orbit (coronal plane) (25 + 29) | L25 + L29 (shortest perpendicular distance between the pred_oaL line and marginal_LOM_L plane) |
+| 31 | pred_R31 | right Cornea (landmark)— right Lateral orbit (coronal plane) (25 + 29) | R25 + R29 (shortest perpendicular distance between the pred_oaL line and marginal_LOM_L plane) |
+| 32 | pred_L32 | left Cornea (landmark)—left Optic canal point (26 + 29) | L26 + L29 (shortest perpendicular distance between the pred_oaL line and pred_ocpL line) |
+| 32 | pred_R32 | right Cornea (landmark)—right Optic canal point (26 + 29) | R26 + R29 (shortest perpendicular distance between the pred_oaR line and pred_ocpR line) |
+| 33 | pred_L33 | left Cornea (landmark)—Coronal plane (27 + 29) | L27 + L29 (shortest perpendicular distance between the pred_oaL line and Coronal plane) |
+| 33 | pred_R33 | right Cornea (landmark)—Coronal plane (27 + 29) | R27 + R29 (shortest perpendicular distance between the pred_oaR line and Coronal plane) |
+| E1_L | pred_E1_L | left Lens centre—left Globe superior (transverse plane) | shortest perpendicular distance between the pred_lcL line and pred_osL line |
+| E1_R | pred_E1_R | right Lens centre—right Globe superior (transverse plane) | shortest perpendicular distance between the pred_lcR line and pred_osR line |
+| E2_L | pred_E2_L | left Lens centre—left Globe Medial (sagittal plane) | shortest perpendicular distance between the pred_lcL line and pred_omL line |
+| E2_R | pred_E2_R | right Lens centre—right Globe Medial (sagittal plane) | shortest perpendicular distance between the pred_lcR line and pred_omR line |
+| E3_L | pred_E3_L | left Globe centre—left Globe superior | shortest perpendicular distance between the gcL and pred_osL line |
+| E3_R | pred_E3_R | right Globe centre—right Globe superior | shortest perpendicular distance between the gcR and pred_osR line |
+| E4_L | pred_E4_L | left Globe centre—left Globe medial | shortest perpendicular distance between the gcL and pred_omL line |
+| E4_R | pred_E4_R | rightGlobe centre—right Globe medial | shortest perpendicular distance between the gcR and pred_omR line |
+| E5_L | pred_E5_L | left Globe superior—left Globe inferior | osL to oiL |
+| E5_R | pred_E5_R | right Globe superior—right Globe inferior | osR to oiR |
+| E6_L | pred_E6_L | left Globe lateral—left Globe medial | olL to omL |
+| E6_R | pred_E6_R | right Globe lateral—right Globe medial | olR to omR |
 
 <details>	
-<summary> Additional presoft tissue measurements </summary>
+<summary> Additional predicted soft tissue measurements </summary>
 	
 ```python
 import slicer
 import numpy as np
+import vtk
 
 def create_soft_tissue_measurements(prefix):
     """
-    Creates ONLY soft-tissue dependent measurements, sourcing all landmarks
-    from the correct eyeball/soft-tissue file for both 'pred_' and 'true_' workflows.
+    Creates soft-tissue dependent measurements based on the robust "helper line" methodology.
+    This version corrects the API calls for point-to-plane and point-to-line distance calculations.
     :param prefix: A string, either "pred_" or "true_".
     """
-    print("="*60)
-    print(f"Creating SOFT TISSUE ONLY Measurements with prefix: '{prefix}'")
-    print("="*60)
+    print("="*80)
+    print(f"Creating SOFT TISSUE Measurements (Corrected Method v4) with prefix: '{prefix}'")
+    print("="*80)
 
     if prefix not in ["pred_", "true_"]:
         slicer.util.errorDisplay("Prefix must be either 'pred_' or 'true_'.")
         return
 
-    # --- Helper Functions (condensed) ---
+    # --- Helper Functions ---
     def get_node(name, cls="vtkMRMLNode"):
         node = slicer.mrmlScene.GetFirstNodeByName(name)
         if not node:
@@ -1236,63 +1266,76 @@ def create_soft_tissue_measurements(prefix):
                     if side_full in n.GetName() and "Eyeball" in n.GetName(): return n
             raise ValueError(f"Node '{name}' ({cls}) not found.")
         return node
+
     def get_landmark_pos(node, label):
-        # Adjust label for 'true_' workflow which has a different naming convention
         p_label = f"true_{label}" if prefix == "true_" else label
-        for i in range(node.GetNumberOfControlPoints()):
-            if node.GetNthControlPointLabel(i) == p_label:
-                p = np.zeros(3); node.GetNthControlPointPositionWorld(i, p); return p
-        # Handle 'ocp_L' vs 'ocpL' naming inconsistency in the predicted file
-        if prefix == "pred_" and label == "ocpL":
-             return get_landmark_pos(node, "ocp_L")
-        raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
-    def style_line(line_node, color):
-        d = line_node.GetDisplayNode() or line_node.CreateDefaultDisplayNodes();
-        d.SetColor(color); d.SetSelectedColor([1,1,0]); d.SetVisibility(True)
-        line_node.GetMeasurement("length").SetEnabled(True)
-    def measure_point_to_plane(p, plane_node):
-        o, n = np.zeros(3), np.zeros(3); plane_node.GetOrigin(o); plane_node.GetNormal(n)
-        dist = np.dot(p-o, n); return abs(dist), p - dist * n
-    def measure_point_to_line(p, line_node):
-        p1, p2 = np.zeros(3), np.zeros(3); line_node.GetNthControlPointPositionWorld(0, p1); line_node.GetNthControlPointPositionWorld(1, p2)
-        if np.linalg.norm(p2-p1) < 1e-6: return 0, p1
-        d=(p2-p1)/np.linalg.norm(p2-p1); v=p-p1; t=np.dot(v,d); cp=p1+t*d; return np.linalg.norm(p-cp), cp
-    
-    created_count = 0
-    skipped_count = 0
-    measured_lengths = {}
-    
-    def create_and_measure(name, p1, p2):
-        nonlocal created_count, skipped_count
-        line_name = f"{prefix}{name}"
-        if slicer.mrmlScene.GetFirstNodeByName(line_name):
-            skipped_count += 1
-            node = get_node(line_name); measured_lengths[name] = node.GetMeasurement('length').GetValue()
-            return
-        dist = np.linalg.norm(np.array(p1) - np.array(p2))
-        line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
-        line_node.AddControlPoint(p1); line_node.AddControlPoint(p2)
-        style_line(line_node, [1,0,0] if prefix == "pred_" else [0,1,0]) # Red for pred, Green for true
-        measured_lengths[name] = dist; created_count += 1
+        if prefix == "pred_":
+            if node.GetControlPointIndexByLabel(p_label) == -1:
+                if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1:
+                    p_label = f"{label[:-1]}_{label[-1]}"
+        
+        idx = node.GetControlPointIndexByLabel(p_label)
+        if idx == -1: raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
+        pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
+        return pos
+
+    def create_line(name, p1, p2, color=[0.8, 0.8, 0.8], visible=False, force_create=False):
+        # If node exists from previous run, remove it before creating new one
+        existing_node = slicer.mrmlScene.GetFirstNodeByName(name)
+        if existing_node:
+            slicer.mrmlScene.RemoveNode(existing_node)
+            
+        node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+        node.AddControlPoint(p1); node.AddControlPoint(p2)
+        d = node.GetDisplayNode() or node.CreateDefaultDisplayNodes();
+        d.SetColor(color); d.SetSelectedColor(color); d.SetVisibility(visible)
+        node.GetMeasurement("length").SetEnabled(True)
+        return node
+        
+    # CORRECTED Helper for point-to-plane projection
+    def project_point_to_plane_node(point, plane_node):
+        origin = np.zeros(3)
+        normal = np.zeros(3)
+        plane_node.GetOrigin(origin)
+        plane_node.GetNormal(normal)
+        
+        # Manually calculate the projection
+        v = point - origin
+        dist = np.dot(v, normal)
+        projected_point = point - dist * normal
+        return projected_point
+
+    # Helper for point-to-line projection
+    def project_point_to_line_node(point, line_node):
+        p1 = np.zeros(3); line_node.GetNthControlPointPositionWorld(0, p1)
+        p2 = np.zeros(3); line_node.GetNthControlPointPositionWorld(1, p2)
+        t_out = vtk.mutable(0)
+        closest_point = np.zeros(3)
+        vtk.vtkLine.DistanceToLine(point, p1, p2, t_out, closest_point)
+        return closest_point
 
     try:
+        # --- STAGE 1: Get all required scene nodes ---
+        print("1. Finding all required nodes...")
         coronal_plane = get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
         orbital_plane = get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
-        soft_node_name = "Ryu_soft_tissue" if prefix == "true_" else ""
+
+        # --- STAGE 2: Create Final Measurements for each side ---
+        print("\n2. Creating final measurement lines...")
+        created_count = 0
+        final_color = [1,0,0] if prefix == "pred_" else [0,1,0]
 
         for side in ["L", "R"]:
             side_full = "Left" if side == "L" else "Right"
-            
-            # Get the single source of landmarks for this workflow (either predicted or true)
-            eyeball_lm_node_name = f"{side_full} Eyeball lmrks" if prefix == "pred_" else soft_node_name
+            eyeball_lm_node_name = f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue"
             eyeball_lm_node = get_node(eyeball_lm_node_name, "vtkMRMLMarkupsFiducialNode")
-
+            
             marginal_SOM = get_node(f"marginal_SOM_{side}", "vtkMRMLMarkupsPlaneNode")
             marginal_MOM = get_node(f"marginal_MOM_{side}", "vtkMRMLMarkupsPlaneNode")
             marginal_LOM = get_node(f"marginal_LOM_{side}", "vtkMRMLMarkupsPlaneNode")
             guiding_LOM = get_node(f"guiding_LOM_{side}", "vtkMRMLMarkupsLineNode")
 
-            # Get all landmark positions from the single correct source node
+            # Get original landmark positions
             ocp_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}")
             lc_pos = get_landmark_pos(eyeball_lm_node, f"lc{side}")
             la_pos = get_landmark_pos(eyeball_lm_node, f"la{side}")
@@ -1304,51 +1347,47 @@ def create_soft_tissue_measurements(prefix):
             om_pos = get_landmark_pos(eyeball_lm_node, f"om{side}")
             gc_pos = get_landmark_pos(eyeball_lm_node, f"gc{side}")
             
-            # Create L17/R17, L18/R18 (depend on ocp)
-            dist, proj = measure_point_to_plane(ocp_pos, coronal_plane); create_and_measure(f"{side}17", ocp_pos, proj)
-            dist, proj = measure_point_to_line(ocp_pos, guiding_LOM); create_and_measure(f"{side}18", ocp_pos, proj)
-
-            # Create Measurements L21-L29
-            dist, proj = measure_point_to_plane(lc_pos, marginal_SOM); create_and_measure(f"{side}21", lc_pos, proj)
-            dist, proj = measure_point_to_plane(lc_pos, orbital_plane); create_and_measure(f"{side}22", lc_pos, proj)
-            dist, proj = measure_point_to_plane(lc_pos, marginal_MOM); create_and_measure(f"{side}23", lc_pos, proj)
-            dist, proj = measure_point_to_plane(lc_pos, marginal_LOM); create_and_measure(f"{side}24", lc_pos, proj)
-            dist, proj = measure_point_to_line(lc_pos, guiding_LOM); create_and_measure(f"{side}25", lc_pos, proj)
-            create_and_measure(f"{side}26", lc_pos, ocp_pos)
-            dist, proj = measure_point_to_plane(lc_pos, coronal_plane); create_and_measure(f"{side}27", lc_pos, proj)
-            create_and_measure(f"{side}28", la_pos, lp_pos)
-            create_and_measure(f"{side}29", oa_pos, lc_pos)
+            # --- Create Measurement Lines ---
+            # L/R 17, 18
+            create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color, True)
+            create_line(f"{prefix}{side}18", ocp_pos, project_point_to_line_node(ocp_pos, guiding_LOM), final_color, True)
             
-            # Create Eyeball Geometry Measurements (E1-E6)
-            create_and_measure(f"E1_{side}", lc_pos, os_pos)
-            create_and_measure(f"E2_{side}", lc_pos, om_pos)
-            create_and_measure(f"E3_{side}", gc_pos, os_pos)
-            create_and_measure(f"E4_{side}", gc_pos, om_pos)
-            create_and_measure(f"E5_{side}", os_pos, oi_pos)
-            create_and_measure(f"E6_{side}", ol_pos, om_pos)
+            # L/R 21-25
+            create_line(f"{prefix}{side}21", lc_pos, project_point_to_plane_node(lc_pos, marginal_SOM), final_color, True)
+            create_line(f"{prefix}{side}22", lc_pos, project_point_to_plane_node(lc_pos, orbital_plane), final_color, True)
+            create_line(f"{prefix}{side}23", lc_pos, project_point_to_plane_node(lc_pos, marginal_MOM), final_color, True)
+            create_line(f"{prefix}{side}24", lc_pos, project_point_to_plane_node(lc_pos, marginal_LOM), final_color, True)
+            create_line(f"{prefix}{side}25", lc_pos, project_point_to_line_node(lc_pos, guiding_LOM), final_color, True)
+            
+            # L/R 26-29, 30
+            create_line(f"{prefix}{side}26", lc_pos, ocp_pos, final_color, True)
+            create_line(f"{prefix}{side}27", lc_pos, project_point_to_plane_node(lc_pos, coronal_plane), final_color, True)
+            create_line(f"{prefix}{side}28", la_pos, lp_pos, final_color, True)
+            create_line(f"{prefix}{side}29", oa_pos, lc_pos, final_color, True)
+            create_line(f"{prefix}{side}30", la_pos, lp_pos, final_color, True) 
 
-        print(f"\n--- Composite Measurements ({prefix}) ---")
-        for side in ["L", "R"]:
-            s25, s26, s27, s29 = measured_lengths.get(f"{side}25"), measured_lengths.get(f"{side}26"), measured_lengths.get(f"{side}27"), measured_lengths.get(f"{side}29")
-            if s25 and s29: print(f"{prefix}{side}31 (sum) = {s25 + s29:.2f} mm")
-            if s26 and s29: print(f"{prefix}{side}32 (sum) = {s26 + s29:.2f} mm")
-            if s27 and s29: print(f"{prefix}{side}33 (sum) = {s27 + s29:.2f} mm")
+            # L/R 31, 32, 33 (Composite measurements)
+            create_line(f"{prefix}{side}31", oa_pos, project_point_to_line_node(oa_pos, guiding_LOM), final_color, True)
+            create_line(f"{prefix}{side}32", oa_pos, ocp_pos, final_color, True)
+            create_line(f"{prefix}{side}33", oa_pos, project_point_to_plane_node(oa_pos, coronal_plane), final_color, True)
 
-        print(f"\nSUCCESS: Created {created_count} new '{prefix}' lines. Skipped {skipped_count} existing lines.")
+            # E1-E6
+            create_line(f"{prefix}E1_{side}", lc_pos, os_pos, final_color, True)
+            create_line(f"{prefix}E2_{side}", lc_pos, om_pos, final_color, True)
+            create_line(f"{prefix}E3_{side}", gc_pos, os_pos, final_color, True)
+            create_line(f"{prefix}E4_{side}", gc_pos, om_pos, final_color, True)
+            create_line(f"{prefix}E5_{side}", os_pos, oi_pos, final_color, True)
+            create_line(f"{prefix}E6_{side}", ol_pos, om_pos, final_color, True)
+            created_count += 21
+
+        print(f"\nSUCCESS: Created/updated ~{created_count} measurement lines for prefix '{prefix}'.")
 
     except Exception as e:
-        slicer.util.errorDisplay(f"An error occurred in soft tissue measurement creation: {e}")
+        slicer.util.errorDisplay(f"An error occurred: {e}")
+        import traceback
+        traceback.print_exc()
 
-# ==============================================================================
-#                               EXAMPLE USAGE
-# ==============================================================================
-#
-# After running the script above in the Slicer Python Interactor, you can call
-# the function with the desired prefix.
-#
-# ------------------------------------------------------------------------------
-# To create PREDICTED measurements (RED lines) from the GUI-placed eyeball:
-# ------------------------------------------------------------------------------
+# --- Example Usage ---
 create_soft_tissue_measurements(prefix="pred_")
 
 
@@ -1360,8 +1399,35 @@ create_soft_tissue_measurements(prefix="pred_")
 
 The code below creates the soft tissue measurements related to the true eyeball landmarks. 
 
-| original abbreviation | Slicer abbrv | Original definition | Slicer definition |
-|----------------------|--------------|---------------------|-------------------|
+(1)
+| Line name  | bisects (in Ryu_soft_tissue) |is parallel to |
+|------------------------------|----------------|-----------------|
+| true_lcL line | true_lcL | Coronal |
+| true_lcR line | true_lcR | Coronal |
+| true_ocpR line | true_ocpR | Coronal |
+| true_ocpL line | true_ocpL | Coronal |
+| true_laR line | true_laR | Coronal |
+| true_laL line | true_laL | Coronal |
+| true_oaR line | true_oaR | Coronal |
+| true_oaL line | true_oaL | Coronal |
+| true_lpR line | true_lpR | Coronal |
+| true_lpL line | true_lpL | Coronal |
+| true_oiR line | true_oiR | orbital transverse |
+| true_oiL line | true_oiL | orbital transverse |
+| true_osR line | true_osR | orbital transverse |
+| true_osL line | true_osL | orbital transverse |
+| true_omR line | true_omR | Coronal |
+| true_omL line | true_omL | Coronal |
+| true_olR line | true_olR | Coronal |
+| true_olL line | true_olL | Coronal |
+
+(2)
+| original | Slicer abbrv | Original definition | Slicer definition |
+|----------|--------------|---------------------|-------------------|
+| 17 | pred_L17 | left Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpL and the coronal plane |
+| 17 | pred_R17 | right Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpR and the coronal plane |
+| 18 | pred_L18 | left Optic canal point (landmark)— left Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpL and guiding_LOM_L line |
+| 18 | pred_R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpR and guiding_LOM_R line |
 | 21 | true_L21 | left Lens centre (landmark)—left Supraorbitale (transverse plane) | shortest perpendicular distance between the true_lcL and marginal_SOM_L |
 | 21 | true_R21 | right Lens centre (landmark)—right Supraorbitale (transverse plane) | shortest perpendicular distance between the true_lcR and marginal_SOM_R |
 | 22 | true_L22 | left Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the true_lcL and orbitale transverse plane |
@@ -1372,34 +1438,34 @@ The code below creates the soft tissue measurements related to the true eyeball 
 | 24 | true_R24 | rightLens centre (landmark)—right Lateral orbit (sagittal plane) | shortest perpendicular distance between the true_lcR and marginal_LOM_R plane |
 | 25 | true_L25 | left Lens centre (landmark)—left Lateral orbit (coronal plane) | shortest perpendicular distance between the true_lcL and guiding_LOM_L line |
 | 25 | true_R25 | right Lens centre (landmark)—right Lateral orbit (coronal plane) | shortest perpendicular distance between the true_lcR and guiding_LOM_R line |
-| 26 | true_L26 | left Lens centre (landmark)—left Optic canal point | true_lcL to true_ocpL |
-| 26 | true_R26 | right Lens centre (landmark)—right Optic canal point | true_lcR to true_ocpR |
-| 27 | true_L27 | left Lens centre (landmark)— Coronal plane | shortest perpendicular distance between the true_lcL and Coronal plane |
-| 27 | true_R27 | rightLens centre (landmark)— Coronal plane | shortest perpendicular distance between the true_lcR and Coronal plane |
-| 28 | true_L28 | left Lens anterior (landmark)—left Lens posterior | true_laL to true_lpL |
-| 28 | true_R28 | right Lens anterior (landmark)—right Lens posterior | true_laR to true_lpR |
-| 29 | true_L29 | left Cornea (landmark)—left Lens centre (coronal plane) | true_oaL to true_lcL |
-| 29 | true_R29 | rightCornea (landmark)—right Lens centre (coronal plane) | true_oaR to true_lcR |
+| 26 | true_L26 | left Lens centre (landmark)—left Optic canal point | shortest perpendicular distance between the true_lcL line and true_ocpL line |
+| 26 | true_R26 | right Lens centre (landmark)—right Optic canal point | shortest perpendicular distance between the true_lcR line and true_ocpR line |
+| 27 | true_L27 | left Lens centre (landmark)— Coronal plane | shortest perpendicular distance between the true_lcL line and Coronal plane |
+| 27 | true_R27 | rightLens centre (landmark)— Coronal plane | shortest perpendicular distance between the true_lcR line and Coronal plane |
+| 28 | true_L28 | left Lens anterior (landmark)—left Lens posterior | shortest perpendicular distance between true_laL line and true_lpL line |
+| 28 | true_R28 | right Lens anterior (landmark)—right Lens posterior | shortest perpendicular distance between true_laR line and true_lpR line |
+| 29 | true_L29 | left Cornea (landmark)—left Lens centre (coronal plane) | shortest perpendicular distance between true_oaL line and true_lcL line |
+| 29 | true_R29 | right Cornea (landmark)—right Lens centre (coronal plane) | shortest perpendicular distance between true_oaR line and true_lcR line |
 | 30 | true_L30 | left Lens diameter | manual |
 | 30 | true_R30 | right Lens diameter | manual |
-| 31 | true_L31 | left Cornea (landmark)— left Lateral orbit (coronal plane) (25 + 29) | true_L25 + true_L29 |
-| 31 | true_R31 | right Cornea (landmark)— right Lateral orbit (coronal plane) (25 + 29) | true_R25 + true_R29 |
-| 32 | true_L32 | left Cornea (landmark)—left Optic canal point (26 + 29) | true_L26 + true_L29 |
-| 32 | true_R32 | right Cornea (landmark)—right Optic canal point (26 + 29) | true_R26 + true_R29 |
-| 33 | true_L33 | left Cornea (landmark)—Coronal plane (27 + 29) | true_L27 + true_L29 |
-| 33 | true_R33 | right Cornea (landmark)—Coronal plane (27 + 29) | true_R27 + true_R29 |
-| true_E1_L | | left Lens centre—left Globe superior (transverse plane) | shortest perpendicular distance between the true_lcL and true_osL |
-| true_E1_R | | right Lens centre—right Globe superior (transverse plane) | shortest perpendicular distance between the true_lcR and true_osR |
-| true_E2_L | | left Lens centre—left Globe Medial (sagittal plane) | shortest perpendicular distance between the true_lcL and true_omL |
-| true_E2_R | | right Lens centre—right Globe Medial (sagittal plane) | shortest perpendicular distance between the true_lcR and true_omR |
-| true_E3_L | | left Globe centre—left Globe superior | true_gcL to true_osL |
-| true_E3_R | | right Globe centre—right Globe superior | true_gcR to true_osR |
-| true_E4_L | | left Globe centre—left Globe medial | true_gcL to true_omL |
-| true_E4_R | | rightGlobe centre—right Globe medial | true_gcR to true_omR |
-| true_E5_L | | left Globe superior—left Globe inferior | true_osL to true_oiL |
-| true_E5_R | | right Globe superior—right Globe inferior | true_osR to true_oiR |
-| true_E6_L | | left Globe lateral—left Globe medial | true_olL to true_omL |
-| true_E6_R | | right Globe lateral—right Globe medial | true_olR to true_omR |
+| 31 | true_L31 | left Cornea (landmark)— left Lateral orbit (coronal plane) (25 + 29) | L25 + L29 (shortest perpendicular distance between the true_oaL line and marginal_LOM_L plane) |
+| 31 | true_R31 | right Cornea (landmark)— right Lateral orbit (coronal plane) (25 + 29) | R25 + R29 (shortest perpendicular distance between the true_oaR line and marginal_LOM_R plane) |
+| 32 | true_L32 | left Cornea (landmark)—left Optic canal point (26 + 29) | L26 + L29 (shortest perpendicular distance between the true_oaL line and true_ocpL line) |
+| 32 | true_R32 | right Cornea (landmark)—right Optic canal point (26 + 29) | R26 + R29 (shortest perpendicular distance between the true_oaR line and true_ocpR line) |
+| 33 | true_L33 | left Cornea (landmark)—Coronal plane (27 + 29) | L27 + L29 (shortest perpendicular distance between the true_oaL line and Coronal plane) |
+| 33 | true_R33 | right Cornea (landmark)—Coronal plane (27 + 29) | R27 + R29 (shortest perpendicular distance between the true_oaR line and Coronal plane) |
+| E1_L | true_E1_L | left Lens centre—left Globe superior (transverse plane) | shortest perpendicular distance between the true_lcL line and true_osL line |
+| E1_R | true_E1_R | right Lens centre—right Globe superior (transverse plane) | shortest perpendicular distance between the true_lcR line and true_osR line |
+| E2_L | true_E2_L | left Lens centre—left Globe Medial (sagittal plane) | shortest perpendicular distance between the true_lcL line and true_omL line |
+| E2_R | true_E2_R | right Lens centre—right Globe Medial (sagittal plane) | shortest perpendicular distance between the true_lcR line and true_omR line |
+| E3_L | true_E3_L | left Globe centre—left Globe superior | shortest perpendicular distance between the gcL and true_osL line |
+| E3_R | true_E3_R | right Globe centre—right Globe superior | shortest perpendicular distance between the gcR and true_osR line |
+| E4_L | true_E4_L | left Globe centre—left Globe medial | shortest perpendicular distance between the gcL and true_omL line |
+| E4_R | true_E4_R | rightGlobe centre—right Globe medial | shortest perpendicular distance between the gcR and true_omR line |
+| E5_L | true_E5_L | left Globe superior—left Globe inferior | true_osL to true_oiL |
+| E5_R | true_E5_R | right Globe superior—right Globe inferior | true_osR to true_oiR |
+| E6_L | true_E6_L | left Globe lateral—left Globe medial | true_olL to true_omL |
+| E6_R | true_E6_R | right Globe lateral—right Globe medial | true_olR to true_omR |
 
 <details>	
 <summary> True soft tissue measurement creation </summary>
@@ -1407,22 +1473,23 @@ The code below creates the soft tissue measurements related to the true eyeball 
 ```python
 import slicer
 import numpy as np
+import vtk
 
 def create_soft_tissue_measurements(prefix):
     """
-    Creates ONLY soft-tissue dependent measurements, sourcing all landmarks
-    from the correct eyeball/soft-tissue file for both 'pred_' and 'true_' workflows.
+    Creates soft-tissue dependent measurements based on the robust "helper line" methodology.
+    This version corrects the API calls for point-to-plane and point-to-line distance calculations.
     :param prefix: A string, either "pred_" or "true_".
     """
-    print("="*60)
-    print(f"Creating SOFT TISSUE ONLY Measurements with prefix: '{prefix}'")
-    print("="*60)
+    print("="*80)
+    print(f"Creating SOFT TISSUE Measurements (Corrected Method v4) with prefix: '{prefix}'")
+    print("="*80)
 
     if prefix not in ["pred_", "true_"]:
         slicer.util.errorDisplay("Prefix must be either 'pred_' or 'true_'.")
         return
 
-    # --- Helper Functions (condensed) ---
+    # --- Helper Functions ---
     def get_node(name, cls="vtkMRMLNode"):
         node = slicer.mrmlScene.GetFirstNodeByName(name)
         if not node:
@@ -1432,63 +1499,76 @@ def create_soft_tissue_measurements(prefix):
                     if side_full in n.GetName() and "Eyeball" in n.GetName(): return n
             raise ValueError(f"Node '{name}' ({cls}) not found.")
         return node
+
     def get_landmark_pos(node, label):
-        # Adjust label for 'true_' workflow which has a different naming convention
         p_label = f"true_{label}" if prefix == "true_" else label
-        for i in range(node.GetNumberOfControlPoints()):
-            if node.GetNthControlPointLabel(i) == p_label:
-                p = np.zeros(3); node.GetNthControlPointPositionWorld(i, p); return p
-        # Handle 'ocp_L' vs 'ocpL' naming inconsistency in the predicted file
-        if prefix == "pred_" and label == "ocpL":
-             return get_landmark_pos(node, "ocp_L")
-        raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
-    def style_line(line_node, color):
-        d = line_node.GetDisplayNode() or line_node.CreateDefaultDisplayNodes();
-        d.SetColor(color); d.SetSelectedColor([1,1,0]); d.SetVisibility(True)
-        line_node.GetMeasurement("length").SetEnabled(True)
-    def measure_point_to_plane(p, plane_node):
-        o, n = np.zeros(3), np.zeros(3); plane_node.GetOrigin(o); plane_node.GetNormal(n)
-        dist = np.dot(p-o, n); return abs(dist), p - dist * n
-    def measure_point_to_line(p, line_node):
-        p1, p2 = np.zeros(3), np.zeros(3); line_node.GetNthControlPointPositionWorld(0, p1); line_node.GetNthControlPointPositionWorld(1, p2)
-        if np.linalg.norm(p2-p1) < 1e-6: return 0, p1
-        d=(p2-p1)/np.linalg.norm(p2-p1); v=p-p1; t=np.dot(v,d); cp=p1+t*d; return np.linalg.norm(p-cp), cp
-    
-    created_count = 0
-    skipped_count = 0
-    measured_lengths = {}
-    
-    def create_and_measure(name, p1, p2):
-        nonlocal created_count, skipped_count
-        line_name = f"{prefix}{name}"
-        if slicer.mrmlScene.GetFirstNodeByName(line_name):
-            skipped_count += 1
-            node = get_node(line_name); measured_lengths[name] = node.GetMeasurement('length').GetValue()
-            return
-        dist = np.linalg.norm(np.array(p1) - np.array(p2))
-        line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
-        line_node.AddControlPoint(p1); line_node.AddControlPoint(p2)
-        style_line(line_node, [1,0,0] if prefix == "pred_" else [0,1,0]) # Red for pred, Green for true
-        measured_lengths[name] = dist; created_count += 1
+        if prefix == "pred_":
+            if node.GetControlPointIndexByLabel(p_label) == -1:
+                if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1:
+                    p_label = f"{label[:-1]}_{label[-1]}"
+        
+        idx = node.GetControlPointIndexByLabel(p_label)
+        if idx == -1: raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
+        pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
+        return pos
+
+    def create_line(name, p1, p2, color=[0.8, 0.8, 0.8], visible=False, force_create=False):
+        # If node exists from previous run, remove it before creating new one
+        existing_node = slicer.mrmlScene.GetFirstNodeByName(name)
+        if existing_node:
+            slicer.mrmlScene.RemoveNode(existing_node)
+            
+        node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+        node.AddControlPoint(p1); node.AddControlPoint(p2)
+        d = node.GetDisplayNode() or node.CreateDefaultDisplayNodes();
+        d.SetColor(color); d.SetSelectedColor(color); d.SetVisibility(visible)
+        node.GetMeasurement("length").SetEnabled(True)
+        return node
+        
+    # CORRECTED Helper for point-to-plane projection
+    def project_point_to_plane_node(point, plane_node):
+        origin = np.zeros(3)
+        normal = np.zeros(3)
+        plane_node.GetOrigin(origin)
+        plane_node.GetNormal(normal)
+        
+        # Manually calculate the projection
+        v = point - origin
+        dist = np.dot(v, normal)
+        projected_point = point - dist * normal
+        return projected_point
+
+    # Helper for point-to-line projection
+    def project_point_to_line_node(point, line_node):
+        p1 = np.zeros(3); line_node.GetNthControlPointPositionWorld(0, p1)
+        p2 = np.zeros(3); line_node.GetNthControlPointPositionWorld(1, p2)
+        t_out = vtk.mutable(0)
+        closest_point = np.zeros(3)
+        vtk.vtkLine.DistanceToLine(point, p1, p2, t_out, closest_point)
+        return closest_point
 
     try:
+        # --- STAGE 1: Get all required scene nodes ---
+        print("1. Finding all required nodes...")
         coronal_plane = get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
         orbital_plane = get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
-        soft_node_name = "Ryu_soft_tissue" if prefix == "true_" else ""
+
+        # --- STAGE 2: Create Final Measurements for each side ---
+        print("\n2. Creating final measurement lines...")
+        created_count = 0
+        final_color = [1,0,0] if prefix == "pred_" else [0,1,0]
 
         for side in ["L", "R"]:
             side_full = "Left" if side == "L" else "Right"
-            
-            # Get the single source of landmarks for this workflow (either predicted or true)
-            eyeball_lm_node_name = f"{side_full} Eyeball lmrks" if prefix == "pred_" else soft_node_name
+            eyeball_lm_node_name = f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue"
             eyeball_lm_node = get_node(eyeball_lm_node_name, "vtkMRMLMarkupsFiducialNode")
-
+            
             marginal_SOM = get_node(f"marginal_SOM_{side}", "vtkMRMLMarkupsPlaneNode")
             marginal_MOM = get_node(f"marginal_MOM_{side}", "vtkMRMLMarkupsPlaneNode")
             marginal_LOM = get_node(f"marginal_LOM_{side}", "vtkMRMLMarkupsPlaneNode")
             guiding_LOM = get_node(f"guiding_LOM_{side}", "vtkMRMLMarkupsLineNode")
 
-            # Get all landmark positions from the single correct source node
+            # Get original landmark positions
             ocp_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}")
             lc_pos = get_landmark_pos(eyeball_lm_node, f"lc{side}")
             la_pos = get_landmark_pos(eyeball_lm_node, f"la{side}")
@@ -1500,55 +1580,48 @@ def create_soft_tissue_measurements(prefix):
             om_pos = get_landmark_pos(eyeball_lm_node, f"om{side}")
             gc_pos = get_landmark_pos(eyeball_lm_node, f"gc{side}")
             
-            # Create L17/R17, L18/R18 (depend on ocp)
-            dist, proj = measure_point_to_plane(ocp_pos, coronal_plane); create_and_measure(f"{side}17", ocp_pos, proj)
-            dist, proj = measure_point_to_line(ocp_pos, guiding_LOM); create_and_measure(f"{side}18", ocp_pos, proj)
-
-            # Create Measurements L21-L29
-            dist, proj = measure_point_to_plane(lc_pos, marginal_SOM); create_and_measure(f"{side}21", lc_pos, proj)
-            dist, proj = measure_point_to_plane(lc_pos, orbital_plane); create_and_measure(f"{side}22", lc_pos, proj)
-            dist, proj = measure_point_to_plane(lc_pos, marginal_MOM); create_and_measure(f"{side}23", lc_pos, proj)
-            dist, proj = measure_point_to_plane(lc_pos, marginal_LOM); create_and_measure(f"{side}24", lc_pos, proj)
-            dist, proj = measure_point_to_line(lc_pos, guiding_LOM); create_and_measure(f"{side}25", lc_pos, proj)
-            create_and_measure(f"{side}26", lc_pos, ocp_pos)
-            dist, proj = measure_point_to_plane(lc_pos, coronal_plane); create_and_measure(f"{side}27", lc_pos, proj)
-            create_and_measure(f"{side}28", la_pos, lp_pos)
-            create_and_measure(f"{side}29", oa_pos, lc_pos)
+            # --- Create Measurement Lines ---
+            # L/R 17, 18
+            create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color, True)
+            create_line(f"{prefix}{side}18", ocp_pos, project_point_to_line_node(ocp_pos, guiding_LOM), final_color, True)
             
-            # Create Eyeball Geometry Measurements (E1-E6)
-            create_and_measure(f"E1_{side}", lc_pos, os_pos)
-            create_and_measure(f"E2_{side}", lc_pos, om_pos)
-            create_and_measure(f"E3_{side}", gc_pos, os_pos)
-            create_and_measure(f"E4_{side}", gc_pos, om_pos)
-            create_and_measure(f"E5_{side}", os_pos, oi_pos)
-            create_and_measure(f"E6_{side}", ol_pos, om_pos)
+            # L/R 21-25
+            create_line(f"{prefix}{side}21", lc_pos, project_point_to_plane_node(lc_pos, marginal_SOM), final_color, True)
+            create_line(f"{prefix}{side}22", lc_pos, project_point_to_plane_node(lc_pos, orbital_plane), final_color, True)
+            create_line(f"{prefix}{side}23", lc_pos, project_point_to_plane_node(lc_pos, marginal_MOM), final_color, True)
+            create_line(f"{prefix}{side}24", lc_pos, project_point_to_plane_node(lc_pos, marginal_LOM), final_color, True)
+            create_line(f"{prefix}{side}25", lc_pos, project_point_to_line_node(lc_pos, guiding_LOM), final_color, True)
+            
+            # L/R 26-29, 30
+            create_line(f"{prefix}{side}26", lc_pos, ocp_pos, final_color, True)
+            create_line(f"{prefix}{side}27", lc_pos, project_point_to_plane_node(lc_pos, coronal_plane), final_color, True)
+            create_line(f"{prefix}{side}28", la_pos, lp_pos, final_color, True)
+            create_line(f"{prefix}{side}29", oa_pos, lc_pos, final_color, True)
+            create_line(f"{prefix}{side}30", la_pos, lp_pos, final_color, True) 
 
-        print(f"\n--- Composite Measurements ({prefix}) ---")
-        for side in ["L", "R"]:
-            s25, s26, s27, s29 = measured_lengths.get(f"{side}25"), measured_lengths.get(f"{side}26"), measured_lengths.get(f"{side}27"), measured_lengths.get(f"{side}29")
-            if s25 and s29: print(f"{prefix}{side}31 (sum) = {s25 + s29:.2f} mm")
-            if s26 and s29: print(f"{prefix}{side}32 (sum) = {s26 + s29:.2f} mm")
-            if s27 and s29: print(f"{prefix}{side}33 (sum) = {s27 + s29:.2f} mm")
+            # L/R 31, 32, 33 (Composite measurements)
+            create_line(f"{prefix}{side}31", oa_pos, project_point_to_line_node(oa_pos, guiding_LOM), final_color, True)
+            create_line(f"{prefix}{side}32", oa_pos, ocp_pos, final_color, True)
+            create_line(f"{prefix}{side}33", oa_pos, project_point_to_plane_node(oa_pos, coronal_plane), final_color, True)
 
-        print(f"\nSUCCESS: Created {created_count} new '{prefix}' lines. Skipped {skipped_count} existing lines.")
+            # E1-E6
+            create_line(f"{prefix}E1_{side}", lc_pos, os_pos, final_color, True)
+            create_line(f"{prefix}E2_{side}", lc_pos, om_pos, final_color, True)
+            create_line(f"{prefix}E3_{side}", gc_pos, os_pos, final_color, True)
+            create_line(f"{prefix}E4_{side}", gc_pos, om_pos, final_color, True)
+            create_line(f"{prefix}E5_{side}", os_pos, oi_pos, final_color, True)
+            create_line(f"{prefix}E6_{side}", ol_pos, om_pos, final_color, True)
+            created_count += 21
+
+        print(f"\nSUCCESS: Created/updated ~{created_count} measurement lines for prefix '{prefix}'.")
 
     except Exception as e:
-        slicer.util.errorDisplay(f"An error occurred in soft tissue measurement creation: {e}")
+        slicer.util.errorDisplay(f"An error occurred: {e}")
+        import traceback
+        traceback.print_exc()
 
-# ==============================================================================
-#                               EXAMPLE USAGE
-# ==============================================================================
-#
-# After running the script above in the Slicer Python Interactor, you can call
-# the function with the desired prefix.
-#
-
-# ------------------------------------------------------------------------------
-# To create GROUND TRUTH measurements (GREEN lines) from the loaded JSON file:
-# ------------------------------------------------------------------------------
+# --- Example Usage ---
 create_soft_tissue_measurements(prefix="true_")
-
-
 ```
 
 </details>
@@ -1568,31 +1641,23 @@ import numpy as np
 
 def get_landmark_node(pattern, required=True):
     """Finds a fiducial node by a wildcard pattern."""
-    # Use slicer.util.getNode for direct matches or simple wildcards
     try:
         node = slicer.util.getNode(pattern)
-        if node:
-            return node
-    except slicer.util.MRMLNodeNotFoundException:
-        pass # Node not found, will be handled by the logic below
-
-    # Fallback for more complex patterns if needed
+        if node: return node
+    except slicer.util.MRMLNodeNotFoundException: pass
+    
     nodes = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode") if pattern.replace('*','') in n.GetName()]
     if not nodes:
-        if required:
-            raise ValueError(f"Could not find required landmark node: '{pattern}'")
+        if required: raise ValueError(f"Could not find required landmark node: '{pattern}'")
         return None
     return nodes[0]
-
 
 def get_pos(lmk_node, label):
     """Gets the world position of a landmark by its label."""
     if not lmk_node: return None
-    # Use GetControlPointIndexByLabel for robustness
     idx = lmk_node.GetControlPointIndexByLabel(label)
-    if idx == -1: return None # Landmark not found
-    pos = np.zeros(3)
-    lmk_node.GetNthControlPointPositionWorld(idx, pos)
+    if idx == -1: return None
+    pos = np.zeros(3); lmk_node.GetNthControlPointPositionWorld(idx, pos)
     return pos
 
 def get_all_lines_by_prefix(prefix):
@@ -1601,19 +1666,13 @@ def get_all_lines_by_prefix(prefix):
     line_nodes = slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode")
     for node in line_nodes:
         if node.GetName().startswith(prefix):
-            # Extract the measurement code (e.g., "L17", "R21", "E1_L")
             key = node.GetName().replace(prefix, "")
             lines_dict[key] = node.GetMeasurement('length').GetValue()
     return lines_dict
 
-
 def run_eye_analysis():
-    """
-    Compares predicted vs. true landmarks and measurement lengths for the eye prediction method.
-    """
-    print("="*80)
-    print("      Starting Eye Prediction Comparison Analysis")
-    print("="*80)
+    """Compares predicted vs. true landmarks and measurement lengths for the eye prediction method."""
+    print("="*80); print("      Starting Eye Prediction Comparison Analysis"); print("="*80)
 
     try:
         # --- 1. Find landmark nodes ---
@@ -1621,30 +1680,22 @@ def run_eye_analysis():
         true_lmks_node = get_landmark_node("Ryu_soft_tissue")
         pred_left_lmks_node = get_landmark_node("Left Eyeball lmrks", required=False)
         pred_right_lmks_node = get_landmark_node("Right Eyeball lmrks", required=False)
-
         print(f"   ✓ True landmarks: '{true_lmks_node.GetName()}'")
-        if pred_left_lmks_node: print(f"   ✓ Predicted Left: '{pred_left_lmks_node.GetName()}'")
-        else: print("   - Predicted Left: NOT FOUND")
-        if pred_right_lmks_node: print(f"   ✓ Predicted Right: '{pred_right_lmks_node.GetName()}'")
-        else: print("   - Predicted Right: NOT FOUND")
+        print(f"   ✓ Predicted Left: '{pred_left_lmks_node.GetName() if pred_left_lmks_node else 'NOT FOUND'}'")
+        print(f"   ✓ Predicted Right: '{pred_right_lmks_node.GetName() if pred_right_lmks_node else 'NOT FOUND'}'")
 
         # --- 2. Landmark-to-Landmark Distance Calculation ---
         print("\n2. Calculating landmark-to-landmark distances (3D Error)...")
         landmark_types = ['ocp', 'lc', 'la', 'lp', 'oa', 'os', 'oi', 'ol', 'om', 'gc']
         landmark_results = []
-
         for side_char, pred_node in [('L', pred_left_lmks_node), ('R', pred_right_lmks_node)]:
             for lmk_type in landmark_types:
                 pred_label = f"{lmk_type}{side_char}"
                 if lmk_type == 'ocp' and side_char == 'L' and pred_node:
                     if pred_node.GetControlPointIndexByLabel(f"{lmk_type}_{side_char}") != -1:
                         pred_label = f"{lmk_type}_{side_char}"
-                
                 true_label = f"true_{lmk_type}{side_char}"
-                
-                true_pos = get_pos(true_lmks_node, true_label)
-                pred_pos = get_pos(pred_node, pred_label)
-
+                true_pos, pred_pos = get_pos(true_lmks_node, true_label), get_pos(pred_node, pred_label)
                 if true_pos is not None and pred_pos is not None:
                     dist = np.linalg.norm(true_pos - pred_pos)
                     landmark_results.append((pred_label, f"{dist:.2f} mm"))
@@ -1661,40 +1712,20 @@ def run_eye_analysis():
         for key in all_measurement_keys:
             pred_len = predicted_lengths.get(key)
             true_len = true_lengths.get(key)
-            
             pred_str = f"{pred_len:.2f} mm" if pred_len is not None else "N/A"
             true_str = f"{true_len:.2f} mm" if true_len is not None else "N/A"
-            
-            if pred_len is not None and true_len is not None:
-                diff = abs(pred_len - true_len)
-                diff_str = f"{diff:.2f} mm"
-            else:
-                diff_str = "N/A"
-                
+            diff_str = f"{abs(pred_len - true_len):.2f} mm" if pred_len is not None and true_len is not None else "N/A"
             measurement_results.append((key, pred_str, true_str, diff_str))
 
         # --- 4. Print Formatted Results ---
-        print("\n\n" + "="*80)
-        print("                          FINAL ANALYSIS RESULTS")
-        print("="*80)
-
+        print("\n\n" + "="*80); print("                          FINAL ANALYSIS RESULTS"); print("="*80)
         if landmark_results:
-            print("\n### Table 1: Landmark Positional Error (3D Distance)\n")
-            print("| Landmark | Error (True vs. Predicted) |")
-            print("|---|---|")
-            for label, dist_str in sorted(landmark_results):
-                print(f"| `{label}` | {dist_str} |")
-        
+            print("\n### Table 1: Landmark Positional Error (3D Distance)\n\n| Landmark | Error (True vs. Predicted) |\n|---|---|")
+            for label, dist_str in sorted(landmark_results): print(f"| `{label}` | {dist_str} |")
         if measurement_results:
-            print("\n\n### Table 2: Measurement Length Comparison\n")
-            print("| Measurement | Predicted Length | True Length | Absolute Difference |")
-            print("|---|---|---|---|")
-            for key, pred_str, true_str, diff_str in measurement_results:
-                print(f"| `{key}` | {pred_str} | {true_str} | {diff_str} |")
-
-        print("\n" + "="*80)
-        print("✓ Analysis complete.")
-        print("="*80)
+            print("\n\n### Table 2: Measurement Length Comparison\n\n| Measurement | Predicted Length | True Length | Absolute Difference |\n|---|---|---|---|")
+            for key, pred_str, true_str, diff_str in measurement_results: print(f"| `{key}` | {pred_str} | {true_str} | {diff_str} |")
+        print("\n" + "="*80); print("✓ Analysis complete."); print("="*80)
 
     except Exception as e:
         slicer.util.errorDisplay(f"An error occurred during analysis: {e}")
@@ -1715,7 +1746,100 @@ run_eye_analysis()
 What to expect? The code will print some information on the console, something like this: 
 
 ```python
+================================================================================
+      Starting Eye Prediction Comparison Analysis
+================================================================================
+1. Finding landmark nodes...
+   ✓ True landmarks: 'Ryu_soft_tissue'
+   ✓ Predicted Left: 'Left Eyeball lmrks'
+   ✓ Predicted Right: 'Right Eyeball lmrks'
 
+2. Calculating landmark-to-landmark distances (3D Error)...
+
+3. Calculating measurement length differences...
+
+
+================================================================================
+                          FINAL ANALYSIS RESULTS
+================================================================================
+
+### Table 1: Landmark Positional Error (3D Distance)
+
+| Landmark | Error (True vs. Predicted) |
+|---|---|
+| `gcL` | 6.74 mm |
+| `gcR` | 9.08 mm |
+| `laL` | 12.70 mm |
+| `laR` | 12.02 mm |
+| `lcL` | 13.94 mm |
+| `lcR` | 13.60 mm |
+| `lpL` | 14.98 mm |
+| `lpR` | 14.97 mm |
+| `oaL` | 8.76 mm |
+| `oaR` | 8.99 mm |
+| `ocpR` | 11.81 mm |
+| `ocp_L` | 10.30 mm |
+| `oiL` | 6.72 mm |
+| `oiR` | 12.46 mm |
+| `olL` | 7.37 mm |
+| `olR` | 7.70 mm |
+| `omL` | 5.74 mm |
+| `omR` | 11.27 mm |
+| `osL` | 5.18 mm |
+| `osR` | 5.05 mm |
+
+
+### Table 2: Measurement Length Comparison
+
+| Measurement | Predicted Length | True Length | Absolute Difference |
+|---|---|---|---|
+| `E1_L` | 13.81 mm | 20.94 mm | 7.14 mm |
+| `E1_R` | 13.81 mm | 19.68 mm | 5.87 mm |
+| `E2_L` | 15.19 mm | 10.72 mm | 4.47 mm |
+| `E2_R` | 15.19 mm | 18.00 mm | 2.82 mm |
+| `E3_L` | 11.94 mm | 16.14 mm | 4.21 mm |
+| `E3_R` | 11.94 mm | 17.00 mm | 5.07 mm |
+| `E4_L` | 12.19 mm | 12.03 mm | 0.17 mm |
+| `E4_R` | 12.19 mm | 16.29 mm | 4.09 mm |
+| `E5_L` | 23.98 mm | 30.13 mm | 6.15 mm |
+| `E5_R` | 23.98 mm | 32.35 mm | 8.38 mm |
+| `E6_L` | 24.01 mm | 24.74 mm | 0.73 mm |
+| `E6_R` | 24.01 mm | 30.52 mm | 6.51 mm |
+| `L17` | 5.10 mm | 14.18 mm | 9.08 mm |
+| `L18` | 21.81 mm | 23.40 mm | 1.60 mm |
+| `L21` | 13.08 mm | 16.19 mm | 3.11 mm |
+| `L22` | 15.22 mm | 12.11 mm | 3.11 mm |
+| `L23` | 19.96 mm | 18.00 mm | 1.96 mm |
+| `L24` | 15.90 mm | 17.86 mm | 1.96 mm |
+| `L25` | 18.88 mm | 18.16 mm | 0.72 mm |
+| `L26` | 19.69 mm | 15.44 mm | 4.25 mm |
+| `L27` | 12.67 mm | 0.78 mm | 11.89 mm |
+| `L28` | 3.73 mm | 5.60 mm | 1.87 mm |
+| `L29` | 4.67 mm | 9.49 mm | 4.81 mm |
+| `L30` | 3.73 mm | 5.60 mm | 1.87 mm |
+| `L31` | 21.62 mm | 17.30 mm | 4.31 mm |
+| `L32` | 24.23 mm | 23.61 mm | 0.63 mm |
+| `L33` | 17.20 mm | 8.51 mm | 8.69 mm |
+| `R17` | 3.73 mm | 12.51 mm | 8.79 mm |
+| `R18` | 19.30 mm | 19.50 mm | 0.19 mm |
+| `R21` | 13.31 mm | 15.36 mm | 2.05 mm |
+| `R22` | 14.39 mm | 12.35 mm | 2.05 mm |
+| `R23` | 19.33 mm | 18.60 mm | 0.73 mm |
+| `R24` | 14.93 mm | 15.66 mm | 0.73 mm |
+| `R25` | 18.08 mm | 15.99 mm | 2.09 mm |
+| `R26` | 19.83 mm | 16.78 mm | 3.05 mm |
+| `R27` | 14.55 mm | 1.12 mm | 13.42 mm |
+| `R28` | 3.73 mm | 6.34 mm | 2.61 mm |
+| `R29` | 4.67 mm | 9.02 mm | 4.34 mm |
+| `R30` | 3.73 mm | 6.34 mm | 2.61 mm |
+| `R31` | 21.18 mm | 16.14 mm | 5.04 mm |
+| `R32` | 24.40 mm | 24.44 mm | 0.04 mm |
+| `R33` | 19.07 mm | 10.11 mm | 8.96 mm |
+
+================================================================================
+✓ Analysis complete.
+================================================================================
+>>> 
 ```
 
 
