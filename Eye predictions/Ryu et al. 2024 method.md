@@ -459,12 +459,16 @@ There is also an option to choose whether you want to use **L/R15 or L/R20 or th
 
 
 
+<img width="500" height="371" alt="image" src="https://github.com/user-attachments/assets/15457804-b8b0-49ba-bf06-1a59701ca3b1" />
 
 Expect this additional window on the right. 
 
 
 
-Expected view after the eyeball placement for both sides is done
+<img src="https://github.com/user-attachments/assets/2bb83f47-0b74-4f42-9518-b0ba570249c9" width="500">  <img src="https://github.com/user-attachments/assets/af98b5fd-e2b3-4df3-88aa-204420ddae5e" width="500">
+
+
+Expected view for the "jump" and its resolution
 
 
 
@@ -765,8 +769,8 @@ slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dock_widget)
 
 </details>
 
+<img width="868" height="954" alt="image" src="https://github.com/user-attachments/assets/bd3b313c-576a-44f0-a307-7b4f433a331a" />
 
-<img width="874" height="1125" alt="image" src="https://github.com/user-attachments/assets/b3ade752-6d3c-49c7-924f-3c833081cf0b" />
 
 View after placing both eyeballs
 
@@ -775,14 +779,15 @@ View after placing both eyeballs
 If you wanted to use this this tool for an approximation, you're done!
 
 Additionally, we can compare the predicted and the actual eyeball positions via landmarks, by placing the soft tissue landmarks denoted with a blue square in the previous section "Landmarks in this study". 
-You can download them [here](https://github.com/user-attachments/files/26708232/true_eyeball.mrk.json). 
+You can download them [here](https://github.com/user-attachments/files/27196663/Ryu_soft_tissue.mrk.json).
+
 Once you placed the "ground truth" landmarks (called true_eyeball.lmrk.json) onto the scan (you'll likely have to use the red/green/yellow windows for a more precise placement), you can run the code below. 
 
 It will create two comparison tables: (1) for comparing length measurements between the "artificial" eyeball model and the true eyeball that were measured by Guyomarc'h et al. (2012)[^2] in the original studt to create the regressions; (2) for measuring the distance between the true vs artificial eyeball landmarks. 
 
 
 <details>	
-<summary> Eye model placement code </summary>
+<summary> Additional hard tissue measurements </summary>
 	
 ```python
 
