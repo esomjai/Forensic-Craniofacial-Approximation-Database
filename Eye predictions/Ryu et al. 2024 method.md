@@ -882,8 +882,8 @@ After this, we can add the extra hard tissue measurements (which were not a prer
 <summary> Linear lens diameter measurements </summary>
 
 You'll need to open the **Markups** module and click on the _Create Markups_ > _Line_ option. This will add an empty distance measurement called "L_1/2..." by default. Now, if you place two points on either the 3D scene view or the red/yellow/green boxes, a measurement line in mm will show up. It is important that you rename these lines accordingly, as the codes will only recognise them under specific names. These will have to be
-1) "true_ldL" and "true_ldR" for the true lens diamaters on the scans
-2) "pred_ldL" and "pred_ldR" for the diamater of the lens on the "artificial" eye model
+1) "true_L30" and "true_L30" for the true lens diamaters on the scans
+2) "pred_L30" and "pred_R30" for the diamater of the lens on the "artificial" eye model
 
 It is easier to employ the **lcL/R** points for this manual placement as the line had to connect two opposing sides of the lens in anterior/posterior view and cross the lens centre point. 
 
@@ -1015,7 +1015,7 @@ And scroll until you can see the lens on the scan, to end up with something like
 
 <img width="1510" height="1005" alt="image" src="https://github.com/user-attachments/assets/fac915b0-feac-486c-98b2-3b2f9734cdb1" />
 
-Make sure you rename these lines **"true_ldL" and "true_ldR"**. 
+Make sure you rename these lines **true_L30 and "true_R30"**. 
 
 </details>
 
