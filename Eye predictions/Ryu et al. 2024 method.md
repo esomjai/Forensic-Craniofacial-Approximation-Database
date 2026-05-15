@@ -208,15 +208,15 @@ try:
     print(f"Corrected vec_anterior: {np.round(vec_anterior, 2)}")
 
     # Create planes from these corrected vectors
-    midsag_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Median Sagittal Plane (Trial)")
+    midsag_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Median Sagittal Plane")
     midsag_plane.SetOrigin(get_landmark(hard_node, 'n')); midsag_plane.SetNormal(vec_right)
     style_plane(midsag_plane, [0.2, 0.8, 0.2])
 
-    orbital_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Orbitale Transverse Plane (Trial)")
+    orbital_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Orbitale Transverse Plane")
     orbital_plane.SetOrigin(get_landmark(hard_node, 'orL')); orbital_plane.SetNormal(vec_superior)
     style_plane(orbital_plane, [0.8, 0.2, 0.2])
 
-    coronal_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Coronal Plane (Trial)")
+    coronal_plane = get_or_create("vtkMRMLMarkupsPlaneNode", "Coronal Plane")
     coronal_plane.SetOrigin(get_landmark(hard_node, 'b')); coronal_plane.SetNormal(vec_anterior)
     style_plane(coronal_plane, [0.2, 0.2, 0.8])
 
@@ -224,6 +224,7 @@ try:
 
 except Exception as e:
     slicer.util.errorDisplay(f"An error occurred in Step 1: {e}")
+
 
 ```
 
