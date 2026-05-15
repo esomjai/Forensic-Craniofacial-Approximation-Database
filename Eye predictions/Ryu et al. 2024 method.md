@@ -30,8 +30,8 @@ The original method was carried out on post-mortem CTs on a population of 171 Ko
 | 12 | 13 | dR | Median Orbitale (right) | The point where the RIGHT anterior lacrimal ridge meets frontonasal suture | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
 | 13 | 14 | skL | Supra Orbitale (left) | The most upper point on the LEFT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
 | 14 | 15 | skR | Supra Orbitale (right) | The most upper point on the RIGHT orbital rim | Martin, 1928 [^3]; Knussmann, 1988 [^4] | hard |
-| 15 | 16 | 🟦ocpR | Optic Canal Point (right) | Uppermost point of the RIGHT optic nerve canal | Ryu et al. 2024 [^2] | soft |
-| 16 | 17 | 🟦ocpL | Optic Canal Point (left) | Uppermost point of the LEFT optic nerve canal | Ryu et al. 2024 [^2] | soft |
+| 15 | 16 | ocpR | Optic Canal Point (right) | Uppermost point of the RIGHT optic nerve canal | Ryu et al. 2024 [^2] | hard |
+| 16 | 17 | ocpL | Optic Canal Point (left) | Uppermost point of the LEFT optic nerve canal | Ryu et al. 2024 [^2] | hard |
 | 17 | 18 | 🟦lcL | Lens Centre (left) | The center of gravity of the left lens (sic!)- geometric mean | Ryu et al. 2024 [^2] | soft |
 | 18 | 19 | 🟦lcR | Lens Centre (right) | The center of gravity of the right lens (sic!)- geometric mean | Ryu et al. 2024 [^2] | soft |
 | 19 | 20 | 🟦laL | Lens Anterior (left) | The most anterior point of the LEFT lens | Ryu et al. 2024 [^2] | soft |
