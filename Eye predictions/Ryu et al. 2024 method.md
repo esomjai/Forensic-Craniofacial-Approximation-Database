@@ -305,8 +305,8 @@ try:
     hard_node = slicer.util.getNode("Ryu_hard_tissue")
     
     # Get vectors from the correctly oriented main planes
-    vec_superior = np.array(slicer.util.getNode("Orbitale Transverse Plane (Trial)").GetNormal())
-    vec_right = np.array(slicer.util.getNode("Median Sagittal Plane (Trial)").GetNormal())
+    vec_superior = np.array(slicer.util.getNode("Orbitale Transverse Plane").GetNormal())
+    vec_right = np.array(slicer.util.getNode("Median Sagittal Plane").GetNormal())
 
     # Create marginal geometry
     defs = [
@@ -325,7 +325,6 @@ try:
 
 except Exception as e:
     slicer.util.errorDisplay(f"An error occurred in Step 2: {e}")
-
 
 ```
 
