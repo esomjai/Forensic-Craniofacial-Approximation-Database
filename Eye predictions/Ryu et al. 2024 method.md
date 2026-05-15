@@ -661,7 +661,7 @@ After this, we can add the extra hard tissue measurements (which were not a prer
 <summary> Linear lens diameter measurements </summary>
 
 You'll need to open the **Markups** module and click on the _Create Markups_ > _Line_ option. This will add an empty distance measurement called "L_1/2..." by default. Now, if you place two points on either the 3D scene view or the red/yellow/green boxes, a measurement line in mm will show up. It is important that you rename these lines accordingly, as the codes will only recognise them under specific names. These will have to be
-1) "true_L30" and "true_L30" for the true lens diamaters on the scans
+1) "true_L30" and "true_R30" for the true lens diamaters on the scans
 2) "pred_L30" and "pred_R30" for the diamater of the lens on the "artificial" eye model
 
 It is easier to employ the **lcL/R** points for this manual placement as the line had to connect two opposing sides of the lens in anterior/posterior view and cross the lens centre point. 
@@ -676,10 +676,10 @@ Now, we can go back to the markups module to place the lines:
 
 <img width="665" height="419" alt="{B1219E9A-CB47-4F17-A408-7BB27A4E17F4}" src="https://github.com/user-attachments/assets/b004d74d-c9c4-4146-9654-4f16a481eede" />
 
-And rename them "pred_ldL" and "pred_ldR" for the diamater of the lens on the "artificial" eye model. 
+And rename them "pred_L30" and "pred_R30" for the diamater of the lens on the "artificial" eye model. 
 
 
-This is quite challenging to see on slices - if you want to "re-slice" the scan adhering to the reference planes, use this snippet: 
+This is quite challenging to see on slices for the true soft tissue lens diameter - if you want to "re-slice" the scan adhering to the reference planes, use this snippet: 
 
 
 ```python
