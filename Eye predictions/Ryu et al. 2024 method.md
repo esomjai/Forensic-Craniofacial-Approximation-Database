@@ -473,77 +473,292 @@ Expected view for the "jump" and its resolution
 	
 ```python
 import slicer
+import qt
 import numpy as np
 import os
 import vtk
 
-try: import gdown
-except ImportError: slicer.util.pip_install('gdown'); import gdown
+try:
+    import gdown
+except ImportError:
+    slicer.util.showStatusMessage("Installing 'gdown' package...", 2000)
+    slicer.util.pip_install('gdown')
+    import gdown
 
-# --- CONFIGURATION ---
-SEX = "Female"
-SIDE = "Right"
-# ---------------------
+class TrialEyeballPlacementWidget(qt.QWidget):
+    def __init__(self, parent=None):
+        super(TrialEyeballPlacementWidget, self).__init__(parent)
+        self.setup()
 
-def n(name, cls): return slicer.mrmlScene.GetFirstNodeByName(name)
-def line_len(name): return n(name, "vtkMRMLMarkupsLineNode").GetMeasurement("length").GetValue()
-def get_p(node, label):
-    p=np.zeros(3); node.GetNthControlPointPositionWorld(node.GetControlPointIndexByLabel(label), p); return p
+    def setup(self):
+        self.setLayout(qt.QVBoxLayout())
+        
+        infoLabel = qt.QLabel("This tool places an eyeball model based on the Ryu et al. (2024) method geometry.")
+        infoLabel.setWordWrap(True)
+        self.layout().addWidget(infoLabel)
+        
+        formLayout = qt.QFormLayout()
+        self.sex_combo = qt.QComboBox()
+        self.sex_combo.addItems(["Female", "Male"])
+        formLayout.addRow("Biological Sex:", self.sex_combo)
+        
+        self.side_combo = qt.QComboBox()
+        self.side_combo.addItems(["Left", "Right"])
+        formLayout.addRow("Side:", self.side_combo)
+        self.layout().addLayout(formLayout)
 
-side = SIDE[0]
-L1, L8, L15 = line_len(f"{side}1"), line_len(f"{side}8"), line_len(f"{side}15")
+        # Prediction method selection (items will be side-specific)
+        self.method_group = qt.QGroupBox("Prediction method for soft tissue distances")
+        method_layout = qt.QFormLayout(self.method_group)
+        
+        self.method_L27_label = qt.QLabel("Predict measurement 27 (coronal to lc point):")
+        self.method_L33_label = qt.QLabel("Predict measurement 33 (coronal to oa point):")
+        self.method_27_combo = qt.QComboBox()
+        self.method_33_combo = qt.QComboBox()
+        
+        method_layout.addRow(self.method_L27_label, self.method_27_combo)
+        method_layout.addRow(self.method_L33_label, self.method_33_combo)
+        
+        self.layout().addWidget(self.method_group)
 
-if SEX == "Female":
-    pred_L21, pred_L22 = 0.349*L8 + 4.320, 0.402*L8 - 2.057
-    pred_L23, pred_L33 = 0.619*L1 - 2.175, 1.007*L15 + 9.552
-else:
-    pred_L21, pred_L22 = 0.560*L8 - 3.648, 0.321*L8 + 1.831
-    pred_L23, pred_L33 = 0.844*L1 - 11.224, 0.989*L15 + 11.550
+        self.place_button = qt.QPushButton("Place Eyeball")
+        self.place_button.toolTip = "Run the placement based on the selected Sex, Side and prediction methods"
+        self.place_button.setStyleSheet("background-color: #A9DFBF; font-weight: bold; padding: 8px;")
+        self.layout().addWidget(self.place_button)
+        
+        self.status_label = qt.QLabel("Ready.")
+        self.status_label.setWordWrap(True)
+        self.layout().addWidget(self.status_label)
+        
+        self.layout().addStretch(1)
 
-# Use vectors from correctly set up planes
-vS = np.array(n("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
-vR = np.array(n("Median Sagittal Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
-vA = np.array(n("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
+        # Connections
+        self.place_button.clicked.connect(self.run_placement)
+        self.side_combo.currentIndexChanged.connect(self.update_prediction_ui)
 
-# Define 3 target planes
-p_si_1 = np.array(n(f"marginal_SOM_{side}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) - vS * pred_L21
-p_si_2 = np.array(n(f"marginal_IOM_{side}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vS * pred_L22
-d_si = 0.5 * (np.dot(vS, p_si_1) + np.dot(vS, p_si_2))
+        # Initial UI update
+        self.update_prediction_ui()
 
-lat = -vR if side == "L" else vR
-p_ml = np.array(n(f"marginal_MOM_{side}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + lat * pred_L23
-d_ml = np.dot(vR, p_ml)
+    def update_prediction_ui(self):
+        """Update labels and combo box items to reflect current side (L or R)."""
+        side = self.side_combo.currentText
+        side_char = side[0]  # 'L' or 'R'
+        
+        self.method_L27_label.setText(f"Predict {side_char}27 (coronal to lc point):")
+        self.method_L33_label.setText(f"Predict {side_char}33 (coronal to oa point):")
+        
+        # Store current selection to preserve choice type
+        current_27 = self.method_27_combo.currentText
+        current_33 = self.method_33_combo.currentText
+        
+        def get_choice_type(text):
+            if text.startswith("Use L") or text.startswith("Use R"):
+                return "use_L15" if "L15" in text or "R15" in text else "use_L20"
+            return "average"
+        
+        choice_27 = get_choice_type(current_27) if current_27 else "use_L15"
+        choice_33 = get_choice_type(current_33) if current_33 else "use_L15"
+        
+        new_items = [f"Use {side_char}15", f"Use {side_char}20", f"Average ({side_char}15+{side_char}20)"]
+        self.method_27_combo.clear()
+        self.method_27_combo.addItems(new_items)
+        self.method_33_combo.clear()
+        self.method_33_combo.addItems(new_items)
+        
+        # Restore selection
+        self.method_27_combo.setCurrentIndex(0 if choice_27 == "use_L15" else 1 if choice_27 == "use_L20" else 2)
+        self.method_33_combo.setCurrentIndex(0 if choice_33 == "use_L15" else 1 if choice_33 == "use_L20" else 2)
 
-p_ap = np.array(n("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vA * pred_L33
-d_ap = np.dot(vA, p_ap)
+    def run_placement(self):
+        self.status_label.setText("Starting placement...")
+        slicer.app.processEvents()
+        
+        try:
+            SEX = self.sex_combo.currentText
+            SIDE = self.side_combo.currentText
+            side_char = SIDE[0]
+            
+            def get_node(name, cls):
+                node = slicer.mrmlScene.GetFirstNodeByName(name)
+                if not node or not node.IsA(cls):
+                    raise ValueError(f"Required node '{name}' of type {cls} not found. Please run the setup script first.")
+                return node
+            
+            def get_line_length(name):
+                return get_node(name, "vtkMRMLMarkupsLineNode").GetMeasurement("length").GetValue()
 
-# Solve for the unique intersection
-target = np.linalg.solve(np.array([vS, vR, vA]), np.array([d_si, d_ml, d_ap]))
-print(f"Final target position: {np.round(target, 2)}")
+            # Read measurements
+            self.status_label.setText(f"1. Reading measurements for {SIDE} side...")
+            L1 = get_line_length(f"{side_char}1")
+            L8 = get_line_length(f"{side_char}8")
+            L15 = get_line_length(f"{side_char}15")
+            L20 = get_line_length(f"{side_char}20")
 
-# Download and place
-IDS = {"Female Left":"1ltxpb5aE6-AqLe7nL0I07ehwrITWHbGC", "Female Right":"1Du_9w2hZlvz8vCoA09fxWwI1uv25G6ni", "Male Left":"1x6LFw7AxTW5U62K5j4RR-lH61aUnI0gi", "Male Right":"1zQhoh2EEMaX5SgKeVg3FuvoJoRJdRM-v"}
-key = f"{SEX} {SIDE}"
-mrb = os.path.join(slicer.app.temporaryPath, f"trial_{key.replace(' ','_')}.mrb")
-gdown.download(id=IDS[key], output=mrb, quiet=False)
+            # L21, L22, L23 from L8 and L1
+            if SEX == "Female":
+                pred_L21 = 0.349 * L8 + 4.320
+                pred_L22 = 0.652 * L8 - 4.353
+                pred_L23 = 0.619 * L1 - 2.175
+            else:  # Male
+                pred_L21 = 0.560 * L8 - 3.648
+                pred_L22 = 0.439 * L8 + 3.662
+                pred_L23 = 0.844 * L1 - 11.224
 
-before = set(slicer.util.getNodesByClass("vtkMRMLNode"))
-slicer.util.loadScene(mrb, {"clear": False})
-new_nodes = list(set(slicer.util.getNodesByClass("vtkMRMLNode")) - before)
+            # Predictions from L15 and L20 for 27 and 33
+            if SEX == "Female":
+                pred27_from_L15 = 1.007 * L15 + 9.552
+                pred27_from_L20 = 0.969 * L20 + 5.309
+                pred33_from_L15 = 1.005 * L15 + 14.700
+                pred33_from_L20 = 1.028 * L20 + 6.826
+            else:  # Male
+                pred27_from_L15 = 0.989 * L15 + 11.550
+                pred27_from_L20 = 0.889 * L20 + 11.756
+                pred33_from_L15 = 0.950 * L15 + 19.126
+                pred33_from_L20 = 0.865 * L20 + 18.436
 
-xform_node, oa0_pos = None, None
-for nd in new_nodes:
-    if nd.IsA("vtkMRMLLinearTransformNode"): xform_node = nd
-    if nd.IsA("vtkMRMLMarkupsFiducialNode"):
-        if nd.GetControlPointIndexByLabel(f"oa{side}") >= 0: oa0_pos = get_p(nd, f"oa{side}")
+            # Apply user method
+            method_27_text = self.method_27_combo.currentText
+            if "Use R15" in method_27_text or "Use L15" in method_27_text:
+                pred27 = pred27_from_L15
+            elif "Use R20" in method_27_text or "Use L20" in method_27_text:
+                pred27 = pred27_from_L20
+            else:
+                pred27 = (pred27_from_L15 + pred27_from_L20) / 2.0
 
-if xform_node is None or oa0_pos is None: raise ValueError("Missing model data")
+            method_33_text = self.method_33_combo.currentText
+            if "Use R15" in method_33_text or "Use L15" in method_33_text:
+                pred33 = pred33_from_L15
+            elif "Use R20" in method_33_text or "Use L20" in method_33_text:
+                pred33 = pred33_from_L20
+            else:
+                pred33 = (pred33_from_L15 + pred33_from_L20) / 2.0
 
-t = target - oa0_pos
-M = vtk.vtkMatrix4x4(); xform_node.GetMatrixTransformToParent(M)
-for i in range(3): M.SetElement(i, 3, M.GetElement(i, 3) + t[i])
-xform_node.SetMatrixTransformToParent(M)
-slicer.util.infoDisplay("Placement complete with definitive vector logic.")
+            # Vectors and planes
+            vS = np.array(get_node("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
+            vR = np.array(get_node("Median Sagittal Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
+            vA = np.array(get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
+
+            p_si_1 = np.array(get_node(f"marginal_SOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) - vS * pred_L21
+            p_si_2 = np.array(get_node(f"marginal_IOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vS * pred_L22
+            d_si = 0.5 * (np.dot(vS, p_si_1) + np.dot(vS, p_si_2))
+
+            lat_dir = -vR if side_char == "L" else vR
+            p_ml = np.array(get_node(f"marginal_MOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + lat_dir * pred_L23
+            d_ml = np.dot(vR, p_ml)
+
+            p_ap = np.array(get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vA * pred33
+            d_ap = np.dot(vA, p_ap)
+
+            target_pos = np.linalg.solve(np.array([vS, vR, vA]), np.array([d_si, d_ml, d_ap]))
+
+            # --- Save current camera state ---
+            def get_camera_state():
+                view = slicer.app.layoutManager().threeDWidget(0).threeDView()
+                renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
+                cam = renderer.GetActiveCamera()
+                return (cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp())
+            
+            camera_state = get_camera_state()
+
+            # Download and place model
+            self.status_label.setText("3. Downloading model...")
+            IDS = {
+                "Female Left": "1k0VSUYA6ZM8ihOS50A69Iah-4SDr4sfu",
+                "Female Right": "1boOyC2Z_N0FZT-6F5i3p3ozjJ-8UUUIG",
+                "Male Left": "1qpSXWe3c96U0CgxJnUL6-QuSaZfhj6AC",
+                "Male Right": "1W-xeGiLqOPitoIWHFOJcjzU5UW7Uyf1s"
+            }
+            key = f"{SEX} {SIDE}"
+            mrb_path = os.path.join(slicer.app.temporaryPath, f"trial_{key.replace(' ','_')}.mrb")
+            gdown.download(id=IDS[key], output=mrb_path, quiet=False)
+            
+            nodes_before = set(slicer.util.getNodesByClass("vtkMRMLNode"))
+            slicer.util.loadScene(mrb_path, {"clear": False, "loadCamera": False})
+            new_nodes = list(set(slicer.util.getNodesByClass("vtkMRMLNode")) - nodes_before)
+
+            xform_node, oa0_pos = None, None
+            for node in new_nodes:
+                if node.IsA("vtkMRMLLinearTransformNode"):
+                    xform_node = node
+                if node.IsA("vtkMRMLMarkupsFiducialNode"):
+                    if node.GetControlPointIndexByLabel(f"oa{side_char}") >= 0:
+                        p = np.zeros(3)
+                        node.GetNthControlPointPositionWorld(node.GetControlPointIndexByLabel(f"oa{side_char}"), p)
+                        oa0_pos = p
+
+            if xform_node is None or oa0_pos is None:
+                raise ValueError("Could not find model transform or 'oa' landmark.")
+
+            translation = target_pos - oa0_pos
+            matrix = vtk.vtkMatrix4x4()
+            xform_node.GetMatrixTransformToParent(matrix)
+            for i in range(3):
+                matrix.SetElement(i, 3, matrix.GetElement(i, 3) + translation[i])
+            xform_node.SetMatrixTransformToParent(matrix)
+
+            # Create prediction lines
+            def make_pred_line(name, p0, p1, value, color=(0,0,1)):
+                ln = slicer.mrmlScene.GetFirstNodeByName(name)
+                if not ln:
+                    ln = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
+                ln.RemoveAllControlPoints()
+                ln.AddControlPoint(p0)
+                ln.AddControlPoint(p1)
+                ln.GetMeasurement("length").SetEnabled(True)
+                ln.GetMeasurement("length").SetValue(value)
+                d = ln.GetDisplayNode() or ln.CreateDefaultDisplayNodes()
+                d.SetColor(color[0], color[1], color[2])
+                d.SetSelectedColor(1, 1, 0)
+                d.SetVisibility(True)
+
+            coronal_origin = np.array(get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetOrigin())
+            p_on_som = target_pos - vS * np.dot(target_pos - np.array(get_node(f"marginal_SOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()), vS)
+            p_on_iom = target_pos - vS * np.dot(target_pos - np.array(get_node(f"marginal_IOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()), vS)
+            p_on_mom = target_pos - vR * np.dot(target_pos - np.array(get_node(f"marginal_MOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()), vR)
+            p_on_coronal = target_pos - vA * np.dot(target_pos - coronal_origin, vA)
+
+            make_pred_line(f"pred_{side_char}21", target_pos, p_on_som, pred_L21)
+            make_pred_line(f"pred_{side_char}22", target_pos, p_on_iom, pred_L22)
+            make_pred_line(f"pred_{side_char}23", target_pos, p_on_mom, pred_L23)
+            make_pred_line(f"pred_{side_char}33", target_pos, p_on_coronal, pred33)
+            make_pred_line(f"pred_{side_char}27", target_pos, p_on_coronal, pred27)
+
+            # --- Restore camera state ---
+            view = slicer.app.layoutManager().threeDWidget(0).threeDView()
+            renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
+            cam = renderer.GetActiveCamera()
+            pos, fp, up = camera_state
+            cam.SetPosition(pos)
+            cam.SetFocalPoint(fp)
+            cam.SetViewUp(up)
+            view.renderWindow().Render()
+
+            final_message = (f"Eyeball placement complete!\n"
+                             f"Predicted distances for {SIDE} side:\n"
+                             f"{side_char}21 = {pred_L21:.2f} mm\n"
+                             f"{side_char}22 = {pred_L22:.2f} mm\n"
+                             f"{side_char}23 = {pred_L23:.2f} mm\n"
+                             f"{side_char}27 = {pred27:.2f} mm (method: {method_27_text})\n"
+                             f"{side_char}33 = {pred33:.2f} mm (method: {method_33_text})")
+            self.status_label.setText(final_message)
+            slicer.util.infoDisplay(final_message)
+
+        except Exception as e:
+            self.status_label.setText(f"ERROR: {e}")
+            slicer.util.errorDisplay(f"An error occurred: {e}")
+            raise e
+
+# Cleanup and instantiation
+try:
+    if 'trial_placement_widget' in globals() and trial_placement_widget:
+        trial_placement_widget.parent().close()
+except NameError:
+    pass
+
+trial_placement_widget = TrialEyeballPlacementWidget()
+dock_widget = qt.QDockWidget("Ryu Eyeball Placement")
+dock_widget.setWidget(trial_placement_widget)
+slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dock_widget)
 ```
 
 </details>
@@ -687,26 +902,26 @@ import slicer
 import numpy as np
 
 print("="*60)
-print("Re-orienting Slice Views to Custom 'Trial' Anatomical Planes")
+print("Re-orienting Slice Views to Custom Anatomical Planes")
 print("="*60)
 
 def get_node(name, cls="vtkMRMLMarkupsPlaneNode"):
     node = slicer.mrmlScene.GetFirstNodeByName(name)
     if not node:
-        raise ValueError(f"Required plane '{name}' not found. Please create the 'Trial' anatomical planes first.")
+        raise ValueError(f"Required plane '{name}' not found. Please create the anatomical planes first.")
     if not node.IsA(cls):
         raise ValueError(f"Node '{name}' is not of type {cls}.")
     return node
 
 try:
     # 1. Get the normal vectors that will become our new anatomical axes
-    midsagittal_plane = get_node("Median Sagittal Plane (Trial)")
+    midsagittal_plane = get_node("Median Sagittal Plane")
     axis_x = np.array(midsagittal_plane.GetNormal())  # Right-Left axis
     
-    coronal_plane = get_node("Coronal Plane (Trial)")
+    coronal_plane = get_node("Coronal Plane")
     axis_y = np.array(coronal_plane.GetNormal())      # Anterior-Posterior axis
     
-    orbital_plane = get_node("Orbitale Transverse Plane (Trial)")
+    orbital_plane = get_node("Orbitale Transverse Plane")
     axis_z = np.array(orbital_plane.GetNormal())      # Superior-Inferior axis
 
     # 2. Normalize and ensure perfect orthogonality (create a right-handed basis)
@@ -778,14 +993,13 @@ try:
     except Exception as e:
         print(f"Could not automatically center views, but re-orientation was successful. Error: {e}")
 
-    print("\nSUCCESS: Slice viewers have been re-oriented to your custom 'Trial' planes.")
+    print("\nSUCCESS: Slice viewers have been re-oriented to your custom planes.")
     print(" - Red View (Axial) is now aligned with the Orbitale Transverse Plane.")
     print(" - Yellow View (Sagittal) is now aligned with the Median Sagittal Plane.")
     print(" - Green View (Coronal) is now aligned with the Coronal Plane.")
 
 except Exception as e:
     slicer.util.errorDisplay(f"An error occurred during re-orientation: {e}")
-
 
 ```
 
@@ -885,8 +1099,8 @@ def create_and_measure(name, p1, p2, value=None):
 
 try:
     hard_node = get_node("Ryu_hard_tissue", "vtkMRMLMarkupsFiducialNode")
-    coronal_plane = get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
-    orbital_plane = get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
+    coronal_plane = get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode")
+    orbital_plane = get_node("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode")
 
     # --- Bilateral Descriptive Measurements ---
     for side in ["L", "R"]:
@@ -933,7 +1147,6 @@ try:
 
 except Exception as e:
     slicer.util.errorDisplay(f"An error occurred in descriptive measurement creation: {e}")
-
 ```
 
 </details>
@@ -986,122 +1199,7 @@ There will be added lines (similar to the guiding_lines previously) to ensure th
 | | true_olL line | true_olL | Coronal |
 
 
-To create all of these, copy-paste the following code in the Python console. Once there is a pop-up about the success of the first batch, just click OK for the second batch to run. This could take a few minutes. 
-<details>	
-<summary> Additional soft tissue guides for soft tissue measurements </summary>
-	
-```python
-import slicer
-import numpy as np
 
-def create_parallel_guide_lines(prefix):
-    """
-    Creates a set of visible, grey 'guide lines' using the 'guide_' prefix
-    (e.g., 'guide_pred_lcL', 'guide_true_oaR').
-    :param prefix: A string, either "pred_" or "true_".
-    """
-    print("="*80)
-    print(f"Creating PARALLEL GUIDE LINES with prefix: '{prefix}'")
-    print("="*80)
-
-    if prefix not in ["pred_", "true_"]:
-        slicer.util.errorDisplay("Prefix must be either 'pred_' or 'true_'.")
-        return
-
-    # --- Helper Functions ---
-    def get_node(name, cls="vtkMRMLNode"):
-        node = slicer.mrmlScene.GetFirstNodeByName(name)
-        if not node:
-            if prefix == "pred_" and "Eyeball lmrks" in name:
-                side_full = name.split(" ")[0]
-                for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
-                    if side_full in n.GetName() and "Eyeball" in n.GetName(): return n
-            raise ValueError(f"Node '{name}' ({cls}) not found.")
-        return node
-
-    def get_landmark_pos(node, label):
-        p_label = f"true_{label}" if prefix == "true_" else label
-        if prefix == "pred_" and node.GetControlPointIndexByLabel(p_label) == -1:
-            if node.GetControlPointIndexByLabel(f"{label[:-1]}_{label[-1]}") != -1:
-                p_label = f"{label[:-1]}_{label[-1]}"
-        
-        idx = node.GetControlPointIndexByLabel(p_label)
-        if idx == -1: raise ValueError(f"Landmark '{p_label}' not found in '{node.GetName()}'.")
-        pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
-        return pos
-
-    def create_line(name, p1, p2, color, visible=True):
-        node = slicer.mrmlScene.GetFirstNodeByName(name)
-        if not node:
-            node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
-        
-        node.RemoveAllControlPoints()
-        node.AddControlPoint(p1); node.AddControlPoint(p2)
-        
-        d = node.GetDisplayNode() or node.CreateDefaultDisplayNodes()
-        d.SetColor(color); d.SetSelectedColor([1,1,0])
-        d.SetVisibility(visible)
-        node.GetMeasurement("length").SetEnabled(False) # Guide length is not a measurement
-        return node
-
-    try:
-        # --- STAGE 0: Clean up old guide lines ---
-        print("0. Cleaning up old guide lines...")
-        guide_prefix_full = f"guide_{prefix}"
-        nodes_to_remove = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") if n.GetName().startswith(guide_prefix_full)]
-        for node in nodes_to_remove:
-            slicer.mrmlScene.RemoveNode(node)
-        print(f"   ✓ Removed {len(nodes_to_remove)} old '{guide_prefix_full}' lines.")
-
-        # --- STAGE 1: Get Anatomical Axes ---
-        print("\n1. Getting anatomical axis vectors...")
-        midsagittal_plane = get_node("Median Sagittal Plane (Trial)")
-        orbital_plane = get_node("Orbitale Transverse Plane (Trial)")
-
-        sup_inf_axis = np.array(orbital_plane.GetNormal())
-        right_left_axis = np.array(midsagittal_plane.GetNormal())
-        
-        # --- STAGE 2: Create Guide Lines ---
-        print("\n2. Creating parallel guide lines...")
-        guide_line_length = 50 
-        guide_color = [0.6, 0.6, 0.6] # Grey
-
-        sup_inf_landmarks = ['lc', 'ocp', 'la', 'oa', 'lp', 'om', 'ol']
-        right_left_landmarks = ['oi', 'os']
-        
-        created_count = 0
-        for side in ["L", "R"]:
-            side_full = "Left" if side == "L" else "Right"
-            landmark_source_node = get_node(f"{side_full} Eyeball lmrks" if prefix == "pred_" else "Ryu_soft_tissue")
-
-            for lm_base in sup_inf_landmarks + right_left_landmarks:
-                lm_label = f"{lm_base}{side}"
-                start_pos = get_landmark_pos(landmark_source_node, lm_label)
-                
-                axis = sup_inf_axis if lm_base in sup_inf_landmarks else right_left_axis
-                
-                p1 = start_pos - (axis * guide_line_length / 2.0)
-                p2 = start_pos + (axis * guide_line_length / 2.0)
-                
-                line_name = f"guide_{prefix}{lm_label}"
-                create_line(line_name, p1, p2, guide_color, visible=True)
-                created_count += 1
-                
-        slicer.util.infoDisplay(f"SUCCESS: Created {created_count} parallel guide lines.")
-
-    except Exception as e:
-        slicer.util.errorDisplay(f"An error occurred in create_parallel_guide_lines: {e}")
-        import traceback
-        traceback.print_exc()
-
-# --- Example Usage ---
-create_parallel_guide_lines(prefix="pred_")
-create_parallel_guide_lines(prefix="true_")
-
-
-```
-
-</details>
 
 ##### Predicted Soft tissue measurements
 
@@ -1151,8 +1249,12 @@ create_parallel_guide_lines(prefix="true_")
 | E6_L | pred_E6_L | left Globe lateral—left Globe medial | olL to omL |
 | E6_R | pred_E6_R | right Globe lateral—right Globe medial | olR to omR |
 
+
+To create all of these, copy-paste the following code in the Python console. Once there is a pop-up about the success of the first batch, just click OK for the second batch to run. This could take a few minutes. 
+
+
 <details>	
-<summary> Additional predicted soft tissue measurements </summary>
+<summary> Additional predicted and true soft tissue measurements </summary>
 	
 ```python
 import slicer
@@ -1219,8 +1321,8 @@ def create_final_measurements(prefix):
 
         # --- STAGE 1: Get all required nodes ---
         print("\n1. Finding all required nodes...")
-        coronal_plane = get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
-        orbital_plane = get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
+        coronal_plane = get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode")
+        orbital_plane = get_node("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode")
 
         # --- STAGE 2: Create Final Measurements for each side ---
         print("\n2. Creating final measurement lines...")
@@ -1280,9 +1382,8 @@ def create_final_measurements(prefix):
         traceback.print_exc()
 
 # --- Example Usage (run from the console) ---
+
 create_final_measurements(prefix="pred_")
-
-
 ```
 
 </details>
@@ -1406,8 +1507,8 @@ def create_final_measurements(prefix):
 
         # --- STAGE 1: Get all required nodes ---
         print("\n1. Finding all required nodes...")
-        coronal_plane = get_node("Coronal Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
-        orbital_plane = get_node("Orbitale Transverse Plane (Trial)", "vtkMRMLMarkupsPlaneNode")
+        coronal_plane = get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode")
+        orbital_plane = get_node("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode")
 
         # --- STAGE 2: Create Final Measurements for each side ---
         print("\n2. Creating final measurement lines...")
