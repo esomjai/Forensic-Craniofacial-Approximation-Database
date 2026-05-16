@@ -35,6 +35,9 @@ The Ryu method | Ryu et al. 2020 | [link](https://github.com/esomjai/Forensic-Cr
 The Thitiorul method | Thitiorul et al. 2020 | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul2020.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul%20(2020)%20GUI.md)
 The Purkait and Singh method | Purkait & Singh (2024) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Purkait%20and%20Singh%202024.md) | [link](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Purkait%20and%20Singh%202024%20GUI.md)
 
+Unified multi-method proposal (single-scene workflow): [Unified Nose Multi-Method GUI](Nose%20predictions/Unified%20Nose%20Multi-Method%20GUI.md)  
+Master landmark schema for alias recognition and guided landmarks: [nose_master_landmarks.json](Nose%20predictions/nose_master_landmarks.json)
+
 
 
 
