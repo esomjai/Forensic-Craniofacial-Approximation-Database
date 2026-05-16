@@ -6,6 +6,8 @@ import numpy as np
 import qt
 import slicer
 
+LOSSLESS_FLOAT_SIG_DIGITS = 17  # 17 significant digits preserve IEEE-754 float64 round-trip fidelity.
+
 
 SCHEMA_JSON = r'''
 {
@@ -633,7 +635,7 @@ class UnifiedNoseMasterGUI(qt.QWidget):
         if val is None:
             return ""
         if isinstance(val, (float, np.floating)):
-            return format(float(val), ".17g")
+            return format(float(val), f".{LOSSLESS_FLOAT_SIG_DIGITS}g")
         if isinstance(val, (int, np.integer)):
             return str(int(val))
         return str(val)
