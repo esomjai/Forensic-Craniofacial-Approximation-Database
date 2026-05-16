@@ -9,7 +9,7 @@ This unified GUI combines most nose approximation workflows into one scene in 3D
 - Threefold ANS (Krogman & Iscan)
 - Stephan et al. (2003)
 - Rynn et al. (2010) **(necessary components only)**
-- Tedeschi-Oliviera (2016)
+- Tedeschi-Oliveira (2016)
 - Ridel et al. (2018)
 - Ryu et al. (2020)
 - Thitiorul et al. (2020)
@@ -115,12 +115,13 @@ Global outputs:
 {
   "schemaVersion": "1.0.0",
   "source": "User-provided landmark table image and existing method GUI docs in this repository",
+  "sourceImageUrl": "https://github.com/user-attachments/assets/36959dcc-ba75-40fd-86d9-518b8efb5da0",
   "scope": {
     "includedMethods": [
       "Threefold_ANS",
       "Stephan_2003",
       "Rynn_2010_necessary_only",
-      "Tedeschi_Oliviera_2016",
+      "Tedeschi_Oliveira_2016",
       "Ridel_2018",
       "Ryu_2020",
       "Thitiorul_2020",
@@ -137,6 +138,14 @@ Global outputs:
     "stripWhitespace": true,
     "leftRightNormalization": true
   },
+  "landmarksRequiringGuidingLines": [
+    "HT-5",
+    "HT-24",
+    "ST-4",
+    "ST-17",
+    "ST-18",
+    "ST-19"
+  ],
   "landmarks": [
     {"id":"HT-1","canonicalName":"Nasion","tissueType":"hard","aka":["nasion","N","n"]},
     {"id":"HT-2","canonicalName":"Inion","tissueType":"hard","aka":["inion"]},
