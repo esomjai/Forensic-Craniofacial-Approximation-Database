@@ -566,9 +566,9 @@ class UnifiedNoseMasterGUI(qt.QWidget):
                     method,
                     "Distance",
                     f"{a}-{b}",
-                    f"{pred_d:.2f}",
-                    f"{true_d:.2f}",
-                    f"{delta:.2f}",
+                    pred_d,
+                    true_d,
+                    delta,
                     "mm",
                     "OK"
                 ))
@@ -588,9 +588,9 @@ class UnifiedNoseMasterGUI(qt.QWidget):
                             method,
                             "Angle",
                             f"{a}-{b}-{c}",
-                            f"{pred_ang:.2f}",
-                            f"{true_ang:.2f}",
-                            f"{delta:.2f}",
+                            pred_ang,
+                            true_ang,
+                            delta,
                             "deg",
                             "OK"
                         ))
@@ -610,10 +610,10 @@ class UnifiedNoseMasterGUI(qt.QWidget):
             rows.append((
                 method,
                 landmark,
-                f"{point[0]:.2f}",
-                f"{point[1]:.2f}",
-                f"{point[2]:.2f}",
-                (f"{err:.2f}" if err is not None else ""),
+                point[0],
+                point[1],
+                point[2],
+                (err if err is not None else ""),
                 trueLabel,
                 eStatus or p.get("status", "")
             ))
@@ -626,8 +626,17 @@ class UnifiedNoseMasterGUI(qt.QWidget):
         table.setRowCount(len(rows))
         for r, row in enumerate(rows):
             for c, val in enumerate(row):
-                table.setItem(r, c, qt.QTableWidgetItem(str(val)))
+                table.setItem(r, c, qt.QTableWidgetItem(self._toLosslessString(val)))
         table.resizeColumnsToContents()
+
+    def _toLosslessString(self, val):
+        if val is None:
+            return ""
+        if isinstance(val, (float, np.floating)):
+            return format(float(val), ".17g")
+        if isinstance(val, (int, np.integer)):
+            return str(int(val))
+        return str(val)
 
     def _tableToTSV(self, table):
         headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount)]
