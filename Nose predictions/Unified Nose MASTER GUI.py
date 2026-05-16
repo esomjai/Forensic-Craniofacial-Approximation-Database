@@ -555,7 +555,7 @@ class UnifiedNoseMasterGUI(qt.QWidget):
 
             common = sorted(common)
             if len(common) < 2:
-                rows.append((method, "Summary", "-", "", "", "", "", "No comparable measurement pairs"))
+                rows.append((method, "Summary", "N/A", None, None, None, "", "No comparable measurement pairs"))
                 continue
 
             for a, b in itertools.combinations(common, 2):
@@ -650,8 +650,13 @@ class UnifiedNoseMasterGUI(qt.QWidget):
         return "\n".join(lines)
 
     def copyResults(self):
-        sections = ["[Landmark Results]", self._tableToTSV(self.resultsTable), "", "[Comparable Measurements]"]
-        sections.append(self._tableToTSV(self.measurementsTable))
+        sections = [
+            "[Landmark Results]",
+            self._tableToTSV(self.resultsTable),
+            "",
+            "[Comparable Measurements]",
+            self._tableToTSV(self.measurementsTable),
+        ]
         text = "\n".join(sections)
         qt.QApplication.clipboard().setText(text)
         slicer.util.infoDisplay("Results copied to clipboard.")
