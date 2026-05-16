@@ -1,9 +1,12 @@
 import json
 import re
 import csv
+import itertools
 import numpy as np
 import qt
 import slicer
+
+LOSSLESS_FLOAT_SIG_DIGITS = 17  # 17 significant digits preserve IEEE-754 float64 round-trip fidelity.
 
 
 SCHEMA_JSON = r'''
@@ -110,6 +113,7 @@ class UnifiedNoseMasterGUI(qt.QWidget):
         self.mapping = {}
         self.predictions = []
         self.errorRows = []
+        self.measurementRows = []
         self.methodNodes = {}
 
         self._buildAliasIndex()
@@ -222,6 +226,13 @@ class UnifiedNoseMasterGUI(qt.QWidget):
         ])
         self.resultsTable.horizontalHeader().setStretchLastSection(True)
         root.addWidget(self.resultsTable)
+
+        self.measurementsTable = qt.QTableWidget(0, 8)
+        self.measurementsTable.setHorizontalHeaderLabels([
+            "Method", "Type", "Measurement", "Predicted", "True", "Delta", "Unit", "Status"
+        ])
+        self.measurementsTable.horizontalHeader().setStretchLastSection(True)
+        root.addWidget(self.measurementsTable)
 
         self.summaryLabel = qt.QLabel("Summary: (no errors yet)")
         root.addWidget(self.summaryLabel)
@@ -424,6 +435,7 @@ class UnifiedNoseMasterGUI(qt.QWidget):
 
         self.predictions = []
         self.errorRows = []
+        self.measurementRows = []
         self.methodNodes = {}
 
         selected = [m for m, c in self.methodChecks.items() if c.isChecked()]
@@ -448,15 +460,11 @@ class UnifiedNoseMasterGUI(qt.QWidget):
             self.methodNodes[method] = node
 
         self.refreshResultsTable()
+        self.refreshMeasurementsTable()
         self.status.setText(f"Ran {len(selected)} method(s)")
 
     def _truePointByPredLandmark(self, predLandmark):
-        lookup = {
-            "Pronasale": "ST-3",
-            "Subnasale": "ST-2",
-            "Alare_L": "ST-9",
-            "Alare_R": "ST-10",
-        }
+        lookup = self._predToTrueLandmarkMap()
         lid = lookup.get(predLandmark)
         if not lid:
             return None, None
@@ -473,6 +481,7 @@ class UnifiedNoseMasterGUI(qt.QWidget):
             return
 
         self.errorRows = []
+        self.measurementRows = []
         errs = []
         for row in self.predictions:
             if row.get("point") is None:
@@ -498,8 +507,96 @@ class UnifiedNoseMasterGUI(qt.QWidget):
         else:
             self.summaryLabel.setText("Summary: no comparable true soft-tissue landmarks found")
 
+        self.measurementRows = self._computeMeasurementRows()
         self.refreshResultsTable()
+        self.refreshMeasurementsTable()
         self.status.setText("Error computation complete")
+
+    def _predToTrueLandmarkMap(self):
+        return {
+            "Pronasale": "ST-3",
+            "Subnasale": "ST-2",
+            "Alare_L": "ST-9",
+            "Alare_R": "ST-10",
+        }
+
+    def _angleDeg(self, p1, p2, p3):
+        v1 = np.array(p1) - np.array(p2)
+        v2 = np.array(p3) - np.array(p2)
+        n1 = np.linalg.norm(v1)
+        n2 = np.linalg.norm(v2)
+        if n1 < 1e-8 or n2 < 1e-8:
+            return None
+        c = np.dot(v1 / n1, v2 / n2)
+        c = max(-1.0, min(1.0, float(c)))
+        return float(np.degrees(np.arccos(c)))
+
+    def _computeMeasurementRows(self):
+        rows = []
+        by_method = {}
+        for pred in self.predictions:
+            if pred.get("point") is None:
+                continue
+            by_method.setdefault(pred["method"], {})[pred["landmark"]] = np.array(pred["point"], dtype=float)
+
+        pred_to_true = self._predToTrueLandmarkMap()
+        for method, pred_pts in by_method.items():
+            common = []
+            true_pts = {}
+            for lm, p in pred_pts.items():
+                true_id = pred_to_true.get(lm)
+                if not true_id:
+                    continue
+                m = self.mapping.get(true_id)
+                if not m or m.get("status") != "matched":
+                    continue
+                tp = np.zeros(3)
+                m["node"].GetNthControlPointPositionWorld(m["index"], tp)
+                true_pts[lm] = np.array(tp, dtype=float)
+                common.append(lm)
+
+            common = sorted(common)
+            if len(common) < 2:
+                rows.append((method, "Summary", "N/A", None, None, None, "", "No comparable measurement pairs"))
+                continue
+
+            for a, b in itertools.combinations(common, 2):
+                pred_d = float(np.linalg.norm(pred_pts[a] - pred_pts[b]))
+                true_d = float(np.linalg.norm(true_pts[a] - true_pts[b]))
+                delta = pred_d - true_d
+                rows.append((
+                    method,
+                    "Distance",
+                    f"{a}-{b}",
+                    pred_d,
+                    true_d,
+                    delta,
+                    "mm",
+                    "OK"
+                ))
+
+            if len(common) >= 3:
+                for trio in itertools.combinations(common, 3):
+                    for vertex in trio:
+                        others = [x for x in trio if x != vertex]
+                        a, c = sorted(others)
+                        b = vertex
+                        pred_ang = self._angleDeg(pred_pts[a], pred_pts[b], pred_pts[c])
+                        true_ang = self._angleDeg(true_pts[a], true_pts[b], true_pts[c])
+                        if pred_ang is None or true_ang is None:
+                            continue
+                        delta = pred_ang - true_ang
+                        rows.append((
+                            method,
+                            "Angle",
+                            f"{a}-{b}-{c}",
+                            pred_ang,
+                            true_ang,
+                            delta,
+                            "deg",
+                            "OK"
+                        ))
+        return rows
 
     def refreshResultsTable(self):
         errorIndex = {(m, l): (e, tl, st) for (m, l, e, tl, st) in self.errorRows}
@@ -515,21 +612,33 @@ class UnifiedNoseMasterGUI(qt.QWidget):
             rows.append((
                 method,
                 landmark,
-                f"{point[0]:.2f}",
-                f"{point[1]:.2f}",
-                f"{point[2]:.2f}",
-                (f"{err:.2f}" if err is not None else ""),
+                point[0],
+                point[1],
+                point[2],
+                (err if err is not None else ""),
                 trueLabel,
                 eStatus or p.get("status", "")
             ))
         self._fillTable(self.resultsTable, rows)
 
+    def refreshMeasurementsTable(self):
+        self._fillTable(self.measurementsTable, self.measurementRows)
+
     def _fillTable(self, table, rows):
         table.setRowCount(len(rows))
         for r, row in enumerate(rows):
             for c, val in enumerate(row):
-                table.setItem(r, c, qt.QTableWidgetItem(str(val)))
+                table.setItem(r, c, qt.QTableWidgetItem(self._toLosslessString(val)))
         table.resizeColumnsToContents()
+
+    def _toLosslessString(self, val):
+        if val is None:
+            return ""
+        if isinstance(val, (float, np.floating)):
+            return format(float(val), f".{LOSSLESS_FLOAT_SIG_DIGITS}g")
+        if isinstance(val, (int, np.integer)):
+            return str(int(val))
+        return str(val)
 
     def _tableToTSV(self, table):
         headers = [table.horizontalHeaderItem(i).text() for i in range(table.columnCount)]
@@ -543,7 +652,14 @@ class UnifiedNoseMasterGUI(qt.QWidget):
         return "\n".join(lines)
 
     def copyResults(self):
-        text = self._tableToTSV(self.resultsTable)
+        sections = [
+            "[Landmark Results]",
+            self._tableToTSV(self.resultsTable),
+            "",
+            "[Comparable Measurements]",
+            self._tableToTSV(self.measurementsTable),
+        ]
+        text = "\n".join(sections)
         qt.QApplication.clipboard().setText(text)
         slicer.util.infoDisplay("Results copied to clipboard.")
 
@@ -553,12 +669,24 @@ class UnifiedNoseMasterGUI(qt.QWidget):
             return
         with open(path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
+            writer.writerow(["[Landmark Results]"])
             headers = [self.resultsTable.horizontalHeaderItem(i).text() for i in range(self.resultsTable.columnCount)]
             writer.writerow(headers)
             for r in range(self.resultsTable.rowCount):
                 row = []
                 for c in range(self.resultsTable.columnCount):
                     item = self.resultsTable.item(r, c)
+                    row.append(item.text() if item else "")
+                writer.writerow(row)
+
+            writer.writerow([])
+            writer.writerow(["[Comparable Measurements]"])
+            m_headers = [self.measurementsTable.horizontalHeaderItem(i).text() for i in range(self.measurementsTable.columnCount)]
+            writer.writerow(m_headers)
+            for r in range(self.measurementsTable.rowCount):
+                row = []
+                for c in range(self.measurementsTable.columnCount):
+                    item = self.measurementsTable.item(r, c)
                     row.append(item.text() if item else "")
                 writer.writerow(row)
         slicer.util.infoDisplay(f"CSV exported: {path}")
