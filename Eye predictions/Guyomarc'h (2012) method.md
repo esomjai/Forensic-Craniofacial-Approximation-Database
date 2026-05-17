@@ -432,11 +432,11 @@ class EyeballPlacementWidget(qt.QWidget):
 
         # --- Data ---
         # The correct, direct download links for the Google Drive files.
-        self.model_urls = {
+		self.model_urls = {
             "Female Left": "https://drive.google.com/uc?export=download&id=1IO2-DIroRDhs84rBsQc1srfuzDFyRy2g",
             "Female Right": "https://drive.google.com/uc?export=download&id=1-QCnBmAdogNQLweVzcdVd_SVd3oImz85",
             "Male Left": "https://drive.google.com/uc?export=download&id=120wrETZx5o0-0CwAzldF07ZnFKNgn-Km",
-            "Male Right": "https://drive.google.com/uc?export=download&id=1TkaORcBvHCvKVCdi21-fxUgjoW8d3GSs"
+            "Male Right": "https://drive.google.com/uc?export=download&id=1D2ZakWhd6jefyFT-EN3ECdNqVolpi9Ak"
         }
 
         # --- UI Layout ---
