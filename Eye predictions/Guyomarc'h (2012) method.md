@@ -47,6 +47,10 @@ The original method was carried out on clinical CTs on a population of 375 adult
 
 > [!IMPORTANT]
 > The landmarks with the 🟦 symbol are for reproducing the entire method for validation and not essential to place for applying the eyeball placement for facial approximation.
+To download the file containing the bony orbital landmarks, use this link [Guyomarch_hard_tissue.mrk.json](https://github.com/user-attachments/files/27900137/Guyomarch_hard_tissue.mrk.json).
+To validate the method, download the soft tissue (ground truth/🟦) landmarks and place them: [Guyomarch_soft_tissue.mrk.json](https://github.com/user-attachments/files/27900157/Guyomarch_soft_tissue.mrk.json)
+
+
 
 Illustration of the method: 
 
