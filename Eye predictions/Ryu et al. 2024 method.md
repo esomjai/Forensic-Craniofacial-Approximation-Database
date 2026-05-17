@@ -776,7 +776,7 @@ Additionally, we can compare the predicted and the actual eyeball positions via 
 You can download them [here](https://github.com/user-attachments/files/27196663/Ryu_soft_tissue.mrk.json).
 
 Once you placed the "ground truth" landmarks (called Ryu_soft_tissue.lmrk.json) onto the scan (you'll likely have to use the red/green/yellow windows for a more precise placement), you can run the codes below. 
-It is an iterative process, with an extra step for placing the central landmarks. The lens centre (lcL/R) and globe centre (gcL/R) are found by the code called "true centres placement", by calculating the midpoint between the lens anterior and lens posterior for the lens centre on both sides; and by using a triaxial ellipdoid's geometry to calculate the globe's centre based on the oa-op, oi-os, om-ol distances. Please place all the soft tissue landmarks **with the exception of lcL, lcR, gcL, gcR**, then run the code below. 
+It is an iterative process, with an extra step for placing the central landmarks. The lens centre (lcL/R) and globe centre (gcL/R) are found by the code called "true centres placement", by calculating the midpoint between the lens anterior and lens posterior for the lens centre on both sides; and by using a triaxial ellipsoid's geometry to calculate the globe's centre based on the oa-op, oi-os, om-ol distances. Please place all the soft tissue landmarks **with the exception of lcL, lcR, gcL, gcR**, then run the code below. 
 
 <details>	
 <summary> Find true soft tissue centres </summary>
@@ -1050,7 +1050,7 @@ These measurements are also based on only hard tissue, but were not chosen as pr
 | 17 | L17 | left Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpL and the coronal plane |
 | 17 | R17 | right Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpR and the coronal plane |
 | 18 | L18 | left Optic canal point (landmark)— left Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpL and guiding_LOM_L line |
-| 18 | R18 | rightOptic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpR and guiding_LOM_R line |
+| 18 | R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpR and guiding_LOM_R line |
 | 19 | L19 | left Medial orbit (landmark)—Coronal plane | shortest perpendicular distance between the dL and the coronal plane |
 | 19 | R19 | right Medial orbit (landmark)—Coronal plane | shortest perpendicular distance between the dR and the coronal plane |
 
@@ -1163,8 +1163,6 @@ There will be added lines (similar to the guiding_lines previously) to ensure th
 |--------|------------|---------|----------------|
 | Predicted (Eyeball lmrks) | pred_lcL line | lcL | Coronal |
 | | pred_lcR line | lcR | Coronal |
-| | pred_ocpR line | ocpR | Coronal |
-| | pred_ocpL line | ocpL | Coronal |
 | | pred_laR line | laR | Coronal |
 | | pred_laL line | laL | Coronal |
 | | pred_oaR line | oaR | Coronal |
@@ -1181,8 +1179,6 @@ There will be added lines (similar to the guiding_lines previously) to ensure th
 | | pred_olL line | olL | Coronal |
 | True (Ryu_soft_tissue) | true_lcL line | true_lcL | Coronal |
 | | true_lcR line | true_lcR | Coronal |
-| | true_ocpR line | true_ocpR | Coronal |
-| | true_ocpL line | true_ocpL | Coronal |
 | | true_laR line | true_laR | Coronal |
 | | true_laL line | true_laL | Coronal |
 | | true_oaR line | true_oaR | Coronal |
@@ -1206,10 +1202,6 @@ There will be added lines (similar to the guiding_lines previously) to ensure th
 (2) Additional Predicted measurements
 | original | Slicer abbrv | Original definition | Slicer definition |
 |----------|--------------|---------------------|-------------------|
-| 17 | pred_L17 | left Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpL and the coronal plane |
-| 17 | pred_R17 | right Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the ocpR and the coronal plane |
-| 18 | pred_L18 | left Optic canal point (landmark)— left Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpL and guiding_LOM_L line |
-| 18 | pred_R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpR and guiding_LOM_R line |
 | 21 | pred_L21 | left Lens centre (landmark)—left Supraorbitale (transverse plane) | shortest perpendicular distance between the lcL and marginal_SOM_L |
 | 21 | pred_R21 | right Lens centre (landmark)—right Supraorbitale (transverse plane) | shortest perpendicular distance between the lcR and marginal_SOM_R |
 | 22 | pred_L22 | left Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the lcL and orbitale transverse plane |
@@ -1396,10 +1388,6 @@ There will be added lines (similar to the guiding_lines previously) to ensure th
 (2) Additional True measurements
 | original | Slicer abbrv | Original definition | Slicer definition |
 |----------|--------------|---------------------|-------------------|
-| 17 | true_L17 | left Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the true_ocpL and the coronal plane |
-| 17 | true_R17 | right Optic canal point (landmark)—Coronal plane | shortest perpendicular distance between the true_ocpR and the coronal plane |
-| 18 | true_L18 | left Optic canal point (landmark)— left Lateral orbit (coronal plane) | shortest perpendicular distance between the true_ocpL and guiding_LOM_L line |
-| 18 | true_R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the true_ocpR and guiding_LOM_R line |
 | 21 | true_L21 | left Lens centre (landmark)—left Supraorbitale (transverse plane) | shortest perpendicular distance between the true_lcL and marginal_SOM_L |
 | 21 | true_R21 | right Lens centre (landmark)—right Supraorbitale (transverse plane) | shortest perpendicular distance between the true_lcR and marginal_SOM_R |
 | 22 | true_L22 | left Lens centre (landmark)—Orbitale (transverse plane) | shortest perpendicular distance between the true_lcL and orbitale transverse plane |
@@ -1724,8 +1712,6 @@ What to expect? The code will print some information on the console, something l
 | `lpR` | 14.97 mm |
 | `oaL` | 8.76 mm |
 | `oaR` | 8.99 mm |
-| `ocpR` | 11.81 mm |
-| `ocp_L` | 10.30 mm |
 | `oiL` | 6.72 mm |
 | `oiR` | 12.46 mm |
 | `olL` | 7.37 mm |
@@ -1856,7 +1842,6 @@ To copy all the linear measurements to clipboard, use the method described in [t
 | | guide_pred_oiL | 50 | ❌ - not a real measurement |
 | | guide_pred_osL | 50 | ❌ - not a real measurement |
 | | guide_pred_lcR | 50 | ❌ - not a real measurement |
-| | guide_pred_ocpR | 50 | ❌ - not a real measurement |
 | | guide_pred_laR | 50 | ❌ - not a real measurement |
 | | guide_pred_oaR | 50 | ❌ - not a real measurement |
 | | guide_pred_lpR | 50 | ❌ - not a real measurement |
@@ -1865,7 +1850,6 @@ To copy all the linear measurements to clipboard, use the method described in [t
 | | guide_pred_oiR | 50 | ❌ - not a real measurement |
 | | guide_pred_osR | 50 | ❌ - not a real measurement |
 | | guide_true_lcL | 50 | ❌ - not a real measurement |
-| | guide_true_ocpL | 50 | ❌ - not a real measurement |
 | | guide_true_laL | 50 | ❌ - not a real measurement |
 | | guide_true_oaL | 50 | ❌ - not a real measurement |
 | | guide_true_lpL | 50 | ❌ - not a real measurement |
