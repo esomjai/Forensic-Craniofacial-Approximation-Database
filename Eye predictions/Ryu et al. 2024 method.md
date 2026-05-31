@@ -1512,6 +1512,7 @@ It will create two comparison tables: (1) for comparing length measurements betw
 	
 ```python
 import slicer
+import qt
 import numpy as np
 
 def get_landmark_node(pattern, required=True):
@@ -1545,11 +1546,126 @@ def get_all_lines_by_prefix(prefix):
             lines_dict[key] = node.GetMeasurement('length').GetValue()
     return lines_dict
 
+def get_line_length(line_name):
+    """Gets the length of a specific line by name."""
+    try:
+        node = slicer.util.getFirstNodeByName(line_name)
+        if node and node.IsA("vtkMRMLMarkupsLineNode"):
+            return node.GetMeasurement('length').GetValue()
+    except: pass
+    return None
+
+def select_eyeball_sex():
+    """
+    Opens a dialog for the user to select which eyeballs were used (Male or Female).
+    Returns the selected sex as a string ('Male' or 'Female'), or None if cancelled.
+    """
+    dialog = qt.QDialog(slicer.util.mainWindow())
+    dialog.setWindowTitle("Eyeball Sex Selection")
+    dialog.setModal(True)
+    dialog.setMinimumWidth(400)
+    
+    layout = qt.QVBoxLayout(dialog)
+    
+    # Info label
+    info_label = qt.QLabel(
+        "Which eyeballs did you use for placement?\n\n"
+        "The regression equations are sex-specific, so please confirm "
+        "whether you placed Male or Female eyeball models."
+    )
+    info_label.setWordWrap(True)
+    layout.addWidget(info_label)
+    
+    # Radio buttons
+    layout.addSpacing(10)
+    button_group = qt.QButtonGroup(dialog)
+    
+    female_radio = qt.QRadioButton("Female Eyeballs")
+    male_radio = qt.QRadioButton("Male Eyeballs")
+    female_radio.setChecked(True)  # Default selection
+    
+    button_group.addButton(female_radio, 0)
+    button_group.addButton(male_radio, 1)
+    
+    layout.addWidget(female_radio)
+    layout.addWidget(male_radio)
+    
+    # Buttons
+    layout.addSpacing(10)
+    button_layout = qt.QHBoxLayout()
+    
+    ok_button = qt.QPushButton("OK")
+    cancel_button = qt.QPushButton("Cancel")
+    
+    button_layout.addWidget(ok_button)
+    button_layout.addWidget(cancel_button)
+    layout.addLayout(button_layout)
+    
+    layout.addStretch(1)
+    
+    # Connections
+    def on_ok():
+        dialog.selected_sex = "Female" if female_radio.checked else "Male"
+        dialog.accept()
+    
+    def on_cancel():
+        dialog.selected_sex = None
+        dialog.reject()
+    
+    ok_button.clicked.connect(on_ok)
+    cancel_button.clicked.connect(on_cancel)
+    
+    # Show dialog
+    dialog.selected_sex = None
+    result = dialog.exec_()
+    
+    return dialog.selected_sex
+
+def calculate_additional_predictions(sex, side_char):
+    """
+    Calculates additional predicted measurements (L/R27, L/R33 from L/R15).
+    These are NOT used for eyeball placement but are calculated for comparison.
+    """
+    predictions = {}
+    
+    # Get core measurements
+    L1 = get_line_length(f"{side_char}1")
+    L8 = get_line_length(f"{side_char}8")
+    L15 = get_line_length(f"{side_char}15")
+    
+    if L1 is None or L8 is None or L15 is None:
+        return predictions
+    
+    # Sex-specific regression equations
+    if sex == "Female":
+        # L27 from L15 (additional prediction, not used for placement)
+        pred_L27_from_L15 = 1.007 * L15 + 9.552
+        # L33 from L15 (additional prediction, not used for placement)
+        pred_L33_from_L15 = 1.005 * L15 + 14.700
+    else:  # Male
+        # L27 from L15 (additional prediction, not used for placement)
+        pred_L27_from_L15 = 0.989 * L15 + 11.550
+        # L33 from L15 (additional prediction, not used for placement)
+        pred_L33_from_L15 = 0.950 * L15 + 19.126
+    
+    predictions[f"{side_char}27_from_L15"] = pred_L27_from_L15
+    predictions[f"{side_char}33_from_L15"] = pred_L33_from_L15
+    
+    return predictions
+
 def run_eye_analysis():
     """Compares predicted vs. true landmarks and measurement lengths for the eye prediction method."""
     print("="*80); print("      Starting Eye Prediction Comparison Analysis"); print("="*80)
 
     try:
+        # --- 0. Get sex from user ---
+        sex = select_eyeball_sex()
+        if sex is None:
+            print("Analysis cancelled by user.")
+            return
+        
+        print(f"\n✓ Selected eyeball sex: {sex}\n")
+
         # --- 1. Find landmark nodes ---
         print("1. Finding landmark nodes...")
         true_lmks_node = get_landmark_node("Ryu_soft_tissue")
@@ -1577,7 +1693,6 @@ def run_eye_analysis():
 
         # --- 3. Measurement Length Difference Calculation ---
         print("\n3. Calculating measurement length differences...")
-        # CORRECTED: Using lowercase prefixes
         predicted_lengths = get_all_lines_by_prefix("pred_")
         true_lengths = get_all_lines_by_prefix("true_")
         
@@ -1592,14 +1707,52 @@ def run_eye_analysis():
             diff_str = f"{abs(pred_len - true_len):.2f} mm" if pred_len is not None and true_len is not None else "N/A"
             measurement_results.append((key, pred_str, true_str, diff_str))
 
-        # --- 4. Print Formatted Results ---
+        # --- 4. Additional Predictions (L/R27, L/R33 from L/R15) ---
+        print("\n4. Calculating additional predictions (not used for placement)...")
+        additional_results = []
+        
+        for side_char in ['L', 'R']:
+            predictions = calculate_additional_predictions(sex, side_char)
+            
+            for pred_key, pred_value in predictions.items():
+                # Extract measurement type (e.g., "27" from "L27_from_L15")
+                meas_type = pred_key.split('_')[0]  # e.g., "L27"
+                
+                # Get true measurement
+                true_len = get_line_length(f"true_{meas_type}")
+                
+                pred_str = f"{pred_value:.2f} mm"
+                true_str = f"{true_len:.2f} mm" if true_len is not None else "N/A"
+                diff_str = f"{abs(pred_value - true_len):.2f} mm" if true_len is not None else "N/A"
+                
+                # Note: These are regression predictions, not visualized lines
+                additional_results.append((f"{pred_key} (regr.)", pred_str, true_str, diff_str))
+
+        # --- 5. Print Formatted Results ---
         print("\n\n" + "="*80); print("                          FINAL ANALYSIS RESULTS"); print("="*80)
+        print(f"\nEyeball Sex Used: {sex}\n")
+        
         if landmark_results:
-            print("\n### Table 1: Landmark Positional Error (3D Distance)\n\n| Landmark | Error (True vs. Predicted) |\n|---|---|")
-            for label, dist_str in sorted(landmark_results): print(f"| `{label}` | {dist_str} |")
+            print("\n### Table 1: Landmark Positional Error (3D Distance)\n")
+            print("| Landmark | Error (True vs. Predicted) |")
+            print("|---|---|")
+            for label, dist_str in sorted(landmark_results): 
+                print(f"| `{label}` | {dist_str} |")
+        
         if measurement_results:
-            print("\n\n### Table 2: Measurement Length Comparison\n\n| Measurement | Predicted Length | True Length | Absolute Difference |\n|---|---|---|---|")
-            for key, pred_str, true_str, diff_str in measurement_results: print(f"| `{key}` | {pred_str} | {true_str} | {diff_str} |")
+            print("\n\n### Table 2: Visualized Measurement Length Comparison\n")
+            print("| Measurement | Predicted Length | True Length | Absolute Difference |")
+            print("|---|---|---|---|")
+            for key, pred_str, true_str, diff_str in measurement_results: 
+                print(f"| `{key}` | {pred_str} | {true_str} | {diff_str} |")
+        
+        if additional_results:
+            print("\n\n### Table 3: Additional Predicted Measurements (Not Used for Placement)\n")
+            print("| Prediction | Predicted Value | True Measurement | Absolute Difference |")
+            print("|---|---|---|---|")
+            for key, pred_str, true_str, diff_str in additional_results: 
+                print(f"| `{key}` | {pred_str} | {true_str} | {diff_str} |")
+        
         print("\n" + "="*80); print("✓ Analysis complete."); print("="*80)
 
     except Exception as e:
@@ -1608,7 +1761,6 @@ def run_eye_analysis():
 
 # --- Run the Analysis ---
 run_eye_analysis()
-
 ```
 
 </details>
