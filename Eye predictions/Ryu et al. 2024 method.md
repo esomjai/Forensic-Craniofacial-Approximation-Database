@@ -990,6 +990,9 @@ These measurements are also based on only hard tissue, but were not chosen as pr
 | 18 | R18 | right Optic canal point (landmark)— right Lateral orbit (coronal plane) | shortest perpendicular distance between the ocpR and guiding_LOM_R line |
 | 19 | L19 | left Medial orbit (landmark)—Coronal plane | shortest perpendicular distance between the dL and the coronal plane |
 | 19 | R19 | right Medial orbit (landmark)—Coronal plane | shortest perpendicular distance between the dR and the coronal plane |
+| 20 | R20 | right Orbitale (landmark)— Coronal plane | shortest perpendicular Coronal plane- IOM_R line distance|
+| 20 | L20 | light Orbitale (landmark)— Coronal plane | shortest perpendicular Coronal plane- IOM_L line distance|
+
 
 <details>	
 <summary> Additional hard tissue measurements </summary>
@@ -1091,7 +1094,7 @@ except Exception as e:
 
 #### More predicted soft tissue distances
 
-There have been some soft tissue measurements (L/R21, 22, 23, 27, 33) that were predicted in the step where the artificial eyes were placed. The rest of the predicted soft tissue distances are created by the code below. 
+There have been some soft tissue measurements (L/R21, 22, 23, 33) that were predicted in the step where the artificial eyes were placed. The rest of the predicted soft tissue distances are created by the code below. 
 
 ##### More Guide lines
 There will be added lines (similar to the guiding_lines previously) to ensure the parallell measurement theme in the original study. 
