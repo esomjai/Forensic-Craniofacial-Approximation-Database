@@ -337,7 +337,13 @@ except Exception as e:
 
 
 ### Hard tissue measurements for prediction ONLY
-Ryu et al. (2024)[^2]  devised regressions specific for biological sex to predict the position of the oa (oculare anterior/cornea by their terminology) and the lens centre, that depend on a few chosen measurement **L/R1, 8, 15, 20**. Regressions from the bony measurements predict soft tissue dimensions **L/R21,22,23,27 and 33**; which determine the approximated position of the eyeball in 3 dimensions. The following code creates the hard tissue measurement necessary to undertake the prediction, summarised in the table below. 
+Ryu et al. (2024)[^2]  devised regressions specific for biological sex to predict the position of the oa (oculare anterior/cornea by their terminology) and the lens centre, that depend on a few chosen measurement **L/R1, 8, 15, 20**. Regressions from the bony measurements predict soft tissue dimensions **L/R21,22,23,27 and 33**; which determine the approximated position of the eyeball in 3 dimensions. 
+After personal communication with the corresponding author, Lee Won-Joon, the following was implemented for the code below: 
+**L/R27 approximation is excluded altogether
+L/R15 was used to predict L/R33**
+L/R20 and L/R27 are instead added to extra hard tissue measurements and the validation steps.
+
+The following code creates the hard tissue measurement necessary to undertake the prediction, summarised in the table below. 
 
 | Line name | Description |
 |----------------|-------------|
@@ -347,8 +353,7 @@ Ryu et al. (2024)[^2]  devised regressions specific for biological sex to predic
 | R8 | shortest perpendicular guiding_SOM_R line to guiding_IOM_R line distance |
 | L15 | shortest perpendicular Coronal plane-guiding_LOM_L line distance |
 | R15 | shortest perpendicular Coronal plane-guiding_LOM_R line distance |
-| L20 | shortest perpendicular Coronal plane-guiding_IOM_L line distance |
-| R20 | shortest perpendicular Coronal plane-guiding_IOM_R line distance |
+
 
 <details>	
 <summary> Core hard tissue measurment code </summary>
@@ -391,37 +396,40 @@ def make_line(name, p0, p1, color, value=None):
 
 try:
     hard_node = slicer.util.getNode("Ryu_hard_tissue")
-    vec_superior = np.array(slicer.util.getNode("Orbitale Transverse Plane (Trial)").GetNormal())
-    vec_right = np.array(slicer.util.getNode("Median Sagittal Plane (Trial)").GetNormal())
-    vec_anterior = np.array(slicer.util.getNode("Coronal Plane (Trial)").GetNormal())
+    vec_superior = np.array(slicer.util.getNode("Orbitale Transverse Plane").GetNormal())
+    vec_right = np.array(slicer.util.getNode("Median Sagittal Plane").GetNormal())
+    vec_anterior = np.array(slicer.util.getNode("Coronal Plane").GetNormal())
+    coronal_origin = np.array(slicer.util.getNode("Coronal Plane").GetOrigin())
     
-    cyan = [0,1,1]
+    cyan = [0, 1, 1]
     
     for s in ["L", "R"]:
-        # L1/R1
+        # L1/R1: Distance from dL/dR to lat_orL/R along Right direction
         lom_p = get_landmark(hard_node, f"lat_or{s}")
         mom_p = get_landmark(hard_node, f"d{s}")
         dist = abs(np.dot(lom_p - mom_p, vec_right))
         make_line(f"{s}1", mom_p, mom_p + vec_right * np.dot(lom_p - mom_p, vec_right), cyan, dist)
         
-        # L8/R8
+        # L8/R8: Distance from skL/R to orL/R along Superior direction
         som_p = get_landmark(hard_node, f"sk{s}")
         iom_p = get_landmark(hard_node, f"or{s}")
         dist = abs(np.dot(som_p - iom_p, vec_superior))
         make_line(f"{s}8", iom_p, iom_p + vec_superior * np.dot(som_p - iom_p, vec_superior), cyan, dist)
         
-        # L15/R15
+        # L15/R15: Distance from lat_orL/R to Coronal Plane along Anterior direction
         lom_p = get_landmark(hard_node, f"lat_or{s}")
-        coronal_origin = np.array(slicer.util.getNode("Coronal Plane (Trial)").GetOrigin())
         dist = abs(np.dot(lom_p - coronal_origin, vec_anterior))
         make_line(f"{s}15", lom_p, lom_p - vec_anterior * np.dot(lom_p - coronal_origin, vec_anterior), cyan, dist)
 
     print("\nStep 3 complete. Hard tissue measurement lines created.")
-    print("\nSetup is finished. You can now use the GUI for placement.")
+    print(f"  ✓ Created L1, R1 (medial-lateral orbital breadth)")
+    print(f"  ✓ Created L8, R8 (superior-inferior orbital height)")
+    print(f"  ✓ Created L15, R15 (lateral orbitale to coronal plane)")
+    print("\nThese three measurements (L/R1, L/R8, L/R15) feed into the regression equations.")
+    print("Setup is finished. You can now use the placement tool.")
 
 except Exception as e:
     slicer.util.errorDisplay(f"An error occurred in Step 3: {e}")
-
 ```
 
 </details>
@@ -430,7 +438,7 @@ except Exception as e:
 
 ### Eye model placement
 
-Next, the **L/R21,22,23,27 and 33** will be calculated using the hard tissue measurements from the previous step; as published by Ryu et al. (2024)[^2]. These are not visualised before the eyeball placement, but after. When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
+Next, the **L/R21,22,23 and 33** will be calculated using the hard tissue measurements from the previous step; as published by Ryu et al. (2024)[^2]. These are not visualised before the eyeball placement, but after. When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did not differentiate between the biological sexes, but some do, hence the option. All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
 
 | Predictor  | Male equation | Female equation | Predicted soft tissue measurement | Definition of soft tissue measurement |
 |----------------------|---------------|-----------------|----------------------------------|----------------------------------------|
@@ -439,24 +447,19 @@ Next, the **L/R21,22,23,27 and 33** will be calculated using the hard tissue mea
 | L8 | L22 = 0.439 × L8 + 3.662 | L22 = 0.652 × L8 - 4.353 | L22 | oaL perpendicular distance "upward" from the IOM_L |
 | L15 | L27 = 0.989 × L15 + 11.550 | L27 = 1.007 × L15 + 9.552 | L27 | lcL perpendicular distance "forward/anterior" from the Coronal plane |
 | L15 | L33 = 0.950 × L15 + 19.126 | L33 = 1.005 × L15 + 14.700 | L33 | oaL perpendicular distance "forward/anterior" from the Coronal plane |
-| L20 | L27 = 0.889 × L20 + 11.756 | L27 = 0.969 × L20 + 5.309 | L27 | lcL perpendicular distance "forward/anterior" from the Coronal plane |
-| L20 | L33 = 0.865 × L20 + 18.436 | L33 = 1.028 × L20 + 6.826 | L33 | oaL perpendicular distance "forward/anterior" from the Coronal plane |
 | R1 | R23 = 0.734 × R1 - 6.687 | R23 = 0.449 × R1 + 4.505 | R23 | oaR perpendicular distance "inward/laterally" from the MOM_R |
 | R8 | R21 = 0.562 × R8 - 3.923 | R21 = 0.407 × R8 + 2.082 | R21 | oaR perpendicular distance "downward" from the SOM_R |
 | R8 | R22 = 0.438 × R8 + 3.939 | R22 = 0.593 × R8 - 2.064 | R22 | oaR perpendicular distance "upward" from the IOM_R |
 | R15 | R27 = 0.978 × R15 + 12.421 | R27 = 0.951 × R15 + 12.818 | R27 | lcR perpendicular distance "forward/anterior" from the Coronal plane |
 | R15 | R33 = 0.954 × R15 + 18.983 | R33 = 0.973 × R15 + 16.707 | R33 | oaR perpendicular distance "forward/anterior" from the Coronal plane |
-| R20 | R27 = 0.867 × R20 + 13.012 | R27 = 0.905 × R20 + 9.297 | R27 | lcR perpendicular distance "forward/anterior" from the Coronal plane |
-| R20 | R33 = 0.840 × R20 + 19.843 | R33 = 0.985 × R20 + 9.354 | R33 | oaR perpendicular distance "forward/anterior" from the Coronal plane |
+
 
 
 When running the code, expect a pop-up window of a graphic user interface (GUI) which asks you to download an artificial eye model for a male or female. The current study did differentiate between the biological sexes hence the option. 
 All eye models were adjusted to the average size of a human eyeball, 24mm in diameter. You'll have to choose the left and right eyes individually - so clicking the "Download and Place Eyeball" twice, but choosing the other side from the dropdown menu. 
-There is also an option to choose whether you want to use **L/R15 or L/R20 or their average** for calculating **L/R27 and L/R33** - this is beacuse the original authors provided multiple, equally well-performing regressions for these. 
 
 > [!IMPORTANT]
 > After the left eyeball is placed, the scene may "jump". No action needed, it should be restored either after the right eye is placed, or simply clicking the "Anterior" direction in the scene view
-
 
 
 <img width="500" height="371" alt="image" src="https://github.com/user-attachments/assets/15457804-b8b0-49ba-bf06-1a59701ca3b1" />
@@ -490,15 +493,15 @@ except ImportError:
     slicer.util.pip_install('gdown')
     import gdown
 
-class TrialEyeballPlacementWidget(qt.QWidget):
+class RyuEyeballPlacementWidget(qt.QWidget):
     def __init__(self, parent=None):
-        super(TrialEyeballPlacementWidget, self).__init__(parent)
+        super(RyuEyeballPlacementWidget, self).__init__(parent)
         self.setup()
 
     def setup(self):
         self.setLayout(qt.QVBoxLayout())
         
-        infoLabel = qt.QLabel("This tool places an eyeball model based on the Ryu et al. (2024) method geometry.")
+        infoLabel = qt.QLabel("Ryu et al. (2024) - Eyeball Placement\n\nThis tool places an eyeball model based on hard tissue measurements (L/R1, L/R8, L/R15) and sex-specific regression equations.")
         infoLabel.setWordWrap(True)
         self.layout().addWidget(infoLabel)
         
@@ -512,22 +515,8 @@ class TrialEyeballPlacementWidget(qt.QWidget):
         formLayout.addRow("Side:", self.side_combo)
         self.layout().addLayout(formLayout)
 
-        # Prediction method selection (items will be side-specific)
-        self.method_group = qt.QGroupBox("Prediction method for soft tissue distances")
-        method_layout = qt.QFormLayout(self.method_group)
-        
-        self.method_L27_label = qt.QLabel("Predict measurement 27 (coronal to lc point):")
-        self.method_L33_label = qt.QLabel("Predict measurement 33 (coronal to oa point):")
-        self.method_27_combo = qt.QComboBox()
-        self.method_33_combo = qt.QComboBox()
-        
-        method_layout.addRow(self.method_L27_label, self.method_27_combo)
-        method_layout.addRow(self.method_L33_label, self.method_33_combo)
-        
-        self.layout().addWidget(self.method_group)
-
         self.place_button = qt.QPushButton("Place Eyeball")
-        self.place_button.toolTip = "Run the placement based on the selected Sex, Side and prediction methods"
+        self.place_button.toolTip = "Calculate predictions from L/R1, L/R8, L/R15 and place eyeball model"
         self.place_button.setStyleSheet("background-color: #A9DFBF; font-weight: bold; padding: 8px;")
         self.layout().addWidget(self.place_button)
         
@@ -539,40 +528,6 @@ class TrialEyeballPlacementWidget(qt.QWidget):
 
         # Connections
         self.place_button.clicked.connect(self.run_placement)
-        self.side_combo.currentIndexChanged.connect(self.update_prediction_ui)
-
-        # Initial UI update
-        self.update_prediction_ui()
-
-    def update_prediction_ui(self):
-        """Update labels and combo box items to reflect current side (L or R)."""
-        side = self.side_combo.currentText
-        side_char = side[0]  # 'L' or 'R'
-        
-        self.method_L27_label.setText(f"Predict {side_char}27 (coronal to lc point):")
-        self.method_L33_label.setText(f"Predict {side_char}33 (coronal to oa point):")
-        
-        # Store current selection to preserve choice type
-        current_27 = self.method_27_combo.currentText
-        current_33 = self.method_33_combo.currentText
-        
-        def get_choice_type(text):
-            if text.startswith("Use L") or text.startswith("Use R"):
-                return "use_L15" if "L15" in text or "R15" in text else "use_L20"
-            return "average"
-        
-        choice_27 = get_choice_type(current_27) if current_27 else "use_L15"
-        choice_33 = get_choice_type(current_33) if current_33 else "use_L15"
-        
-        new_items = [f"Use {side_char}15", f"Use {side_char}20", f"Average ({side_char}15+{side_char}20)"]
-        self.method_27_combo.clear()
-        self.method_27_combo.addItems(new_items)
-        self.method_33_combo.clear()
-        self.method_33_combo.addItems(new_items)
-        
-        # Restore selection
-        self.method_27_combo.setCurrentIndex(0 if choice_27 == "use_L15" else 1 if choice_27 == "use_L20" else 2)
-        self.method_33_combo.setCurrentIndex(0 if choice_33 == "use_L15" else 1 if choice_33 == "use_L20" else 2)
 
     def run_placement(self):
         self.status_label.setText("Starting placement...")
@@ -586,63 +541,42 @@ class TrialEyeballPlacementWidget(qt.QWidget):
             def get_node(name, cls):
                 node = slicer.mrmlScene.GetFirstNodeByName(name)
                 if not node or not node.IsA(cls):
-                    raise ValueError(f"Required node '{name}' of type {cls} not found. Please run the setup script first.")
+                    raise ValueError(f"Required node '{name}' of type {cls} not found.")
                 return node
             
             def get_line_length(name):
                 return get_node(name, "vtkMRMLMarkupsLineNode").GetMeasurement("length").GetValue()
 
-            # Read measurements
+            # Read core measurements
             self.status_label.setText(f"1. Reading measurements for {SIDE} side...")
+            slicer.app.processEvents()
+            
             L1 = get_line_length(f"{side_char}1")
             L8 = get_line_length(f"{side_char}8")
             L15 = get_line_length(f"{side_char}15")
-            L20 = get_line_length(f"{side_char}20")
 
-            # L21, L22, L23 from L8 and L1
+            # --- Apply sex-specific regression equations ---
+            # Based on image: Female and Male equations for L21, L22, L23, L33
             if SEX == "Female":
                 pred_L21 = 0.349 * L8 + 4.320
                 pred_L22 = 0.652 * L8 - 4.353
                 pred_L23 = 0.619 * L1 - 2.175
+                pred_L33 = 1.005 * L15 + 14.700
             else:  # Male
                 pred_L21 = 0.560 * L8 - 3.648
                 pred_L22 = 0.439 * L8 + 3.662
                 pred_L23 = 0.844 * L1 - 11.224
+                pred_L33 = 0.950 * L15 + 19.126
 
-            # Predictions from L15 and L20 for 27 and 33
-            if SEX == "Female":
-                pred27_from_L15 = 1.007 * L15 + 9.552
-                pred27_from_L20 = 0.969 * L20 + 5.309
-                pred33_from_L15 = 1.005 * L15 + 14.700
-                pred33_from_L20 = 1.028 * L20 + 6.826
-            else:  # Male
-                pred27_from_L15 = 0.989 * L15 + 11.550
-                pred27_from_L20 = 0.889 * L20 + 11.756
-                pred33_from_L15 = 0.950 * L15 + 19.126
-                pred33_from_L20 = 0.865 * L20 + 18.436
+            self.status_label.setText(f"2. Predictions calculated:\n{side_char}21={pred_L21:.2f}, {side_char}22={pred_L22:.2f}, {side_char}23={pred_L23:.2f}, {side_char}33={pred_L33:.2f}")
+            slicer.app.processEvents()
 
-            # Apply user method
-            method_27_text = self.method_27_combo.currentText
-            if "Use R15" in method_27_text or "Use L15" in method_27_text:
-                pred27 = pred27_from_L15
-            elif "Use R20" in method_27_text or "Use L20" in method_27_text:
-                pred27 = pred27_from_L20
-            else:
-                pred27 = (pred27_from_L15 + pred27_from_L20) / 2.0
-
-            method_33_text = self.method_33_combo.currentText
-            if "Use R15" in method_33_text or "Use L15" in method_33_text:
-                pred33 = pred33_from_L15
-            elif "Use R20" in method_33_text or "Use L20" in method_33_text:
-                pred33 = pred33_from_L20
-            else:
-                pred33 = (pred33_from_L15 + pred33_from_L20) / 2.0
-
-            # Vectors and planes
+            # Get anatomical reference vectors and planes
             vS = np.array(get_node("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
             vR = np.array(get_node("Median Sagittal Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
             vA = np.array(get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetNormal())
 
+            # Calculate target eyeball position from predictions
             p_si_1 = np.array(get_node(f"marginal_SOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) - vS * pred_L21
             p_si_2 = np.array(get_node(f"marginal_IOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vS * pred_L22
             d_si = 0.5 * (np.dot(vS, p_si_1) + np.dot(vS, p_si_2))
@@ -651,12 +585,12 @@ class TrialEyeballPlacementWidget(qt.QWidget):
             p_ml = np.array(get_node(f"marginal_MOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + lat_dir * pred_L23
             d_ml = np.dot(vR, p_ml)
 
-            p_ap = np.array(get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vA * pred33
+            p_ap = np.array(get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode").GetOrigin()) + vA * pred_L33
             d_ap = np.dot(vA, p_ap)
 
             target_pos = np.linalg.solve(np.array([vS, vR, vA]), np.array([d_si, d_ml, d_ap]))
 
-            # --- Save current camera state ---
+            # Save camera state
             def get_camera_state():
                 view = slicer.app.layoutManager().threeDWidget(0).threeDView()
                 renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
@@ -665,16 +599,18 @@ class TrialEyeballPlacementWidget(qt.QWidget):
             
             camera_state = get_camera_state()
 
-            # Download and place model
-            self.status_label.setText("3. Downloading model...")
+            # Download and place eyeball model
+            self.status_label.setText("3. Downloading eyeball model...")
+            slicer.app.processEvents()
+            
             IDS = {
-                "Female Left": "1k0VSUYA6ZM8ihOS50A69Iah-4SDr4sfu",
-                "Female Right": "1boOyC2Z_N0FZT-6F5i3p3ozjJ-8UUUIG",
-                "Male Left": "1qpSXWe3c96U0CgxJnUL6-QuSaZfhj6AC",
-                "Male Right": "1W-xeGiLqOPitoIWHFOJcjzU5UW7Uyf1s"
+                "Female Left": "1p8rCfH7g35sAKXl0HeVf8PHzPt_xmSes",
+                "Female Right": "1SK4alr7IumBGPm9OFUbNTCRAvJCPCpDR",
+                "Male Left": "1X7JllfMrZM-AZpSrNh1CZwMGUTnHcqfG",
+                "Male Right": "1rKmPbzuC1EjNoxLwoKNLIqLpZcVSxNYh"
             }
             key = f"{SEX} {SIDE}"
-            mrb_path = os.path.join(slicer.app.temporaryPath, f"trial_{key.replace(' ','_')}.mrb")
+            mrb_path = os.path.join(slicer.app.temporaryPath, f"ryu_{key.replace(' ','_')}.mrb")
             gdown.download(id=IDS[key], output=mrb_path, quiet=False)
             
             nodes_before = set(slicer.util.getNodesByClass("vtkMRMLNode"))
@@ -701,8 +637,8 @@ class TrialEyeballPlacementWidget(qt.QWidget):
                 matrix.SetElement(i, 3, matrix.GetElement(i, 3) + translation[i])
             xform_node.SetMatrixTransformToParent(matrix)
 
-            # Create prediction lines
-            def make_pred_line(name, p0, p1, value, color=(0,0,1)):
+            # Create prediction measurement lines
+            def make_pred_line(name, p0, p1, value, color=(1, 0, 0)):
                 ln = slicer.mrmlScene.GetFirstNodeByName(name)
                 if not ln:
                     ln = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
@@ -722,13 +658,12 @@ class TrialEyeballPlacementWidget(qt.QWidget):
             p_on_mom = target_pos - vR * np.dot(target_pos - np.array(get_node(f"marginal_MOM_{side_char}", "vtkMRMLMarkupsPlaneNode").GetOrigin()), vR)
             p_on_coronal = target_pos - vA * np.dot(target_pos - coronal_origin, vA)
 
-            make_pred_line(f"pred_{side_char}21", target_pos, p_on_som, pred_L21)
-            make_pred_line(f"pred_{side_char}22", target_pos, p_on_iom, pred_L22)
-            make_pred_line(f"pred_{side_char}23", target_pos, p_on_mom, pred_L23)
-            make_pred_line(f"pred_{side_char}33", target_pos, p_on_coronal, pred33)
-            make_pred_line(f"pred_{side_char}27", target_pos, p_on_coronal, pred27)
+            make_pred_line(f"pred_{side_char}21", target_pos, p_on_som, pred_L21, color=(1, 0, 0))
+            make_pred_line(f"pred_{side_char}22", target_pos, p_on_iom, pred_L22, color=(1, 0, 0))
+            make_pred_line(f"pred_{side_char}23", target_pos, p_on_mom, pred_L23, color=(1, 0, 0))
+            make_pred_line(f"pred_{side_char}33", target_pos, p_on_coronal, pred_L33, color=(1, 0, 0))
 
-            # --- Restore camera state ---
+            # Restore camera state
             view = slicer.app.layoutManager().threeDWidget(0).threeDView()
             renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
             cam = renderer.GetActiveCamera()
@@ -738,13 +673,13 @@ class TrialEyeballPlacementWidget(qt.QWidget):
             cam.SetViewUp(up)
             view.renderWindow().Render()
 
-            final_message = (f"Eyeball placement complete!\n"
-                             f"Predicted distances for {SIDE} side:\n"
+            final_message = (f"✓ Prediction complete!\n\n"
+                             f"{SEX} {SIDE} eyeball\n\n"
+                             f"Predicted soft tissue distances:\n"
                              f"{side_char}21 = {pred_L21:.2f} mm\n"
                              f"{side_char}22 = {pred_L22:.2f} mm\n"
                              f"{side_char}23 = {pred_L23:.2f} mm\n"
-                             f"{side_char}27 = {pred27:.2f} mm (method: {method_27_text})\n"
-                             f"{side_char}33 = {pred33:.2f} mm (method: {method_33_text})")
+                             f"{side_char}33 = {pred_L33:.2f} mm")
             self.status_label.setText(final_message)
             slicer.util.infoDisplay(final_message)
 
@@ -755,15 +690,16 @@ class TrialEyeballPlacementWidget(qt.QWidget):
 
 # Cleanup and instantiation
 try:
-    if 'trial_placement_widget' in globals() and trial_placement_widget:
-        trial_placement_widget.parent().close()
+    if 'ryu_placement_widget' in globals() and ryu_placement_widget:
+        ryu_placement_widget.parent().close()
 except NameError:
     pass
 
-trial_placement_widget = TrialEyeballPlacementWidget()
+ryu_placement_widget = RyuEyeballPlacementWidget()
 dock_widget = qt.QDockWidget("Ryu Eyeball Placement")
-dock_widget.setWidget(trial_placement_widget)
+dock_widget.setWidget(ryu_placement_widget)
 slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dock_widget)
+dock_widget.show()
 ```
 
 </details>
