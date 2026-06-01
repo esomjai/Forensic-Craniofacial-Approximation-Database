@@ -467,8 +467,6 @@ Expect this additional window on the right.
 <img src="https://github.com/user-attachments/assets/2bb83f47-0b74-4f42-9518-b0ba570249c9" width="500">  <img src="https://github.com/user-attachments/assets/af98b5fd-e2b3-4df3-88aa-204420ddae5e" width="500">
 
 
-Expected view for the "jump" and its resolution
-
 
 
 
@@ -492,6 +490,7 @@ except ImportError:
 class RyuEyeballPlacementWidget(qt.QWidget):
     def __init__(self, parent=None):
         super(RyuEyeballPlacementWidget, self).__init__(parent)
+        self.loaded_nodes = []  # Track loaded nodes for potential cleanup
         self.setup()
 
     def setup(self):
@@ -552,7 +551,6 @@ class RyuEyeballPlacementWidget(qt.QWidget):
             L15 = get_line_length(f"{side_char}15")
 
             # --- Apply sex-specific regression equations ---
-            # Based on image: Female and Male equations for L21, L22, L23, L33
             if SEX == "Female":
                 pred_L21 = 0.349 * L8 + 4.320
                 pred_L22 = 0.652 * L8 - 4.353
@@ -586,14 +584,25 @@ class RyuEyeballPlacementWidget(qt.QWidget):
 
             target_pos = np.linalg.solve(np.array([vS, vR, vA]), np.array([d_si, d_ml, d_ap]))
 
-            # Save camera state
+            # Save 3D view and layout state
             def get_camera_state():
                 view = slicer.app.layoutManager().threeDWidget(0).threeDView()
                 renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
                 cam = renderer.GetActiveCamera()
                 return (cam.GetPosition(), cam.GetFocalPoint(), cam.GetViewUp())
             
+            def get_layout_state():
+                """Save visibility state of all nodes before loading"""
+                visibility_state = {}
+                for node in slicer.util.getNodesByClass("vtkMRMLNode"):
+                    if hasattr(node, 'GetDisplayNode'):
+                        display_node = node.GetDisplayNode()
+                        if display_node:
+                            visibility_state[node.GetID()] = display_node.GetVisibility()
+                return visibility_state
+            
             camera_state = get_camera_state()
+            layout_state = get_layout_state()
 
             # Download and place eyeball model
             self.status_label.setText("3. Downloading eyeball model...")
@@ -609,9 +618,16 @@ class RyuEyeballPlacementWidget(qt.QWidget):
             mrb_path = os.path.join(slicer.app.temporaryPath, f"ryu_{key.replace(' ','_')}.mrb")
             gdown.download(id=IDS[key], output=mrb_path, quiet=False)
             
+            # Track nodes before loading
             nodes_before = set(slicer.util.getNodesByClass("vtkMRMLNode"))
+            
+            # Load scene WITHOUT clearing
             slicer.util.loadScene(mrb_path, {"clear": False, "loadCamera": False})
-            new_nodes = list(set(slicer.util.getNodesByClass("vtkMRMLNode")) - nodes_before)
+            
+            # Get newly loaded nodes
+            nodes_after = set(slicer.util.getNodesByClass("vtkMRMLNode"))
+            new_nodes = list(nodes_after - nodes_before)
+            self.loaded_nodes.extend([n.GetID() for n in new_nodes])
 
             xform_node, oa0_pos = None, None
             for node in new_nodes:
@@ -659,7 +675,7 @@ class RyuEyeballPlacementWidget(qt.QWidget):
             make_pred_line(f"pred_{side_char}23", target_pos, p_on_mom, pred_L23, color=(1, 0, 0))
             make_pred_line(f"pred_{side_char}33", target_pos, p_on_coronal, pred_L33, color=(1, 0, 0))
 
-            # Restore camera state
+            # Restore camera state and layout
             view = slicer.app.layoutManager().threeDWidget(0).threeDView()
             renderer = view.renderWindow().GetRenderers().GetFirstRenderer()
             cam = renderer.GetActiveCamera()
@@ -668,6 +684,14 @@ class RyuEyeballPlacementWidget(qt.QWidget):
             cam.SetFocalPoint(fp)
             cam.SetViewUp(up)
             view.renderWindow().Render()
+            
+            # Restore visibility state of previous nodes
+            for node_id, visibility in layout_state.items():
+                node = slicer.mrmlScene.GetNodeByID(node_id)
+                if node and hasattr(node, 'GetDisplayNode'):
+                    display_node = node.GetDisplayNode()
+                    if display_node:
+                        display_node.SetVisibility(visibility)
 
             final_message = (f"✓ Prediction complete!\n\n"
                              f"{SEX} {SIDE} eyeball\n\n"
