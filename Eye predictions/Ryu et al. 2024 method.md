@@ -1246,6 +1246,14 @@ def create_final_measurements(prefix):
         pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
         return pos
 
+    def get_landmark_pos_hard_tissue(node, label):
+        """Special handler for hard tissue landmarks like ocp that don't have true_ prefix."""
+        # ocp landmarks are in hard tissue node but without true_ prefix
+        idx = node.GetControlPointIndexByLabel(label)
+        if idx == -1: raise ValueError(f"Landmark '{label}' not found in '{node.GetName()}'.")
+        pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
+        return pos
+
     def create_line(name, p1, p2, color, visible=True):
         node = slicer.mrmlScene.GetFirstNodeByName(name)
         if not node: node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
@@ -1279,11 +1287,12 @@ def create_final_measurements(prefix):
         print("\n1. Finding all required nodes...")
         coronal_plane = get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode")
         orbital_plane = get_node("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode")
+        hard_tissue_node = get_node("Ryu_hard_tissue")  # For ocp landmark
 
         # --- STAGE 2: Create Final Measurements for each side ---
         print("\n2. Creating final measurement lines...")
         created_count = 0
-        final_color = [1,0,0] if prefix == "pred_" else [0,1,0]
+        final_color = (1,0,0) if prefix == "pred_" else (0,1,0)
 
         for side in ["L", "R"]:
             print(f"   - Processing Side: {side}")
@@ -1293,12 +1302,19 @@ def create_final_measurements(prefix):
             marginal_SOM, marginal_MOM, marginal_LOM = get_node(f"marginal_SOM_{side}"), get_node(f"marginal_MOM_{side}"), get_node(f"marginal_LOM_{side}")
             guiding_LOM = get_node(f"guiding_LOM_{side}")
 
-            # Get landmark positions
-            ocp_pos, lc_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}"), get_landmark_pos(eyeball_lm_node, f"lc{side}")
-            la_pos, lp_pos = get_landmark_pos(eyeball_lm_node, f"la{side}"), get_landmark_pos(eyeball_lm_node, f"lp{side}")
-            oa_pos, os_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}"), get_landmark_pos(eyeball_lm_node, f"os{side}")
-            oi_pos, ol_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}"), get_landmark_pos(eyeball_lm_node, f"ol{side}")
-            om_pos, gc_pos = get_landmark_pos(eyeball_lm_node, f"om{side}"), get_landmark_pos(eyeball_lm_node, f"gc{side}")
+            # Get landmark positions from eyeball landmarks node
+            lc_pos = get_landmark_pos(eyeball_lm_node, f"lc{side}")
+            la_pos = get_landmark_pos(eyeball_lm_node, f"la{side}")
+            lp_pos = get_landmark_pos(eyeball_lm_node, f"lp{side}")
+            oa_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}")
+            os_pos = get_landmark_pos(eyeball_lm_node, f"os{side}")
+            oi_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}")
+            ol_pos = get_landmark_pos(eyeball_lm_node, f"ol{side}")
+            om_pos = get_landmark_pos(eyeball_lm_node, f"om{side}")
+            gc_pos = get_landmark_pos(eyeball_lm_node, f"gc{side}")
+            
+            # --- FIX: Get ocp from hard tissue landmarks (no true_ prefix) ---
+            ocp_pos = get_landmark_pos_hard_tissue(hard_tissue_node, f"ocp{side}")
             
             # --- Create Measurement Lines (point to plane/line) ---
             create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color)
@@ -1337,9 +1353,7 @@ def create_final_measurements(prefix):
         import traceback
         traceback.print_exc()
 
-# --- Example Usage (run from the console) ---
-
-create_final_measurements(prefix="pred_")
+create_final_measurements(prefix="pred_")  # Red lines with predicted eyeball landmarks
 ```
 
 </details>
@@ -1428,6 +1442,14 @@ def create_final_measurements(prefix):
         pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
         return pos
 
+    def get_landmark_pos_hard_tissue(node, label):
+        """Special handler for hard tissue landmarks like ocp that don't have true_ prefix."""
+        # ocp landmarks are in hard tissue node but without true_ prefix
+        idx = node.GetControlPointIndexByLabel(label)
+        if idx == -1: raise ValueError(f"Landmark '{label}' not found in '{node.GetName()}'.")
+        pos = np.zeros(3); node.GetNthControlPointPositionWorld(idx, pos)
+        return pos
+
     def create_line(name, p1, p2, color, visible=True):
         node = slicer.mrmlScene.GetFirstNodeByName(name)
         if not node: node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", name)
@@ -1461,11 +1483,12 @@ def create_final_measurements(prefix):
         print("\n1. Finding all required nodes...")
         coronal_plane = get_node("Coronal Plane", "vtkMRMLMarkupsPlaneNode")
         orbital_plane = get_node("Orbitale Transverse Plane", "vtkMRMLMarkupsPlaneNode")
+        hard_tissue_node = get_node("Ryu_hard_tissue")  # For ocp landmark
 
         # --- STAGE 2: Create Final Measurements for each side ---
         print("\n2. Creating final measurement lines...")
         created_count = 0
-        final_color = [1,0,0] if prefix == "pred_" else [0,1,0]
+        final_color = (1,0,0) if prefix == "pred_" else (0,1,0)
 
         for side in ["L", "R"]:
             print(f"   - Processing Side: {side}")
@@ -1475,12 +1498,19 @@ def create_final_measurements(prefix):
             marginal_SOM, marginal_MOM, marginal_LOM = get_node(f"marginal_SOM_{side}"), get_node(f"marginal_MOM_{side}"), get_node(f"marginal_LOM_{side}")
             guiding_LOM = get_node(f"guiding_LOM_{side}")
 
-            # Get landmark positions
-            ocp_pos, lc_pos = get_landmark_pos(eyeball_lm_node, f"ocp{side}"), get_landmark_pos(eyeball_lm_node, f"lc{side}")
-            la_pos, lp_pos = get_landmark_pos(eyeball_lm_node, f"la{side}"), get_landmark_pos(eyeball_lm_node, f"lp{side}")
-            oa_pos, os_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}"), get_landmark_pos(eyeball_lm_node, f"os{side}")
-            oi_pos, ol_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}"), get_landmark_pos(eyeball_lm_node, f"ol{side}")
-            om_pos, gc_pos = get_landmark_pos(eyeball_lm_node, f"om{side}"), get_landmark_pos(eyeball_lm_node, f"gc{side}")
+            # Get landmark positions from eyeball landmarks node
+            lc_pos = get_landmark_pos(eyeball_lm_node, f"lc{side}")
+            la_pos = get_landmark_pos(eyeball_lm_node, f"la{side}")
+            lp_pos = get_landmark_pos(eyeball_lm_node, f"lp{side}")
+            oa_pos = get_landmark_pos(eyeball_lm_node, f"oa{side}")
+            os_pos = get_landmark_pos(eyeball_lm_node, f"os{side}")
+            oi_pos = get_landmark_pos(eyeball_lm_node, f"oi{side}")
+            ol_pos = get_landmark_pos(eyeball_lm_node, f"ol{side}")
+            om_pos = get_landmark_pos(eyeball_lm_node, f"om{side}")
+            gc_pos = get_landmark_pos(eyeball_lm_node, f"gc{side}")
+            
+            # --- FIX: Get ocp from hard tissue landmarks (no true_ prefix) ---
+            ocp_pos = get_landmark_pos_hard_tissue(hard_tissue_node, f"ocp{side}")
             
             # --- Create Measurement Lines (point to plane/line) ---
             create_line(f"{prefix}{side}17", ocp_pos, project_point_to_plane_node(ocp_pos, coronal_plane), final_color)
@@ -1519,8 +1549,7 @@ def create_final_measurements(prefix):
         import traceback
         traceback.print_exc()
 
-# --- Example Usage (run from the console) ---
-create_final_measurements(prefix="true_")
+create_final_measurements(prefix="true_")  # Green lines with true eyeball landmarks (both use same ocp from hard tissue)
 ```
 
 </details>
