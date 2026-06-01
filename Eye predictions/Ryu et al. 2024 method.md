@@ -1656,23 +1656,25 @@ def select_eyeball_sex():
     
     layout.addStretch(1)
     
+    # Use a container to store the result
+    result_container = {"selected_sex": None}
+    
     # Connections
     def on_ok():
-        dialog.selected_sex = "Female" if female_radio.checked else "Male"
+        result_container["selected_sex"] = "Female" if female_radio.checked else "Male"
         dialog.accept()
     
     def on_cancel():
-        dialog.selected_sex = None
+        result_container["selected_sex"] = None
         dialog.reject()
     
     ok_button.clicked.connect(on_ok)
     cancel_button.clicked.connect(on_cancel)
     
     # Show dialog
-    dialog.selected_sex = None
     result = dialog.exec_()
     
-    return dialog.selected_sex
+    return result_container["selected_sex"]
 
 def calculate_additional_predictions(sex, side_char):
     """
@@ -1829,6 +1831,9 @@ What to expect? The code will print some information on the console, something l
 ================================================================================
       Starting Eye Prediction Comparison Analysis
 ================================================================================
+
+✓ Selected eyeball sex: Female
+
 1. Finding landmark nodes...
    ✓ True landmarks: 'Ryu_soft_tissue'
    ✓ Predicted Left: 'Left Eyeball lmrks'
@@ -1838,86 +1843,100 @@ What to expect? The code will print some information on the console, something l
 
 3. Calculating measurement length differences...
 
+4. Calculating additional predictions (not used for placement)...
+
 
 ================================================================================
                           FINAL ANALYSIS RESULTS
 ================================================================================
 
+Eyeball Sex Used: Female
+
+
 ### Table 1: Landmark Positional Error (3D Distance)
 
 | Landmark | Error (True vs. Predicted) |
 |---|---|
-| `gcL` | 6.74 mm |
-| `gcR` | 9.08 mm |
-| `laL` | 12.70 mm |
-| `laR` | 12.02 mm |
-| `lcL` | 13.94 mm |
-| `lcR` | 13.60 mm |
-| `lpL` | 14.98 mm |
-| `lpR` | 14.97 mm |
-| `oaL` | 8.76 mm |
-| `oaR` | 8.99 mm |
-| `oiL` | 6.72 mm |
-| `oiR` | 12.46 mm |
-| `olL` | 7.37 mm |
-| `olR` | 7.70 mm |
-| `omL` | 5.74 mm |
-| `omR` | 11.27 mm |
-| `osL` | 5.18 mm |
-| `osR` | 5.05 mm |
+| `gcL` | 2.67 mm |
+| `gcR` | 2.67 mm |
+| `laL` | 4.53 mm |
+| `laR` | 3.23 mm |
+| `lcL` | 3.78 mm |
+| `lcR` | 2.60 mm |
+| `lpL` | 3.14 mm |
+| `lpR` | 2.31 mm |
+| `oaL` | 5.62 mm |
+| `oaR` | 4.03 mm |
+| `oiL` | 6.16 mm |
+| `oiR` | 3.53 mm |
+| `olL` | 4.58 mm |
+| `olR` | 5.22 mm |
+| `omL` | 2.42 mm |
+| `omR` | 2.07 mm |
+| `osL` | 2.65 mm |
+| `osR` | 6.32 mm |
 
 
-### Table 2: Measurement Length Comparison
+### Table 2: Visualized Measurement Length Comparison
 
 | Measurement | Predicted Length | True Length | Absolute Difference |
 |---|---|---|---|
-| `E1_L` | 13.81 mm | 20.94 mm | 7.14 mm |
-| `E1_R` | 13.81 mm | 19.68 mm | 5.87 mm |
-| `E2_L` | 15.19 mm | 10.72 mm | 4.47 mm |
-| `E2_R` | 15.19 mm | 18.00 mm | 2.82 mm |
-| `E3_L` | 11.94 mm | 16.14 mm | 4.21 mm |
-| `E3_R` | 11.94 mm | 17.00 mm | 5.07 mm |
-| `E4_L` | 12.19 mm | 12.03 mm | 0.17 mm |
-| `E4_R` | 12.19 mm | 16.29 mm | 4.09 mm |
-| `E5_L` | 23.98 mm | 30.13 mm | 6.15 mm |
-| `E5_R` | 23.98 mm | 32.35 mm | 8.38 mm |
-| `E6_L` | 24.01 mm | 24.74 mm | 0.73 mm |
-| `E6_R` | 24.01 mm | 30.52 mm | 6.51 mm |
-| `L17` | 5.10 mm | 14.18 mm | 9.08 mm |
-| `L18` | 21.81 mm | 23.40 mm | 1.60 mm |
-| `L21` | 13.08 mm | 16.19 mm | 3.11 mm |
-| `L22` | 15.22 mm | 12.11 mm | 3.11 mm |
-| `L23` | 19.96 mm | 18.00 mm | 1.96 mm |
-| `L24` | 15.90 mm | 17.86 mm | 1.96 mm |
-| `L25` | 18.88 mm | 18.16 mm | 0.72 mm |
-| `L26` | 19.69 mm | 15.44 mm | 4.25 mm |
-| `L27` | 12.67 mm | 0.78 mm | 11.89 mm |
-| `L28` | 3.73 mm | 5.60 mm | 1.87 mm |
-| `L29` | 4.67 mm | 9.49 mm | 4.81 mm |
-| `L30` | 3.73 mm | 5.60 mm | 1.87 mm |
-| `L31` | 21.62 mm | 17.30 mm | 4.31 mm |
-| `L32` | 24.23 mm | 23.61 mm | 0.63 mm |
-| `L33` | 17.20 mm | 8.51 mm | 8.69 mm |
-| `R17` | 3.73 mm | 12.51 mm | 8.79 mm |
-| `R18` | 19.30 mm | 19.50 mm | 0.19 mm |
-| `R21` | 13.31 mm | 15.36 mm | 2.05 mm |
-| `R22` | 14.39 mm | 12.35 mm | 2.05 mm |
-| `R23` | 19.33 mm | 18.60 mm | 0.73 mm |
-| `R24` | 14.93 mm | 15.66 mm | 0.73 mm |
-| `R25` | 18.08 mm | 15.99 mm | 2.09 mm |
-| `R26` | 19.83 mm | 16.78 mm | 3.05 mm |
-| `R27` | 14.55 mm | 1.12 mm | 13.42 mm |
-| `R28` | 3.73 mm | 6.34 mm | 2.61 mm |
-| `R29` | 4.67 mm | 9.02 mm | 4.34 mm |
-| `R30` | 3.73 mm | 6.34 mm | 2.61 mm |
-| `R31` | 21.18 mm | 16.14 mm | 5.04 mm |
-| `R32` | 24.40 mm | 24.44 mm | 0.04 mm |
-| `R33` | 19.07 mm | 10.11 mm | 8.96 mm |
+| `E1_L` | 13.81 mm | 13.18 mm | 0.63 mm |
+| `E1_R` | 13.81 mm | 14.89 mm | 1.08 mm |
+| `E2_L` | 15.19 mm | 15.25 mm | 0.06 mm |
+| `E2_R` | 15.19 mm | 16.16 mm | 0.98 mm |
+| `E3_L` | 11.94 mm | 12.50 mm | 0.56 mm |
+| `E3_R` | 11.94 mm | 13.20 mm | 1.26 mm |
+| `E4_L` | 12.19 mm | 11.86 mm | 0.33 mm |
+| `E4_R` | 12.19 mm | 11.66 mm | 0.53 mm |
+| `E5_L` | 23.98 mm | 23.96 mm | 0.01 mm |
+| `E5_R` | 23.98 mm | 24.73 mm | 0.75 mm |
+| `E6_L` | 24.01 mm | 22.29 mm | 1.72 mm |
+| `E6_R` | 24.01 mm | 23.15 mm | 0.86 mm |
+| `L17` | 2.56 mm | 2.56 mm | 0.00 mm |
+| `L18` | 48.80 mm | 48.80 mm | 0.00 mm |
+| `L21` | 15.60 mm | 17.83 mm | 2.23 mm |
+| `L22` | 19.18 mm | 16.94 mm | 2.23 mm |
+| `L23` | 21.75 mm | 23.58 mm | 1.83 mm |
+| `L24` | 16.67 mm | 14.85 mm | 1.83 mm |
+| `L25` | 19.58 mm | 16.78 mm | 2.80 mm |
+| `L26` | 51.30 mm | 50.52 mm | 0.78 mm |
+| `L27` | 43.37 mm | 40.92 mm | 2.45 mm |
+| `L28` | 3.73 mm | 4.43 mm | 0.70 mm |
+| `L29` | 4.67 mm | 4.51 mm | 0.16 mm |
+| `L30` | 3.73 mm | 4.43 mm | 0.70 mm |
+| `L31` | 22.44 mm | 18.36 mm | 4.08 mm |
+| `L32` | 55.66 mm | 54.86 mm | 0.80 mm |
+| `L33` | 47.96 mm | 44.69 mm | 3.27 mm |
+| `R17` | 0.47 mm | 0.47 mm | 0.00 mm |
+| `R18` | 45.40 mm | 45.40 mm | 0.00 mm |
+| `R21` | 15.03 mm | 17.15 mm | 2.12 mm |
+| `R22` | 18.80 mm | 16.68 mm | 2.12 mm |
+| `R23` | 19.97 mm | 21.47 mm | 1.50 mm |
+| `R24` | 15.65 mm | 14.15 mm | 1.50 mm |
+| `R25` | 18.71 mm | 17.54 mm | 1.18 mm |
+| `R26` | 47.44 mm | 48.83 mm | 1.38 mm |
+| `R27` | 40.80 mm | 40.90 mm | 0.10 mm |
+| `R28` | 3.73 mm | 4.43 mm | 0.70 mm |
+| `R29` | 4.67 mm | 4.70 mm | 0.03 mm |
+| `R30` | 3.73 mm | 4.43 mm | 0.70 mm |
+| `R31` | 21.65 mm | 20.51 mm | 1.14 mm |
+| `R32` | 51.72 mm | 52.86 mm | 1.13 mm |
+| `R33` | 45.40 mm | 44.76 mm | 0.63 mm |
+
+
+### Table 3: Additional Predicted Measurements (Not Used for Placement)
+
+| Prediction | Predicted Value | True Measurement | Absolute Difference |
+|---|---|---|---|
+| `L27_from_L15 (regr.)` | 42.88 mm | 40.92 mm | 1.96 mm |
+| `L33_from_L15 (regr.)` | 47.96 mm | 44.69 mm | 3.27 mm |
+| `R27_from_L15 (regr.)` | 40.31 mm | 40.90 mm | 0.59 mm |
+| `R33_from_L15 (regr.)` | 45.40 mm | 44.76 mm | 0.63 mm |
 
 ================================================================================
 ✓ Analysis complete.
 ================================================================================
->>> 
 ```
 
 
@@ -1926,7 +1945,7 @@ What to expect? The code will print some information on the console, something l
 To copy all the linear measurements to clipboard, use the method described in [this guide](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md). 
 
 > [!IMPORTANT]
-> It is very important that you do not treat the pre-programmed lines with set length as measurements in your statistical analysis, therefore there is an example below. 
+> It is very important that you do not treat the pre-programmed lines with set length as measurements in your statistical analysis, therefore there is an example below. ALSO, the additional prediction lines (Table 3) will NOT show up in this!
 
 
 | ID | line node name | length in mm | Note |
