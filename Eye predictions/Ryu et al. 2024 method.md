@@ -53,22 +53,22 @@ The original method was carried out on post-mortem CTs on a population of 171 Ko
 | 35 | 36 | 🟦gcL | left globe centre | calculated programmatically | originally undefined! | soft |
 | 36 | 37 | 🟦gcR | right globe centre | calculated programmatically | originally undefined! | soft |
 
+[Ryu_soft_tissue.mrk.json](https://github.com/user-attachments/files/28473452/Ryu_soft_tissue.mrk.json)
+[Ryu_hard_tissue.mrk.json](https://github.com/user-attachments/files/28473451/Ryu_hard_tissue.mrk.json)
+
+
+
 > [!IMPORTANT]
 > The landmarks with the 🟦 symbol are for reproducing the entire method for validation and not essential to place for applying the eyeball placement for facial approximation.
 
 Illustration of the method: 
-
-[Ryu_hard_tissue.mrk.json](https://github.com/user-attachments/files/28435260/Ryu_hard_tissue.mrk.json)
-
-[Ryu_soft_tissue.mrk.json](https://github.com/user-attachments/files/28435266/Ryu_soft_tissue.mrk.json)
-
 
 
 > [!WARNING]
 > Before you proceed, please make sure you completed the following steps: 
 
 - [ ] The scan has to be re-aligned in the FHP
-- [ ] Hard tissue landmarks from the [hard tissue landmark file]([Ryu_hard_tissue.mrk.json](https://github.com/user-attachments/files/28435260/Ryu_hard_tissue.mrk.json); except for the mid-auriculare have to be allocated
+- [ ] Hard tissue landmarks from the ; except for the mid-auriculare have to be allocated
 
 <img width="906" height="1026" alt="image" src="https://github.com/user-attachments/assets/19d34a4f-641b-4b5e-a051-ea154bc24ac0" />
 
