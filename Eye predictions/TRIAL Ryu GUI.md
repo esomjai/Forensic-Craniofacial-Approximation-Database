@@ -1,3 +1,4 @@
+```python
 # ==============================================================================
 # Ryu et al. 2024 Method - COMPLETE WORKFLOW (v6 - WITH EXTRA HARD TISSUE)
 # ==============================================================================
@@ -889,3 +890,5 @@ dockWidget = qt.QDockWidget("Ryu 2024 Complete Workflow")
 dockWidget.setWidget(ryu2024WorkflowGUI)
 slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dockWidget)
 dockWidget.show()
+
+```
