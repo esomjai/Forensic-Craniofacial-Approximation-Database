@@ -1,14 +1,11 @@
 ```python
 # =============================================================================
-# Ryu et al. 2024 Method – FINAL with Folders & All Features
+# Ryu et al. 2024 Method – FINAL with Folders (Fixed API)
 # =============================================================================
-# Includes:
-#   - Folder organisation (Reference Planes, Predictive/Descriptive Hard Tissue,
-#     Core/Additional Predicted Soft Tissue, True Soft Tissue)
-#   - Camera preservation during eyeball placement
-#   - All measurement lines with correct colours
-#   - Manual lens diameter instructions for predicted and true
-#   - Slice re‑orientation helper
+# Fixed: Subject hierarchy GetSceneItemID() instead of GetSceneItem()
+# Fixed: Undefined variables in _execute_step4 (eyeball_node, hard_tissue_node)
+# Fixed: Function definition order in _execute_step4
+# Fixed: Proper nested folder organization for all generated nodes
 # =============================================================================
 
 import slicer
@@ -26,6 +23,66 @@ except ImportError:
     import gdown
 
 # -----------------------------------------------------------------------------
+# Subject hierarchy folder management (FIXED with nested folders)
+# -----------------------------------------------------------------------------
+sh = None
+
+def get_or_create_folder(folder_path):
+    """
+    Get or create a nested folder structure in subject hierarchy.
+    folder_path can be a single name or a list of names for nested folders.
+    Example: get_or_create_folder(["Reference Planes", "Marginal Planes"])
+    """
+    global sh
+    if sh is None:
+        sh = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    
+    scene_root = sh.GetSceneItemID()
+    current_parent = scene_root
+    
+    if isinstance(folder_path, str):
+        folder_path = [folder_path]
+    
+    for folder_name in folder_path:
+        # Look for existing folder under current parent
+        folder_id = sh.GetItemChildWithName(current_parent, folder_name)
+        if folder_id == 0:
+            # Create new folder
+            folder_id = sh.CreateFolderItem(current_parent, folder_name)
+            # Set folder color and properties (optional)
+            if folder_id:
+                sh.SetItemAttribute(folder_id, "Color", "0.7,0.7,0.7")
+        current_parent = folder_id
+    
+    return current_parent
+
+def add_node_to_folder(node, folder_path):
+    """Add a node to a nested folder structure."""
+    global sh
+    if sh is None:
+        sh = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    
+    if not node:
+        return
+    
+    # Get the folder ID (creates if needed)
+    folder_id = get_or_create_folder(folder_path)
+    
+    # Find the subject hierarchy item for this node
+    sh_item_id = sh.GetItemByDataNode(node)
+    
+    if sh_item_id == 0:
+        # Node doesn't have a hierarchy item yet - create one
+        sh_item_id = sh.CreateItem(folder_id, node)
+    else:
+        # Node already has an item - reparent it
+        current_parent = sh.GetItemParent(sh_item_id)
+        if current_parent != folder_id:
+            sh.SetItemParent(sh_item_id, folder_id)
+    
+    return sh_item_id
+
+# -----------------------------------------------------------------------------
 # Helper to set node colour reliably
 # -----------------------------------------------------------------------------
 def set_node_color(node, color_rgb):
@@ -36,29 +93,6 @@ def set_node_color(node, color_rgb):
     if dn:
         dn.SetColor(color_rgb[0], color_rgb[1], color_rgb[2])
         dn.SetSelectedColor(color_rgb[0], color_rgb[1], color_rgb[2])
-
-# -----------------------------------------------------------------------------
-# Subject hierarchy folder management
-# -----------------------------------------------------------------------------
-sh = None
-folder_cache = {}
-
-def get_or_create_folder(name):
-    """Get or create a subject hierarchy folder with the given name."""
-    global sh
-    if sh is None:
-        sh = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
-    # Check if folder already exists
-    folder_id = sh.GetItemChildWithName(sh.GetSceneItem(), name)
-    if folder_id == 0:
-        folder_id = sh.CreateFolderItem(sh.GetSceneItem(), name)
-    return folder_id
-
-def add_node_to_folder(node, folder_name):
-    """Add a markup node to a named folder (creates folder if needed)."""
-    folder_id = get_or_create_folder(folder_name)
-    node_id = node.GetID()
-    sh.SetItemParent(node_id, folder_id)
 
 # -----------------------------------------------------------------------------
 # Standalone mid‑au calculation function
@@ -173,11 +207,16 @@ class Ryu2024WorkflowLogic:
     def __init__(self, gui):
         self.gui = gui
 
-    def trackNode(self, node, folder=None):
+    def trackNode(self, node, folder_path=None):
+        """Track created nodes and optionally add them to nested folder structure."""
         if node and node.GetID() not in self.gui.createdNodeIDs:
             self.gui.createdNodeIDs.append(node.GetID())
-        if folder and node:
-            add_node_to_folder(node, folder)
+        if folder_path and node:
+            try:
+                add_node_to_folder(node, folder_path)
+                logging.info(f"Added {node.GetName()} to folder: {folder_path}")
+            except Exception as e:
+                logging.warning(f"Could not add {node.GetName()} to folder: {e}")
 
     def undo_all(self):
         logging.info(f"Cleaning up {len(self.gui.createdNodeIDs)} generated nodes...")
@@ -232,7 +271,7 @@ class Ryu2024WorkflowLogic:
             plane.SetOrigin(origin)
             plane.SetNormal(normal)
             set_node_color(plane, color)
-            self.trackNode(plane, "Reference Planes")
+            self.trackNode(plane, ["Reference Planes", "Main Planes"])
             return plane
 
         create_plane("Median Sagittal Plane", n_pos, vec_right, (0.2, 0.8, 0.2))
@@ -276,14 +315,14 @@ class Ryu2024WorkflowLogic:
                 plane.SetOrigin(p)
                 plane.SetNormal(plane_n)
                 set_node_color(plane, color)
-                self.trackNode(plane, "Reference Planes")
+                self.trackNode(plane, ["Reference Planes", "Marginal Planes"])
 
                 line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", f"guiding_{base}_{side}")
                 line.AddControlPoint(p - line_dir * 37.5)
                 line.AddControlPoint(p + line_dir * 37.5)
                 line.GetMeasurement("length").SetEnabled(True)
                 set_node_color(line, color)
-                self.trackNode(line, "Reference Planes")
+                self.trackNode(line, ["Reference Planes", "Guiding Lines"])
 
         return True
 
@@ -318,7 +357,7 @@ class Ryu2024WorkflowLogic:
             line.GetMeasurement("length").SetEnabled(True)
             line.GetMeasurement("length").SetValue(length)
             set_node_color(line, cyan)
-            self.trackNode(line, "Predictive Hard Tissue")
+            self.trackNode(line, ["Predictive Hard Tissue", "Essential"])
             return line
 
         for side in ["L", "R"]:
@@ -339,7 +378,7 @@ class Ryu2024WorkflowLogic:
         return True
 
     # -------------------------------------------------------------------------
-    # Step 4: Place eyeball + core predicted lines (yellow)
+    # Step 4: Place eyeball + core predicted lines (yellow) - FIXED VERSION
     # -------------------------------------------------------------------------
     def _execute_step4(self, sex, side):
         logging.info(f"Step 4: Place Eyeball ({sex} {side})")
@@ -373,7 +412,8 @@ class Ryu2024WorkflowLogic:
         vec_superior = np.array(slicer.util.getFirstNodeByName("Orbitale Transverse Plane").GetNormal())
         vec_right = np.array(slicer.util.getFirstNodeByName("Median Sagittal Plane").GetNormal())
         vec_anterior = np.array(slicer.util.getFirstNodeByName("Coronal Plane").GetNormal())
-        coronal_origin = np.array(slicer.util.getFirstNodeByName("Coronal Plane").GetOrigin())
+        coronal_plane = slicer.util.getFirstNodeByName("Coronal Plane")
+        coronal_origin = np.array(coronal_plane.GetOrigin())
 
         p_si_1 = np.array(slicer.util.getFirstNodeByName(f"marginal_SOM_{side_char}").GetOrigin()) - vec_superior * pred_L21
         p_si_2 = np.array(slicer.util.getFirstNodeByName(f"marginal_IOM_{side_char}").GetOrigin()) + vec_superior * pred_L22
@@ -407,8 +447,15 @@ class Ryu2024WorkflowLogic:
         gdown.download(id=IDS[key], output=mrb_path, quiet=False)
         nodes_before = set(slicer.util.getNodesByClass("vtkMRMLNode"))
         slicer.util.loadScene(mrb_path, {"clear": False, "loadCamera": False})
+        
+        # Track all loaded nodes with proper folder organization
         for node in set(slicer.util.getNodesByClass("vtkMRMLNode")) - nodes_before:
-            self.trackNode(node)  # all model nodes go to default (no folder)
+            if node.IsA("vtkMRMLModelNode"):
+                self.trackNode(node, ["Eye Models", f"{sex} {side} Eye"])
+            elif node.IsA("vtkMRMLMarkupsFiducialNode"):
+                self.trackNode(node, ["Eye Models", f"{sex} {side} Eye", "Landmarks"])
+            else:
+                self.trackNode(node, ["Eye Models", f"{sex} {side} Eye"])
 
         # Find transform and oa
         xform_node, oa0_pos = None, None
@@ -438,6 +485,23 @@ class Ryu2024WorkflowLogic:
         cam.SetViewUp(cam_up)
         view.renderWindow().Render()
 
+        # ========== FIX: Find the eyeball landmarks node ==========
+        eyeball_node = None
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+            if node.GetName() == f"{side} Eyeball lmrks" or node.GetName() == f"{side} Eyeball lmrks (2)":
+                eyeball_node = node
+                break
+
+        if eyeball_node is None:
+            raise ValueError(f"Could not find eyeball landmarks node for {side}")
+
+        # Move eyeball node to proper folder if not already there
+        self.trackNode(eyeball_node, ["Eye Models", f"{sex} {side} Eye", "Landmarks"])
+
+        hard_tissue_node = slicer.util.getFirstNodeByName('Ryu_hard_tissue')
+        if not hard_tissue_node:
+            raise ValueError("Ryu_hard_tissue not found.")
+
         # Create core predicted lines (yellow)
         yellow = (1, 1, 0)
 
@@ -462,20 +526,18 @@ class Ryu2024WorkflowLogic:
             ln.AddControlPoint(p2)
             ln.GetMeasurement("length").SetEnabled(True)
             set_node_color(ln, yellow)
-            self.trackNode(ln, "Core Predicted Soft Tissue")
+            self.trackNode(ln, ["Predicted Soft Tissue", "Core"])
             return ln
 
         def project_to_plane(point, plane):
-            o = np.zeros(3); n = np.zeros(3)
-            plane.GetOrigin(o); plane.GetNormal(n)
+            o = np.zeros(3)
+            n = np.zeros(3)
+            plane.GetOrigin(o)
+            plane.GetNormal(n)
             return point - np.dot(point - o, n) * n
 
-        coronal_plane = get_node("Coronal Plane")
-        hard_tissue_node = get_node("Ryu_hard_tissue")
-        eyeball_node = get_node(f"{'Left' if side_char=='L' else 'Right'} Eyeball lmrks")
         marginal_SOM = get_node(f"marginal_SOM_{side_char}")
         marginal_MOM = get_node(f"marginal_MOM_{side_char}")
-
         lc = get_landmark_pos(eyeball_node, f"lc{side_char}")
         oa = get_landmark_pos(eyeball_node, f"oa{side_char}")
         ocp = get_landmark_pos(hard_tissue_node, f"ocp{side_char}")
@@ -517,7 +579,7 @@ class Ryu2024WorkflowLogic:
             ln.AddControlPoint(p2)
             ln.GetMeasurement("length").SetEnabled(True)
             set_node_color(ln, (1, 0.5, 0))
-            self.trackNode(ln, "Descriptive Hard Tissue")
+            self.trackNode(ln, ["Descriptive Hard Tissue", "Measurements"])
             return ln
 
         def measure_point_to_plane(point, plane):
@@ -614,7 +676,7 @@ class Ryu2024WorkflowLogic:
             ln.AddControlPoint(p2)
             ln.GetMeasurement("length").SetEnabled(True)
             set_node_color(ln, yellow)
-            self.trackNode(ln, "Additional Predicted Soft Tissue")
+            self.trackNode(ln, ["Predicted Soft Tissue", "Additional"])
             return ln
 
         def project_to_plane(point, plane):
@@ -674,6 +736,9 @@ class Ryu2024WorkflowLogic:
         true_node = slicer.util.getFirstNodeByName("Ryu_soft_tissue")
         if not true_node:
             raise ValueError("Ryu_soft_tissue not found. Please load it first.")
+        
+        # Move true node to proper folder
+        self.trackNode(true_node, ["True Soft Tissue", "Landmarks"])
 
         # Compute lens centre and globe centre if missing
         for side in ["L", "R"]:
@@ -729,7 +794,7 @@ class Ryu2024WorkflowLogic:
             ln.AddControlPoint(p2)
             ln.GetMeasurement("length").SetEnabled(True)
             set_node_color(ln, green)
-            self.trackNode(ln, "True Soft Tissue")
+            self.trackNode(ln, ["True Soft Tissue", "Measurements"])
             return ln
 
         def project_to_plane(point, plane):
@@ -912,6 +977,9 @@ class Ryu2024WorkflowLogic:
 # -----------------------------------------------------------------------------
 # GUI Widget Class
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# GUI Widget Class (UPDATED with scroll area and no window resizing)
+# -----------------------------------------------------------------------------
 class Ryu2024WorkflowGUI(qt.QWidget):
     def __init__(self, parent=None):
         super(Ryu2024WorkflowGUI, self).__init__(parent)
@@ -921,7 +989,22 @@ class Ryu2024WorkflowGUI(qt.QWidget):
 
     def setup(self):
         self.setWindowTitle("Ryu et al. 2024 Workflow (Organised Folders)")
-        self.mainLayout = qt.QVBoxLayout(self)
+        
+        # Create a scroll area to contain the workflow
+        scroll_area = qt.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(qt.Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(qt.Qt.ScrollBarAsNeeded)
+        
+        # Create the main container widget for the scroll area
+        container_widget = qt.QWidget()
+        self.mainLayout = qt.QVBoxLayout(container_widget)
+        self.mainLayout.setContentsMargins(5, 5, 5, 5)
+        self.mainLayout.setSpacing(5)
+        
+        # Set a fixed maximum width for the dock widget (prevents window resizing)
+        self.setMaximumWidth(450)
+        self.setMinimumWidth(350)
 
         self.hard_tissue_url = "https://github.com/user-attachments/files/28905389/Ryu_2024_hard_tissue_lmrks.mrk.json"
         self.soft_tissue_url = "https://github.com/user-attachments/files/27196663/Ryu_soft_tissue.mrk.json"
@@ -954,6 +1037,7 @@ class Ryu2024WorkflowGUI(qt.QWidget):
         self.sideCombo.addItems(["Left", "Right"])
         self.step4Button = qt.QPushButton("Download and Place Eyeball")
         self.placementStatus = qt.QLabel("Ready.")
+        self.placementStatus.setWordWrap(True)
         formLayout.addRow("Sex:", self.sexCombo)
         formLayout.addRow("Side:", self.sideCombo)
         formLayout.addRow(self.step4Button)
@@ -991,6 +1075,7 @@ class Ryu2024WorkflowGUI(qt.QWidget):
         self.additionalTable.setColumnCount(2)
         self.additionalTable.setHorizontalHeaderLabels(["Prediction", "Value (mm)"])
         self.additionalTable.setMinimumHeight(150)
+        self.additionalTable.setMaximumHeight(200)
         self._add_to_box_layout(step8Box, [self.step8Button, self.additionalTable])
 
         # Step 9
@@ -1000,6 +1085,7 @@ class Ryu2024WorkflowGUI(qt.QWidget):
         self.resultTable.setColumnCount(3)
         self.resultTable.setHorizontalHeaderLabels(["Measurement", "Value (mm)", "Method"])
         self.resultTable.setMinimumHeight(200)
+        self.resultTable.setMaximumHeight(300)
         self.copyButton = qt.QPushButton("Copy Table to Clipboard")
         self._add_to_box_layout(step9Box, [self.step9Button, self.resultTable, self.copyButton])
 
@@ -1009,6 +1095,14 @@ class Ryu2024WorkflowGUI(qt.QWidget):
         self._add_to_box_layout(manageBox, [self.cleanupButton])
 
         self.mainLayout.addStretch(1)
+        
+        # Set the container widget as the scroll area's widget
+        scroll_area.setWidget(container_widget)
+        
+        # Create a layout for this widget and add the scroll area
+        main_layout = qt.QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addWidget(scroll_area)
 
         # Connections
         self.loadHardButton.clicked.connect(lambda: self.onLoadMarkups(self.hard_tissue_url, "Ryu_hard_tissue"))
@@ -1029,15 +1123,21 @@ class Ryu2024WorkflowGUI(qt.QWidget):
         self.step9Button.clicked.connect(self.onValidate)
         self.copyButton.clicked.connect(self.onCopy)
         self.cleanupButton.clicked.connect(self.onCleanup)
+        
+        # Set size policy to prevent resizing of main window
+        self.setSizePolicy(qt.QSizePolicy.Fixed, qt.QSizePolicy.Expanding)
 
     def _create_collapsible_box(self, title):
         try:
             import ctk
             box = ctk.ctkCollapsibleButton()
             box.text = title
+            # Set size policy to prevent expansion
+            box.setSizePolicy(qt.QSizePolicy.Expanding, qt.QSizePolicy.Minimum)
         except ImportError:
             box = qt.QGroupBox(title)
             box.setCheckable(True)
+            box.setSizePolicy(qt.QSizePolicy.Expanding, qt.QSizePolicy.Minimum)
         self.mainLayout.addWidget(box)
         return box
 
@@ -1048,7 +1148,9 @@ class Ryu2024WorkflowGUI(qt.QWidget):
             layout = qt.QVBoxLayout()
             for w in widgets:
                 layout.addWidget(w)
-        box.setLayout(layout)
+        # Only set the layout if the box doesn't already have one
+        if not box.layout():
+            box.setLayout(layout)
 
     def onLoadMarkups(self, url, node_name):
         if slicer.util.getFirstNodeByName(node_name):
@@ -1060,6 +1162,11 @@ class Ryu2024WorkflowGUI(qt.QWidget):
             urllib.request.urlretrieve(url, temp_path)
             node = slicer.util.loadMarkups(temp_path)
             node.SetName(node_name)
+            # Move to appropriate folder after loading
+            if node_name == "Ryu_hard_tissue":
+                self.logic.trackNode(node, ["Hard Tissue Landmarks"])
+            elif node_name == "Ryu_soft_tissue":
+                self.logic.trackNode(node, ["True Soft Tissue", "Landmarks"])
             slicer.util.infoDisplay(f"Successfully loaded '{node_name}'.")
         except Exception as e:
             slicer.util.errorDisplay(f"Failed: {e}")
@@ -1145,7 +1252,7 @@ class Ryu2024WorkflowGUI(qt.QWidget):
         slicer.util.infoDisplay("Cleanup done.")
 
 # -----------------------------------------------------------------------------
-# Run GUI
+# Run GUI (UPDATED - prevents main window resizing)
 # -----------------------------------------------------------------------------
 try:
     if 'ryu2024WorkflowGUI' in globals() and ryu2024WorkflowGUI.parent():
@@ -1157,8 +1264,16 @@ except (NameError, KeyError):
 ryu2024WorkflowGUI = Ryu2024WorkflowGUI()
 dock = qt.QDockWidget("Ryu 2024 Workflow (Organised)")
 dock.setWidget(ryu2024WorkflowGUI)
-slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dock)
-dock.show()
+dock.setFeatures(qt.QDockWidget.DockWidgetClosable | qt.QDockWidget.DockWidgetMovable)
+dock.setAllowedAreas(qt.Qt.LeftDockWidgetArea | qt.Qt.RightDockWidgetArea)
 
+# Add dock without forcing the main window to resize
+slicer.util.mainWindow().addDockWidget(qt.Qt.RightDockWidgetArea, dock)
+
+# Ensure the dock widget doesn't cause the main window to resize
+dock.setSizePolicy(qt.QSizePolicy.Fixed, qt.QSizePolicy.Minimum)
+dock.setMaximumWidth(450)
+
+dock.show()
 
 ```
