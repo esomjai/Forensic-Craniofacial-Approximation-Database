@@ -1934,7 +1934,7 @@ class GerasimowNosePredictor:
     # ========================================================================
     def onDownloadLandmarksClicked(self):
         """Download landmarks from GitHub"""
-        url = "https://github.com/user-attachments/files/22232935/Gerasimow_landmarks.mrk.json"
+        url = "https://github.com/user-attachments/files/28797197/Gerasimow_landmarks.mrk.json"
         self.step1StatusLabel.setText("Status: Downloading...")
         slicer.app.processEvents()
         
@@ -2063,6 +2063,5 @@ def _unit(v):
 
 # To run the GUI, create an instance: 
 gui = GerasimowNosePredictor()
-
 
 ```
