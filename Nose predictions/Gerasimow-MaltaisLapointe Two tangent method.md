@@ -45,13 +45,9 @@ The method followed here will split into two: the first will be called  **Gerasi
 | 3                | 4                | rhinion      | rhinion       | Most rostral (end) point on the internasal suture.                                                                            |  Caple and Stephan 2016[^11]     |
 | 4                | 5                | acanthion    | acanthion     | Most anterior tip of the anterior nasal spine                                                                                 |  Caple and Stephan 2016[^11]      |
 | 5                | 6                | pronasale    | pronasale     | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen           | Caple and Stephan 2016[^11]|
-| 6                | 7                | Right Reference point 2    | RR2     | The point where the T4R crosses the surface of the nasal soft tissue on the right        | Maltais Lapointe 2016[^14]|
-| 7                | 8                | Left Reference point 2    | LR2     | The point where the T4L crosses the surface of the nasal soft tissue on the left        | Maltais Lapointe 2016[^14]|
-| 8                | 9                | Reference point 2    | R2     |IF ONLY ONE SIDE WAS USED FOR T4! The point where the T4 crosses the surface of the nasal soft tissue on the midsagittal plane      | Maltais Lapointe 2016[^14]|
+| 6                | 7                | Reference point 2    | R2     |The point where the T4 crosses the surface of the nasal soft tissue on the midsagittal plane      | Maltais Lapointe 2016[^14]|
 
-
-[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/22232935/Gerasimow_landmarks.mrk.json)
-
+[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/28797197/Gerasimow_landmarks.mrk.json)
 
 
 > [!WARNING]
@@ -99,7 +95,9 @@ To help with the side profile, we will establish either MSP or INB plane, depend
 
 “MSP” plane  defined by any landmarks described as midline: nasion, acanthion and rhinion
 
-Download the markups file for this method: [Gerasimow_landmarks.mrk.json](./path/to/Gerasimow_landmarks.mrk.json). Then choose the plane you can create based on landmarks that can be placed on the skull you work with, allocate the  landmarks and copy and paste the following code:the code snippet of your choosing. 
+Download the markups file for this method: 
+[Gerasimow_landmarks.mrk.json](https://github.com/user-attachments/files/28797197/Gerasimow_landmarks.mrk.json)
+ Then choose the plane you can create based on landmarks that can be placed on the skull you work with, allocate the  landmarks and copy and paste the following code:the code snippet of your choosing. 
 
 The codes use a centroid origin, calculated from the landmarks that weights all plane-defining landmarks equally and  normal vector based on the same landmarks. 
 
