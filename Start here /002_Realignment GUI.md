@@ -117,6 +117,53 @@ def createFHPPlane(poR, poL, orR, orL):
     print("Created 'FHP' transverse plane")
     return planeNode
 
+def translate_all_markups(translation_vector):
+    """
+    Apply translation to all markup nodes (fiducials, lines, planes, curves, ROIs, etc.)
+    For planes: translate origin, leave normal unchanged.
+    For others: translate each control point.
+    """
+    scene = slicer.mrmlScene
+    def trans(p):
+        return [p[0] + translation_vector[0], p[1] + translation_vector[1], p[2] + translation_vector[2]]
+
+    # 1. Fiducial nodes
+    fid_nodes = scene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
+    fid_nodes.UnRegister(scene)
+    for i in range(fid_nodes.GetNumberOfItems()):
+        node = fid_nodes.GetItemAsObject(i)
+        for j in range(node.GetNumberOfControlPoints()):
+            pos = [0.0, 0.0, 0.0]
+            node.GetNthControlPointPositionWorld(j, pos)
+            node.SetNthControlPointPositionWorld(j, trans(pos))
+        node.SetAndObserveTransformNodeID(None)
+
+    # 2. Line, curve, closed curve, angle, ROI nodes
+    line_classes = ["vtkMRMLMarkupsLineNode", "vtkMRMLMarkupsCurveNode",
+                    "vtkMRMLMarkupsClosedCurveNode", "vtkMRMLMarkupsAngleNode",
+                    "vtkMRMLMarkupsROINode"]
+    for cls in line_classes:
+        nodes = scene.GetNodesByClass(cls)
+        nodes.UnRegister(scene)
+        for i in range(nodes.GetNumberOfItems()):
+            node = nodes.GetItemAsObject(i)
+            for j in range(node.GetNumberOfControlPoints()):
+                pos = [0.0, 0.0, 0.0]
+                node.GetNthControlPointPositionWorld(j, pos)
+                node.SetNthControlPointPositionWorld(j, trans(pos))
+            node.SetAndObserveTransformNodeID(None)
+
+    # 3. Plane nodes: translate origin, keep normal
+    plane_nodes = scene.GetNodesByClass("vtkMRMLMarkupsPlaneNode")
+    plane_nodes.UnRegister(scene)
+    for i in range(plane_nodes.GetNumberOfItems()):
+        plane = plane_nodes.GetItemAsObject(i)
+        origin = [0.0, 0.0, 0.0]
+        plane.GetOrigin(origin)
+        plane.SetOrigin(trans(origin))
+        # Normal remains unchanged
+        plane.SetAndObserveTransformNodeID(None)
+
 def onRealignButton():
     global originalTransformNode, fhpTransformRoot, originalFiducialTransform, translationTransformNode
 
@@ -165,8 +212,9 @@ def onRealignButton():
     inputVolume.SetAndObserveTransformNodeID(transform1.GetID())
     fiducials.SetAndObserveTransformNodeID(transform1.GetID())
 
+    # NEW: Use non-deprecated method
     currentMatrix = vtk.vtkMatrix4x4()
-    currentMatrix.DeepCopy(transform1.GetMatrixTransformToParent())
+    transform1.GetMatrixTransformToParent(currentMatrix)
     poR = numpy.array(currentMatrix.MultiplyPoint([poR[0], poR[1], poR[2], 1.0])[:3])
     poL = numpy.array(currentMatrix.MultiplyPoint([poL[0], poL[1], poL[2], 1.0])[:3])
     orR = numpy.array(currentMatrix.MultiplyPoint([orR[0], orR[1], orR[2], 1.0])[:3])
@@ -180,7 +228,7 @@ def onRealignButton():
     transform2 = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Roll')
     transform2.SetMatrixTransformToParent(vTransform2.GetMatrix())
     transform1.SetAndObserveTransformNodeID(transform2.GetID())
-    currentMatrix.DeepCopy(transform2.GetMatrixTransformToParent())
+    transform2.GetMatrixTransformToParent(currentMatrix)
     poR = numpy.array(currentMatrix.MultiplyPoint([poR[0], poR[1], poR[2], 1.0])[:3])
     poL = numpy.array(currentMatrix.MultiplyPoint([poL[0], poL[1], poL[2], 1.0])[:3])
     orR = numpy.array(currentMatrix.MultiplyPoint([orR[0], orR[1], orR[2], 1.0])[:3])
@@ -197,7 +245,7 @@ def onRealignButton():
     transform3.SetMatrixTransformToParent(vTransform3.GetMatrix())
     transform2.SetAndObserveTransformNodeID(transform3.GetID())
     finalMatrix = vtk.vtkMatrix4x4()
-    finalMatrix.DeepCopy(transform3.GetMatrixTransformToParent())
+    transform3.GetMatrixTransformToParent(finalMatrix)
 
     # Update FHP landmarks after full rotation
     poR_final = numpy.array(finalMatrix.MultiplyPoint([poR[0], poR[1], poR[2], 1.0])[:3])
@@ -238,27 +286,17 @@ def onRealignButton():
             translation_vector = -numpy.array(nasion_pos)
             print(f"Translation to move nasion to origin: {translation_vector} mm")
 
-            # Create and apply a translation transform
+            # Create and apply a translation transform to the volume
             vTranslate = vtk.vtkTransform()
             vTranslate.Translate(translation_vector)
             translationTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Nasion_Translation')
             translationTransformNode.SetMatrixTransformToParent(vTranslate.GetMatrix())
             inputVolume.SetAndObserveTransformNodeID(translationTransformNode.GetID())
 
-            # Apply the same translation to ALL fiducial points in the scene
-            # so they stay aligned with the volume.
-            scene = slicer.mrmlScene
-            allFiducialNodes = scene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
-            allFiducialNodes.UnRegister(scene)
-            for i in range(allFiducialNodes.GetNumberOfItems()):
-                node = allFiducialNodes.GetItemAsObject(i)
-                for j in range(node.GetNumberOfControlPoints()):
-                    pos = [0,0,0]
-                    node.GetNthControlPointPositionWorld(j, pos)
-                    new_pos = vTranslate.TransformPoint(pos)
-                    node.SetNthControlPointPositionWorld(j, new_pos)
+            # ---- Update ALL markups in the scene to keep them aligned ----
+            translate_all_markups(translation_vector)
 
-            # Harden the translation transform
+            # Harden the translation transform on the volume
             slicer.vtkSlicerTransformLogic().hardenTransform(inputVolume)
             # Remove the temporary transform node
             slicer.mrmlScene.RemoveNode(translationTransformNode)
@@ -278,7 +316,7 @@ def onRealignButton():
         info_text += f"\nNasion moved to origin (Δx={translation_vector[0]:.2f}, Δy={translation_vector[1]:.2f}, Δz={translation_vector[2]:.2f})"
     slicer.util.infoDisplay(info_text)
 
-    # Optional FHP plane
+    # Optional FHP plane (created after translation, so coordinates are already final)
     reply = qt.QMessageBox.question(fhp_widget, "Create FHP Plane?",
                                     "Do you want to create a visualization plane for the new Frankfurt Horizontal Plane?",
                                     qt.QMessageBox.Yes | qt.QMessageBox.No)
@@ -366,4 +404,6 @@ fhp_widget.show()
 autoLoadLandmarks()
 onSelect()
 print("4-Point FHP Realign panel is now showing. Ready for use.")
+
+
 ```
