@@ -1196,6 +1196,7 @@ class GerasimowNosePredictor:
     
     def onCalculateErrorsClicked(self):
         """Calculate all 8 prediction errors based on different tangent intersections"""
+        self.clearResults()
         self.log("Calculating all prediction errors...")
         
         if not self.landmarksNode:
@@ -1632,6 +1633,7 @@ class GerasimowNosePredictor:
     
     def runT1T2Shortcut(self):
         """Run the T1-T2 shortcut workflow (only T1-T2 intersection)"""
+        self.clearResults()  
         self.log("=== Starting T1-T2 Shortcut Workflow ===")
         
         # Check if T1 and T2 exist
@@ -1701,20 +1703,13 @@ class GerasimowNosePredictor:
         self.showDialogOnTop("T1-T2 Shortcut Complete!\nPrediction point created.\n\nUse Step 6 for full error analysis with R2.", "Information")
     
     def findAllIntersections(self):
-        """Find all intersections in full mode including T4"""
-        self.log("Finding all intersections (full mode including T4)")
-        
-        # This should include T1-T2 intersection, T3-T4 intersection, etc.
-        # For now, call T1-T2 and also use T4 if available
-        self.runT1T2Shortcut()
-        
-        # If T4 is available, use it for R2 calculation hint
+        """Full mode – no table entries, only logging."""
+        self.log("Full mode: Use 'Compare True vs. Predicted Points' to calculate 8 errors.")
+        if "T1" in self.tangents and "T2" in self.tangents:
+            self.log("T1 and T2 are available – intersection can be seen in the 3D view if you have drawn the lines.")
         if "T4" in self.tangents:
-            self.log("T4 tangent available for R2 calculation in Step 6")
-            self.step5StatusLabel.setText("Status: T1-T2 intersection found. T4 is ready for R2 calculation in Step 6.")
-        else:
-            self.step5StatusLabel.setText("Status: T1-T2 intersection found. Consider placing T4R and T4L for better results.")
-    
+            self.log("T4 is available for R2 calculation in Step 6.")
+        self.step5StatusLabel.setText("Status: Full mode ready. Go to Step 6 and click 'Compare True vs. Predicted Points'.")
     # ========================================================================
     # RESULT COPYING METHODS
     # ========================================================================
@@ -1867,6 +1862,13 @@ class GerasimowNosePredictor:
         }
         self.updateResultsTables()
     
+    def clearResults(self):
+        """Clear all stored measurements and coordinates before a new calculation."""
+        self.all_measurements.clear()
+        self.all_coordinates.clear()
+        self.updateResultsTables()
+        self.log("Cleared previous results tables.")
+
     def updateResultsTables(self):
         """Update both results tables with current data"""
         # Update Measurements Table
