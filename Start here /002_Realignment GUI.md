@@ -161,8 +161,50 @@ def translate_all_markups(translation_vector):
         origin = [0.0, 0.0, 0.0]
         plane.GetOrigin(origin)
         plane.SetOrigin(trans(origin))
-        # Normal remains unchanged
         plane.SetAndObserveTransformNodeID(None)
+
+def compute_fhp_transform(poR, poL, orR, orL):
+    """
+    Compute a rotation matrix that aligns the Frankfort Horizontal Plane to the XY plane
+    and the inter‑porion line to the X axis (left‑right).
+    Returns a vtkMatrix4x4 (rotation only, no translation).
+    """
+    # 1. Compute FHP plane normal (best fit of all 4 points)
+    pts = numpy.vstack([poR, poL, orR, orL])
+    centroid = numpy.mean(pts, axis=0)
+    centered = pts - centroid
+    U, S, Vt = numpy.linalg.svd(centered)
+    normal = Vt[2]                     # plane normal
+    if normal[2] < 0:                  # ensure superior direction
+        normal = -normal
+
+    # 2. Compute left‑right axis (from left porion to right porion)
+    lr = poR - poL
+    lr = lr / numpy.linalg.norm(lr)
+
+    # 3. Compute anterior axis (orthogonal to normal and lr)
+    anterior = numpy.cross(normal, lr)
+    anterior = anterior / numpy.linalg.norm(anterior)
+
+    # 4. Re‑orthogonalise (ensure normal is perpendicular to both)
+    normal = numpy.cross(lr, anterior)
+    normal = normal / numpy.linalg.norm(normal)
+
+    # 5. Build rotation matrix from world axes to desired basis
+    #    We want world X → lr, world Y → anterior, world Z → normal
+    rot_matrix = vtk.vtkMatrix4x4()
+    for i in range(3):
+        rot_matrix.SetElement(i, 0, lr[i])
+        rot_matrix.SetElement(i, 1, anterior[i])
+        rot_matrix.SetElement(i, 2, normal[i])
+    rot_matrix.SetElement(3, 3, 1.0)
+
+    # The above matrix maps local basis to world. We need the inverse (world to local)
+    # Since the basis is orthonormal, inverse is transpose.
+    rot_matrix_inv = vtk.vtkMatrix4x4()
+    rot_matrix_inv.DeepCopy(rot_matrix)
+    rot_matrix_inv.Invert()
+    return rot_matrix_inv
 
 def onRealignButton():
     global originalTransformNode, fhpTransformRoot, originalFiducialTransform, translationTransformNode
@@ -197,76 +239,49 @@ def onRealignButton():
             slicer.util.errorDisplay(f"Missing landmark: {req}. Please add it to the fiducial list.")
             return
 
-    poR = landmarks['poR'].copy()
-    poL = landmarks['poL'].copy()
-    orR = landmarks['orR'].copy()
-    orL = landmarks['orL'].copy()
+    poR = landmarks['poR']
+    poL = landmarks['poL']
+    orR = landmarks['orR']
+    orL = landmarks['orL']
 
-    # --- Yaw ---
-    po_vector = poR - poL
-    yaw_angle = -numpy.arctan2(po_vector[1], po_vector[0]) * 180 / numpy.pi
-    vTransform1 = vtk.vtkTransform()
-    vTransform1.RotateZ(yaw_angle)
-    transform1 = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Yaw')
-    transform1.SetMatrixTransformToParent(vTransform1.GetMatrix())
-    inputVolume.SetAndObserveTransformNodeID(transform1.GetID())
-    fiducials.SetAndObserveTransformNodeID(transform1.GetID())
+    # Compute the rotation matrix
+    rot_matrix = compute_fhp_transform(poR, poL, orR, orL)
 
-    # NEW: Use non-deprecated method
-    currentMatrix = vtk.vtkMatrix4x4()
-    transform1.GetMatrixTransformToParent(currentMatrix)
-    poR = numpy.array(currentMatrix.MultiplyPoint([poR[0], poR[1], poR[2], 1.0])[:3])
-    poL = numpy.array(currentMatrix.MultiplyPoint([poL[0], poL[1], poL[2], 1.0])[:3])
-    orR = numpy.array(currentMatrix.MultiplyPoint([orR[0], orR[1], orR[2], 1.0])[:3])
-    orL = numpy.array(currentMatrix.MultiplyPoint([orL[0], orL[1], orL[2], 1.0])[:3])
+    # Create a transform node with this rotation
+    transformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Rotation')
+    transformNode.SetMatrixTransformToParent(rot_matrix)
 
-    # --- Roll ---
-    po_vector = poR - poL
-    roll_angle = numpy.arctan2(po_vector[2], po_vector[0]) * 180 / numpy.pi
-    vTransform2 = vtk.vtkTransform()
-    vTransform2.RotateY(roll_angle)
-    transform2 = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Roll')
-    transform2.SetMatrixTransformToParent(vTransform2.GetMatrix())
-    transform1.SetAndObserveTransformNodeID(transform2.GetID())
-    transform2.GetMatrixTransformToParent(currentMatrix)
-    poR = numpy.array(currentMatrix.MultiplyPoint([poR[0], poR[1], poR[2], 1.0])[:3])
-    poL = numpy.array(currentMatrix.MultiplyPoint([poL[0], poL[1], poL[2], 1.0])[:3])
-    orR = numpy.array(currentMatrix.MultiplyPoint([orR[0], orR[1], orR[2], 1.0])[:3])
-    orL = numpy.array(currentMatrix.MultiplyPoint([orL[0], orL[1], orL[2], 1.0])[:3])
+    # Apply to volume and fiducials
+    inputVolume.SetAndObserveTransformNodeID(transformNode.GetID())
+    fiducials.SetAndObserveTransformNodeID(transformNode.GetID())
 
-    # --- Pitch ---
-    or_midpoint = (orR + orL) / 2.0
-    po_midpoint = (poR + poL) / 2.0
-    po_or_vector = or_midpoint - po_midpoint
-    pitch_angle = -numpy.arctan2(po_or_vector[2], po_or_vector[1]) * 180 / numpy.pi
-    vTransform3 = vtk.vtkTransform()
-    vTransform3.RotateX(pitch_angle)
-    transform3 = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Pitch')
-    transform3.SetMatrixTransformToParent(vTransform3.GetMatrix())
-    transform2.SetAndObserveTransformNodeID(transform3.GetID())
+    # Update landmark coordinates to their rotated positions (for later use)
     finalMatrix = vtk.vtkMatrix4x4()
-    transform3.GetMatrixTransformToParent(finalMatrix)
+    transformNode.GetMatrixTransformToParent(finalMatrix)
 
-    # Update FHP landmarks after full rotation
-    poR_final = numpy.array(finalMatrix.MultiplyPoint([poR[0], poR[1], poR[2], 1.0])[:3])
-    poL_final = numpy.array(finalMatrix.MultiplyPoint([poL[0], poL[1], poL[2], 1.0])[:3])
-    orR_final = numpy.array(finalMatrix.MultiplyPoint([orR[0], orR[1], orR[2], 1.0])[:3])
-    orL_final = numpy.array(finalMatrix.MultiplyPoint([orL[0], orL[1], orL[2], 1.0])[:3])
+    def apply_matrix(pt):
+        h = [pt[0], pt[1], pt[2], 1.0]
+        return numpy.array(finalMatrix.MultiplyPoint(h)[:3])
 
-    fhpTransformRoot = transform1
+    poR_rot = apply_matrix(poR)
+    poL_rot = apply_matrix(poL)
+    orR_rot = apply_matrix(orR)
+    orL_rot = apply_matrix(orL)
 
-    # Remove transform from FHP fiducials and update their positions
+    fhpTransformRoot = transformNode
+
+    # Remove transform from fiducials and update their positions
     fiducials.SetAndObserveTransformNodeID(None)
     for i in range(fiducials.GetNumberOfControlPoints()):
         label = fiducials.GetNthControlPointLabel(i)
         if label == 'poR':
-            fiducials.SetNthControlPointPositionWorld(i, poR_final)
+            fiducials.SetNthControlPointPositionWorld(i, poR_rot)
         elif label == 'poL':
-            fiducials.SetNthControlPointPositionWorld(i, poL_final)
+            fiducials.SetNthControlPointPositionWorld(i, poL_rot)
         elif label == 'orR':
-            fiducials.SetNthControlPointPositionWorld(i, orR_final)
+            fiducials.SetNthControlPointPositionWorld(i, orR_rot)
         elif label == 'orL':
-            fiducials.SetNthControlPointPositionWorld(i, orL_final)
+            fiducials.SetNthControlPointPositionWorld(i, orL_rot)
 
     # Harden the rotation transform (makes it permanent)
     slicer.vtkSlicerTransformLogic().hardenTransform(inputVolume)
@@ -310,18 +325,20 @@ def onRealignButton():
     undoButton.enabled = True
     applyButton.enabled = False
 
-    # Info message
-    info_text = f"4-point FHP realignment complete!\nYaw: {yaw_angle:.1f}°, Roll: {roll_angle:.1f}°, Pitch: {pitch_angle:.1f}°"
+    # Extract approximate Euler angles for info (optional)
+    # Not needed for correctness.
+    info_text = "4-point FHP realignment complete!\nPlane-based alignment applied."
     if moveNasionToOrigin and nasion_node:
         info_text += f"\nNasion moved to origin (Δx={translation_vector[0]:.2f}, Δy={translation_vector[1]:.2f}, Δz={translation_vector[2]:.2f})"
     slicer.util.infoDisplay(info_text)
 
-    # Optional FHP plane (created after translation, so coordinates are already final)
+    # Optional FHP plane (created after rotation and translation, so coordinates are final)
     reply = qt.QMessageBox.question(fhp_widget, "Create FHP Plane?",
                                     "Do you want to create a visualization plane for the new Frankfurt Horizontal Plane?",
                                     qt.QMessageBox.Yes | qt.QMessageBox.No)
     if reply == qt.QMessageBox.Yes:
-        createFHPPlane(poR_final, poL_final, orR_final, orL_final)
+        # Use the rotated landmark positions (they already include translation if applied)
+        createFHPPlane(poR_rot, poL_rot, orR_rot, orL_rot)
 
 def onUndoButton():
     global fhpTransformRoot, originalFiducialTransform, translationTransformNode
@@ -404,6 +421,5 @@ fhp_widget.show()
 autoLoadLandmarks()
 onSelect()
 print("4-Point FHP Realign panel is now showing. Ready for use.")
-
 
 ```
