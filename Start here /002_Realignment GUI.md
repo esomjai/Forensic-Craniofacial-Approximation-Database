@@ -286,14 +286,14 @@ def onRealignButton():
     # Harden the rotation transform (makes it permanent)
     slicer.vtkSlicerTransformLogic().hardenTransform(inputVolume)
 
-    # --- Optional translation to move nasion to origin (after hardening) ---
+    # --- Optional translation to move nasion to origin (after hardening rotation) ---
     moveNasionToOrigin = nasionOriginCheckbox.isChecked()
     translation_vector = numpy.array([0.0, 0.0, 0.0])
     nasion_node, nasion_idx = findNasionLandmark()
 
     if moveNasionToOrigin:
         if nasion_node is None:
-            slicer.util.errorDisplay("Nasion landmark not found...")
+            slicer.util.errorDisplay("Nasion landmark not found.\nPlease add a point named 'nasion' or 'n' in any fiducial list.")
         else:
             # Get current world position of nasion (after rotation)
             nasion_pos = [0,0,0]
@@ -301,40 +301,37 @@ def onRealignButton():
             translation_vector = -numpy.array(nasion_pos)
             print(f"Translation to move nasion to origin: {translation_vector} mm")
 
-            # Create a combined transform: rotation (already hardened) + translation
-            # But the rotation is already hardened, so we apply a new translation transform.
+            # Create a translation transform
             vTranslate = vtk.vtkTransform()
             vTranslate.Translate(translation_vector)
             translationTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Nasion_Translation')
             translationTransformNode.SetMatrixTransformToParent(vTranslate.GetMatrix())
-            
-            # Apply translation to volume AND to the nasion's fiducial node (and all others)
+
+            # Apply translation to the volume
             inputVolume.SetAndObserveTransformNodeID(translationTransformNode.GetID())
-            
-            # Instead of manually moving markups, we set the same translation transform on all markups
-            # This keeps them perfectly aligned with the volume.
+
+            # Apply the SAME translation transform to ALL markup nodes in the scene
             scene = slicer.mrmlScene
             all_markup_nodes = scene.GetNodesByClass("vtkMRMLMarkupsNode")
             all_markup_nodes.UnRegister(scene)
             for i in range(all_markup_nodes.GetNumberOfItems()):
                 markup = all_markup_nodes.GetItemAsObject(i)
                 markup.SetAndObserveTransformNodeID(translationTransformNode.GetID())
-            
-            # Harden the translation on the volume (makes it permanent)
+
+            # Harden the translation on the volume (bakes translation into image data)
             slicer.vtkSlicerTransformLogic().hardenTransform(inputVolume)
-            
-            # Now harden the translation on all markups (bake the translation into their control points)
+
+            # Harden the translation on all markups (bakes translation into control points)
             for i in range(all_markup_nodes.GetNumberOfItems()):
                 markup = all_markup_nodes.GetItemAsObject(i)
                 slicer.vtkSlicerTransformLogic().hardenTransform(markup)
-            
+
             # Remove the temporary transform node
             slicer.mrmlScene.RemoveNode(translationTransformNode)
             translationTransformNode = None
-            
-            # After hardening, the nasion should be at origin. But due to floating point, ensure it.
-            nasion_node.SetNthControlPointPositionWorld(nasion_idx, [0.0, 0.0, 0.0])
 
+            # Final sanity: set nasion exactly at origin
+            nasion_node.SetNthControlPointPositionWorld(nasion_idx, [0.0, 0.0, 0.0])
     # Update UI
     undoButton.enabled = True
     applyButton.enabled = False
