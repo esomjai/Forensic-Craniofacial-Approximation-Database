@@ -374,41 +374,55 @@ print("4-Point FHP Realign panel is now showing. Ready for use.")
 
 
 ```python
-def move_nasion_to_origin(sequential_mode=False, next_callback=None):
+def move_nasion_to_origin():
     """
     Translate the whole scene so that the nasion landmark becomes (0,0,0) in RAS.
-    
-    Parameters:
-    -----------
-    sequential_mode : bool
-        If True, automatically close after completion and call callback
-    next_callback : function
-        Function to call when complete (for sequential workflow)
+    After transformation, reset all markup display nodes to avoid Markups module freeze.
     """
     import slicer
     import vtk
-    import numpy as np
-    
+
     scene = slicer.mrmlScene
-    
-    print("Starting nasion relocation...")
-    
-    # ---- 1. Find nasion landmark ----
-    nasion_node = None
-    nasion_idx = -1
-    
-    # Collect all fiducial nodes first
-    fiducial_nodes = []
-    fiducial_nodes_collection = scene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
-    for i in range(fiducial_nodes_collection.GetNumberOfItems()):
-        node = fiducial_nodes_collection.GetItemAsObject(i)
-        if node:
-            fiducial_nodes.append(node)
-    
-    for node in fiducial_nodes:
-        try:
-            n_points = node.GetNumberOfControlPoints()
-            for j in range(n_points):
+
+    # Disable rendering updates
+    renderer = None
+    try:
+        layout_manager = slicer.app.layoutManager()
+        if layout_manager and layout_manager.threeDWidgetCount > 0:
+            threeD_widget = layout_manager.threeDWidget(0)
+            if threeD_widget:
+                threeD_view = threeD_widget.threeDView()
+                if threeD_view:
+                    renderer = threeD_view.renderWindow()
+                    original_update_rate = renderer.GetDesiredUpdateRate()
+                    renderer.SetDesiredUpdateRate(0.001)
+    except:
+        pass
+
+    # Disable undo
+    undo_stack = None
+    try:
+        undo_stack = scene.GetUndoStack()
+        if undo_stack:
+            undo_stack.setActive(False)
+    except:
+        pass
+
+    transaction_active = False
+    try:
+        slicer.mrmlScene.StartState(slicer.mrmlScene.BatchProcessState)
+        transaction_active = True
+
+        # ---- Find nasion ----
+        nasion_node = None
+        nasion_idx = -1
+        fiducial_nodes = []
+        fiducial_nodes_collection = scene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
+        for i in range(fiducial_nodes_collection.GetNumberOfItems()):
+            fiducial_nodes.append(fiducial_nodes_collection.GetItemAsObject(i))
+
+        for node in fiducial_nodes:
+            for j in range(node.GetNumberOfControlPoints()):
                 label = node.GetNthControlPointLabel(j).strip().lower()
                 if label in ["nasion", "n"]:
                     nasion_node = node
@@ -416,200 +430,176 @@ def move_nasion_to_origin(sequential_mode=False, next_callback=None):
                     break
             if nasion_node:
                 break
-        except:
-            continue
-    
-    if nasion_node is None:
-        slicer.util.errorDisplay("Nasion landmark not found.\nPlease create a fiducial point named 'nasion' or 'n' in any markup list.")
-        if sequential_mode and next_callback:
-            next_callback()
-        return None
-    
-    # ---- 2. Get current world position of nasion ----
-    nasion_pos = [0.0, 0.0, 0.0]
-    nasion_node.GetNthControlPointPositionWorld(nasion_idx, nasion_pos)
-    translation = [-nasion_pos[0], -nasion_pos[1], -nasion_pos[2]]
-    print(f"Moving nasion from {nasion_pos} to (0,0,0) with translation {translation}")
-    
-    # Early exit if already at origin
-    if all(abs(x) < 1e-6 for x in translation):
-        slicer.util.infoDisplay("Nasion already at origin. No translation needed.")
-        if sequential_mode and next_callback:
-            next_callback()
-        return translation
-    
-    # Helper function for translation
-    def trans_point(p):
-        return [p[0] + translation[0], p[1] + translation[1], p[2] + translation[2]]
-    
-    # ---- 3. Process volumes ----
-    volume_nodes = []
-    vol_collection = scene.GetNodesByClass("vtkMRMLScalarVolumeNode")
-    for i in range(vol_collection.GetNumberOfItems()):
-        node = vol_collection.GetItemAsObject(i)
-        if node:
-            volume_nodes.append(node)
-    
-    for vol in volume_nodes:
-        try:
-            old_transform_id = vol.GetTransformNodeID()
-            
+
+        if nasion_node is None:
+            slicer.util.errorDisplay("Nasion landmark not found.")
+            return
+
+        # ---- Get translation ----
+        nasion_pos = [0.0, 0.0, 0.0]
+        nasion_node.GetNthControlPointPositionWorld(nasion_idx, nasion_pos)
+        translation = [-nasion_pos[0], -nasion_pos[1], -nasion_pos[2]]
+        print(f"Moving nasion from {nasion_pos} to (0,0,0) with translation {translation}")
+
+        if all(abs(x) < 1e-6 for x in translation):
+            slicer.util.infoDisplay("Nasion already at origin.")
+            return
+
+        def trans(p):
+            return [p[0] + translation[0], p[1] + translation[1], p[2] + translation[2]]
+
+        # ---- Volumes ----
+        volume_nodes = []
+        vol_collection = scene.GetNodesByClass("vtkMRMLScalarVolumeNode")
+        for i in range(vol_collection.GetNumberOfItems()):
+            volume_nodes.append(vol_collection.GetItemAsObject(i))
+
+        if volume_nodes:
             vtk_transform = vtk.vtkTransform()
             vtk_transform.Translate(translation)
             transform_node = scene.AddNewNodeByClass("vtkMRMLLinearTransformNode", "temp_nasion_translation")
             transform_node.SetMatrixTransformToParent(vtk_transform.GetMatrix())
-            
-            vol.SetAndObserveTransformNodeID(transform_node.GetID())
-            slicer.app.processEvents()
-            
-            logic = slicer.vtkSlicerTransformLogic()
-            logic.hardenTransform(vol)
-            
-            if old_transform_id:
-                vol.SetAndObserveTransformNodeID(old_transform_id)
-            
+
+            for vol in volume_nodes:
+                original_transform = vol.GetTransformNodeID()
+                vol.SetAndObserveTransformNodeID(transform_node.GetID())
+                slicer.app.processEvents()
+                slicer.vtkSlicerTransformLogic().hardenTransform(vol)
+                if original_transform:
+                    vol.SetAndObserveTransformNodeID(original_transform)
+
             scene.RemoveNode(transform_node)
-            print(f"Processed volume: {vol.GetName()}")
-        except Exception as e:
-            print(f"Error processing volume {vol.GetName()}: {e}")
-            continue
-    
-    # ---- 4. Process models ----
-    model_nodes = []
-    model_collection = scene.GetNodesByClass("vtkMRMLModelNode")
-    for i in range(model_collection.GetNumberOfItems()):
-        node = model_collection.GetItemAsObject(i)
-        if node:
-            model_nodes.append(node)
-    
-    for model in model_nodes:
-        try:
-            old_transform_id = model.GetTransformNodeID()
-            
+
+        # ---- Models ----
+        model_nodes = []
+        model_collection = scene.GetNodesByClass("vtkMRMLModelNode")
+        for i in range(model_collection.GetNumberOfItems()):
+            model_nodes.append(model_collection.GetItemAsObject(i))
+
+        if model_nodes:
             vtk_transform = vtk.vtkTransform()
             vtk_transform.Translate(translation)
             transform_node = scene.AddNewNodeByClass("vtkMRMLLinearTransformNode", "temp_nasion_translation")
             transform_node.SetMatrixTransformToParent(vtk_transform.GetMatrix())
-            
-            model.SetAndObserveTransformNodeID(transform_node.GetID())
-            slicer.app.processEvents()
-            
-            logic = slicer.vtkSlicerTransformLogic()
-            logic.hardenTransform(model)
-            
-            if old_transform_id:
-                model.SetAndObserveTransformNodeID(old_transform_id)
-            
+
+            for model in model_nodes:
+                original_transform = model.GetTransformNodeID()
+                model.SetAndObserveTransformNodeID(transform_node.GetID())
+                slicer.app.processEvents()
+                slicer.vtkSlicerTransformLogic().hardenTransform(model)
+                if original_transform:
+                    model.SetAndObserveTransformNodeID(original_transform)
+
             scene.RemoveNode(transform_node)
-            print(f"Processed model: {model.GetName()}")
-        except Exception as e:
-            print(f"Error processing model {model.GetName()}: {e}")
-            continue
-    
-    # ---- 5. Process markup nodes (FIXED: proper StartModify/EndModify) ----
-    for node in fiducial_nodes:
-        try:
+
+        # ---- Fiducials (translate points directly) ----
+        for node in fiducial_nodes:
             positions = []
             n_points = node.GetNumberOfControlPoints()
             for j in range(n_points):
                 pos = [0.0, 0.0, 0.0]
                 node.GetNthControlPointPositionWorld(j, pos)
-                positions.append(trans_point(pos))
-            
-            # FIX: Store the return value from StartModify
-            was_modified = node.StartModify()
+                positions.append(trans(pos))
+
             for j, new_pos in enumerate(positions):
                 node.SetNthControlPointPositionWorld(j, new_pos)
             node.SetAndObserveTransformNodeID(None)
-            # FIX: Pass the stored value to EndModify
-            node.EndModify(was_modified)
-            print(f"Updated fiducial: {node.GetName()}")
-        except Exception as e:
-            print(f"Error updating fiducial {node.GetName()}: {e}")
-            continue
-    
-    # ---- 6. Process other markup types (FIXED) ----
-    other_markups_classes = [
-        "vtkMRMLMarkupsLineNode", 
-        "vtkMRMLMarkupsCurveNode",
-        "vtkMRMLMarkupsClosedCurveNode", 
-        "vtkMRMLMarkupsAngleNode",
-        "vtkMRMLMarkupsROINode"
-    ]
-    
-    for cls in other_markups_classes:
-        collection = scene.GetNodesByClass(cls)
-        nodes_list = []
-        for i in range(collection.GetNumberOfItems()):
-            node = collection.GetItemAsObject(i)
-            if node:
-                nodes_list.append(node)
-        
-        for node in nodes_list:
-            try:
+
+        # ---- Other markups (lines, curves, etc.) ----
+        other_classes = ["vtkMRMLMarkupsLineNode", "vtkMRMLMarkupsCurveNode",
+                         "vtkMRMLMarkupsClosedCurveNode", "vtkMRMLMarkupsAngleNode",
+                         "vtkMRMLMarkupsROINode"]
+        for cls in other_classes:
+            collection = scene.GetNodesByClass(cls)
+            nodes_list = []
+            for i in range(collection.GetNumberOfItems()):
+                nodes_list.append(collection.GetItemAsObject(i))
+            for node in nodes_list:
                 positions = []
                 n_points = node.GetNumberOfControlPoints()
                 for j in range(n_points):
                     pos = [0.0, 0.0, 0.0]
                     node.GetNthControlPointPositionWorld(j, pos)
-                    positions.append(trans_point(pos))
-                
-                # FIX: Store the return value from StartModify
-                was_modified = node.StartModify()
+                    positions.append(trans(pos))
                 for j, new_pos in enumerate(positions):
                     node.SetNthControlPointPositionWorld(j, new_pos)
                 node.SetAndObserveTransformNodeID(None)
-                # FIX: Pass the stored value to EndModify
-                node.EndModify(was_modified)
-            except Exception as e:
-                print(f"Error updating {cls}: {e}")
-                continue
-    
-    # ---- 7. Process planes (FIXED) ----
-    plane_nodes = []
-    plane_collection = scene.GetNodesByClass("vtkMRMLMarkupsPlaneNode")
-    for i in range(plane_collection.GetNumberOfItems()):
-        node = plane_collection.GetItemAsObject(i)
-        if node:
-            plane_nodes.append(node)
-    
-    for plane in plane_nodes:
-        try:
+
+        # ---- Planes ----
+        plane_nodes = []
+        plane_collection = scene.GetNodesByClass("vtkMRMLMarkupsPlaneNode")
+        for i in range(plane_collection.GetNumberOfItems()):
+            plane_nodes.append(plane_collection.GetItemAsObject(i))
+        for plane in plane_nodes:
             origin = [0.0, 0.0, 0.0]
             plane.GetOrigin(origin)
-            # FIX: Store the return value from StartModify
-            was_modified = plane.StartModify()
-            plane.SetOrigin(trans_point(origin))
+            plane.SetOrigin(trans(origin))
             plane.SetAndObserveTransformNodeID(None)
-            # FIX: Pass the stored value to EndModify
-            plane.EndModify(was_modified)
-        except Exception as e:
-            print(f"Error updating plane {plane.GetName()}: {e}")
-            continue
-    
-    # ---- 8. Ensure nasion is exactly at origin (FIXED) ----
-    try:
-        was_modified = nasion_node.StartModify()
-        nasion_node.SetNthControlPointPositionWorld(nasion_idx, [0.0, 0.0, 0.0])
-        nasion_node.EndModify(was_modified)
-    except Exception as e:
-        print(f"Error setting nasion to origin: {e}")
-    
-    # Force UI update
-    slicer.app.processEvents()
-    
-    print(f"Nasion moved to origin successfully!")
-    slicer.util.infoDisplay(f"Nasion moved to origin.\nTranslation applied: {translation[0]:.2f}, {translation[1]:.2f}, {translation[2]:.2f} mm")
-    
-    # Handle sequential mode
-    if sequential_mode and next_callback:
-        print("Nasion relocation complete, continuing to next tool...")
-        next_callback()
-    
-    return translation
 
-# Run the function (stand-alone mode)
-if __name__ == "__main__":
-    move_nasion_to_origin()
+        # ---- Final nasion adjustment ----
+        nasion_node.SetNthControlPointPositionWorld(nasion_idx, [0.0, 0.0, 0.0])
+
+        slicer.app.processEvents()
+        slicer.util.infoDisplay(f"Nasion moved to origin.\nTranslation: {translation[0]:.2f}, {translation[1]:.2f}, {translation[2]:.2f} mm")
+
+        # ========== PREVENT MARKUPS MODULE FREEZE ==========
+        # Reset display nodes for all markup nodes
+        print("Resetting markup display nodes to avoid freeze...")
+        all_markup_nodes = []
+        for cls in markup_classes + ["vtkMRMLMarkupsFiducialNode"]:  # ensure all covered
+            coll = scene.GetNodesByClass(cls)
+            for i in range(coll.GetNumberOfItems()):
+                node = coll.GetItemAsObject(i)
+                if node:
+                    all_markup_nodes.append(node)
+
+        for node in all_markup_nodes:
+            try:
+                # Remove old display node
+                old_display = node.GetDisplayNode()
+                if old_display:
+                    node.RemoveDisplayNodeID(old_display.GetID())
+                    scene.RemoveNode(old_display)
+                # Create fresh display node
+                node.CreateDefaultDisplayNode()
+                # Ensure visibility
+                new_display = node.GetDisplayNode()
+                if new_display:
+                    new_display.SetVisibility(True)
+            except Exception as e:
+                print(f"Could not reset display node for {node.GetName()}: {e}")
+            slicer.app.processEvents()
+
+        # Force scene update and reset views
+        scene.Modified()
+        for i in range(lm.threeDViewCount):
+            view = lm.threeDWidget(i).threeDView()
+            view.resetFocalPoint()
+            view.resetCamera()
+            view.renderWindow().Render()
+
+        print("Markup display nodes reset complete. Markups module should now work.")
+        # =================================================
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        slicer.util.errorDisplay(f"Error: {str(e)}")
+
+    finally:
+        if transaction_active:
+            slicer.mrmlScene.EndState(slicer.mrmlScene.BatchProcessState)
+        if undo_stack:
+            undo_stack.setActive(True)
+        if renderer:
+            try:
+                renderer.SetDesiredUpdateRate(30.0)
+                renderer.Render()
+            except:
+                pass
+        slicer.app.processEvents()
+
+# Run it
+move_nasion_to_origin()
 ```
 </details>
