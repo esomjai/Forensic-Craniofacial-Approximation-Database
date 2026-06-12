@@ -1,5 +1,10 @@
 This GUI uses a 4-point approach to relign the scan and create a Frankfort Horizontal Plane.
-It also adds an option to make nasion the origin of the RAS coordinate system - you have to allocate the nasion from another landmark file (usually in the landmark files for any method or manually adding it, but must be called "n" or "nasion")
+The next snippet adds an option to make nasion the origin of the RAS coordinate system - you have to allocate the nasion from another landmark file (usually in the landmark files for any method or manually adding it, but must be called "n" or "nasion"); after the FHP realignment is hardened. 
+
+
+<details>
+<summary>Code for 4-point FHP realignment </summary>
+
 
 ```python
 import qt
@@ -22,7 +27,7 @@ except:
 
 # --- Create our main widget (the floating window) ---
 fhp_widget = qt.QWidget()
-fhp_widget.setWindowTitle("4-Point FHP Realign + Nasion Origin")
+fhp_widget.setWindowTitle("4-Point FHP Realign Tool")
 
 # --- Set up the layout ---
 panelLayout = qt.QVBoxLayout(fhp_widget)
@@ -43,15 +48,9 @@ inputFiducialsSelector.setToolTip("FHP landmarks (poR, poL, orR, orL).")
 formLayout.addRow("Frankfort Plane landmarks (poR, poL, orR, orL):", inputFiducialsSelector)
 
 instructionLabel = qt.QLabel("Please place all four landmarks (poR, poL, orR, orL) before proceeding.\n\n"
-                             "poR = right porion, poL = left porion,\norR = right orbitale, orL = left orbitale\n\n"
-                             "If you check the box below, also place a point named 'nasion' or 'n' in ANY fiducial list.")
+                             "poR = right porion, poL = left porion,\norR = right orbitale, orL = left orbitale")
 instructionLabel.setWordWrap(True)
 panelLayout.addWidget(instructionLabel)
-
-# --- Option to move nasion to origin AFTER FHP realignment ---
-nasionOriginCheckbox = qt.QCheckBox("After FHP realignment, move nasion to origin (0,0,0)")
-nasionOriginCheckbox.setToolTip("Will search all fiducial nodes for a point labelled 'nasion' or 'n'.")
-panelLayout.addWidget(nasionOriginCheckbox)
 
 # --- Action Buttons ---
 applyButton = qt.QPushButton("Apply 4-Point FHP Realignment")
@@ -70,20 +69,6 @@ panelLayout.addStretch(1)
 originalTransformNode = None
 fhpTransformRoot = None
 originalFiducialTransform = None
-translationTransformNode = None
-
-def findNasionLandmark():
-    """Search all MarkupsFiducial nodes for a point with label 'nasion' or 'n' (case‑insensitive)."""
-    scene = slicer.mrmlScene
-    nodes = scene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
-    nodes.UnRegister(scene)
-    for i in range(nodes.GetNumberOfItems()):
-        node = nodes.GetItemAsObject(i)
-        for j in range(node.GetNumberOfControlPoints()):
-            label = node.GetNthControlPointLabel(j).strip().lower()
-            if label in ["nasion", "n"]:
-                return node, j
-    return None, -1
 
 def onSelect():
     fiducialNode = inputFiducialsSelector.currentNode()
@@ -93,7 +78,7 @@ def onSelect():
         applyButton.enabled = bool(inputVolumeSelector.currentNode() and hasAllPoints)
     else:
         applyButton.enabled = False
-    undoButton.enabled = bool(fhpTransformRoot) or bool(translationTransformNode)
+    undoButton.enabled = bool(fhpTransformRoot)
 
 def createFHPPlane(poR, poL, orR, orL):
     points = numpy.vstack([poR, poL, orR, orL])
@@ -117,81 +102,29 @@ def createFHPPlane(poR, poL, orR, orL):
     print("Created 'FHP' transverse plane")
     return planeNode
 
-def translate_all_markups(translation_vector):
-    """
-    Apply translation to all markup nodes (fiducials, lines, planes, curves, ROIs, etc.)
-    For planes: translate origin, leave normal unchanged.
-    For others: translate each control point.
-    """
-    scene = slicer.mrmlScene
-    def trans(p):
-        return [p[0] + translation_vector[0], p[1] + translation_vector[1], p[2] + translation_vector[2]]
-
-    # 1. Fiducial nodes
-    fid_nodes = scene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
-    fid_nodes.UnRegister(scene)
-    for i in range(fid_nodes.GetNumberOfItems()):
-        node = fid_nodes.GetItemAsObject(i)
-        for j in range(node.GetNumberOfControlPoints()):
-            pos = [0.0, 0.0, 0.0]
-            node.GetNthControlPointPositionWorld(j, pos)
-            node.SetNthControlPointPositionWorld(j, trans(pos))
-        node.SetAndObserveTransformNodeID(None)
-
-    # 2. Line, curve, closed curve, angle, ROI nodes
-    line_classes = ["vtkMRMLMarkupsLineNode", "vtkMRMLMarkupsCurveNode",
-                    "vtkMRMLMarkupsClosedCurveNode", "vtkMRMLMarkupsAngleNode",
-                    "vtkMRMLMarkupsROINode"]
-    for cls in line_classes:
-        nodes = scene.GetNodesByClass(cls)
-        nodes.UnRegister(scene)
-        for i in range(nodes.GetNumberOfItems()):
-            node = nodes.GetItemAsObject(i)
-            for j in range(node.GetNumberOfControlPoints()):
-                pos = [0.0, 0.0, 0.0]
-                node.GetNthControlPointPositionWorld(j, pos)
-                node.SetNthControlPointPositionWorld(j, trans(pos))
-            node.SetAndObserveTransformNodeID(None)
-
-    # 3. Plane nodes: translate origin, keep normal
-    plane_nodes = scene.GetNodesByClass("vtkMRMLMarkupsPlaneNode")
-    plane_nodes.UnRegister(scene)
-    for i in range(plane_nodes.GetNumberOfItems()):
-        plane = plane_nodes.GetItemAsObject(i)
-        origin = [0.0, 0.0, 0.0]
-        plane.GetOrigin(origin)
-        plane.SetOrigin(trans(origin))
-        plane.SetAndObserveTransformNodeID(None)
-
 def compute_fhp_transform(poR, poL, orR, orL):
     """
     Compute a rotation matrix that aligns the Frankfort Horizontal Plane to the XY plane
     and the inter‑porion line to the X axis (left‑right).
     Returns a vtkMatrix4x4 (rotation only, no translation).
     """
-    # 1. Compute FHP plane normal (best fit of all 4 points)
     pts = numpy.vstack([poR, poL, orR, orL])
     centroid = numpy.mean(pts, axis=0)
     centered = pts - centroid
     U, S, Vt = numpy.linalg.svd(centered)
-    normal = Vt[2]                     # plane normal
-    if normal[2] < 0:                  # ensure superior direction
+    normal = Vt[2]
+    if normal[2] < 0:
         normal = -normal
 
-    # 2. Compute left‑right axis (from left porion to right porion)
     lr = poR - poL
     lr = lr / numpy.linalg.norm(lr)
 
-    # 3. Compute anterior axis (orthogonal to normal and lr)
     anterior = numpy.cross(normal, lr)
     anterior = anterior / numpy.linalg.norm(anterior)
 
-    # 4. Re‑orthogonalise (ensure normal is perpendicular to both)
     normal = numpy.cross(lr, anterior)
     normal = normal / numpy.linalg.norm(normal)
 
-    # 5. Build rotation matrix from world axes to desired basis
-    #    We want world X → lr, world Y → anterior, world Z → normal
     rot_matrix = vtk.vtkMatrix4x4()
     for i in range(3):
         rot_matrix.SetElement(i, 0, lr[i])
@@ -199,15 +132,13 @@ def compute_fhp_transform(poR, poL, orR, orL):
         rot_matrix.SetElement(i, 2, normal[i])
     rot_matrix.SetElement(3, 3, 1.0)
 
-    # The above matrix maps local basis to world. We need the inverse (world to local)
-    # Since the basis is orthonormal, inverse is transpose.
     rot_matrix_inv = vtk.vtkMatrix4x4()
     rot_matrix_inv.DeepCopy(rot_matrix)
     rot_matrix_inv.Invert()
     return rot_matrix_inv
 
 def onRealignButton():
-    global originalTransformNode, fhpTransformRoot, originalFiducialTransform, translationTransformNode
+    global originalTransformNode, fhpTransformRoot, originalFiducialTransform
 
     inputVolume = inputVolumeSelector.currentNode()
     fiducials = inputFiducialsSelector.currentNode()
@@ -286,73 +217,21 @@ def onRealignButton():
     # Harden the rotation transform (makes it permanent)
     slicer.vtkSlicerTransformLogic().hardenTransform(inputVolume)
 
-    # --- Optional translation to move nasion to origin (after hardening rotation) ---
-    moveNasionToOrigin = nasionOriginCheckbox.isChecked()
-    translation_vector = numpy.array([0.0, 0.0, 0.0])
-    nasion_node, nasion_idx = findNasionLandmark()
-
-    if moveNasionToOrigin:
-        if nasion_node is None:
-            slicer.util.errorDisplay("Nasion landmark not found.\nPlease add a point named 'nasion' or 'n' in any fiducial list.")
-        else:
-            # Get current world position of nasion (after rotation)
-            nasion_pos = [0,0,0]
-            nasion_node.GetNthControlPointPositionWorld(nasion_idx, nasion_pos)
-            translation_vector = -numpy.array(nasion_pos)
-            print(f"Translation to move nasion to origin: {translation_vector} mm")
-
-            # Create a translation transform
-            vTranslate = vtk.vtkTransform()
-            vTranslate.Translate(translation_vector)
-            translationTransformNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLLinearTransformNode', 'FHP_Nasion_Translation')
-            translationTransformNode.SetMatrixTransformToParent(vTranslate.GetMatrix())
-
-            # Apply translation to the volume
-            inputVolume.SetAndObserveTransformNodeID(translationTransformNode.GetID())
-
-            # Apply the SAME translation transform to ALL markup nodes in the scene
-            scene = slicer.mrmlScene
-            all_markup_nodes = scene.GetNodesByClass("vtkMRMLMarkupsNode")
-            all_markup_nodes.UnRegister(scene)
-            for i in range(all_markup_nodes.GetNumberOfItems()):
-                markup = all_markup_nodes.GetItemAsObject(i)
-                markup.SetAndObserveTransformNodeID(translationTransformNode.GetID())
-
-            # Harden the translation on the volume (bakes translation into image data)
-            slicer.vtkSlicerTransformLogic().hardenTransform(inputVolume)
-
-            # Harden the translation on all markups (bakes translation into control points)
-            for i in range(all_markup_nodes.GetNumberOfItems()):
-                markup = all_markup_nodes.GetItemAsObject(i)
-                slicer.vtkSlicerTransformLogic().hardenTransform(markup)
-
-            # Remove the temporary transform node
-            slicer.mrmlScene.RemoveNode(translationTransformNode)
-            translationTransformNode = None
-
-            # Final sanity: set nasion exactly at origin
-            nasion_node.SetNthControlPointPositionWorld(nasion_idx, [0.0, 0.0, 0.0])
     # Update UI
     undoButton.enabled = True
     applyButton.enabled = False
 
-    # Extract approximate Euler angles for info (optional)
-    # Not needed for correctness.
-    info_text = "4-point FHP realignment complete!\nPlane-based alignment applied."
-    if moveNasionToOrigin and nasion_node:
-        info_text += f"\nNasion moved to origin (Δx={translation_vector[0]:.2f}, Δy={translation_vector[1]:.2f}, Δz={translation_vector[2]:.2f})"
-    slicer.util.infoDisplay(info_text)
+    slicer.util.infoDisplay("4-point FHP realignment complete!\nPlane-based alignment applied.")
 
-    # Optional FHP plane (created after rotation and translation, so coordinates are final)
+    # Optional FHP plane
     reply = qt.QMessageBox.question(fhp_widget, "Create FHP Plane?",
                                     "Do you want to create a visualization plane for the new Frankfurt Horizontal Plane?",
                                     qt.QMessageBox.Yes | qt.QMessageBox.No)
     if reply == qt.QMessageBox.Yes:
-        # Use the rotated landmark positions (they already include translation if applied)
         createFHPPlane(poR_rot, poL_rot, orR_rot, orL_rot)
 
 def onUndoButton():
-    global fhpTransformRoot, originalFiducialTransform, translationTransformNode
+    global fhpTransformRoot, originalFiducialTransform
     inputVolume = inputVolumeSelector.currentNode()
     fiducials = inputFiducialsSelector.currentNode()
 
@@ -371,13 +250,10 @@ def onUndoButton():
     else:
         fiducials.SetAndObserveTransformNodeID(None)
 
-    # Remove our transform nodes
+    # Remove our transform node
     if fhpTransformRoot:
         slicer.mrmlScene.RemoveNode(fhpTransformRoot)
         fhpTransformRoot = None
-    if translationTransformNode:
-        slicer.mrmlScene.RemoveNode(translationTransformNode)
-        translationTransformNode = None
 
     undoButton.enabled = False
     applyButton.enabled = True
@@ -435,3 +311,127 @@ print("4-Point FHP Realign panel is now showing. Ready for use.")
 
 
 ```
+</details>
+
+
+
+<details>
+<summary>Code for setting nasion at origin (0,0,0)</summary>
+
+
+```python
+def move_nasion_to_origin():
+    """
+    Translate the whole scene so that the nasion landmark becomes (0,0,0) in RAS.
+    Searches all MarkupsFiducial nodes for a point labelled 'nasion' or 'n' (case‑insensitive).
+    Updates all scene nodes directly (no transform chains) to avoid orientation errors and deprecation warnings.
+    """
+    import slicer
+    import vtk
+
+    scene = slicer.mrmlScene
+
+    # ---- 1. Find nasion landmark ----
+    nasion_node = None
+    nasion_idx = -1
+    fiducial_nodes = scene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
+    fiducial_nodes.UnRegister(scene)
+    for i in range(fiducial_nodes.GetNumberOfItems()):
+        node = fiducial_nodes.GetItemAsObject(i)
+        for j in range(node.GetNumberOfControlPoints()):
+            label = node.GetNthControlPointLabel(j).strip().lower()
+            if label in ["nasion", "n"]:
+                nasion_node = node
+                nasion_idx = j
+                break
+        if nasion_node:
+            break
+
+    if nasion_node is None:
+        slicer.util.errorDisplay("Nasion landmark not found.\nPlease create a fiducial point named 'nasion' or 'n' in any markup list.")
+        return
+
+    # ---- 2. Get current world position of nasion ----
+    nasion_pos = [0.0, 0.0, 0.0]
+    nasion_node.GetNthControlPointPositionWorld(nasion_idx, nasion_pos)
+    translation = [-nasion_pos[0], -nasion_pos[1], -nasion_pos[2]]
+    print(f"Moving nasion from {nasion_pos} to (0,0,0) with translation {translation}")
+
+    # ---- Helper: apply translation to a point ----
+    def trans(p):
+        return [p[0] + translation[0], p[1] + translation[1], p[2] + translation[2]]
+
+    # ---- 3. Process volumes (using a temporary transform then harden) ----
+    volume_nodes = scene.GetNodesByClass("vtkMRMLScalarVolumeNode")
+    volume_nodes.UnRegister(scene)
+    if volume_nodes.GetNumberOfItems() > 0:
+        vtk_transform = vtk.vtkTransform()
+        vtk_transform.Translate(translation)
+        transform_node = scene.AddNewNodeByClass("vtkMRMLLinearTransformNode", "temp_nasion_translation")
+        transform_node.SetMatrixTransformToParent(vtk_transform.GetMatrix())
+        for i in range(volume_nodes.GetNumberOfItems()):
+            vol = volume_nodes.GetItemAsObject(i)
+            vol.SetAndObserveTransformNodeID(transform_node.GetID())
+            slicer.vtkSlicerTransformLogic().hardenTransform(vol)
+        scene.RemoveNode(transform_node)
+
+    # ---- 4. Process models ----
+    model_nodes = scene.GetNodesByClass("vtkMRMLModelNode")
+    model_nodes.UnRegister(scene)
+    if model_nodes.GetNumberOfItems() > 0:
+        vtk_transform = vtk.vtkTransform()
+        vtk_transform.Translate(translation)
+        transform_node = scene.AddNewNodeByClass("vtkMRMLLinearTransformNode", "temp_nasion_translation")
+        transform_node.SetMatrixTransformToParent(vtk_transform.GetMatrix())
+        for i in range(model_nodes.GetNumberOfItems()):
+            model = model_nodes.GetItemAsObject(i)
+            model.SetAndObserveTransformNodeID(transform_node.GetID())
+            slicer.vtkSlicerTransformLogic().hardenTransform(model)
+        scene.RemoveNode(transform_node)
+
+    # ---- 5. Markup nodes: translate control points directly ----
+    # Fiducials
+    for i in range(fiducial_nodes.GetNumberOfItems()):
+        node = fiducial_nodes.GetItemAsObject(i)
+        for j in range(node.GetNumberOfControlPoints()):
+            pos = [0.0, 0.0, 0.0]
+            node.GetNthControlPointPositionWorld(j, pos)
+            node.SetNthControlPointPositionWorld(j, trans(pos))
+        node.SetAndObserveTransformNodeID(None)
+
+    # Lines, curves, angles, ROIs
+    other_markups = ["vtkMRMLMarkupsLineNode", "vtkMRMLMarkupsCurveNode",
+                     "vtkMRMLMarkupsClosedCurveNode", "vtkMRMLMarkupsAngleNode",
+                     "vtkMRMLMarkupsROINode"]
+    for cls in other_markups:
+        nodes = scene.GetNodesByClass(cls)
+        nodes.UnRegister(scene)
+        for i in range(nodes.GetNumberOfItems()):
+            node = nodes.GetItemAsObject(i)
+            for j in range(node.GetNumberOfControlPoints()):
+                pos = [0.0, 0.0, 0.0]
+                node.GetNthControlPointPositionWorld(j, pos)
+                node.SetNthControlPointPositionWorld(j, trans(pos))
+            node.SetAndObserveTransformNodeID(None)
+
+    # Planes: translate origin only, leave normal untouched
+    plane_nodes = scene.GetNodesByClass("vtkMRMLMarkupsPlaneNode")
+    plane_nodes.UnRegister(scene)
+    for i in range(plane_nodes.GetNumberOfItems()):
+        plane = plane_nodes.GetItemAsObject(i)
+        origin = [0.0, 0.0, 0.0]
+        plane.GetOrigin(origin)
+        plane.SetOrigin(trans(origin))
+        plane.SetAndObserveTransformNodeID(None)
+
+    # ---- 6. Ensure nasion is exactly at (0,0,0) ----
+    nasion_node.SetNthControlPointPositionWorld(nasion_idx, [0.0, 0.0, 0.0])
+
+    slicer.util.infoDisplay(f"Nasion moved to origin.\nTranslation applied: {translation[0]:.2f}, {translation[1]:.2f}, {translation[2]:.2f} mm")
+
+# Run the function
+move_nasion_to_origin()
+
+
+```
+</details>
