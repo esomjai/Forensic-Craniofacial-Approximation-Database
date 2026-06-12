@@ -2054,7 +2054,7 @@ class GerasimowNosePredictor:
         slicer.util.selectModule('VolumeRendering')
         self.log("Opened Volume Rendering module for manual method")
         self.step3StatusLabel.setText("Status: Volume Rendering opened. Use Display ROI to visualize the skull.")
-
+    
 
 # Helper function for unit vector
 def _unit(v):
@@ -2062,8 +2062,39 @@ def _unit(v):
     n = np.linalg.norm(v)
     return (v / n) if n > 1e-8 else np.array([1.0, 0.0, 0.0])
 
+# ========================================================================
+# SEQUENTIAL WORKFLOW SUPPORT
+# ========================================================================
 
-# To run the GUI, create an instance: 
-gui = GerasimowNosePredictor()
+# Store the original onFinish method
+original_onFinish = None
+sequential_mode = False
+next_callback = None
+
+def enable_sequential_mode(callback=None):
+    """Enable sequential workflow mode"""
+    global sequential_mode, next_callback, original_onFinish
+    sequential_mode = True
+    next_callback = callback
+    
+    # Modify the GUI to add completion button if not already there
+    if hasattr(gui, 'finishButton'):
+        gui.finishButton.setText("✓ Complete Gerasimow & Continue")
+        gui.finishButton.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 12px;")
+        
+        # Store original onFinish and replace with sequential version
+        original_onFinish = gui.onFinish
+        
+        def sequential_finish():
+            print("Gerasimow completed, continuing to next tool...")
+            original_onFinish()
+            if next_callback:
+                next_callback()
+        
+        gui.onFinish = sequential_finish
+
+# Auto-run if script is executed directly
+if __name__ == "__main__":
+    gui = GerasimowNosePredictor()
 
 ```
