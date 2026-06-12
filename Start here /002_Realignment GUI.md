@@ -420,7 +420,7 @@ def move_nasion_to_origin(sequential_mode=False, next_callback=None):
     if nasion_node is None:
         slicer.util.errorDisplay("Nasion landmark not found.\nPlease create a fiducial point named 'nasion' or 'n' in any markup list.")
         if sequential_mode and next_callback:
-            next_callback()  # Still continue to next if needed
+            next_callback()
         return None
     
     # ---- 2. Get current world position of nasion ----
@@ -504,7 +504,7 @@ def move_nasion_to_origin(sequential_mode=False, next_callback=None):
             print(f"Error processing model {model.GetName()}: {e}")
             continue
     
-    # ---- 5. Process markup nodes ----
+    # ---- 5. Process markup nodes (FIXED: proper StartModify/EndModify) ----
     for node in fiducial_nodes:
         try:
             positions = []
@@ -514,17 +514,19 @@ def move_nasion_to_origin(sequential_mode=False, next_callback=None):
                 node.GetNthControlPointPositionWorld(j, pos)
                 positions.append(trans_point(pos))
             
-            node.StartModify()
+            # FIX: Store the return value from StartModify
+            was_modified = node.StartModify()
             for j, new_pos in enumerate(positions):
                 node.SetNthControlPointPositionWorld(j, new_pos)
             node.SetAndObserveTransformNodeID(None)
-            node.EndModify()
+            # FIX: Pass the stored value to EndModify
+            node.EndModify(was_modified)
             print(f"Updated fiducial: {node.GetName()}")
         except Exception as e:
             print(f"Error updating fiducial {node.GetName()}: {e}")
             continue
     
-    # ---- 6. Process other markup types ----
+    # ---- 6. Process other markup types (FIXED) ----
     other_markups_classes = [
         "vtkMRMLMarkupsLineNode", 
         "vtkMRMLMarkupsCurveNode",
@@ -550,16 +552,18 @@ def move_nasion_to_origin(sequential_mode=False, next_callback=None):
                     node.GetNthControlPointPositionWorld(j, pos)
                     positions.append(trans_point(pos))
                 
-                node.StartModify()
+                # FIX: Store the return value from StartModify
+                was_modified = node.StartModify()
                 for j, new_pos in enumerate(positions):
                     node.SetNthControlPointPositionWorld(j, new_pos)
                 node.SetAndObserveTransformNodeID(None)
-                node.EndModify()
+                # FIX: Pass the stored value to EndModify
+                node.EndModify(was_modified)
             except Exception as e:
                 print(f"Error updating {cls}: {e}")
                 continue
     
-    # ---- 7. Process planes ----
+    # ---- 7. Process planes (FIXED) ----
     plane_nodes = []
     plane_collection = scene.GetNodesByClass("vtkMRMLMarkupsPlaneNode")
     for i in range(plane_collection.GetNumberOfItems()):
@@ -571,21 +575,23 @@ def move_nasion_to_origin(sequential_mode=False, next_callback=None):
         try:
             origin = [0.0, 0.0, 0.0]
             plane.GetOrigin(origin)
-            plane.StartModify()
+            # FIX: Store the return value from StartModify
+            was_modified = plane.StartModify()
             plane.SetOrigin(trans_point(origin))
             plane.SetAndObserveTransformNodeID(None)
-            plane.EndModify()
+            # FIX: Pass the stored value to EndModify
+            plane.EndModify(was_modified)
         except Exception as e:
             print(f"Error updating plane {plane.GetName()}: {e}")
             continue
     
-    # ---- 8. Ensure nasion is exactly at origin ----
+    # ---- 8. Ensure nasion is exactly at origin (FIXED) ----
     try:
-        nasion_node.StartModify()
+        was_modified = nasion_node.StartModify()
         nasion_node.SetNthControlPointPositionWorld(nasion_idx, [0.0, 0.0, 0.0])
-        nasion_node.EndModify()
-    except:
-        pass
+        nasion_node.EndModify(was_modified)
+    except Exception as e:
+        print(f"Error setting nasion to origin: {e}")
     
     # Force UI update
     slicer.app.processEvents()
@@ -603,6 +609,5 @@ def move_nasion_to_origin(sequential_mode=False, next_callback=None):
 # Run the function (stand-alone mode)
 if __name__ == "__main__":
     move_nasion_to_origin()
-
 ```
 </details>
