@@ -1100,10 +1100,15 @@ class ProkopecUbelakerGUI(qt.QWidget):
                 self.predictionStatusLabel.setText(f"Error: Not enough outline points.")
                 return
                 
+            # CORRECTED: Points are already in R1,R2,...,L1,L2,... order
+            # R-side points are indices 0 to plane_count-1
+            # L-side points are indices plane_count to (2*plane_count)-1
             points = [np.array(outline_node.GetNthControlPointPosition(i)) for i in range(outline_node.GetNumberOfControlPoints())]
             count = 0
             for i in range(plane_count):
                 line_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', f"nasal outline{i+1}{suffix}")
+                # R-side point is at index i
+                # L-side point is at index i + plane_count
                 line_node.AddControlPoint(points[i])
                 line_node.AddControlPoint(points[i + plane_count])
                 displayNode = line_node.GetDisplayNode()
