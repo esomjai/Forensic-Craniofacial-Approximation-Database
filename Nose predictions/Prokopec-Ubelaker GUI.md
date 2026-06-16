@@ -1,4 +1,4 @@
-``` python
+```python
 
 import os
 import vtk
@@ -1017,7 +1017,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
         urls = {
             4: "https://github.com/user-attachments/files/19318005/nasal.bone.outline.4.mrk.json",
             5: "https://github.com/user-attachments/files/19318009/nasal.bone.outline.5.mrk.json",
-            6: "https://github.com/user-attachments/files/23497912/nose_profile_outline_6.mrk.json"
+            6: "https://github.com/user-attachments/files/19318010/nasal.bone.outline.6.mrk.json"
         }
         node = self.download_and_load_markup("nasal_bone_outline", self.bonePointsStatusLabel, urls, show_step6_image=True)
         if node:
@@ -1314,57 +1314,105 @@ class ProkopecUbelakerGUI(qt.QWidget):
             self.populateResultsTable()
 
     def populateResultsTable(self):
+        """Populate results table with 4 columns: Prediction Line | Mirror Equivalent | Value (mm) | Error (mm)"""
         self.measurementsTable.setRowCount(0)
+        
+        # Set up 4 columns
+        self.measurementsTable.setColumnCount(4)
+        self.measurementsTable.setHorizontalHeaderLabels([
+            "Prediction Line", 
+            "Mirror Equivalent", 
+            "Value (mm)", 
+            "Error (mm)"
+        ])
+        
         plane_count = self.planeCountSlider.value
         suffix = f"_{plane_count}p"
         
-        all_nodes = []
-        for prefix in ['nasalboneto', 'pred soft nose outline', 'pred error']:
-            nodes = slicer.util.getNodes(f'{prefix}*{suffix}')
-            all_nodes.extend(nodes.values())
-
+        # Get all prediction nodes
+        prediction_nodes = {}
+        for node_name, node in slicer.util.getNodes(f'pred soft nose outline *{suffix}').items():
+            # Extract the number from the node name (e.g., "pred soft nose outline 1" -> 1)
+            import re
+            match = re.search(r'pred soft nose outline (\d+)', node_name)
+            if match:
+                pred_num = int(match.group(1))
+                prediction_nodes[pred_num] = node
+        
+        if not prediction_nodes:
+            self.measurementsTable.setRowCount(1)
+            self.measurementsTable.setItem(0, 0, qt.QTableWidgetItem("No predictions found"))
+            return
+        
+        # Sort by prediction number
         row = 0
-        processed_names = set()
-
-        for node in all_nodes:
-            name = node.GetName()
-            if name in processed_names: continue
+        for pred_num in sorted(prediction_nodes.keys()):
+            pred_node = prediction_nodes[pred_num]
             
-            length = np.linalg.norm(np.array(node.GetNthControlPointPosition(1)) - np.array(node.GetNthControlPointPosition(0)))
-
+            # Get the prediction length (from mirror point to predicted endpoint)
+            pred_length = np.linalg.norm(
+                np.array(pred_node.GetNthControlPointPosition(1)) - 
+                np.array(pred_node.GetNthControlPointPosition(0))
+            )
+            
+            # Find corresponding mirror equivalent (nasalbonetoB)
+            mirror_node_name = f"nasalbonetoB{pred_num}{suffix}"
+            mirror_length = None
+            mirror_label = f"nasalbonetoB{pred_num}"
+            try:
+                mirror_node = slicer.util.getNode(mirror_node_name)
+                mirror_length = np.linalg.norm(
+                    np.array(mirror_node.GetNthControlPointPosition(1)) - 
+                    np.array(mirror_node.GetNthControlPointPosition(0))
+                )
+            except slicer.util.MRMLNodeNotFoundException:
+                mirror_label = "N/A"
+            
+            # Find corresponding error
+            # Error for prediction N corresponds to pred error{plane_count - N + 1}
+            error_num = plane_count - pred_num + 1
+            error_length = None
+            try:
+                error_node_name = f"pred error{error_num}{suffix}"
+                error_node = slicer.util.getNode(error_node_name)
+                error_length = np.linalg.norm(
+                    np.array(error_node.GetNthControlPointPosition(1)) - 
+                    np.array(error_node.GetNthControlPointPosition(0))
+                )
+            except slicer.util.MRMLNodeNotFoundException:
+                pass
+            
+            # Add row to table
             self.measurementsTable.insertRow(row)
-            base_name = name.replace(suffix, '')
             
-            self.measurementsTable.setItem(row, 1, qt.QTableWidgetItem(base_name))
+            # Column 0: Prediction line name
+            self.measurementsTable.setItem(row, 0, qt.QTableWidgetItem(f"pred soft nose outline {pred_num}"))
             
-            if name.startswith('pred error'):
-                self.measurementsTable.setItem(row, 0, qt.QTableWidgetItem("error"))
-                self.measurementsTable.setItem(row, 3, qt.QTableWidgetItem(f"{length:.2f}"))
-            elif name.startswith('pred soft nose outline'):
-                self.measurementsTable.setItem(row, 0, qt.QTableWidgetItem("prediction"))
-                self.measurementsTable.setItem(row, 2, qt.QTableWidgetItem(f"{length:.2f}"))
-                
-                try:
-                    num_str = ''.join(filter(str.isdigit, base_name.split(" ")[-1]))
-                    if not num_str: continue
-                    pred_num = int(num_str)
-                    true_num = plane_count - pred_num + 1
-
-                    error_node_name = f"pred error{true_num}{suffix}"
-                    error_node = slicer.util.getNode(error_node_name)
-                    error_length = np.linalg.norm(np.array(error_node.GetNthControlPointPosition(1)) - np.array(error_node.GetNthControlPointPosition(0)))
-                    self.measurementsTable.setItem(row, 3, qt.QTableWidgetItem(f"{error_length:.2f}"))
-                except Exception as e:
-                    print(f"Could not find matching error for {name}: {e}")
-                    pass
+            # Column 1: Mirror equivalent
+            self.measurementsTable.setItem(row, 1, qt.QTableWidgetItem(mirror_label))
+            
+            # Column 2: Value (mirror length)
+            if mirror_length is not None:
+                self.measurementsTable.setItem(row, 2, qt.QTableWidgetItem(f"{mirror_length:.2f}"))
             else:
-                self.measurementsTable.setItem(row, 0, qt.QTableWidgetItem("measurement"))
-                self.measurementsTable.setItem(row, 2, qt.QTableWidgetItem(f"{length:.2f}"))
-
-            processed_names.add(name)
-            row += 1
+                self.measurementsTable.setItem(row, 2, qt.QTableWidgetItem("N/A"))
             
+            # Column 3: Error
+            if error_length is not None:
+                self.measurementsTable.setItem(row, 3, qt.QTableWidgetItem(f"{error_length:.2f}"))
+            else:
+                self.measurementsTable.setItem(row, 3, qt.QTableWidgetItem("N/A"))
+            
+            row += 1
+        
+        # Resize columns to fit content
         self.measurementsTable.resizeColumnsToContents()
+        
+        # Make the table stretch to fill available space
+        header = self.measurementsTable.horizontalHeader()
+        header.setStretchLastSection(True)
+        for i in range(4):
+            header.setSectionResizeMode(i, qt.QHeaderView.ResizeToContents)
 
     def onCopyToClipboardClicked(self):
         clipboard = qt.QApplication.clipboard()
@@ -1415,5 +1463,6 @@ if not hasattr(slicer, 'ProkopecUbelakerGUIWidget') or not slicer.ProkopecUbelak
 
 slicer.ProkopecUbelakerGUIWidget.show()
 slicer.ProkopecUbelakerGUIWidget.raise_()
+
 
 ```
