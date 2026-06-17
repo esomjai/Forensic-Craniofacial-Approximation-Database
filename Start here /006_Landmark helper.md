@@ -5,6 +5,8 @@ When there is overlap between the landmarks in different methods, it is tedious 
 When using this GUI, you can export the coordinates of already existing landmarks into the "New" method's coordinates - so i f you had nasion at 0,0,0, in method1; and you have methosd2's landmark ALSO in the scene, the script compares the two for identical landmarks and copies the landmark coordinates from method1 to method2 - saving time for you.
 
 
+Currently, the dictionary only contains the landmarks in Nose prediction guidelines. 
+
 
 ```python
 import json
