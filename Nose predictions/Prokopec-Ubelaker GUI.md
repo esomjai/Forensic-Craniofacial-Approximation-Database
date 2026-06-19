@@ -372,6 +372,11 @@ class ProkopecUbelakerGUI(qt.QWidget):
         self.downloadOutlineButton = qt.QPushButton("Download Aperture Outline Landmarks")
         layout.addWidget(self.downloadOutlineButton)
         
+        # NEW: Project points to lines button
+        self.projectPointsToLinesButton = qt.QPushButton("Project Points to Intersection Lines")
+        self.projectPointsToLinesButton.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        layout.addWidget(self.projectPointsToLinesButton)
+        
         self.bonePointsStatusLabel = qt.QLabel("Select existing landmarks or download new ones.")
         self.bonePointsStatusLabel.setWordWrap(True)
         layout.addWidget(self.bonePointsStatusLabel)
@@ -391,6 +396,7 @@ class ProkopecUbelakerGUI(qt.QWidget):
         layout.addWidget(self.confirmationLabel)
         
         self.downloadOutlineButton.connect('clicked(bool)', self.onDownloadNasalBoneOutlineClicked)
+        self.projectPointsToLinesButton.connect('clicked(bool)', self.onProjectPointsToLinesClicked)  # NEW
         self.toggleVisibilityButton6.connect('clicked(bool)', self.onToggleVisibilityClicked)
         self.stepStack.addWidget(widget)
 
@@ -959,7 +965,76 @@ class ProkopecUbelakerGUI(qt.QWidget):
     def onFindLineBIntersectionClicked(self):
         self.find_line_intersections("Line_B", "mirrorB")
 
-    # --- THIS FUNCTION IS CORRECTED ---
+    def onProjectPointsToLinesClicked(self):
+        """Project nasal aperture outline points onto the corresponding profile-mirror intersection lines"""
+        with slicer.util.tryWithErrorDisplay("Failed to project points to lines."):
+            plane_count = self.planeCountSlider.value
+            suffix = f"_{plane_count}p"
+            self.bonePointsStatusLabel.setText("Projecting points to intersection lines...")
+            slicer.app.processEvents()
+            
+            # Get the outline node
+            outline_node = self.nasalBoneOutlineSelector.currentNode()
+            if not outline_node:
+                self.bonePointsStatusLabel.setText("Error: No nasal bone outline selected.")
+                return
+            
+            # Check if we have the right number of points
+            expected_points = plane_count * 2  # R1-Rn and L1-Ln
+            if outline_node.GetNumberOfControlPoints() < expected_points:
+                self.bonePointsStatusLabel.setText(f"Error: Need {expected_points} points, but found {outline_node.GetNumberOfControlPoints()}.")
+                return
+            
+            # Get the profile plane
+            try:
+                profile_plane = slicer.util.getNode(self.activeProfilePlaneName)
+            except slicer.util.MRMLNodeNotFoundException:
+                self.bonePointsStatusLabel.setText(f"Error: {self.activeProfilePlaneName} plane not found. Run Step 3 first.")
+                return
+            
+            projected_count = 0
+            for i in range(plane_count):
+                letter = chr(65 + i)  # A, B, C, D, E, F
+                
+                # Get the intersection line for this plane
+                try:
+                    intersection_line = slicer.util.getNode(f"{self.activeProfilePlaneName}_{letter}{suffix}")
+                except slicer.util.MRMLNodeNotFoundException:
+                    self.bonePointsStatusLabel.setText(f"Error: Intersection line {self.activeProfilePlaneName}_{letter}{suffix} not found.")
+                    continue
+                
+                # Get the R-side point (index i) and L-side point (index i + plane_count)
+                r_point_pos = np.array(outline_node.GetNthControlPointPosition(i))
+                l_point_pos = np.array(outline_node.GetNthControlPointPosition(i + plane_count))
+                
+                # Project both points onto the intersection line
+                r_projected = self.project_point_to_line(r_point_pos, intersection_line)
+                l_projected = self.project_point_to_line(l_point_pos, intersection_line)
+                
+                # Update the point positions
+                outline_node.SetNthControlPointPosition(i, *r_projected)
+                outline_node.SetNthControlPointPosition(i + plane_count, *l_projected)
+                projected_count += 2
+            
+            self.bonePointsStatusLabel.setText(f"Projected {projected_count} points to intersection lines.")
+            slicer.util.delayDisplay(f"Successfully projected {projected_count} nasal aperture points to the {self.activeProfilePlaneName} intersection lines.", 2000)
+
+    def project_point_to_line(self, point, line_node):
+        """Project a 3D point onto a line defined by two points"""
+        # Get line endpoints
+        p1 = np.array(line_node.GetNthControlPointPosition(0))
+        p2 = np.array(line_node.GetNthControlPointPosition(1))
+        
+        # Calculate projection
+        line_vec = p2 - p1
+        point_vec = point - p1
+        line_vec_norm = line_vec / np.linalg.norm(line_vec)
+        projection_length = np.dot(point_vec, line_vec_norm)
+        projected_point = p1 + projection_length * line_vec_norm
+        
+        return projected_point   
+
+
     def find_line_intersections(self, target_line_name, point_prefix):
         with slicer.util.tryWithErrorDisplay(f"Failed to find intersections on {target_line_name}."):
             plane_count = self.planeCountSlider.value
@@ -1419,55 +1494,24 @@ class ProkopecUbelakerGUI(qt.QWidget):
         for i in range(4):
             header.setSectionResizeMode(i, qt.QHeaderView.ResizeToContents)
 
-    def onCopyToClipboardClicked(self):
-        clipboard = qt.QApplication.clipboard()
-        header = "\t".join([self.measurementsTable.horizontalHeaderItem(i).text() for i in range(self.measurementsTable.columnCount)])
-        table_text = header + "\n"
-        for row in range(self.measurementsTable.rowCount):
-            row_data = [self.measurementsTable.item(row, col).text() if self.measurementsTable.item(row, col) else "" for col in range(self.measurementsTable.columnCount)]
-            table_text += "\t".join(row_data) + "\n"
-        clipboard.setText(table_text)
-        self.exportStatusLabel.setText("Results copied to clipboard.")
-
-        def onExportResultsClicked(self):
-            result = qt.QFileDialog.getSaveFileName(self, "Export Results", "", "CSV Files (*.csv)")
-        
-            # Check if we got a result (user didn't cancel)
-            if not result or len(result) == 0:
-                self.exportStatusLabel.setText("Export cancelled.")
-                return
-            
-            # Get the filename (handle both tuple and single value returns)
-            if isinstance(result, tuple):
-                fileName = result[0]
-            else:
-                fileName = result
-            
-            # Check if user actually entered a filename
-            if not fileName or fileName == "":
-                self.exportStatusLabel.setText("Export cancelled.")
-                return
-            
-            # Now proceed with saving
-            if fileName:
-                with slicer.util.tryWithErrorDisplay("Failed to export results."):
-                    with open(fileName, 'w', newline='') as csvfile:
-                        writer = csv.writer(csvfile)
-                        writer.writerow([self.measurementsTable.horizontalHeaderItem(i).text() for i in range(self.measurementsTable.columnCount())])
-                        for row in range(self.measurementsTable.rowCount()):
-                            row_data = [self.measurementsTable.item(row, col).text() if self.measurementsTable.item(row, col) else "" for col in range(self.measurementsTable.columnCount())]
-                            writer.writerow(row_data)
-                    self.exportStatusLabel.setText(f"Results exported to {os.path.basename(fileName)}.")
+    
 
 # --- This part runs the GUI ---
-if not hasattr(slicer, 'ProkopecUbelakerGUIWidget') or not slicer.ProkopecUbelakerGUIWidget.isVisible():
+# Always create a fresh widget (simplest and most reliable)
+try:
     if hasattr(slicer, 'ProkopecUbelakerGUIWidget'):
-        slicer.ProkopecUbelakerGUIWidget.delete()
-    slicer.ProkopecUbelakerGUIWidget = ProkopecUbelakerGUI()
-    slicer.ProkopecUbelakerGUIWidget.setWindowTitle("Prokopec-Ubelaker Nasal Prediction")
+        try:
+            slicer.ProkopecUbelakerGUIWidget.deleteLater()
+        except:
+            pass
+        delattr(slicer, 'ProkopecUbelakerGUIWidget')
+except:
+    pass
 
+# Create new widget
+slicer.ProkopecUbelakerGUIWidget = ProkopecUbelakerGUI()
+slicer.ProkopecUbelakerGUIWidget.setWindowTitle("Prokopec-Ubelaker Nasal Prediction")
 slicer.ProkopecUbelakerGUIWidget.show()
 slicer.ProkopecUbelakerGUIWidget.raise_()
-
 
 ```
