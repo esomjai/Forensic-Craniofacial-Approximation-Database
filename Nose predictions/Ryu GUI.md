@@ -126,7 +126,7 @@ class RyuGUI:
         download_soft_btn.setStyleSheet("background-color: #E8F5E9; padding: 8px; margin-bottom: 10px;")
         download_soft_btn.setToolTip("Download and load Ryu_soft_tissue.mrk.json ground truth directly into the scene")
         download_soft_btn.clicked.connect(lambda: self.download_and_load_landmarks(
-            "https://github.com/user-attachments/files/24859020/Ryu_soft_tissue.mrk.json",
+            "https://github.com/user-attachments/files/29245314/Ryu_soft_tissue.mrk.json",
             "Ryu_soft_tissue"
         ))
         stage3_layout.addWidget(download_soft_btn)
@@ -1214,5 +1214,7 @@ except:
     pass
 
 ryu_gui_instance = RyuGUI()
+
+
 
 ```
