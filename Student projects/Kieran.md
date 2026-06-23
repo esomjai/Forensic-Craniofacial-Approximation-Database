@@ -699,6 +699,46 @@ def generate_comparison_table():
         slicer.util.errorDisplay(f"Failed to generate comparison table:\n{e}")
 
 # ============================================================
+# Step 5: Copy linear measurements to clipboard
+# ============================================================
+
+def copy_linear_measurements_to_clipboard():
+    try:
+        rows = []
+        lineNodes = slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode")
+
+        for lineNode in lineNodes:
+            if lineNode.GetNumberOfDefinedControlPoints() < 2:
+                continue
+
+            try:
+                lineNode.GetMeasurement("length").SetEnabled(True)
+                length = lineNode.GetMeasurement("length").GetValue()
+            except Exception:
+                continue
+
+            imagePath = "(unknown)"
+            try:
+                assocId = lineNode.GetNthControlPointAssociatedNodeID(0)
+                volumeNode = slicer.mrmlScene.GetNodeByID(assocId) if assocId else None
+                if volumeNode and volumeNode.GetStorageNode():
+                    imagePath = volumeNode.GetStorageNode().GetFileName()
+            except Exception:
+                pass
+
+            rows.append("\t".join([imagePath, lineNode.GetName(), f"{length:.3f}"]))
+
+        if rows:
+            clipboard_text = "\n".join(rows)
+            slicer.app.clipboard().setText(clipboard_text)
+            slicer.util.delayDisplay(f"✅ Copied {len(rows)} linear measurements to clipboard.\nPaste into Excel (Ctrl+V).")
+        else:
+            slicer.util.delayDisplay("No completed linear measurements found to copy.")
+            
+    except Exception as e:
+        slicer.util.errorDisplay(f"Failed to copy linear measurements:\n{e}")
+
+# ============================================================
 # GUI window
 # ============================================================
 
