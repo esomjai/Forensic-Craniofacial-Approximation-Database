@@ -177,18 +177,29 @@ def create_empty_manual_measurement_nodes():
 def create_linear_measurements():
     
     try:
+        # First, list all fiducial nodes to help debug
+        print("Available fiducial nodes:")
+        nodes = slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode")
+        for n in nodes:
+            print(f"  - {n.GetName()} ({n.GetNumberOfControlPoints()} points)")
+            labels = [n.GetNthControlPointLabel(i) for i in range(n.GetNumberOfControlPoints())]
+            print(f"    Labels: {labels}")
+        
         # Prefer the node named exactly 'landmarks'
         try:
             F = slicer.util.getNode("landmarks")
+            print(f"Found node named 'landmarks'")
         except slicer.util.MRMLNodeNotFoundException:
             F = None
+            print("No node named 'landmarks' found")
 
         # Fallback: try to find a fiducial list that looks like the anatomical list
         if not F:
-            F = find_fiducial_node_with_labels(["g", "gn", "id", "n", "pr", "zyL", "zyR", "ba", "pns", 
-                                                "kdlL", "kdlR", "kdsL", "kdsR", "krL", "krR", "itL", "itR",
-                                                "ol", "goL", "goR", "pog", "op", "b", "kdpL", "kdpR", 
-                                                "irbL", "irbR"])
+            F = find_fiducial_node_with_labels(["g", "gn", "id", "n", "pr", "zyL", "zyR"])
+            if F:
+                print(f"Found fallback node: {F.GetName()}")
+            else:
+                print("No fallback node found")
 
         if not F:
             slicer.util.errorDisplay(
@@ -200,6 +211,11 @@ def create_linear_measurements():
         if F.GetClassName() != "vtkMRMLMarkupsFiducialNode":
             slicer.util.errorDisplay(f"Node 'landmarks' is not a fiducial list (it is {F.GetClassName()}).")
             return
+
+        # Print all available labels in the found node
+        print(f"Available labels in {F.GetName()}:")
+        labels = [F.GetNthControlPointLabel(i) for i in range(F.GetNumberOfControlPoints())]
+        print(f"  {labels}")
 
         # Updated measurements list based on your specifications
         measurements = [
@@ -235,12 +251,17 @@ def create_linear_measurements():
 
         created = 0
         skipped = 0
+        missing_labels = []
 
         for name, a, b in measurements:
             p1 = get_landmark_point(F, a)
             p2 = get_landmark_point(F, b)
             if p1 is None or p2 is None:
                 skipped += 1
+                if p1 is None:
+                    missing_labels.append(a)
+                if p2 is None:
+                    missing_labels.append(b)
                 continue
 
             lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
@@ -267,11 +288,15 @@ def create_linear_measurements():
                 (goL[2] + goR[2]) / 2,
             ]
 
-            # Create midpoint as fiducial (hidden)
+            # Create midpoint as fiducial (hidden using display node)
             midNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
             midNode.SetName("goR goL midpoint")
             midNode.AddControlPoint(midpoint[0], midpoint[1], midpoint[2])
-            midNode.SetVisibility(False)
+            # Hide the node using its display node
+            midNode.CreateDefaultDisplayNodes()
+            displayNode = midNode.GetDisplayNode()
+            if displayNode:
+                displayNode.SetVisibility(False)
 
             lineNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode")
             lineNode.SetName("Mandibular body length")
@@ -280,11 +305,27 @@ def create_linear_measurements():
             created += 1
         else:
             skipped += 1
+            if goL is None:
+                missing_labels.append("goL")
+            if goR is None:
+                missing_labels.append("goR")
+            if pog is None:
+                missing_labels.append("pog")
 
-        slicer.util.delayDisplay(
-            f"Created {created} automatic linear measurement line nodes.\n"
-            f"Skipped {skipped} (missing landmarks)."
-        )
+        # Show warning about missing labels
+        if missing_labels:
+            unique_missing = sorted(set(missing_labels))
+            slicer.util.delayDisplay(
+                f"Created {created} automatic linear measurement line nodes.\n"
+                f"Skipped {skipped} (missing landmarks).\n\n"
+                f"Missing landmark labels: {', '.join(unique_missing)}\n"
+                f"Please ensure these landmarks are placed in the landmarks node."
+            )
+        else:
+            slicer.util.delayDisplay(
+                f"Created {created} automatic linear measurement line nodes.\n"
+                f"Skipped {skipped} (missing landmarks)."
+            )
 
     except Exception as e:
         slicer.util.errorDisplay(f"Failed to create linear measurements:\n{e}")
