@@ -1,6 +1,4 @@
 ```python
-
-
 import slicer
 import qt
 import numpy as np
@@ -208,45 +206,6 @@ class RyuGUI:
         self.stage_stack.setCurrentWidget(stage1_container)
 
         self.main_widget.show()
-
-        # STAGE 5 - Results
-        stage5_group = self.create_stage_group("Stage 5: Results and Analysis")
-        stage5_layout = stage5_group.layout()
-        self.add_workflow_step(stage5_layout, "<b>Step 7: Show Landmark Error Table</b>",
-                            "Displays a table with final 3D errors for each landmark.",
-                            self.show_landmark_error_table, is_final_step=True)
-        stage4_main_layout.addWidget(stage5_group)
-
-        # Visualization tools
-        viz_group = qt.QGroupBox("Visualization Tools")
-        viz_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
-        viz_layout = qt.QGridLayout(viz_group)
-        self.add_toggle_button(viz_layout, "Hard Tissue Measurements (Cyan)", "N", "vtkMRMLMarkupsLineNode", 0)
-        self.add_toggle_button(viz_layout, "Predicted Lengths (Blue)", "Predicted_N", "vtkMRMLMarkupsLineNode", 1)
-        self.add_toggle_button(viz_layout, "True Lengths (Green)", "True_N", "vtkMRMLMarkupsLineNode", 2)
-        self.add_toggle_button(viz_layout, "Error Lines (Red)", "error_", "vtkMRMLMarkupsLineNode", 3)
-        self.add_toggle_button(viz_layout, "Predicted Landmarks (Pink)", "Predicted_Soft_Tissue", "vtkMRMLMarkupsFiducialNode", 4)
-        stage4_main_layout.addWidget(viz_group)
-
-        stage4_main_layout.addStretch()
-
-        # Navigation button for Stage 4
-        nav_layout4 = qt.QHBoxLayout()
-        back_btn4 = qt.QPushButton("← Back: Stage 3")
-        back_btn4.setStyleSheet("padding: 10px 20px;")
-        back_btn4.clicked.connect(lambda: self.go_to_stage(3))
-        nav_layout4.addWidget(back_btn4)
-        nav_layout4.addStretch()
-        stage4_main_layout.addLayout(nav_layout4)
-
-        self.stage_stack.addWidget(stage4_container)
-        self.stage_widgets[4] = stage4_container
-
-        # Set initial stage
-        self.stage_stack.setCurrentWidget(stage1_container)
-
-        self.main_widget.show()    
-            
 
     def create_stage_group(self, title):
         g = qt.QGroupBox(title)
@@ -530,14 +489,41 @@ class RyuGUI:
         pred_display_node.SetColor(1, 0.4, 0.7)
         pred_display_node.SetGlyphScale(3.0)
 
+        # Define landmark definitions with their measurement sequences
         landmark_defs = {
-            "S": ("N", ["N8", "N17", "N20"]), "PN": ("N", ["N11", "N18", "N21"]), "SN": ("N", ["N14", "N19", "N22"]),
-            "ACS_L": ("A_L", ["N41", "N45", "N49"]), "ACP_L": ("A_L", ["N42", "N46", "N50"]),
-            "NA_L": ("A_L", ["N43", "N47", "N51"]), "ACI_L": ("A_L", ["N44", "N48", "N52"]),
-            "ACS_R": ("A_R", ["N65", "N69", "N73"]), "ACP_R": ("A_R", ["N66", "N70", "N74"]),
-            "NA_R": ("A_R", ["N67", "N71", "N75"]), "ACI_R": ("A_R", ["N68", "N72", "N76"])
+            "S": ("N", ["N8", "N17", "N20"]), 
+            "PN": ("N", ["N11", "N18", "N21"]), 
+            "SN": ("N", ["N14", "N19", "N22"]),
+            "ACS_L": ("A_L", ["N41", "N45", "N49"]), 
+            "ACP_L": ("A_L", ["N42", "N46", "N50"]),
+            "NA_L": ("A_L", ["N43", "N47", "N51"]), 
+            "ACI_L": ("A_L", ["N44", "N48", "N52"]),
+            "ACS_R": ("A_R", ["N65", "N69", "N73"]), 
+            "ACP_R": ("A_R", ["N66", "N70", "N74"]),
+            "NA_R": ("A_R", ["N67", "N71", "N75"]), 
+            "ACI_R": ("A_R", ["N68", "N72", "N76"])
         }
 
+        # Map measurements to their corresponding hard tissue measurements
+        # For direction, we need to use the corresponding hard tissue measurement
+        hard_measurement_map = {
+        # Midline landmarks - Midsagittal uses N1, Orbital uses N4/N5, Coronal uses N6/N7
+        "N8": "N1", "N17": "N4", "N20": "N6",   # S: Midsagittal→N1, Orbital→N4, Coronal→N6
+        "N11": "N1", "N18": "N5", "N21": "N7",  # PN: Midsagittal→N1, Orbital→N5, Coronal→N7
+        "N14": "N1", "N19": "N5", "N22": "N7",  # SN: Midsagittal→N1, Orbital→N5, Coronal→N7
+        # Left alare landmarks - Alare Sagittal uses N30, Orbital uses N34, Coronal uses N38
+        "N41": "N30", "N45": "N34", "N49": "N38",
+        "N42": "N30", "N46": "N34", "N50": "N38",
+        "N43": "N30", "N47": "N34", "N51": "N38",
+        "N44": "N30", "N48": "N34", "N52": "N38",
+        # Right alare landmarks - Alare Sagittal uses N30, Orbital uses N34, Coronal uses N38
+        "N65": "N30", "N69": "N34", "N73": "N38",
+        "N66": "N30", "N70": "N34", "N74": "N38",
+        "N67": "N30", "N71": "N34", "N75": "N38",
+        "N68": "N30", "N72": "N34", "N76": "N38"
+    }
+
+        # Plane mapping for each measurement
         plane_map = {
             "N8": "Midsagittal", "N17": "Orbital", "N20": "Coronal",
             "N11": "Midsagittal", "N18": "Orbital", "N21": "Coronal",
@@ -553,33 +539,71 @@ class RyuGUI:
         }
 
         for landmark_name, (start_landmark, measurement_codes) in landmark_defs.items():
+            # Start from the hard tissue landmark
             current_pos = self.get_landmark_pos(hard_tissue_node, start_landmark)
             if current_pos is None:
                 continue
 
+            # Process each measurement in sequence
             for measurement_code in measurement_codes:
+                # Get the predicted line for this measurement
                 predicted_line_node = slicer.mrmlScene.GetFirstNodeByName("Predicted_{}".format(measurement_code))
                 if not predicted_line_node:
                     continue
+                
+                # Get the predicted distance
                 dist = predicted_line_node.GetMeasurement('length').GetValue()
-                plane_name = plane_map[measurement_code]
-                plane_node = planes[plane_name]
+                
+                # Get the plane for this measurement
+                plane_name = plane_map.get(measurement_code)
+                if not plane_name:
+                    continue
+                plane_node = planes.get(plane_name)
+                if not plane_node:
+                    continue
+                
+                # Get the corresponding hard tissue measurement for direction
+                hard_code = hard_measurement_map.get(measurement_code)
+                if not hard_code:
+                    continue
+                hard_line = slicer.mrmlScene.GetFirstNodeByName(hard_code)
+                if not hard_line:
+                    continue
+                
+                # Get direction from hard tissue line
+                # Point 0 is the landmark, Point 1 is the projection onto the plane
+                landmark_pos = np.zeros(3)
+                plane_proj_pos = np.zeros(3)
+                hard_line.GetNthControlPointPosition(0, landmark_pos)
+                hard_line.GetNthControlPointPosition(1, plane_proj_pos)
+                
+                # Calculate direction vector (from plane projection to landmark)
+                direction = landmark_pos - plane_proj_pos
+                direction_norm = np.linalg.norm(direction)
+                if direction_norm < 1e-6:
+                    # If direction is zero, use plane normal as fallback
+                    plane_normal = np.zeros(3)
+                    plane_node.GetNormal(plane_normal)
+                    direction = plane_normal
+                    direction_norm = np.linalg.norm(direction)
+                
+                direction = direction / direction_norm
+                
+                # Get plane origin and normal
                 plane_origin = np.zeros(3)
                 plane_node.GetOrigin(plane_origin)
                 plane_normal = np.zeros(3)
                 plane_node.GetNormal(plane_normal)
+                
+                # Project current point onto the plane
+                v = current_pos - plane_origin
+                d = np.dot(v, plane_normal)
+                projected_point = current_pos - d * plane_normal
+                
+                # Move from projected point along the direction by the predicted distance
+                current_pos = projected_point + direction * dist
 
-                vec_to_lm = current_pos - plane_origin
-                if np.dot(vec_to_lm, plane_normal) < 0:
-                    plane_normal = -plane_normal
-
-                vtk_plane = vtk.vtkPlane()
-                vtk_plane.SetOrigin(plane_origin)
-                vtk_plane.SetNormal(plane_normal)
-                projected_on_plane = np.zeros(3)
-                vtk_plane.ProjectPoint(current_pos, projected_on_plane)
-                current_pos = projected_on_plane + plane_normal * dist
-
+            # Add the final landmark
             predicted_landmarks_node.AddControlPoint(current_pos, landmark_name)
 
         self.steps_completed['predicted_landmarks'] = True
@@ -694,7 +718,7 @@ class LengthPredictionDialog(qt.QDialog):
                 "N19": 0.91 * m.get("N5", 0) + 5.81,
                 "N20": 0.93 * m.get("N6", 0) + 11.28,
                 "N21": 0.96 * m.get("N7", 0) + 24.70,
-                "N22": 0.96 * m.get("N7", 0) + 8.0,
+                "N22": 0.96 * m.get("N7", 0) + 11.20,
                 "N45": 0.66 * m.get("N35", 0) - 3.97,
                 "N69": 0.62 * m.get("N59", 0) - 2.63,
                 "N46": 0.75 * m.get("N35", 0) + 3.07,
@@ -760,18 +784,28 @@ class LengthPredictionDialog(qt.QDialog):
         for node in nodes_to_remove:
             slicer.mrmlScene.RemoveNode(node)
 
+        # Map predicted measurements to their corresponding hard tissue measurements for direction
+        hard_measurement_map = {
+        # Midline landmarks - use the correct hard tissue measurement for each plane
+        "N17": "N4", "N18": "N5", "N19": "N5",
+        "N20": "N6", "N21": "N7", "N22": "N7",
+        # Note: N8, N11, N14 are NOT in run_length_prediction because they don't have regression equations
+        # Left side - use the regression measurements
+        "N45": "N34", "N46": "N34", "N47": "N34", "N48": "N34",
+        "N49": "N38", "N50": "N38", "N51": "N38", "N52": "N38",
+        # Right side - use the regression measurements
+        "N69": "N34", "N70": "N34", "N71": "N34", "N72": "N34",
+        "N73": "N38", "N74": "N38", "N75": "N38", "N76": "N38"
+    }
+
+        # Plane mapping
         plane_map = {
-            "N8": "Midsagittal", "N17": "Orbital", "N20": "Coronal",
-            "N11": "Midsagittal", "N18": "Orbital", "N21": "Coronal",
-            "N14": "Midsagittal", "N19": "Orbital", "N22": "Coronal",
-            "N41": "Left Alare Sagittal", "N45": "Orbital", "N49": "Coronal",
-            "N42": "Left Alare Sagittal", "N46": "Orbital", "N50": "Coronal",
-            "N43": "Left Alare Sagittal", "N47": "Orbital", "N51": "Coronal",
-            "N44": "Left Alare Sagittal", "N48": "Orbital", "N52": "Coronal",
-            "N65": "Right Alare Sagittal", "N69": "Orbital", "N73": "Coronal",
-            "N66": "Right Alare Sagittal", "N70": "Orbital", "N74": "Coronal",
-            "N67": "Right Alare Sagittal", "N71": "Orbital", "N75": "Coronal",
-            "N68": "Right Alare Sagittal", "N72": "Orbital", "N76": "Coronal"
+            "N17": "Orbital", "N18": "Orbital", "N19": "Orbital",
+            "N20": "Coronal", "N21": "Coronal", "N22": "Coronal",
+            "N45": "Orbital", "N46": "Orbital", "N47": "Orbital", "N48": "Orbital",
+            "N49": "Coronal", "N50": "Coronal", "N51": "Coronal", "N52": "Coronal",
+            "N69": "Orbital", "N70": "Orbital", "N71": "Orbital", "N72": "Orbital",
+            "N73": "Coronal", "N74": "Coronal", "N75": "Coronal", "N76": "Coronal"
         }
 
         hard_tissue_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
@@ -785,6 +819,17 @@ class LengthPredictionDialog(qt.QDialog):
             if not plane_name:
                 continue
             
+            # Get the plane node
+            plane_node = slicer.mrmlScene.GetFirstNodeByName(plane_name)
+            if plane_node is None:
+                continue
+            
+            plane_origin = np.zeros(3)
+            plane_node.GetOrigin(plane_origin)
+            plane_normal = np.zeros(3)
+            plane_node.GetNormal(plane_normal)
+            
+            # Determine the starting landmark
             num = int(pred_name[1:])
             if num <= 22:
                 start_landmark_name = "N"
@@ -797,23 +842,43 @@ class LengthPredictionDialog(qt.QDialog):
             if start_pos is None:
                 continue
             
-            plane_node = slicer.mrmlScene.GetFirstNodeByName(plane_name)
-            if plane_node is None:
+            # Get the corresponding hard tissue measurement for direction
+            hard_code = hard_measurement_map.get(pred_name)
+            if not hard_code:
+                continue
+            hard_line = slicer.mrmlScene.GetFirstNodeByName(hard_code)
+            if not hard_line:
                 continue
             
-            plane_origin = np.zeros(3)
-            plane_node.GetOrigin(plane_origin)
-            plane_normal = np.zeros(3)
-            plane_node.GetNormal(plane_normal)
+            # Get direction from hard tissue line
+            landmark_pos = np.zeros(3)
+            plane_proj_pos = np.zeros(3)
+            hard_line.GetNthControlPointPosition(0, landmark_pos)
+            hard_line.GetNthControlPointPosition(1, plane_proj_pos)
             
-            vec_to_lm = start_pos - plane_origin
-            if np.dot(vec_to_lm, plane_normal) < 0:
-                plane_normal = -plane_normal
+            # Calculate direction vector (from plane projection to landmark)
+            direction = landmark_pos - plane_proj_pos
+            direction_norm = np.linalg.norm(direction)
+            if direction_norm < 1e-6:
+                # If direction is zero, use plane normal
+                direction = plane_normal
+                direction_norm = np.linalg.norm(direction)
+                if direction_norm < 1e-6:
+                    print(f"Warning: Cannot determine direction for {pred_name}")
+                    continue
             
-            end_pos = start_pos + plane_normal * length
+            direction = direction / direction_norm
+            
+            # Project the start position onto the plane
+            v = start_pos - plane_origin
+            d = np.dot(v, plane_normal)
+            projected_point = start_pos - d * plane_normal
+            
+            # Create the predicted line
+            end_pos = projected_point + direction * length
             
             line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "Predicted_{}".format(pred_name))
-            line_node.AddControlPoint(start_pos)
+            line_node.AddControlPoint(projected_point)
             line_node.AddControlPoint(end_pos)
             line_node.GetMeasurement("length").SetEnabled(True)
             display_node = line_node.GetDisplayNode()
@@ -1214,7 +1279,5 @@ except:
     pass
 
 ryu_gui_instance = RyuGUI()
-
-
 
 ```
