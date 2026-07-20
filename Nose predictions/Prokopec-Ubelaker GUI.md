@@ -616,7 +616,11 @@ class ProkopecUbelakerGUI(qt.QWidget):
             else:
                 node.SetDisplayVisibility(self.helpersVisible)
         status = "shown" if self.helpersVisible else "hidden"
-        slicer.util.delayDisplay(f"Helper nodes {status}. {plane_name_part} lines remain visible.", 500)
+        # Update status bar (non-modal, no focus stealing)
+        self.statusLabel.setText(f"Helper nodes {status}. {plane_name_part} lines remain visible.")
+        # Bring GUI back to front
+        self.raise_()
+        self.activateWindow()
     
     def onDownloadHardTissueClicked(self):
         with slicer.util.tryWithErrorDisplay("Failed to download landmarks."):
@@ -1434,5 +1438,6 @@ else:
     slicer.ProkopecUbelakerGUIWidget = ProkopecUbelakerGUI()
     slicer.ProkopecUbelakerGUIWidget.show()
     slicer.ProkopecUbelakerGUIWidget.raise_()
-```
 
+
+```
