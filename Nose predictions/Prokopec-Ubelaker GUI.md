@@ -543,19 +543,26 @@ class ProkopecUbelakerGUI(qt.QWidget):
         all_nodes = slicer.mrmlScene.GetNodes()
         for i in range(all_nodes.GetNumberOfItems()):
             node = all_nodes.GetItemAsObject(i)
-            if not node: 
+            if not node:
                 continue
             node_name = node.GetName()
-            for prefix in prefixes_to_delete:
-                if node_name.startswith(prefix):
-                    nodes_to_remove.append(node)
-                    break
+            if node_name:
+                for prefix in prefixes_to_delete:
+                    if node_name.startswith(prefix):
+                        nodes_to_remove.append(node)
+                        break
+        # Remove duplicates
+        nodes_to_remove = list(set(nodes_to_remove))
         if nodes_to_remove:
             with slicer.util.tryWithErrorDisplay("Failed to clean up scene."):
                 slicer.mrmlScene.StartState(slicer.mrmlScene.BatchProcessState)
-                for node in list(set(nodes_to_remove)):
-                    if node in slicer.mrmlScene.GetNodes():
-                        slicer.mrmlScene.RemoveNode(node)
+                for node in nodes_to_remove:
+                    # Verify the node is still in the scene before removing
+                    if node and node.GetScene() == slicer.mrmlScene:
+                        try:
+                            slicer.mrmlScene.RemoveNode(node)
+                        except Exception:
+                            pass  # Ignore removal errors
                 slicer.mrmlScene.EndState(slicer.mrmlScene.BatchProcessState)
         self.helperNodes = []
     
@@ -1438,6 +1445,5 @@ else:
     slicer.ProkopecUbelakerGUIWidget = ProkopecUbelakerGUI()
     slicer.ProkopecUbelakerGUIWidget.show()
     slicer.ProkopecUbelakerGUIWidget.raise_()
-
 
 ```
