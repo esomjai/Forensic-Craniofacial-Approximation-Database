@@ -1,4 +1,4 @@
-'''python
+```python
 import os
 import vtk
 import numpy as np
@@ -1434,6 +1434,5 @@ else:
     slicer.ProkopecUbelakerGUIWidget = ProkopecUbelakerGUI()
     slicer.ProkopecUbelakerGUIWidget.show()
     slicer.ProkopecUbelakerGUIWidget.raise_()
+```
 
-
-'''
