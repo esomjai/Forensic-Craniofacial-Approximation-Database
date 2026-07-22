@@ -302,7 +302,7 @@ class TedeschiOlivieraGUI:
     def onDownloadLandmarksClicked(self):
         """Downloads the sample landmark file from GitHub."""
         try:
-            url = "https://github.com/user-attachments/files/23657831/Tedeschi_Oliviera_lmrks.mrk.json"
+            url = "https://github.com/user-attachments/files/30263036/Tedeschi_Oliviera_lmrks.mrk.json"
             self.log(f"Downloading landmarks from: {url}")
             with urllib.request.urlopen(url) as response:
                 jsonData = response.read().decode('utf-8')
