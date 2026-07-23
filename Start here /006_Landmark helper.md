@@ -1,11 +1,67 @@
-## Are you trying out multiple methods?
+## Are you trying out multiple methods on the same sample population?
 
 When there is overlap between the landmarks in different methods, it is tedious to re-allocate the same ones - not to mention, introducing possible inconsistencies. 
 
-When using this GUI, you can export the coordinates of already existing landmarks into the "New" method's coordinates - so i f you had nasion at 0,0,0, in method1; and you have methosd2's landmark ALSO in the scene, the script compares the two for identical landmarks and copies the landmark coordinates from method1 to method2 - saving time for you.
+When using this GUI, you can export the coordinates of already existing landmarks into the "New" method's coordinates - so if you had nasion at 0,0,0, in method1; and you have method2's landmark ALSO in the scene, the script compares the two for identical landmarks and copies the landmark coordinates from method1 to method2 - saving time for you. 
 
 
-Currently, the dictionary only contains the landmarks in Nose prediction guidelines. 
+Currently, the dictionary only contains the landmarks in Nose prediction guidelines, however, I plan on expanding it later. For the full list of landmarks included, please see the drop-down menu below.
+
+<details>
+<summary>Landmarks compared</summary>
+
+| Unique ID | Canonical Name | Canonical Definition | Tissue Type | AKA (Also Known As) | Used In (Studies) |
+|-----------|----------------|----------------------|-------------|----------------------|-------------------|
+| HT-1 | Nasion | Intersection of the nasofrontal sutures in the median plane / most anterior point on the frontonasal suture in the midline | hard tissue | nasion; N; n | Rynn et al. 2010; Ryu 2020; Gerasimov & Maltais Lapointe; Prokopec & Ubelaker; Purkait & Singh; Ridel; Stephan; Tedeschi-Oliveira; Thitiorul et al. 2020; Krogman & Iscan |
+| HT-2 | Inion | Median point between the apices of the superior nuchal lines and at the base of the external occipital protuberance | hard tissue | inion | Rynn et al. 2010; Gerasimov & Maltais Lapointe; Prokopec & Ubelaker; Stephan; Tedeschi-Oliveira; Krogman & Iscan |
+| HT-3 | Bregma | Where the sagittal and coronal sutures meet | hard tissue | bregma | Rynn et al. 2010; Gerasimov & Maltais Lapointe; Prokopec & Ubelaker; Stephan; Tedeschi-Oliveira; Krogman & Iscan |
+| HT-4 | Prosthion | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim | hard tissue | prosthion; pr | Rynn et al. 2010; Prokopec & Ubelaker; Stephan; Tedeschi-Oliveira; Thitiorul et al. 2020; Krogman & Iscan |
+| HT-5 | Subspinale | The deepest point seen in the profile view below the anterior nasal spine (orthodontic point A) | hard tissue | subspinale; ss; point A | Rynn et al. 2010; Prokopec & Ubelaker; Purkait & Singh; Stephan; Thitiorul et al. 2020 |
+| HT-6 | Rhinion | Most rostral (end) point on the internasal suture / midline point at the inferior free end of the internasal suture | hard tissue | rhinion; R; rhi; subspinale (Krogman & Iscan, label used in error) | Rynn et al. 2010; Ryu 2020; Gerasimov & Maltais Lapointe; Prokopec & Ubelaker; Purkait & Singh; Ridel; Stephan; Tedeschi-Oliveira; Thitiorul et al. 2020; Krogman & Iscan |
+| HT-7 | Acanthion / Anterior Nasal Spine | Most anterior tip of the anterior nasal spine | hard tissue | acanthion; AC; ANS; ns; a | Rynn et al. 2010; Ryu 2020; Gerasimov & Maltais Lapointe; Prokopec & Ubelaker; Purkait & Singh; Ridel; Stephan; Thitiorul et al. 2020; Krogman & Iscan |
+| HT-8 | Orbitale Left | Most inferior point on the left inferior orbital rim. Usually falls along the lateral half of the orbital margin | hard tissue | O_L | Ryu 2020 |
+| HT-9 | Orbitale Right | Most inferior point on the right inferior orbital rim. Usually falls along the lateral half of the orbital margin | hard tissue | O_R | Ryu 2020 |
+| HT-10 | Inferior Nasal Concha Left | Point where the left inferior nasal concha is submerged into the medial wall of the nasal aperture | hard tissue | IC_L | Ryu 2020 |
+| HT-11 | Inferior Nasal Concha Right | Point where the right inferior nasal concha is submerged into the medial wall of the nasal aperture | hard tissue | IC_R | Ryu 2020 |
+| HT-12 | Hard Tissue Alare Left (Most Lateral Nasal/Piriform Aperture Left) | Instrumentally determined as the most lateral point on the left of the nasal aperture in a transverse plane / most lateral point on the left of the bony pyriform aperture | hard tissue | A_L; alL; B (PA_L) | Ryu 2020; Ridel; Purkait & Singh |
+| HT-13 | Hard Tissue Alare Right (Most Lateral Nasal/Piriform Aperture Right) | Instrumentally determined as the most lateral point on the right of the nasal aperture in a transverse plane / most lateral point on the right of the bony pyriform aperture | hard tissue | A_R; alR; A (PA_R) | Ryu 2020; Ridel; Purkait & Singh |
+| HT-14 | Left Posterior Piriform Aperture Border | Most posterior point on the left lateral curvature of the nasal aperture from profile view | hard tissue | NAG_L | Ryu 2020 |
+| HT-15 | Right Posterior Piriform Aperture Border | Most posterior point on the right lateral curvature of the nasal aperture from profile view | hard tissue | NAG_R | Ryu 2020 |
+| HT-16 | Left Nasal Aperture Inferior / Lowest Bony Pyriform Aperture Base Left | Most inferior point on the left of the nasal aperture from the frontal view / left lowest point on the aperture border in profile view / lowest point on the left base of the bony pyriform aperture | hard tissue | NAI_L; LL; D (PAB_L) | Ryu 2020; Stephan; Purkait & Singh |
+| HT-17 | Right Nasal Aperture Inferior / Lowest Bony Pyriform Aperture Base Right | Most inferior point on the right of the nasal aperture from the frontal view / right lowest point on the aperture border in profile view / lowest point on the right base of the bony pyriform aperture | hard tissue | NAI_R; RL; C (PAB_R) | Ryu 2020; Stephan; Purkait & Singh |
+| HT-18 | Left Zygion | The most lateral point on the outline of the LEFT zygomatic arch | hard tissue | zy_L | Thitiorul et al. 2020 |
+| HT-19 | Right Zygion | The most lateral point on the outline of the RIGHT zygomatic arch | hard tissue | zy_R | Thitiorul et al. 2020 |
+| HT-20 | Left Ectomolare | The most lateral point on the outer surface of the LEFT maxillary alveolar margin | hard tissue | ecm_L | Thitiorul et al. 2020 |
+| HT-21 | Right Ectomolare | The most lateral point on the outer surface of the RIGHT maxillary alveolar margin | hard tissue | ecm_R | Thitiorul et al. 2020 |
+| HT-22 | Left Infraorbital Foramen | The most superior point on the margin of the LEFT infraorbital foramen | hard tissue | iof_L | Thitiorul et al. 2020 |
+| HT-23 | Right Infraorbital Foramen | The most superior point on the margin of the RIGHT infraorbital foramen | hard tissue | iof_R | Thitiorul et al. 2020 |
+| HT-24 | Nasal Suture Depth Point | The farthest point perpendicular from the line between n and rhi | hard tissue | nr | Thitiorul et al. 2020 |
+| HT-25 | Vomer-Maxillary Junction | The point on the cranium where the maxilla and the vomer meet in the midline, at the posterior end of the anterior nasal spine | hard tissue | VMJ | Krogman & Iscan |
+| ST-1 | Soft Tissue Nasion | Point directly anterior to the nasofrontal suture, in the midline, overlying nasion | soft tissue | soft nasion; n'; soft tissue nasion | Rynn et al. 2010; Purkait & Singh; Thitiorul et al. 2020 |
+| ST-2 | Subnasale | Median point at the junction between the lower border of the nasal septum and the philtrum area | soft tissue | subnasale; SN; sn' | Rynn et al. 2010; Ryu 2020; Purkait & Singh; Ridel; Thitiorul et al. 2020 |
+| ST-3 | Pronasale | The most anteriorly protruded point of the apex nasi. In the case of a bifid nose, the more protruding tip is chosen | soft tissue | pronasale; PN; prn; pn' | Rynn et al. 2010; Ryu 2020; Gerasimov & Maltais Lapointe; Purkait & Singh; Ridel; Stephan; Tedeschi-Oliveira; Thitiorul et al. 2020; Krogman & Iscan |
+| ST-4 | Selion / Sellion | Deepest midline point of the nasofrontal angle / most posterior point in the midline of the nasal root | soft tissue | S; se' | Ryu 2020; Thitiorul et al. 2020 |
+| ST-5 | Left Alar Groove / Curvature Superior | Highest point on the left ala nasi / most superior point on the left alar groove | soft tissue | ACS_L; als'L | Ryu 2020; Thitiorul et al. 2020 |
+| ST-6 | Right Alar Groove / Curvature Superior | Highest point on the right ala nasi / most superior point on the right alar groove | soft tissue | ACS_R; als'R | Ryu 2020; Thitiorul et al. 2020 |
+| ST-7 | Left Alar Groove / Curvature Posterior | Most posterolateral point of the left curvature of the base of the nasal alae / most posterior point on the left alar groove | soft tissue | ACP_L; alp'L | Ryu 2020; Thitiorul et al. 2020 |
+| ST-8 | Right Alar Groove / Curvature Posterior | Most posterolateral point of the right curvature of the base of the nasal alae / most posterior point on the right alar groove | soft tissue | ACP_R; alp'R | Ryu 2020; Thitiorul et al. 2020 |
+| ST-9 | Left Alare (Soft Tissue) | The most lateral point on the left nasal ala | soft tissue | NA_L; X1(alL); al'L | Ryu 2020; Purkait & Singh; Ridel; Thitiorul et al. 2020 |
+| ST-10 | Right Alare (Soft Tissue) | The most lateral point on the right nasal ala | soft tissue | NA_R; X2(alR); al'R | Ryu 2020; Purkait & Singh; Ridel; Thitiorul et al. 2020 |
+| ST-11 | Left Alar Groove / Curvature Inferior | Most posterolateral point of the curvature of the base line of the left nasal ala / most inferior point on the left alar groove | soft tissue | ACI_L; ali'L | Ryu 2020; Thitiorul et al. 2020 |
+| ST-12 | Right Alar Groove / Curvature Inferior | Most posterolateral point of the curvature of the base line of the right nasal ala / most inferior point on the right alar groove | soft tissue | ACI_R; ali'R | Ryu 2020; Thitiorul et al. 2020 |
+| ST-13 | Right Reference Point 2 | The point where the T4R crosses the surface of the nasal soft tissue on the right | soft tissue | RR2 | Gerasimov & Maltais Lapointe |
+| ST-14 | Left Reference Point 2 | The point where the T4L crosses the surface of the nasal soft tissue on the left | soft tissue | LR2 | Gerasimov & Maltais Lapointe |
+| ST-15 | Midsagittal Reference Point 2 | The point where the T4 crosses the surface of the nasal soft tissue on the midsagittal plane | soft tissue | R2 | Gerasimov & Maltais Lapointe |
+| ST-16 | Soft Tissue Rhinion | Point overlying rhinion, at the end of the internasal suture where bone ends and cartilage begins | soft tissue | rhi' | Purkait & Singh |
+| ST-17 | Nasal Tip Inferior | Lowest point on the lower margin of the nasal tip in the midsagittal plane | soft tissue | nt | Purkait & Singh |
+| ST-18 | Left Nasal Base Attachment | The base of the left attachment of nasal wings on the upper lip | soft tissue | Y1(nbL) | Purkait & Singh |
+| ST-19 | Right Nasal Base Attachment | The base of the right attachment of nasal wings on the upper lip | soft tissue | Y2(nbR) | Purkait & Singh |
+| ST-20 | n-prn Posterior | The farthest point perpendicular from the line between n' and prn, located posteriorly | soft tissue | npp' | Thitiorul et al. 2020 |
+| ST-21 | n-prn Anterior | The farthest point perpendicular from the line between n' and prn, located anteriorly | soft tissue | npa' | Thitiorul et al. 2020 |
+| ST-22 | Nasal Drop | The farthest point perpendicular from the line between prn and sn, located inferiorly | soft tissue | nd' | Thitiorul et al. 2020 |
+
+
+</details>
 
 
 ```python
