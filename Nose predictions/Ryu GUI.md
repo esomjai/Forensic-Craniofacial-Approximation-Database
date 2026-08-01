@@ -521,7 +521,7 @@ class RyuGUI:
             "N68": "Right Alare Sagittal", "N72": "Orbital", "N76": "Coronal"
         }
 
-        # PRE-EXTRACT ORTHOGONAL PLANES (ONLY Midsagittal, Orbital, Coronal)
+        # PRE-EXTRACT ORTHOGONAL PLANES (Midsagittal, Orbital, Coronal)
         plane_origins = {}
         plane_normals = {}
         for p_name in ["Midsagittal", "Orbital", "Coronal"]:
@@ -532,79 +532,68 @@ class RyuGUI:
                 plane_origins[p_name] = o
                 plane_normals[p_name] = n
 
-        # Used for initial lateral fallback
         midsag_origin = plane_origins.get("Midsagittal")
         midsag_normal = plane_normals.get("Midsagittal")
 
         for landmark_name, (start_landmark, measurement_codes) in landmark_defs.items():
-            # Get starting hard tissue landmark
             start_pos = self.get_landmark_pos(hard_tissue_node, start_landmark)
             if start_pos is None:
                 continue
 
-            # Determine if this is the Left or Right side
-            # Right side = +1 (moves in direction of +X normal), Left side = -1 (moves opposite to normal)
+            # Determine side sign for lateral movement (Left = -1, Right = 1)
             side_sign = 1
-            if start_landmark == "A_L":
-                side_sign = -1
-            elif start_landmark == "A_R":
-                side_sign = 1
+            if start_landmark == "A_L": side_sign = -1
+            elif start_landmark == "A_R": side_sign = 1
 
-            # Initialize distance dictionary
-            dist_dict = {
-                "Midsagittal": 0.0, 
-                "Orbital": 0.0, 
-                "Coronal": 0.0
-            }
+            dist_dict = {"Midsagittal": 0.0, "Orbital": 0.0, "Coronal": 0.0}
 
-            # 1. Determine the lateral Midsagittal offset
-            # If the regression equation provides a lateral prediction, use it with the correct sign.
+            # 1. LATERAL OFFSET (Midsagittal)
             lateral_code = None
             if "ACS_L" in landmark_name or "ACP_L" in landmark_name or "NA_L" in landmark_name or "ACI_L" in landmark_name:
-                # Look for N41, N42, N43, N44
                 for code in measurement_codes:
-                    if code in ["N41", "N42", "N43", "N44"]:
-                        lateral_code = code
-                        break
+                    if code in ["N41", "N42", "N43", "N44"]: lateral_code = code; break
             elif "ACS_R" in landmark_name or "ACP_R" in landmark_name or "NA_R" in landmark_name or "ACI_R" in landmark_name:
-                # Look for N65, N66, N67, N68
                 for code in measurement_codes:
-                    if code in ["N65", "N66", "N67", "N68"]:
-                        lateral_code = code
-                        break
+                    if code in ["N65", "N66", "N67", "N68"]: lateral_code = code; break
 
             if lateral_code:
                 predicted_line_node = slicer.mrmlScene.GetFirstNodeByName("Predicted_{}".format(lateral_code))
                 if predicted_line_node:
                     dist = predicted_line_node.GetMeasurement('length').GetValue()
-                    # Apply the predicted lateral distance directly, multiplying by the side sign!
-                    # Positive distances are normal (outward), negative distances would push inward.
                     if abs(dist) > 0.1:
                         dist_dict["Midsagittal"] = side_sign * dist
 
-            # If predicted lateral line was missing or predicted distance was 0.0, lock to bony anchor
+            # If predicted lateral distance is missing/0, fallback to the bony anchor
             if abs(dist_dict["Midsagittal"]) < 0.1:
                 lateral_offset = np.dot(start_pos - midsag_origin, midsag_normal)
                 dist_dict["Midsagittal"] = lateral_offset
 
-            # 2. Apply Vertical and Depth predictions
+            # 2. VERTICAL OFFSET (Orbital) & ANTERIOR OFFSET (Coronal)
             for measurement_code in measurement_codes:
                 predicted_line_node = slicer.mrmlScene.GetFirstNodeByName("Predicted_{}".format(measurement_code))
                 if predicted_line_node:
                     dist = predicted_line_node.GetMeasurement('length').GetValue()
                     plane_name = plane_map.get(measurement_code)
-                    # Only apply to Orbital/Coronal here. Lateral was handled in Step 1.
-                    if plane_name in ["Orbital", "Coronal"]:
-                        dist_dict[plane_name] = dist
+                    
+                    if plane_name == "Coronal":
+                        dist_dict["Coronal"] = dist
+                        
+                    elif plane_name == "Orbital":
+                        # CRITICAL ANATOMICAL FIX:
+                        # Orbital plane points DOWN (-Z). 
+                        # For most landmarks (PN, SN, Alars), positive dist moves them downward.
+                        # But Selion (S) is SUPERIOR to the Orbital plane. It requires a NEGATIVE dist to move UPWARD.
+                        if landmark_name == "S":
+                            dist_dict["Orbital"] = -1.0 * dist
+                        else:
+                            dist_dict["Orbital"] = dist
 
             # 3. RECONSTRUCT THE 3D POINT FROM THE 3 ORTHOGONAL PLANES
             final_pos = np.zeros(3)
             for p_name, dist in dist_dict.items():
-                if p_name not in plane_origins:
-                    continue
+                if p_name not in plane_origins: continue
                 origin = plane_origins[p_name]
                 normal = plane_normals[p_name]
-                
                 scalar = np.dot(origin, normal) + dist
                 final_pos += scalar * normal
 
@@ -612,7 +601,7 @@ class RyuGUI:
             predicted_landmarks_node.AddControlPoint(final_pos, landmark_name)
 
         self.steps_completed['predicted_landmarks'] = True
-        slicer.util.infoDisplay("Step 4: Predicted soft tissue landmarks (pink) created in node '{}'.".format(node_name)) 
+        slicer.util.infoDisplay("Step 4: Predicted soft tissue landmarks (pink) created in node '{}'.".format(node_name))
 
     def create_true_soft_tissue_measurements(self):
         soft_landmarks_node = self.get_node(self.soft_tissue_selector, "True Soft Tissue Fiducials")
@@ -1250,18 +1239,35 @@ class DetailedBreakdownWindow(qt.QDialog):
             self.lengths_table.setItem(current_row, 3, qt.QTableWidgetItem("{:.2f}".format(true_val) if true_val is not None else "N/A"))
             self.lengths_table.setItem(current_row, 4, qt.QTableWidgetItem("{:.2f}".format(diff) if diff is not None else "N/A"))
 
+    # --- FIX: table_to_text is now properly aligned at the class level ---
     def table_to_text(self, table):
         text = ""
+        # 1. Build the Header
+        headers = []
         for c in range(table.columnCount):
             hdr = table.horizontalHeaderItem(c)
-            text += (hdr.text() if hdr else "") + "\t"
-        text = text.strip() + "\n"
+            headers.append(hdr.text() if hdr else "")
+        text += "\t".join(headers) + "\n"
+        
+        # 2. Build Rows, skipping empty ones
         for r in range(table.rowCount):
+            row_items = []
+            has_valid_data = False
+            
             for c in range(table.columnCount):
                 item = table.item(r, c)
-                text += (item.text() if item else "") + "\t"
-            text = text.strip() + "\n"
-        return text
+                val = item.text() if item else ""
+                row_items.append(val)
+                
+                # Determine if this row has any actual data (ignore "N/A" and empty strings)
+                if val and val != "N/A":
+                    has_valid_data = True
+            
+            # 3. Only add the row if it actually contains measurable data
+            if has_valid_data:
+                text += "\t".join(row_items) + "\n"
+                
+        return text.strip()
 
     def copy_landmark_data(self):
         clipboard = qt.QApplication.clipboard()
