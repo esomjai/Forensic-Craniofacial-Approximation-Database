@@ -339,12 +339,12 @@ class RyuGUI:
             return
 
         required = {
-        "Midsagittal": ["N", "lambda", "prosthion"],
-        "Orbital": ["O_R", "O_L", "au_R", "au_L"],
-        "Coronal": ["bregma"],
-        "Rhinion": ["R"],
-        "Alare": ["A_L", "A_R"]
-    }
+            "Midsagittal": ["N", "lambda", "prosthion"],
+            "Orbital": ["O_R", "O_L", "au_R", "au_L"],
+            "Coronal": ["bregma"],
+            "Rhinion": ["R"],
+            "Alare": ["A_L", "A_R"]
+        }
         all_landmarks = {}
         for i in range(landmarks_node.GetNumberOfControlPoints()):
             label = landmarks_node.GetNthControlPointLabel(i)
@@ -355,39 +355,41 @@ class RyuGUI:
             slicer.util.errorDisplay("Missing required landmarks: {}".format(', '.join(sorted(list(set(missing))))))
             return
 
+        # MIDSAGITTAL PLANE: X axis (points Right)
         midsag_pts = np.array([all_landmarks[n] for n in required["Midsagittal"]])
         centroid = midsag_pts.mean(axis=0)
         _, _, vh = np.linalg.svd(midsag_pts - centroid)
         midsag_normal = vh[2]
+        if midsag_normal[0] < 0: # Force to point Right (Positive X)
+            midsag_normal *= -1
+            
         midsagittal_plane = self.get_or_create_node("vtkMRMLMarkupsPlaneNode", "Midsagittal")
         midsagittal_plane.SetOrigin(centroid)
         midsagittal_plane.SetNormal(midsag_normal)
 
-        # Calculate auriculare midpoint
+        # ORBITAL PLANE: Z axis (points Inferior/Down)
         au_midpoint = (all_landmarks["au_L"] + all_landmarks["au_R"]) / 2.0
-
-        # Use auriculare midpoint and the two orbitale points
-        orbital_pts = np.array([
-            all_landmarks["O_R"],
-            all_landmarks["O_L"],
-            au_midpoint
-        ])
+        orbital_pts = np.array([all_landmarks["O_R"], all_landmarks["O_L"], au_midpoint])
         centroid = orbital_pts.mean(axis=0)
-
-        # Calculate the plane normal using SVD
         _, _, vh = np.linalg.svd(orbital_pts - centroid)
         initial_normal = vh[2]
 
         # Make the plane orthogonal to midsagittal plane
         orbital_normal = initial_normal - np.dot(initial_normal, midsag_normal) * midsag_normal
         orbital_normal = orbital_normal / np.linalg.norm(orbital_normal)
+        if orbital_normal[2] > 0: # Force to point Inferior (Negative Z)
+            orbital_normal *= -1
 
-        # Create the orbital plane
         orbital_plane = self.get_or_create_node("vtkMRMLMarkupsPlaneNode", "Orbital")
         orbital_plane.SetOrigin(centroid)
         orbital_plane.SetNormal(orbital_normal)
 
+        # CORONAL PLANE: Y axis (points Anterior/Forward)
+        # Since we want the face to be at Positive Y, this MUST point Positive Y!
         coronal_normal = np.cross(midsag_normal, orbital_normal)
+        if coronal_normal[1] < 0: # Force to point Anterior (Positive Y)
+            coronal_normal *= -1
+            
         coronal_plane = self.get_or_create_node("vtkMRMLMarkupsPlaneNode", "Coronal")
         coronal_plane.SetOrigin(all_landmarks["bregma"])
         coronal_plane.SetNormal(coronal_normal)
@@ -423,10 +425,10 @@ class RyuGUI:
             ("N31", "NAG_L", "Midsagittal"), ("N32", "NAI_L", "Midsagittal"), ("N33", "IC_L", "Orbital"),
             ("N34", "A_L", "Orbital"), ("N35", "NAG_L", "Orbital"), ("N36", "NAI_L", "Orbital"),
             ("N37", "IC_L", "Coronal"), ("N38", "A_L", "Coronal"), ("N39", "NAG_L", "Coronal"),
-            ("N40", "NAI_L", "Coronal"), ("N53", "IC_R", "Midsagittal"), ("N55", "NAG_R", "Midsagittal"),
-            ("N56", "NAI_R", "Midsagittal"), ("N57", "IC_R", "Orbital"), ("N59", "NAG_R", "Orbital"),
-            ("N60", "NAI_R", "Orbital"), ("N61", "IC_R", "Coronal"), ("N63", "NAG_R", "Coronal"),
-            ("N64", "NAI_R", "Coronal")
+            ("N40", "NAI_L", "Coronal"), ("N53", "IC_R", "Midsagittal"), ("N54", "A_R", "Midsagittal"),
+            ("N55", "NAG_R", "Midsagittal"), ("N56", "NAI_R", "Midsagittal"), ("N57", "IC_R", "Orbital"),
+            ("N59", "NAG_R", "Orbital"), ("N60", "NAI_R", "Orbital"), ("N61", "IC_R", "Coronal"),
+            ("N63", "NAG_R", "Coronal"), ("N64", "NAI_R", "Coronal")
         ]
 
         for line_name, landmark_name, plane_name in hard_tissue_measurements:
@@ -489,6 +491,12 @@ class RyuGUI:
         pred_display_node.SetColor(1, 0.4, 0.7)
         pred_display_node.SetGlyphScale(3.0)
 
+        # --- CORRECTION 1: GET THE ABSOLUTE POSITION OF HARD TISSUE NASION ---
+        hard_tissue_n_pos = self.get_landmark_pos(hard_tissue_node, "N")
+        if hard_tissue_n_pos is None:
+            slicer.util.errorDisplay("Hard tissue landmark 'N' (Nasion) not found! Cannot align coordinates.")
+            return
+
         # Define landmark definitions with their measurement sequences
         landmark_defs = {
             "S": ("N", ["N8", "N17", "N20"]), 
@@ -504,26 +512,7 @@ class RyuGUI:
             "ACI_R": ("A_R", ["N68", "N72", "N76"])
         }
 
-        # Map measurements to their corresponding hard tissue measurements
-        # For direction, we need to use the corresponding hard tissue measurement
-        hard_measurement_map = {
-        # Midline landmarks - Midsagittal uses N1, Orbital uses N4/N5, Coronal uses N6/N7
-        "N8": "N1", "N17": "N4", "N20": "N6",   # S: Midsagittal→N1, Orbital→N4, Coronal→N6
-        "N11": "N1", "N18": "N5", "N21": "N7",  # PN: Midsagittal→N1, Orbital→N5, Coronal→N7
-        "N14": "N1", "N19": "N5", "N22": "N7",  # SN: Midsagittal→N1, Orbital→N5, Coronal→N7
-        # Left alare landmarks - Alare Sagittal uses N30, Orbital uses N34, Coronal uses N38
-        "N41": "N30", "N45": "N34", "N49": "N38",
-        "N42": "N30", "N46": "N34", "N50": "N38",
-        "N43": "N30", "N47": "N34", "N51": "N38",
-        "N44": "N30", "N48": "N34", "N52": "N38",
-        # Right alare landmarks - Alare Sagittal uses N30, Orbital uses N34, Coronal uses N38
-        "N65": "N30", "N69": "N34", "N73": "N38",
-        "N66": "N30", "N70": "N34", "N74": "N38",
-        "N67": "N30", "N71": "N34", "N75": "N38",
-        "N68": "N30", "N72": "N34", "N76": "N38"
-    }
-
-        # Plane mapping for each measurement
+        # Map predicted measurements to their planes
         plane_map = {
             "N8": "Midsagittal", "N17": "Orbital", "N20": "Coronal",
             "N11": "Midsagittal", "N18": "Orbital", "N21": "Coronal",
@@ -538,73 +527,61 @@ class RyuGUI:
             "N68": "Right Alare Sagittal", "N72": "Orbital", "N76": "Coronal"
         }
 
+        # PRE-EXTRACT ORTHOGONAL PLANES (ONLY Midsagittal, Orbital, Coronal)
+        plane_origins = {}
+        plane_normals = {}
+        for p_name in ["Midsagittal", "Orbital", "Coronal"]:
+            p_node = planes.get(p_name)
+            if p_node:
+                o = np.zeros(3); p_node.GetOrigin(o)
+                n = np.zeros(3); p_node.GetNormal(n)
+                plane_origins[p_name] = o
+                plane_normals[p_name] = n
+
         for landmark_name, (start_landmark, measurement_codes) in landmark_defs.items():
-            # Start from the hard tissue landmark
-            current_pos = self.get_landmark_pos(hard_tissue_node, start_landmark)
-            if current_pos is None:
+            # Get starting hard tissue landmark
+            start_pos = self.get_landmark_pos(hard_tissue_node, start_landmark)
+            if start_pos is None:
                 continue
 
-            # Process each measurement in sequence
-            for measurement_code in measurement_codes:
-                # Get the predicted line for this measurement
-                predicted_line_node = slicer.mrmlScene.GetFirstNodeByName("Predicted_{}".format(measurement_code))
-                if not predicted_line_node:
-                    continue
-                
-                # Get the predicted distance
-                dist = predicted_line_node.GetMeasurement('length').GetValue()
-                
-                # Get the plane for this measurement
-                plane_name = plane_map.get(measurement_code)
-                if not plane_name:
-                    continue
-                plane_node = planes.get(plane_name)
-                if not plane_node:
-                    continue
-                
-                # Get the corresponding hard tissue measurement for direction
-                hard_code = hard_measurement_map.get(measurement_code)
-                if not hard_code:
-                    continue
-                hard_line = slicer.mrmlScene.GetFirstNodeByName(hard_code)
-                if not hard_line:
-                    continue
-                
-                # Get direction from hard tissue line
-                # Point 0 is the landmark, Point 1 is the projection onto the plane
-                landmark_pos = np.zeros(3)
-                plane_proj_pos = np.zeros(3)
-                hard_line.GetNthControlPointPosition(0, landmark_pos)
-                hard_line.GetNthControlPointPosition(1, plane_proj_pos)
-                
-                # Calculate direction vector (from plane projection to landmark)
-                direction = landmark_pos - plane_proj_pos
-                direction_norm = np.linalg.norm(direction)
-                if direction_norm < 1e-6:
-                    # If direction is zero, use plane normal as fallback
-                    plane_normal = np.zeros(3)
-                    plane_node.GetNormal(plane_normal)
-                    direction = plane_normal
-                    direction_norm = np.linalg.norm(direction)
-                
-                direction = direction / direction_norm
-                
-                # Get plane origin and normal
-                plane_origin = np.zeros(3)
-                plane_node.GetOrigin(plane_origin)
-                plane_normal = np.zeros(3)
-                plane_node.GetNormal(plane_normal)
-                
-                # Project current point onto the plane
-                v = current_pos - plane_origin
-                d = np.dot(v, plane_normal)
-                projected_point = current_pos - d * plane_normal
-                
-                # Move from projected point along the direction by the predicted distance
-                current_pos = projected_point + direction * dist
+            midsag_origin = plane_origins.get("Midsagittal")
+            midsag_normal = plane_normals.get("Midsagittal")
+            if midsag_origin is None or midsag_normal is None:
+                continue
 
-            # Add the final landmark
-            predicted_landmarks_node.AddControlPoint(current_pos, landmark_name)
+            # CALCULATE THE EXACT LATERAL COORDINATE OF THE BONY LANDMARK
+            lateral_offset = np.dot(start_pos - midsag_origin, midsag_normal)
+
+            dist_dict = {
+                "Midsagittal": lateral_offset, 
+                "Orbital": 0.0, 
+                "Coronal": 0.0
+            }
+
+            for measurement_code in measurement_codes:
+                predicted_line_node = slicer.mrmlScene.GetFirstNodeByName("Predicted_{}".format(measurement_code))
+                if predicted_line_node:
+                    dist = predicted_line_node.GetMeasurement('length').GetValue()
+                    plane_name = plane_map.get(measurement_code)
+                    # Only apply high-R^2 vertical/depth measurements
+                    if plane_name in ["Orbital", "Coronal"]:
+                        dist_dict[plane_name] = dist
+
+            # RECONSTRUCT THE 3D POINT FROM THE 3 ORTHOGONAL PLANES
+            final_pos = np.zeros(3)
+            for p_name, dist in dist_dict.items():
+                if p_name not in plane_origins:
+                    continue
+                origin = plane_origins[p_name]
+                normal = plane_normals[p_name]
+                
+                scalar = np.dot(origin, normal) + dist
+                final_pos += scalar * normal
+
+            # --- CORRECTION 2: SHIFT COORDINATES SO NASION IS AT (0,0,0) ---
+            final_pos_rel = final_pos - hard_tissue_n_pos
+
+            predicted_landmarks_node.AddControlPoint(final_pos_rel, landmark_name)
 
         self.steps_completed['predicted_landmarks'] = True
         slicer.util.infoDisplay("Step 4: Predicted soft tissue landmarks (pink) created in node '{}'.".format(node_name))
@@ -712,6 +689,9 @@ class LengthPredictionDialog(qt.QDialog):
 
     def get_regressions(self, sex, m):
         if sex == "Male":
+            # N45-N48 / N69-N72 use Orbital Plane (N35, N59). 
+            # N49-N52 / N73-N76 use Coronal Plane (N7 - AC to Coronal).
+            # N41-N44 / N65-N68 use Alare Sagittal Plane (N30, N54).
             return {
                 "N17": 0.92 * m.get("N4", 0) - 3.58,
                 "N18": 0.91 * m.get("N5", 0) - 6.84,
@@ -727,16 +707,27 @@ class LengthPredictionDialog(qt.QDialog):
                 "N71": 0.66 * m.get("N59", 0) + 6.77,
                 "N48": 0.66 * m.get("N35", 0) + 14.01,
                 "N72": 0.69 * m.get("N59", 0) + 13.52,
-                "N49": 0.91 * m.get("N39", 0) + 19.98,
-                "N73": 0.92 * m.get("N63", 0) + 18.62,
-                "N50": 0.95 * m.get("N39", 0) + 10.59,
-                "N74": 0.99 * m.get("N63", 0) + 8.11,
-                "N51": 0.98 * m.get("N39", 0) + 12.26,
-                "N75": 1.02 * m.get("N63", 0) + 9.19,
-                "N52": 0.96 * m.get("N39", 0) + 15.18,
-                "N76": 0.99 * m.get("N63", 0) + 13.23
+                "N49": 0.84 * m.get("N7", 0) + 16.41,
+                "N73": 0.83 * m.get("N7", 0) + 17.20,
+                "N50": 0.87 * m.get("N7", 0) + 8.61,
+                "N74": 0.90 * m.get("N7", 0) + 6.34,
+                "N51": 0.92 * m.get("N7", 0) + 8.38,
+                "N75": 0.94 * m.get("N7", 0) + 6.12,
+                "N52": 0.90 * m.get("N7", 0) + 11.41,
+                "N76": 0.92 * m.get("N7", 0) + 9.52,
+                # LATERAL LEFT (Alare Sagittal)
+                "N41": 0.56 * m.get("N30", 0) + 7.61,
+                "N42": 0.68 * m.get("N30", 0) + 12.51,
+                "N43": 0.58 * m.get("N30", 0) + 13.39,
+                "N44": 0.65 * m.get("N30", 0) + 6.57,
+                # LATERAL RIGHT (Alare Sagittal) - N65 has no correlation (p>=0.05)
+                "N65": 0.0, 
+                "N66": 0.79 * m.get("N54", 0) + 11.13,
+                "N67": 0.68 * m.get("N54", 0) + 12.12,
+                "N68": 0.48 * m.get("N54", 0) + 8.83
             }
         else:
+            # Female equations (Note: N41-N44 & N65-N68 = 0 because p>=0.05)
             return {
                 "N17": 0.85 * m.get("N4", 0) - 1.10,
                 "N18": 1.01 * m.get("N5", 0) - 9.04,
@@ -752,14 +743,17 @@ class LengthPredictionDialog(qt.QDialog):
                 "N71": 0.78 * m.get("N59", 0) + 3.82,
                 "N48": 0.65 * m.get("N35", 0) + 13.58,
                 "N72": 0.65 * m.get("N59", 0) + 13.15,
-                "N49": 0.97 * m.get("N39", 0) + 14.07,
-                "N73": 0.90 * m.get("N63", 0) + 18.81,
-                "N50": 0.95 * m.get("N39", 0) + 10.26,
-                "N74": 1.00 * m.get("N63", 0) + 6.55,
-                "N51": 0.95 * m.get("N39", 0) + 12.71,
-                "N75": 1.03 * m.get("N63", 0) + 7.54,
-                "N52": 0.99 * m.get("N39", 0) + 11.45,
-                "N76": 1.02 * m.get("N63", 0) + 9.06
+                "N49": 0.95 * m.get("N7", 0) + 7.65,
+                "N73": 0.93 * m.get("N7", 0) + 9.62,
+                "N50": 0.93 * m.get("N7", 0) + 3.83,
+                "N74": 1.03 * m.get("N7", 0) - 3.54,
+                "N51": 0.95 * m.get("N7", 0) + 4.62,
+                "N75": 1.07 * m.get("N7", 0) - 3.82,
+                "N52": 0.97 * m.get("N7", 0) + 4.68,
+                "N76": 1.05 * m.get("N7", 0) - 1.35,
+                # LATERAL (All p>=0.05, set to 0)
+                "N41": 0.0, "N42": 0.0, "N43": 0.0, "N44": 0.0,
+                "N65": 0.0, "N66": 0.0, "N67": 0.0, "N68": 0.0
             }
 
     def run_length_prediction(self):
@@ -785,17 +779,16 @@ class LengthPredictionDialog(qt.QDialog):
             slicer.mrmlScene.RemoveNode(node)
 
         # Map predicted measurements to their corresponding hard tissue measurements for direction
+        # UPDATED: Alare depth (N49-N52, N73-N76) now uses N7 (AC to Coronal) instead of NAG.
         hard_measurement_map = {
-        # Midline landmarks - use the correct hard tissue measurement for each plane
         "N17": "N4", "N18": "N5", "N19": "N5",
         "N20": "N6", "N21": "N7", "N22": "N7",
-        # Note: N8, N11, N14 are NOT in run_length_prediction because they don't have regression equations
-        # Left side - use the regression measurements
         "N45": "N34", "N46": "N34", "N47": "N34", "N48": "N34",
-        "N49": "N38", "N50": "N38", "N51": "N38", "N52": "N38",
-        # Right side - use the regression measurements
+        "N49": "N7", "N50": "N7", "N51": "N7", "N52": "N7",
         "N69": "N34", "N70": "N34", "N71": "N34", "N72": "N34",
-        "N73": "N38", "N74": "N38", "N75": "N38", "N76": "N38"
+        "N73": "N7", "N74": "N7", "N75": "N7", "N76": "N7",
+        "N41": "N30", "N42": "N30", "N43": "N30", "N44": "N30",
+        "N65": "N54", "N66": "N54", "N67": "N54", "N68": "N54"
     }
 
         # Plane mapping
@@ -805,7 +798,11 @@ class LengthPredictionDialog(qt.QDialog):
             "N45": "Orbital", "N46": "Orbital", "N47": "Orbital", "N48": "Orbital",
             "N49": "Coronal", "N50": "Coronal", "N51": "Coronal", "N52": "Coronal",
             "N69": "Orbital", "N70": "Orbital", "N71": "Orbital", "N72": "Orbital",
-            "N73": "Coronal", "N74": "Coronal", "N75": "Coronal", "N76": "Coronal"
+            "N73": "Coronal", "N74": "Coronal", "N75": "Coronal", "N76": "Coronal",
+            "N41": "Left Alare Sagittal", "N42": "Left Alare Sagittal", 
+            "N43": "Left Alare Sagittal", "N44": "Left Alare Sagittal",
+            "N65": "Right Alare Sagittal", "N66": "Right Alare Sagittal", 
+            "N67": "Right Alare Sagittal", "N68": "Right Alare Sagittal"
         }
 
         hard_tissue_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
@@ -1054,6 +1051,7 @@ class DetailedBreakdownWindow(qt.QDialog):
         lengths_header.setStretchLastSection(True)
 
     def get_regression_equations(self, sex):
+        # UPDATED to match the exact Ryu 2020 supplementary tables provided by user
         if sex == "Male":
             return {
                 "N17": "0.92 * N4 - 3.58",
@@ -1061,23 +1059,19 @@ class DetailedBreakdownWindow(qt.QDialog):
                 "N19": "0.91 * N5 + 5.81",
                 "N20": "0.93 * N6 + 11.28",
                 "N21": "0.96 * N7 + 24.70",
-                "N22": "0.96 * N7 + 8.0",
-                "N45": "0.66 * N35 - 3.97",
-                "N69": "0.62 * N59 - 2.63",
-                "N46": "0.75 * N35 + 3.07",
-                "N70": "0.75 * N59 + 3.70",
-                "N47": "0.66 * N35 + 6.72",
-                "N71": "0.66 * N59 + 6.77",
-                "N48": "0.66 * N35 + 14.01",
-                "N72": "0.69 * N59 + 13.52",
-                "N49": "0.91 * N39 + 19.98",
-                "N73": "0.92 * N63 + 18.62",
-                "N50": "0.95 * N39 + 10.59",
-                "N74": "0.99 * N63 + 8.11",
-                "N51": "0.98 * N39 + 12.26",
-                "N75": "1.02 * N63 + 9.19",
-                "N52": "0.96 * N39 + 15.18",
-                "N76": "0.99 * N63 + 13.23"
+                "N22": "0.96 * N7 + 11.20",
+                "N45": "0.66 * N35 - 3.97", "N69": "0.62 * N59 - 2.63",
+                "N46": "0.75 * N35 + 3.07", "N70": "0.75 * N59 + 3.70",
+                "N47": "0.66 * N35 + 6.72", "N71": "0.66 * N59 + 6.77",
+                "N48": "0.66 * N35 + 14.01", "N72": "0.69 * N59 + 13.52",
+                "N49": "0.84 * N7 + 16.41", "N73": "0.83 * N7 + 17.20",
+                "N50": "0.87 * N7 + 8.61", "N74": "0.90 * N7 + 6.34",
+                "N51": "0.92 * N7 + 8.38", "N75": "0.94 * N7 + 6.12",
+                "N52": "0.90 * N7 + 11.41", "N76": "0.92 * N7 + 9.52",
+                "N41": "0.56 * N30 + 7.61", "N65": "N/A (p>=0.05)",
+                "N42": "0.68 * N30 + 12.51", "N66": "0.79 * N54 + 11.13",
+                "N43": "0.58 * N30 + 13.39", "N67": "0.68 * N54 + 12.12",
+                "N44": "0.65 * N30 + 6.57", "N68": "0.48 * N54 + 8.83"
             }
         else:
             return {
@@ -1087,22 +1081,18 @@ class DetailedBreakdownWindow(qt.QDialog):
                 "N20": "0.96 * N6 + 8.36",
                 "N21": "1.00 * N7 + 19.50",
                 "N22": "1.02 * N7 + 5.18",
-                "N45": "0.67 * N35 - 3.71",
-                "N69": "0.66 * N59 - 3.60",
-                "N46": "0.80 * N35 + 3.27",
-                "N70": "0.77 * N59 + 3.85",
-                "N47": "0.65 * N35 + 6.73",
-                "N71": "0.78 * N59 + 3.82",
-                "N48": "0.65 * N35 + 13.58",
-                "N72": "0.65 * N59 + 13.15",
-                "N49": "0.97 * N39 + 14.07",
-                "N73": "0.90 * N63 + 18.81",
-                "N50": "0.95 * N39 + 10.26",
-                "N74": "1.00 * N63 + 6.55",
-                "N51": "0.95 * N39 + 12.71",
-                "N75": "1.03 * N63 + 7.54",
-                "N52": "0.99 * N39 + 11.45",
-                "N76": "1.02 * N63 + 9.06"
+                "N45": "0.67 * N35 - 3.71", "N69": "0.66 * N59 - 3.60",
+                "N46": "0.80 * N35 + 3.27", "N70": "0.77 * N59 + 3.85",
+                "N47": "0.65 * N35 + 6.73", "N71": "0.78 * N59 + 3.82",
+                "N48": "0.65 * N35 + 13.58", "N72": "0.65 * N59 + 13.15",
+                "N49": "0.95 * N7 + 7.65", "N73": "0.93 * N7 + 9.62",
+                "N50": "0.93 * N7 + 3.83", "N74": "1.03 * N7 - 3.54",
+                "N51": "0.95 * N7 + 4.62", "N75": "1.07 * N7 - 3.82",
+                "N52": "0.97 * N7 + 4.68", "N76": "1.05 * N7 - 1.35",
+                "N41": "N/A (p>=0.05)", "N65": "N/A (p>=0.05)",
+                "N42": "N/A (p>=0.05)", "N66": "N/A (p>=0.05)",
+                "N43": "N/A (p>=0.05)", "N67": "N/A (p>=0.05)",
+                "N44": "N/A (p>=0.05)", "N68": "N/A (p>=0.05)"
             }
 
     def get_landmark_equations(self, label, sex):
@@ -1277,7 +1267,6 @@ try:
         del ryu_gui_instance
 except:
     pass
-
 ryu_gui_instance = RyuGUI()
 
 ```
