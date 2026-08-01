@@ -491,12 +491,6 @@ class RyuGUI:
         pred_display_node.SetColor(1, 0.4, 0.7)
         pred_display_node.SetGlyphScale(3.0)
 
-        # --- CORRECTION 1: GET THE ABSOLUTE POSITION OF HARD TISSUE NASION ---
-        hard_tissue_n_pos = self.get_landmark_pos(hard_tissue_node, "N")
-        if hard_tissue_n_pos is None:
-            slicer.util.errorDisplay("Hard tissue landmark 'N' (Nasion) not found! Cannot align coordinates.")
-            return
-
         # Define landmark definitions with their measurement sequences
         landmark_defs = {
             "S": ("N", ["N8", "N17", "N20"]), 
@@ -538,36 +532,72 @@ class RyuGUI:
                 plane_origins[p_name] = o
                 plane_normals[p_name] = n
 
+        # Used for initial lateral fallback
+        midsag_origin = plane_origins.get("Midsagittal")
+        midsag_normal = plane_normals.get("Midsagittal")
+
         for landmark_name, (start_landmark, measurement_codes) in landmark_defs.items():
             # Get starting hard tissue landmark
             start_pos = self.get_landmark_pos(hard_tissue_node, start_landmark)
             if start_pos is None:
                 continue
 
-            midsag_origin = plane_origins.get("Midsagittal")
-            midsag_normal = plane_normals.get("Midsagittal")
-            if midsag_origin is None or midsag_normal is None:
-                continue
+            # Determine if this is the Left or Right side
+            # Right side = +1 (moves in direction of +X normal), Left side = -1 (moves opposite to normal)
+            side_sign = 1
+            if start_landmark == "A_L":
+                side_sign = -1
+            elif start_landmark == "A_R":
+                side_sign = 1
 
-            # CALCULATE THE EXACT LATERAL COORDINATE OF THE BONY LANDMARK
-            lateral_offset = np.dot(start_pos - midsag_origin, midsag_normal)
-
+            # Initialize distance dictionary
             dist_dict = {
-                "Midsagittal": lateral_offset, 
+                "Midsagittal": 0.0, 
                 "Orbital": 0.0, 
                 "Coronal": 0.0
             }
 
+            # 1. Determine the lateral Midsagittal offset
+            # If the regression equation provides a lateral prediction, use it with the correct sign.
+            lateral_code = None
+            if "ACS_L" in landmark_name or "ACP_L" in landmark_name or "NA_L" in landmark_name or "ACI_L" in landmark_name:
+                # Look for N41, N42, N43, N44
+                for code in measurement_codes:
+                    if code in ["N41", "N42", "N43", "N44"]:
+                        lateral_code = code
+                        break
+            elif "ACS_R" in landmark_name or "ACP_R" in landmark_name or "NA_R" in landmark_name or "ACI_R" in landmark_name:
+                # Look for N65, N66, N67, N68
+                for code in measurement_codes:
+                    if code in ["N65", "N66", "N67", "N68"]:
+                        lateral_code = code
+                        break
+
+            if lateral_code:
+                predicted_line_node = slicer.mrmlScene.GetFirstNodeByName("Predicted_{}".format(lateral_code))
+                if predicted_line_node:
+                    dist = predicted_line_node.GetMeasurement('length').GetValue()
+                    # Apply the predicted lateral distance directly, multiplying by the side sign!
+                    # Positive distances are normal (outward), negative distances would push inward.
+                    if abs(dist) > 0.1:
+                        dist_dict["Midsagittal"] = side_sign * dist
+
+            # If predicted lateral line was missing or predicted distance was 0.0, lock to bony anchor
+            if abs(dist_dict["Midsagittal"]) < 0.1:
+                lateral_offset = np.dot(start_pos - midsag_origin, midsag_normal)
+                dist_dict["Midsagittal"] = lateral_offset
+
+            # 2. Apply Vertical and Depth predictions
             for measurement_code in measurement_codes:
                 predicted_line_node = slicer.mrmlScene.GetFirstNodeByName("Predicted_{}".format(measurement_code))
                 if predicted_line_node:
                     dist = predicted_line_node.GetMeasurement('length').GetValue()
                     plane_name = plane_map.get(measurement_code)
-                    # Only apply high-R^2 vertical/depth measurements
+                    # Only apply to Orbital/Coronal here. Lateral was handled in Step 1.
                     if plane_name in ["Orbital", "Coronal"]:
                         dist_dict[plane_name] = dist
 
-            # RECONSTRUCT THE 3D POINT FROM THE 3 ORTHOGONAL PLANES
+            # 3. RECONSTRUCT THE 3D POINT FROM THE 3 ORTHOGONAL PLANES
             final_pos = np.zeros(3)
             for p_name, dist in dist_dict.items():
                 if p_name not in plane_origins:
@@ -578,13 +608,11 @@ class RyuGUI:
                 scalar = np.dot(origin, normal) + dist
                 final_pos += scalar * normal
 
-            # --- CORRECTION 2: SHIFT COORDINATES SO NASION IS AT (0,0,0) ---
-            final_pos_rel = final_pos - hard_tissue_n_pos
-
-            predicted_landmarks_node.AddControlPoint(final_pos_rel, landmark_name)
+            # KEEP IN WORLD RAS COORDINATES
+            predicted_landmarks_node.AddControlPoint(final_pos, landmark_name)
 
         self.steps_completed['predicted_landmarks'] = True
-        slicer.util.infoDisplay("Step 4: Predicted soft tissue landmarks (pink) created in node '{}'.".format(node_name))
+        slicer.util.infoDisplay("Step 4: Predicted soft tissue landmarks (pink) created in node '{}'.".format(node_name)) 
 
     def create_true_soft_tissue_measurements(self):
         soft_landmarks_node = self.get_node(self.soft_tissue_selector, "True Soft Tissue Fiducials")
