@@ -71,7 +71,7 @@ import numpy as np
 import qt
 import slicer
 
-# Schema for landmark recognition
+# Schema for landmark recognition (same as before)
 SCHEMA_JSON = r'''{"schemaVersion":"1.0.0","landmarks":[{"id":"HT-1","canonicalName":"Nasion","tissueType":"hard","aka":["nasion","N","n"]},{"id":"HT-2","canonicalName":"Inion","tissueType":"hard","aka":["inion"]},{"id":"HT-3","canonicalName":"Bregma","tissueType":"hard","aka":["bregma"]},{"id":"HT-4","canonicalName":"Prosthion","tissueType":"hard","aka":["prosthion","pr"]},{"id":"HT-5","canonicalName":"Subspinale","tissueType":"hard","aka":["subspinale","ss","point A"]},{"id":"HT-6","canonicalName":"Rhinion","tissueType":"hard","aka":["rhinion","R","rhi"]},{"id":"HT-7","canonicalName":"Acanthion / Anterior Nasal Spine","tissueType":"hard","aka":["acanthion","AC","ANS","ns","a"]},{"id":"HT-8","canonicalName":"Orbitale Left","tissueType":"hard","aka":["O_L"]},{"id":"HT-9","canonicalName":"Orbitale Right","tissueType":"hard","aka":["O_R"]},{"id":"HT-10","canonicalName":"Inferior Nasal Concha Left","tissueType":"hard","aka":["IC_L"]},{"id":"HT-11","canonicalName":"Inferior Nasal Concha Right","tissueType":"hard","aka":["IC_R"]},{"id":"HT-12","canonicalName":"Hard Tissue Alare Left","tissueType":"hard","aka":["A_L","alL","B (PA_L)"]},{"id":"HT-13","canonicalName":"Hard Tissue Alare Right","tissueType":"hard","aka":["A_R","alR","A (PA_R)"]},{"id":"HT-14","canonicalName":"Left Posterior Piriform Aperture Border","tissueType":"hard","aka":["NAG_L"]},{"id":"HT-15","canonicalName":"Right Posterior Piriform Aperture Border","tissueType":"hard","aka":["NAG_R"]},{"id":"HT-16","canonicalName":"Left Nasal Aperture Inferior","tissueType":"hard","aka":["NAI_L","LL","D (PAB_L)"]},{"id":"HT-17","canonicalName":"Right Nasal Aperture Inferior","tissueType":"hard","aka":["NAI_R","RL","C (PAB_R)"]},{"id":"HT-18","canonicalName":"Left Zygion","tissueType":"hard","aka":["zy_L"]},{"id":"HT-19","canonicalName":"Right Zygion","tissueType":"hard","aka":["zy_R"]},{"id":"HT-20","canonicalName":"Left Ectomolare","tissueType":"hard","aka":["ecm_L"]},{"id":"HT-21","canonicalName":"Right Ectomolare","tissueType":"hard","aka":["ecm_R"]},{"id":"HT-22","canonicalName":"Left Infraorbital Foramen","tissueType":"hard","aka":["iof_L"]},{"id":"HT-23","canonicalName":"Right Infraorbital Foramen","tissueType":"hard","aka":["iof_R"]},{"id":"HT-25","canonicalName":"Vomer-Maxillary Junction","tissueType":"hard","aka":["VMJ"]},{"id":"ST-1","canonicalName":"Soft Tissue Nasion","tissueType":"soft","aka":["soft nasion","n'","soft tissue nasion"]},{"id":"ST-2","canonicalName":"Subnasale","tissueType":"soft","aka":["subnasale","SN","sn'"]},{"id":"ST-3","canonicalName":"Pronasale","tissueType":"soft","aka":["pronasale","PN","prn","pn'"]},{"id":"ST-4","canonicalName":"Selion / Sellion","tissueType":"soft","aka":["S","se'"]},{"id":"ST-5","canonicalName":"Left Alar Groove / Curvature Superior","tissueType":"soft","aka":["ACS_L","als'L"]},{"id":"ST-6","canonicalName":"Right Alar Groove / Curvature Superior","tissueType":"soft","aka":["ACS_R","als'R"]},{"id":"ST-7","canonicalName":"Left Alar Groove / Curvature Posterior","tissueType":"soft","aka":["ACP_L","alp'L"]},{"id":"ST-8","canonicalName":"Right Alar Groove / Curvature Posterior","tissueType":"soft","aka":["ACP_R","alp'R"]},{"id":"ST-9","canonicalName":"Left Alare (Soft Tissue)","tissueType":"soft","aka":["NA_L","X1(alL)","al'L"]},{"id":"ST-10","canonicalName":"Right Alare (Soft Tissue)","tissueType":"soft","aka":["NA_R","X2(alR)","al'R"]},{"id":"ST-11","canonicalName":"Left Alar Groove / Curvature Inferior","tissueType":"soft","aka":["ACI_L","ali'L"]},{"id":"ST-12","canonicalName":"Right Alar Groove / Curvature Inferior","tissueType":"soft","aka":["ACI_R","ali'R"]},{"id":"ST-13","canonicalName":"Soft Tissue Rhinion","tissueType":"soft","aka":["rhi'"]},{"id":"ST-14","canonicalName":"Nasal Tip Inferior","tissueType":"soft","aka":["nt"]},{"id":"ST-15","canonicalName":"Left Nasal Base Attachment","tissueType":"soft","aka":["Y1(nbL)"]},{"id":"ST-16","canonicalName":"Right Nasal Base Attachment","tissueType":"soft","aka":["Y2(nbR)"]}]}'''
 
 def _normalize_label(label):
@@ -88,35 +88,28 @@ def _normalize_label(label):
 class LandmarkMergerTool(qt.QDialog):
     """
     Landmark Merger Tool - Standalone window with scrollable content and compact mode.
+    Now shows Source/Target Definitions from the markup descriptions.
     """
     
     def __init__(self, parent=None):
         super(LandmarkMergerTool, self).__init__(parent)
         self.setWindowTitle("Landmark Merger Tool")
-        self.setMinimumSize(500, 400)          # further reduced for small screens
+        self.setMinimumSize(500, 400)
         self.setMaximumSize(1200, 800)
         self.setModal(False)
         
-        # Set window flags to make it a proper window
         self.setWindowFlags(qt.Qt.Window | qt.Qt.WindowCloseButtonHint | qt.Qt.WindowMinimizeButtonHint)
-        
-        # Apply dark/light theme based on system
         self._applyTheme()
         
         self.schema = json.loads(SCHEMA_JSON)
         self.landmarkById = {lm["id"]: lm for lm in self.schema["landmarks"]}
-        
-        # Build alias index
         self._buildAliasIndex()
         
-        # Storage for comparison results
         self.matches = []
         self.compactMode = False
-        
         self._buildUI()
         
     def _applyTheme(self):
-        """Apply a clean modern theme."""
         self.setStyleSheet("""
             QDialog {
                 background-color: #f0f2f5;
@@ -206,7 +199,6 @@ class LandmarkMergerTool(qt.QDialog):
         """)
     
     def _buildAliasIndex(self):
-        """Build the alias-to-landmark mapping."""
         self.aliasToLandmarkIdsExact = {}
         self.aliasToLandmarkIdsNormalized = {}
         for lm in self.schema["landmarks"]:
@@ -215,31 +207,21 @@ class LandmarkMergerTool(qt.QDialog):
                 if str(v) not in self.aliasToLandmarkIdsExact:
                     self.aliasToLandmarkIdsExact[str(v)] = []
                 self.aliasToLandmarkIdsExact[str(v)].append(lm["id"])
-                
                 norm_v = _normalize_label(v)
                 if norm_v not in self.aliasToLandmarkIdsNormalized:
                     self.aliasToLandmarkIdsNormalized[norm_v] = []
                 self.aliasToLandmarkIdsNormalized[norm_v].append(lm["id"])
     
     def _buildUI(self):
-        """Build the user interface with a scrollable content area."""
-        # Main vertical layout for the whole window
         mainLayout = qt.QVBoxLayout(self)
         mainLayout.setSpacing(8)
         mainLayout.setContentsMargins(12, 12, 12, 12)
         
-        # ----- Header with title and compact toggle -----
         headerLayout = qt.QHBoxLayout()
         titleLabel = qt.QLabel("🔬 Landmark Merger Tool")
-        titleLabel.setStyleSheet("""
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-            padding: 3px;
-        """)
+        titleLabel.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50; padding: 3px;")
         headerLayout.addWidget(titleLabel)
         headerLayout.addStretch()
-        
         self.toggleCompactBtn = qt.QPushButton("⊞ Toggle Compact Mode")
         self.toggleCompactBtn.setStyleSheet("""
             QPushButton {
@@ -257,18 +239,14 @@ class LandmarkMergerTool(qt.QDialog):
         headerLayout.addWidget(self.toggleCompactBtn)
         mainLayout.addLayout(headerLayout)
         
-        # ----- Scrollable content area -----
         self.scrollArea = qt.QScrollArea()
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setFrameShape(qt.QFrame.NoFrame)
-        
-        # Container widget for scrollable content
         scrollContent = qt.QWidget()
         scrollLayout = qt.QVBoxLayout(scrollContent)
         scrollLayout.setSpacing(10)
         scrollLayout.setContentsMargins(0, 0, 0, 0)
         
-        # Description box (will be hidden in compact mode)
         self.descBox = qt.QGroupBox()
         descLayout = qt.QVBoxLayout(self.descBox)
         descLayout.setContentsMargins(10, 5, 10, 5)
@@ -277,22 +255,14 @@ class LandmarkMergerTool(qt.QDialog):
             "Useful for merging landmarks from previous analyses with new sets."
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet("""
-            color: #555555;
-            font-size: 12px;
-            background-color: #f8f9fa;
-            padding: 6px;
-            border-radius: 4px;
-        """)
+        desc.setStyleSheet("color: #555555; font-size: 12px; background-color: #f8f9fa; padding: 6px; border-radius: 4px;")
         descLayout.addWidget(desc)
         scrollLayout.addWidget(self.descBox)
         
-        # File selection section
         filesBox = qt.QGroupBox("📂 Select Landmark Files to Compare")
         filesLayout = qt.QFormLayout(filesBox)
         filesLayout.setSpacing(6)
         filesLayout.setContentsMargins(10, 15, 10, 10)
-        
         self.sourceSelector = slicer.qMRMLNodeComboBox()
         self.sourceSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
         self.sourceSelector.noneEnabled = True
@@ -301,7 +271,6 @@ class LandmarkMergerTool(qt.QDialog):
         self.sourceSelector.setMRMLScene(slicer.mrmlScene)
         self.sourceSelector.setToolTip("Select the source landmark file (coordinates will be imported FROM this file)")
         self.sourceSelector.setMinimumHeight(25)
-        
         self.targetSelector = slicer.qMRMLNodeComboBox()
         self.targetSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
         self.targetSelector.noneEnabled = True
@@ -310,12 +279,10 @@ class LandmarkMergerTool(qt.QDialog):
         self.targetSelector.setMRMLScene(slicer.mrmlScene)
         self.targetSelector.setToolTip("Select the target landmark file (coordinates will be imported TO this file)")
         self.targetSelector.setMinimumHeight(25)
-        
         filesLayout.addRow("📤 Source (Import FROM):", self.sourceSelector)
         filesLayout.addRow("📥 Target (Import TO):", self.targetSelector)
         scrollLayout.addWidget(filesBox)
         
-        # Compare button
         btnLayout = qt.QHBoxLayout()
         btnLayout.setContentsMargins(0, 3, 0, 3)
         self.compareBtn = qt.QPushButton("🔍 Compare Landmarks")
@@ -342,51 +309,43 @@ class LandmarkMergerTool(qt.QDialog):
         btnLayout.addStretch()
         scrollLayout.addLayout(btnLayout)
         
-        # Results table section
         resultsBox = qt.QGroupBox("📋 Matching Landmarks")
         resultsLayout = qt.QVBoxLayout(resultsBox)
         resultsLayout.setContentsMargins(10, 15, 10, 10)
-        
         instr = qt.QLabel(
             "✓ Check the box to import coordinates from the Source file\n"
             "✗ Uncheck to keep the Target file's coordinates"
         )
         instr.setWordWrap(True)
-        instr.setStyleSheet("""
-            color: #555555;
-            background-color: #f8f9fa;
-            padding: 5px;
-            border-radius: 4px;
-            font-size: 11px;
-        """)
+        instr.setStyleSheet("color: #555555; background-color: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;")
         resultsLayout.addWidget(instr)
-        
         self.resultsTable = qt.QTableWidget()
-        self.resultsTable.setColumnCount(6)
+        self.resultsTable.setColumnCount(8)  # UPDATED: 8 columns (added Source/Target Definition)
         self.resultsTable.setHorizontalHeaderLabels([
-            "Use Source", "ID", "Canonical Name", 
-            "Source Label", "Target Label", "Status"
+            "Use Source", "ID", "Canonical Name",
+            "Source Definition", "Target Definition",
+            "Source Label", "Target Label", "Coordinates"
         ])
         self.resultsTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
         self.resultsTable.verticalHeader().setVisible(False)
         self.resultsTable.setMinimumHeight(150)
         self.resultsTable.setMaximumHeight(400)
         self.resultsTable.setAlternatingRowColors(True)
-        
-        self.resultsTable.setColumnWidth(0, 70)
-        self.resultsTable.setColumnWidth(1, 80)
-        self.resultsTable.setColumnWidth(2, 180)
-        self.resultsTable.setColumnWidth(3, 130)
-        self.resultsTable.setColumnWidth(4, 130)
-        self.resultsTable.setColumnWidth(5, 90)
-        
+        # Set column widths (wider for definitions)
+        self.resultsTable.setColumnWidth(0, 70)   # Use Source
+        self.resultsTable.setColumnWidth(1, 80)   # ID
+        self.resultsTable.setColumnWidth(2, 180)  # Canonical Name
+        self.resultsTable.setColumnWidth(3, 200)  # Source Definition
+        self.resultsTable.setColumnWidth(4, 200)  # Target Definition
+        self.resultsTable.setColumnWidth(5, 130)  # Source Label
+        self.resultsTable.setColumnWidth(6, 130)  # Target Label
+        self.resultsTable.setColumnWidth(7, 90)   # Coordinates
         resultsLayout.addWidget(self.resultsTable)
         scrollLayout.addWidget(resultsBox)
+        self.resultsBox = resultsBox
         
-        # Action buttons
         actionLayout = qt.QHBoxLayout()
         actionLayout.setSpacing(8)
-        
         self.selectAllBtn = qt.QPushButton("✅ Select All")
         self.selectAllBtn.setStyleSheet("""
             QPushButton {
@@ -401,7 +360,6 @@ class LandmarkMergerTool(qt.QDialog):
             }
         """)
         self.selectAllBtn.clicked.connect(self.selectAll)
-        
         self.selectNoneBtn = qt.QPushButton("❌ Select None")
         self.selectNoneBtn.setStyleSheet("""
             QPushButton {
@@ -416,7 +374,6 @@ class LandmarkMergerTool(qt.QDialog):
             }
         """)
         self.selectNoneBtn.clicked.connect(self.selectNone)
-        
         self.applyBtn = qt.QPushButton("📥 Apply Selected Changes")
         self.applyBtn.setStyleSheet("""
             QPushButton {
@@ -438,14 +395,12 @@ class LandmarkMergerTool(qt.QDialog):
         self.applyBtn.clicked.connect(self.applyChanges)
         self.applyBtn.setEnabled(False)
         self.applyBtn.setMinimumHeight(32)
-        
         actionLayout.addWidget(self.selectAllBtn)
         actionLayout.addWidget(self.selectNoneBtn)
         actionLayout.addStretch(1)
         actionLayout.addWidget(self.applyBtn)
         scrollLayout.addLayout(actionLayout)
         
-        # Delete source file button
         deleteLayout = qt.QHBoxLayout()
         deleteLayout.setContentsMargins(0, 2, 0, 2)
         self.deleteBtn = qt.QPushButton("🗑️ Delete Source File (Optional)")
@@ -471,15 +426,10 @@ class LandmarkMergerTool(qt.QDialog):
         deleteLayout.addStretch()
         deleteLayout.addWidget(self.deleteBtn)
         scrollLayout.addLayout(deleteLayout)
-        
-        # Add a stretch at the bottom to keep content from stretching
         scrollLayout.addStretch()
-        
-        # Set the scroll content
         self.scrollArea.setWidget(scrollContent)
         mainLayout.addWidget(self.scrollArea)
         
-        # ----- Status bar (always visible) -----
         self.status = qt.QLabel("🔹 Ready - Select two landmark files and click 'Compare Landmarks'")
         self.status.setStyleSheet("""
             QLabel {
@@ -494,30 +444,20 @@ class LandmarkMergerTool(qt.QDialog):
         self.status.setMinimumHeight(28)
         mainLayout.addWidget(self.status)
         
-        # ----- Footer (hidden in compact mode) -----
         self.footerLayout = qt.QHBoxLayout()
         self.footerLayout.setContentsMargins(0, 2, 0, 0)
         self.footerLabel = qt.QLabel("Landmark Merger Tool v1.0 | 3D Slicer compatible")
-        self.footerLabel.setStyleSheet("""
-            color: #7f8c8d;
-            font-size: 10px;
-            padding: 3px;
-        """)
+        self.footerLabel.setStyleSheet("color: #7f8c8d; font-size: 10px; padding: 3px;")
         self.footerLayout.addWidget(self.footerLabel)
         self.footerLayout.addStretch()
         mainLayout.addLayout(self.footerLayout)
         
-        # Store references for compact mode
         self.mainLayout = mainLayout
-        self.resultsBox = resultsBox
         self.scrollContent = scrollContent
         
     def toggleCompactMode(self):
-        """Toggle between compact and full view for smaller screens."""
         self.compactMode = not self.compactMode
-        
         if self.compactMode:
-            # Hide description, reduce table height, hide footer, reduce margins
             self.descBox.setVisible(False)
             self.resultsTable.setMaximumHeight(200)
             self.footerLabel.setVisible(False)
@@ -529,30 +469,26 @@ class LandmarkMergerTool(qt.QDialog):
             self.footerLabel.setVisible(True)
             self.mainLayout.setContentsMargins(12, 12, 12, 12)
             self.toggleCompactBtn.setText("⊞ Toggle Compact Mode")
-        
-        # Adjust size to fit new layout (scroll area will adapt)
         self.adjustSize()
-        # Ensure minimum size is respected
         if self.size().width() < 500 or self.size().height() < 400:
             self.resize(max(self.size().width(), 500), max(self.size().height(), 400))
     
-    # ----------------------------------------------------------------------
-    # The rest of the class methods remain exactly as before
-    # (compareLandmarks, applyChanges, etc.) – they are unchanged.
-    # For brevity, they are included below but not repeated in full.
-    # ----------------------------------------------------------------------
+    # -----------------------------------------------------------------
+    # Core functionality – modified to include definitions
+    # -----------------------------------------------------------------
     
     def _collectNodeLabels(self, node):
-        """Collect all labels from a landmark node."""
+        """Collect labels and descriptions from a landmark node."""
         labels = []
         if not node:
             return labels
         for i in range(node.GetNumberOfControlPoints()):
-            labels.append((i, node.GetNthControlPointLabel(i)))
+            label = node.GetNthControlPointLabel(i)
+            desc = node.GetNthControlPointDescription(i) if hasattr(node, 'GetNthControlPointDescription') else ""
+            labels.append((i, label, desc))
         return labels
     
     def _findLandmarkId(self, label):
-        """Find the landmark ID for a given label using the schema."""
         if label in self.aliasToLandmarkIdsExact:
             ids = self.aliasToLandmarkIdsExact[label]
             if len(ids) == 1:
@@ -606,7 +542,8 @@ class LandmarkMergerTool(qt.QDialog):
         if sourceNode == targetNode:
             self._setStatus("❌ Error: Source and target files must be different", "error")
             return
-        sourceLabels = self._collectNodeLabels(sourceNode)
+        
+        sourceLabels = self._collectNodeLabels(sourceNode)   # returns (idx, label, desc)
         targetLabels = self._collectNodeLabels(targetNode)
         if not sourceLabels:
             self._setStatus("❌ Error: Source file has no landmarks", "error")
@@ -616,24 +553,27 @@ class LandmarkMergerTool(qt.QDialog):
             return
         
         self.matches = []
-        for sourceIdx, sourceLabel in sourceLabels:
+        for sourceIdx, sourceLabel, sourceDesc in sourceLabels:
             sourceLandmarkId = self._findLandmarkId(sourceLabel)
             if sourceLandmarkId:
                 canonicalName = self.landmarkById[sourceLandmarkId]["canonicalName"]
                 targetIdx = None
                 targetLabel = None
-                for tIdx, tLabel in targetLabels:
+                targetDesc = ""
+                for tIdx, tLabel, tDesc in targetLabels:
                     tLandmarkId = self._findLandmarkId(tLabel)
                     if tLandmarkId == sourceLandmarkId:
                         targetIdx = tIdx
                         targetLabel = tLabel
+                        targetDesc = tDesc
                         break
                 if targetIdx is None:
-                    for tIdx, tLabel in targetLabels:
+                    for tIdx, tLabel, tDesc in targetLabels:
                         tLandmarkId = self._findLandmarkId(tLabel)
                         if tLandmarkId and self.landmarkById[tLandmarkId]["canonicalName"] == canonicalName:
                             targetIdx = tIdx
                             targetLabel = tLabel
+                            targetDesc = tDesc
                             break
                 if targetIdx is not None:
                     self.matches.append({
@@ -641,8 +581,10 @@ class LandmarkMergerTool(qt.QDialog):
                         'canonical_name': canonicalName,
                         'source_idx': sourceIdx,
                         'source_label': sourceLabel,
+                        'source_desc': sourceDesc,
                         'target_idx': targetIdx,
                         'target_label': targetLabel,
+                        'target_desc': targetDesc,
                         'use_source': True
                     })
         self.matches.sort(key=lambda x: x['canonical_name'])
@@ -672,8 +614,7 @@ class LandmarkMergerTool(qt.QDialog):
         if unmatchedLandmarks:
             hard_unmatched = [lm for lm in unmatchedLandmarks if lm['tissueType'] == 'hard']
             soft_unmatched = [lm for lm in unmatchedLandmarks if lm['tissueType'] == 'soft']
-            msg = "📋 LANDMARKS IN TARGET BUT NOT IN SOURCE\n"
-            msg += "=" * 65 + "\n\n"
+            msg = "📋 LANDMARKS IN TARGET BUT NOT IN SOURCE\n" + "=" * 65 + "\n\n"
             msg += "The following landmarks exist in the TARGET file but are NOT present in the SOURCE file.\n"
             msg += "They will NOT be updated during the merge (no source coordinates available).\n\n"
             if hard_unmatched:
@@ -716,15 +657,29 @@ class LandmarkMergerTool(qt.QDialog):
             checkbox.setChecked(match['use_source'])
             checkbox.stateChanged.connect(lambda state, r=row: self._onCheckboxChanged(r, state))
             self.resultsTable.setCellWidget(row, 0, checkbox)
+            
+            # ID
             item = qt.QTableWidgetItem(match['landmark_id'])
             item.setTextAlignment(qt.Qt.AlignCenter)
             self.resultsTable.setItem(row, 1, item)
+            # Canonical Name
             item = qt.QTableWidgetItem(match['canonical_name'])
             self.resultsTable.setItem(row, 2, item)
-            item = qt.QTableWidgetItem(match['source_label'])
+            # Source Definition
+            item = qt.QTableWidgetItem(match['source_desc'] if match['source_desc'] else "")
+            item.setToolTip(match['source_desc'] if match['source_desc'] else "")
             self.resultsTable.setItem(row, 3, item)
-            item = qt.QTableWidgetItem(match['target_label'])
+            # Target Definition
+            item = qt.QTableWidgetItem(match['target_desc'] if match['target_desc'] else "")
+            item.setToolTip(match['target_desc'] if match['target_desc'] else "")
             self.resultsTable.setItem(row, 4, item)
+            # Source Label
+            item = qt.QTableWidgetItem(match['source_label'])
+            self.resultsTable.setItem(row, 5, item)
+            # Target Label
+            item = qt.QTableWidgetItem(match['target_label'])
+            self.resultsTable.setItem(row, 6, item)
+            # Status (now column 7)
             status = "✓ OK"
             statusColor = "#27ae60"
             sourceNode = self.sourceSelector.currentNode()
@@ -748,7 +703,7 @@ class LandmarkMergerTool(qt.QDialog):
             item = qt.QTableWidgetItem(status)
             item.setTextAlignment(qt.Qt.AlignCenter)
             item.setForeground(qt.QColor(statusColor))
-            self.resultsTable.setItem(row, 5, item)
+            self.resultsTable.setItem(row, 7, item)
     
     def _onCheckboxChanged(self, row, state):
         if row < len(self.matches):
@@ -841,10 +796,6 @@ class LandmarkMergerTool(qt.QDialog):
         updatedLandmarks = []
         skippedLandmarks = []
         originalTargetCount = targetNode.GetNumberOfControlPoints()
-        originalTargetLabels = []
-        for i in range(originalTargetCount):
-            originalTargetLabels.append(targetNode.GetNthControlPointLabel(i))
-        
         for match in self.matches:
             if match['use_source']:
                 try:
@@ -872,8 +823,7 @@ class LandmarkMergerTool(qt.QDialog):
         
         self._updateTable()
         unmatchedLandmarks = self._getUnmatchedTargetLandmarks(sourceNode, targetNode)
-        summary = "📊 MERGE COMPLETE\n"
-        summary += "=" * 65 + "\n\n"
+        summary = "📊 MERGE COMPLETE\n" + "=" * 65 + "\n\n"
         if changesApplied > 0:
             summary += "✅ Successfully updated coordinates for " + str(changesApplied) + " landmark(s):\n"
             for name in updatedLandmarks:
@@ -928,9 +878,8 @@ class LandmarkMergerTool(qt.QDialog):
     def closeEvent(self, event):
         event.accept()
 
-
+# Launch function
 def launchLandmarkMerger():
-    """Launch the Landmark Merger Tool as a standalone window."""
     for widget in qt.QApplication.topLevelWidgets():
         if isinstance(widget, LandmarkMergerTool):
             widget.raise_()
@@ -941,8 +890,7 @@ def launchLandmarkMerger():
     merger.show()
     return merger
 
-# Launch the tool as a standalone window
+# Launch the tool
 merger = launchLandmarkMerger()
-
 
 ```
