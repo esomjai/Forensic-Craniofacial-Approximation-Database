@@ -424,42 +424,183 @@ class LengthPredictionDialog(qt.QDialog):
         self.layout().addWidget(self.predict_btn)
 
     def get_regressions(self, sex, m):
+        # Helper to safely get a measurement value or 0.0 if it doesn't exist
+        def val(k): 
+            return m.get(k, 0.0)
+
+        # Helper to prioritize the best R^2 equation
+        def pick_best(options):
+            # options: list of tuples (R^2, independent_measurement, equation_lambda)
+            # We loop through them in order (highest R^2 first)
+            for _, measure_key, eq in options:
+                if val(measure_key) > 0.1: # Check if measurement exists and is valid
+                    return eq(val(measure_key))
+            return 0.0 # Fallback if all are missing
+
+        pred = {}
+
         if sex == "Male":
-            return {
-                "N17": 0.92 * m.get("N4", 0) - 3.58, "N18": 0.91 * m.get("N5", 0) - 6.84,
-                "N19": 0.91 * m.get("N5", 0) + 5.81, "N20": 0.93 * m.get("N6", 0) + 11.28,
-                "N21": 0.96 * m.get("N7", 0) + 24.70, "N22": 0.96 * m.get("N7", 0) + 11.20,
-                "N45": 0.66 * m.get("N35", 0) - 3.97, "N69": 0.62 * m.get("N59", 0) - 2.63,
-                "N46": 0.75 * m.get("N35", 0) + 3.07, "N70": 0.75 * m.get("N59", 0) + 3.70,
-                "N47": 0.66 * m.get("N35", 0) + 6.72, "N71": 0.66 * m.get("N59", 0) + 6.77,
-                "N48": 0.66 * m.get("N35", 0) + 14.01, "N72": 0.69 * m.get("N59", 0) + 13.52,
-                "N49": 0.84 * m.get("N7", 0) + 16.41, "N73": 0.83 * m.get("N7", 0) + 17.20,
-                "N50": 0.87 * m.get("N7", 0) + 8.61, "N74": 0.90 * m.get("N7", 0) + 6.34,
-                "N51": 0.92 * m.get("N7", 0) + 8.38, "N75": 0.94 * m.get("N7", 0) + 6.12,
-                "N52": 0.90 * m.get("N7", 0) + 11.41, "N76": 0.92 * m.get("N7", 0) + 9.52,
-                "N41": 0.56 * m.get("N30", 0) + 7.61, "N42": 0.68 * m.get("N30", 0) + 12.51,
-                "N43": 0.58 * m.get("N30", 0) + 13.39, "N44": 0.65 * m.get("N30", 0) + 6.57,
-                "N65": 0.0, "N66": 0.79 * m.get("N54", 0) + 11.13,
-                "N67": 0.68 * m.get("N54", 0) + 12.12, "N68": 0.48 * m.get("N54", 0) + 8.83
-            }
-        else:
-            return {
-                "N17": 0.85 * m.get("N4", 0) - 1.10, "N18": 1.01 * m.get("N5", 0) - 9.04,
-                "N19": 1.00 * m.get("N5", 0) + 3.23, "N20": 0.96 * m.get("N6", 0) + 8.36,
-                "N21": 1.00 * m.get("N7", 0) + 19.50, "N22": 1.02 * m.get("N7", 0) + 5.18,
-                "N45": 0.67 * m.get("N35", 0) - 3.71, "N69": 0.66 * m.get("N59", 0) - 3.60,
-                "N46": 0.80 * m.get("N35", 0) + 3.27, "N70": 0.77 * m.get("N59", 0) + 3.85,
-                "N47": 0.65 * m.get("N35", 0) + 6.73, "N71": 0.78 * m.get("N59", 0) + 3.82,
-                "N48": 0.65 * m.get("N35", 0) + 13.58, "N72": 0.65 * m.get("N59", 0) + 13.15,
-                "N49": 0.95 * m.get("N7", 0) + 7.65, "N73": 0.93 * m.get("N7", 0) + 9.62,
-                "N50": 0.93 * m.get("N7", 0) + 3.83, "N74": 1.03 * m.get("N7", 0) - 3.54,
-                "N51": 0.95 * m.get("N7", 0) + 4.62, "N75": 1.07 * m.get("N7", 0) - 3.82,
-                "N52": 0.97 * m.get("N7", 0) + 4.68, "N76": 1.05 * m.get("N7", 0) - 1.35,
-                "N41": 0.0, "N42": 0.0, "N43": 0.0, "N44": 0.0,
-                "N65": 0.0, "N66": 0.0, "N67": 0.0, "N68": 0.0
-            }
+            # --- Midline (No conflicts, single R^2 per plane) ---
+            pred["N17"] = 0.92 * val("N4") - 3.58
+            pred["N18"] = 0.91 * val("N5") - 6.84
+            pred["N19"] = 0.91 * val("N5") + 5.81
+            pred["N20"] = 0.93 * val("N6") + 11.28
+            pred["N21"] = 0.96 * val("N7") + 24.70
+            pred["N22"] = 0.96 * val("N7") + 11.20
+
+            # --- Alare Orbital (No conflicts, single R^2 per plane) ---
+            pred["N45"] = 0.66 * val("N35") - 3.97
+            pred["N69"] = 0.62 * val("N59") - 2.63
+            pred["N46"] = 0.75 * val("N35") + 3.07
+            pred["N70"] = 0.75 * val("N59") + 3.70
+            pred["N47"] = 0.66 * val("N35") + 6.72
+            pred["N71"] = 0.66 * val("N59") + 6.77
+            pred["N48"] = 0.66 * val("N35") + 14.01
+            pred["N72"] = 0.69 * val("N59") + 13.52
+
+            # --- Alare Coronal (Prioritized by R^2: N39/N63 > N7 > N28) ---
+            # N49 (Left ACS)
+            pred["N49"] = pick_best([
+                (85, "N39", lambda x: 0.91 * x + 19.98), # Primary (Highest R²)
+                (80, "N7",  lambda x: 0.84 * x + 16.41), # Secondary
+                (71, "N28", lambda x: 0.85 * x + 11.47)  # Tertiary
+            ])
+            # N50 (Left ACP)
+            pred["N50"] = pick_best([
+                (90, "N39", lambda x: 0.95 * x + 10.59),
+                (82, "N7",  lambda x: 0.87 * x + 8.61),
+                (66, "N28", lambda x: 0.83 * x + 7.11)
+            ])
+            # N51 (Left NA)
+            pred["N51"] = pick_best([
+                (87, "N39", lambda x: 0.98 * x + 12.26),
+                (82, "N7",  lambda x: 0.92 * x + 8.38),
+                (70, "N28", lambda x: 0.90 * x + 4.58)
+            ])
+            # N52 (Left ACI)
+            pred["N52"] = pick_best([
+                (88, "N39", lambda x: 0.96 * x + 15.18),
+                (83, "N7",  lambda x: 0.90 * x + 11.41),
+                (63, "N28", lambda x: 0.83 * x + 12.30)
+            ])
+            # N73 (Right ACS)
+            pred["N73"] = pick_best([
+                (84, "N63", lambda x: 0.92 * x + 18.62),
+                (75, "N7",  lambda x: 0.83 * x + 17.20),
+                (69, "N28", lambda x: 0.85 * x + 10.92)
+            ])
+            # N74 (Right ACP)
+            pred["N74"] = pick_best([
+                (90, "N63", lambda x: 0.99 * x + 8.11),
+                (81, "N7",  lambda x: 0.90 * x + 6.34),
+                (66, "N28", lambda x: 0.87 * x + 4.21)
+            ])
+            # N75 (Right NA)
+            pred["N75"] = pick_best([
+                (88, "N63", lambda x: 1.02 * x + 9.19),
+                (81, "N7",  lambda x: 0.94 * x + 6.12),
+                (70, "N28", lambda x: 0.94 * x + 1.61)
+            ])
+            # N76 (Right ACI)
+            pred["N76"] = pick_best([
+                (88, "N63", lambda x: 0.99 * x + 13.23),
+                (83, "N7",  lambda x: 0.92 * x + 9.52),
+                (62, "N28", lambda x: 0.85 * x + 10.92)
+            ])
+
+            # --- Alare Sagittal (Lateral) ---
+            pred["N41"] = 0.56 * val("N30") + 7.61
+            pred["N42"] = 0.68 * val("N30") + 12.51
+            pred["N43"] = 0.58 * val("N30") + 13.39
+            pred["N44"] = 0.65 * val("N30") + 6.57
+            pred["N65"] = 0.0 # p>=0.05
+            pred["N66"] = 0.79 * val("N54") + 11.13
+            pred["N67"] = 0.68 * val("N54") + 12.12
+            pred["N68"] = 0.48 * val("N54") + 8.83
+
+        else: # Female
+            # --- Midline ---
+            pred["N17"] = 0.85 * val("N4") - 1.10
+            pred["N18"] = 1.01 * val("N5") - 9.04
+            pred["N19"] = 1.00 * val("N5") + 3.23
+            pred["N20"] = 0.96 * val("N6") + 8.36
+            pred["N21"] = 1.00 * val("N7") + 19.50
+            pred["N22"] = 1.02 * val("N7") + 5.18
+
+            # --- Alare Orbital ---
+            pred["N45"] = 0.67 * val("N35") - 3.71
+            pred["N69"] = 0.66 * val("N59") - 3.60
+            pred["N46"] = 0.80 * val("N35") + 3.27
+            pred["N70"] = 0.77 * val("N59") + 3.85
+            pred["N47"] = 0.65 * val("N35") + 6.73
+            pred["N71"] = 0.78 * val("N59") + 3.82
+            pred["N48"] = 0.65 * val("N35") + 13.58
+            pred["N72"] = 0.65 * val("N59") + 13.15
+
+            # --- Alare Coronal (Prioritized by R^2: N39/N63 > N28 > N7 for Females) ---
+            # N49 (Left ACS)
+            pred["N49"] = pick_best([
+                (93, "N39", lambda x: 0.97 * x + 14.07), # Primary
+                (87, "N28", lambda x: 0.96 * x + 1.71),  # Secondary (N28 > N7 for Female)
+                (86, "N7",  lambda x: 0.95 * x + 7.65)   # Tertiary
+            ])
+            # N50 (Left ACP)
+            pred["N50"] = pick_best([
+                (97, "N39", lambda x: 0.95 * x + 10.26),
+                (87, "N28", lambda x: 0.92 * x - 0.61),
+                (90, "N7",  lambda x: 0.93 * x + 3.83)
+            ])
+            # N51 (Left NA)
+            pred["N51"] = pick_best([
+                (95, "N39", lambda x: 0.95 * x + 12.71),
+                (93, "N28", lambda x: 0.96 * x - 0.93),
+                (93, "N7",  lambda x: 0.95 * x + 4.62)
+            ])
+            # N52 (Left ACI)
+            pred["N52"] = pick_best([
+                (99, "N39", lambda x: 0.99 * x + 11.45),
+                (86, "N28", lambda x: 0.96 * x + 0.16),
+                (89, "N7",  lambda x: 0.97 * x + 4.68)
+            ])
+            # N73 (Right ACS)
+            pred["N73"] = pick_best([
+                (95, "N63", lambda x: 0.90 * x + 18.81),
+                (89, "N28", lambda x: 0.92 * x + 4.71),
+                (91, "N7",  lambda x: 0.93 * x + 9.62)
+            ])
+            # N74 (Right ACP)
+            pred["N74"] = pick_best([
+                (96, "N63", lambda x: 1.00 * x + 6.55),
+                (89, "N28", lambda x: 1.02 * x - 8.55),
+                (91, "N7",  lambda x: 1.03 * x - 3.54)
+            ])
+            # N75 (Right NA)
+            pred["N75"] = pick_best([
+                (94, "N63", lambda x: 1.03 * x + 7.54),
+                (88, "N28", lambda x: 1.05 * x - 8.27),
+                (92, "N7",  lambda x: 1.07 * x - 3.82)
+            ])
+            # N76 (Right ACI)
+            pred["N76"] = pick_best([
+                (95, "N63", lambda x: 1.02 * x + 9.06),
+                (87, "N28", lambda x: 1.03 * x - 5.60),
+                (91, "N7",  lambda x: 1.05 * x - 1.35)
+            ])
+
+            # --- Alare Sagittal (Lateral) p>=0.05, set to 0 ---
+            pred["N41"] = 0.0
+            pred["N42"] = 0.0
+            pred["N43"] = 0.0
+            pred["N44"] = 0.0
+            pred["N65"] = 0.0
+            pred["N66"] = 0.0
+            pred["N67"] = 0.0
+            pred["N68"] = 0.0
+
+        return pred
 
     def run_length_prediction(self):
+        # (The rest of this method remains EXACTLY the same as before)
         sex = self.sex_combo.currentText
         self.main_gui.last_prediction_sex = sex
         
