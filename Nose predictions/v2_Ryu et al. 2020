@@ -1,0 +1,1067 @@
+# The Ryu et al. 2020 method 
+
+For reference code snippets and insight for how 3D Slicer works, please refer to the official 3D Slicer webpage [^1]. 
+
+The Ryu et al. 2020[^2] method investigated multiple correlations between hard and soft tissue landmarks and measurement on 100 deceased Korean subjects. As  previous methods described by Ridel et al. (2018)[^3] and Lee et al. (2014)[^4], this method also features standardised planes which create the framework for 76 measurements. They describe 26 statistically significant regression equations predicting a soft tissue measurement from a single hard tissue measurement. As the definitions from hard tissue landmarks and measurements in relation to their planes provide a framework, unknown soft tissue measurements and consequently, soft tissue landmarks can be predicted based on their methods via "moving" a landmark from a known position along the planes and lengths predicted to a different position, acting as the predicted soft tissue landmark.
+
+As with other tutorials, this one will focus on 
+1) Reproducing the method in a situation where only hard tissue is available (predicted measurements); 
+2) then investigating the predictive power via establishing the true measurements
+
+
+### This document contains instructions for: 
+
+> [!WARNING]
+> The sample CT (CBCT PreDentalSurgery) used in the screenshots of this guide was taken pre-surgery for an underbite, the error rate shown in the guide is probably not representative if implemented on a population without pathologies.
+
+
+### Landmarks in this guide (for prediction of soft tissues)
+
+[Ryu_hard_tissue.mrk.json](https://github.com/user-attachments/files/24859018/Ryu_hard_tissue.mrk.json)
+
+
+
+| Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
+|------------------|------------------|--------------|---------------|------------|------------|
+| 0 | 1 | N | nasion | Intersection of the nasofrontal sutures in the median plane | Ryu et al. (2020)[^2]  |
+| 1 | 2 | lambda | lambda | Point at which the two legs of the lambdoid suture and sagittal suture meet  | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5]  |
+| 2 | 3 | prosthion | prosthion | Median point between the central incisors on the anterior most margin of the maxillary alveolar rim | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5]  |
+| 3 | 4 | bregma | bregma | Where the sagittal and coronal sutures meet | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5] |
+| 4 | 5 | O_L | left orbitale | Most inferior point on the left inferior orbital rim. Usually falls along the lateral half of the orbital margin | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5] |
+| 5 | 6 | O_R | right orbitale | Most inferior point on the right inferior orbital rim. Usually falls along the lateral half of the orbital margin | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5] |
+| 6 | 7 | por_L | left porion | Upper border of the right external auditory meatus or ear canal | Pittayapat et al. (2017)[^8]|
+| 7 | 8 | por_R | right porion | Upper border of the left external auditory meatus or ear canal | Pittayapat et al. (2017)[^8] |
+| 8 | 9 | au_L | left auriculare | On the left zygomatic root, vertically above the center of the left external auditory meatus | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5] |
+| 9 | 10 | au_R | right auriculare | On the right zygomatic root, vertically above the center of the right external auditory meatus | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5] |
+| 10 | 11 | R | rhinion | Most rostral (end) point on the internasal suture. Cannot be determined accurately if nasal bones are broken distally | Martin (1928)[^6]; Knussman (1988)[^7]; Caple & Stephan (2016)[^5] |
+| 11 | 12 | AC | acanthion | Most anterior tip of the anterior nasal spine | Howells (1937)[^9]; Howells (1974)[^10]; Caple & Stephan (2016)[^5] |
+| 12 | 13 | IC_L | left inferior concha | Point where the left inferior nasal concha is submerged into the medial wall of the nasal aperture | Ryu et al. (2020)[^2]  |
+| 13 | 14 | IC_R | right inferior concha | Point where the right inferior nasal concha is submerged into the medial wall of the nasal aperture | Ryu et al. (2020)[^2] |
+| 14 | 15 | A_L | left alare | Instrumentally determined as the most lateral point on the left of the nasal aperture in a transverse plane | Buikstra (1994)[^13]; Caple & Stephan (2016)[^5]  |
+| 15 | 16 | A_R | right alare | Instrumentally determined as the most lateral point on the right of the nasal aperture in a transverse plane | Buikstra (1994)[^13]; Caple & Stephan (2016)[^5]  |
+| 16 | 17 | NAG_L | left nasal aperture groove | Most posterior point on the left lateral curvature of the nasal aperture from profile view | Ryu et al. (2020)[^2] |
+| 17 | 18 | NAG_R | right nasal aperture groove | Most posterior point on the right lateral curvature of the nasal aperture from profile view | Ryu et al. (2020)[^2]  |
+| 18 | 19 | NAI_L | left nasal aperture inferior | Most inferior point on the left of the nasal aperture from the frontal view | Ryu et al. (2020)[^2]  |
+| 19 | 20 | NAI_R | right nasal aperture inferior | Most inferior point on the right of the nasal aperture from the frontal view | Ryu et al. (2020)[^2] |
+
+Soft tissue landmarks (ALLOCATION NOT NECESSARY for the prediction code to work)
+[Ryu_soft_tissue.mrk.json](https://github.com/user-attachments/files/29245314/Ryu_soft_tissue.mrk.json)
+
+
+
+| Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
+|------------------|-----------------|--------------|---------------|------------|------------|
+| 0 | 1 | S | selion | Deepest midline point of the nasofrontal angle | Kolar, 1997[^11]; Caple & Stephan (2016)[^5]  |
+| 1 | 2 | PN | pronasale | Most anteriorly projected point on a nose | Ryu et al. 2020[^2]  |
+| 2 | 3 | SN | SN | Median point at the junction between the lower border of the nasal septum and the philtrum area | Kolar, 1997[^11]; Caple & Stephan (2016)[^5] |
+| 3 | 4 | ACS_L | ACS_L | Highest point on the left ala nasi (rounded wing shape of a nose) |  Ryu et al. 2020[^2] |
+| 4 | 5 | ACS_R | ACS_R | Highest point on the right ala nasi (rounded wing shape of a nose) |  Ryu et al. 2020[^2] |
+| 5 | 6 | ACP_L | ACP_L | Most posterolateral point of the left curvature of the base of the nasal alae |  Ryu et al. 2020[^2] |
+|6 | 7 | ACP_R | ACP_R | Most posterolateral point of the right curvature of the base of the nasal alae |  Ryu et al. 2020[^2] |
+| 7 | 8 | NA_L | NA_L | The most lateral point on the left nasal ala |  Ryu et al. 2020[^2] |
+| 8 | 9 | NA_R | NA_R | The most lateral point on the right nasal ala |  Ryu et al. 2020[^2] |
+| 9 | 10 | ACI_L | ACI_L | Most posterolateral point of the curvature of the base line of the left nasal ala |  Ryu et al. 2020[^2] |
+| 10 | 11 | ACI_R | ACI_R | Most posterolateral point of the curvature of the base line of the right nasal ala |  Ryu et al. 2020[^2]|
+
+
+
+
+### Illustration of the method
+
+
+> [!WARNING]
+> Before you proceed, please make sure you completed the following steps: 
+
+- [ ] Re-aligned the scene in the FHP
+- [ ] Allocated all hard tissue landmarks
+
+### Reference planes & linear measurements from hard tissue landmarks in the study
+
+The following code snippet creates both the reference planes and all linear hard tissue measurements based on the placed landmarks. These are summarised by the two tables below: 
+
+<table>
+  <thead>
+    <tr>
+      <th>Plane in scene</th>
+      <th>Definition by Ryu et al. (2020)</th>
+      <th>Coded using…</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Midsagittal</td>
+      <td>Plane passing through the three landmarks, nasion, prosthion and lambda</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Orbital</td>
+      <td>Plane that passes through the two landmarks auriculare midpoint and orbitale and is orthogonal to the midsagittal plane</td>
+      <td>midpoint betreen the auriculare (au_L, au_R) and L/R orbitale</td>
+    </tr>
+    <tr>
+      <td>Coronal</td>
+      <td>Plane that passes through one landmark, bregma and is orthogonal to the midsagittal plane and orbital plane</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Rhinion</td>
+      <td>Plane that passes through one landmark, rhinion and is parallel to the orbital plane</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Left Alare Sagittal</td>
+      <td>Plane that passes through one landmark, left alare and is parallel to the midsagittal plane</td>
+      <td>sides separately</td>
+    </tr>
+    <tr>
+      <td>Right Alare Sagittal</td>
+      <td>Plane that passes through one landmark, right alare and is parallel to the midsagittal plane</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+#### Measurements
+
+| Measurement Code | Landmark name | Landmark code | Tissue type | Landmark plane name |
+|-----------------|---------------|--------------|------------|-------------------|
+| N1 | Acanthion | AC | hard | Midsagittal |
+| N2 | Acanthion | AC | hard | Left Alare Sagittal |
+| N3 | Acanthion | AC | hard | Right Alare Sagittal |
+| N4 | Nasion | N | hard | Orbital |
+| N5 | Acanthion | AC | hard | Orbital |
+| N6 | Nasion | N | hard | Coronal |
+| N7 | Acanthion | AC | hard | Coronal |
+| N8 | Sellion | S | soft | Midsagittal |
+| N9 | Sellion | S | soft | Left Alare Sagittal |
+| N10 | Sellion | S | soft | Right Alare Sagittal |
+| N11 | Pronasale | PN | soft | Midsagittal |
+| N12 | Pronasale | PN | soft | Left Alare Sagittal |
+| N13 | Pronasale | PN | soft | Right Alare Sagittal |
+| N14 | Subnasale | SN | soft | Midsagittal |
+| N15 | Subnasale | SN | soft | Left Alare Sagittal |
+| N16 | Subnasale | SN | soft | Right Alare Sagittal |
+| N17 | Sellion | S | soft | Orbital |
+| N18 | Pronasale | PN | soft | Orbital |
+| N19 | Subnasale | SN | soft | Orbital |
+| N20 | Sellion | S | soft | Coronal |
+| N21 | Pronasale | PN | soft | Coronal |
+| N22 | Subnasale | SN | soft | Coronal |
+| N23 | Orbitale (L) | O_L | hard | Rhinion |
+| N24 | Orbitale (R) | O_R | hard | Rhinion |
+| N25 | Sellion | S | soft | Rhinion |
+| N26 | Acanthion | AC | hard | Rhinion |
+| N27 | Subnasale | SN | soft | Rhinion |
+| N28 | Rhinion | R | hard | Coronal |
+| N29 | Left Inferior Concha | IC_L | hard | Midsagittal |
+| N30 | Left Alare | A_L | hard | Midsagittal |
+| N31 | Left Nasal Greater wing | NAG_L | hard | Midsagittal |
+| N32 | Left Nasal Inferior | NAI_L | hard | Midsagittal |
+| N33 | Left Inferior Concha | IC_L | hard | Orbital |
+| N34 | Left Alare | A_L | hard | Orbital |
+| N35 | Left Nasal Greater wing | NAG_L | hard | Orbital |
+| N36 | Left Nasal Inferior | NAI_L | hard | Orbital |
+| N37 | Left Inferior Concha | IC_L | hard | Coronal |
+| N38 | Left Alare | A_L | hard | Coronal |
+| N39 | Left Nasal Greater wing | NAG_L | hard | Coronal |
+| N40 | Left Nasal Inferior | NAI_L | hard | Coronal |
+| N41 | Left Alar crease Superior | ACS_L | soft | Midsagittal |
+| N42 | Left Alar crease Posterior | ACP_L | soft | Midsagittal |
+| N43 | Left Nose | NA_L | soft | Midsagittal |
+| N44 | Left Alar crease Inferior | ACI_L | soft | Midsagittal |
+| N45 | Left Alar crease Superior | ACS_L | soft | Orbital |
+| N46 | Left Alar crease Posterior | ACP_L | soft | Orbital |
+| N47 | Left Nose | NA_L | soft | Orbital |
+| N48 | Left Alar crease Inferior | ACI_L | soft | Orbital |
+| N49 | Left Alar crease Superior | ACS_L | soft | Coronal |
+| N50 | Left Alar crease Posterior | ACP_L | soft | Coronal |
+| N51 | Left Nose | NA_L | soft | Coronal |
+| N52 | Left Alar crease Inferior | ACI_L | soft | Coronal |
+| N53 | Right Inferior Concha | IC_R | hard | Midsagittal |
+| N54 | Right Nose | NA_R | soft | Midsagittal |
+| N55 | Right Nasal Greater wing | NAG_R | hard | Midsagittal |
+| N56 | Right Nasal Inferior | NAI_R | hard | Midsagittal |
+| N57 | Right Inferior Concha | IC_R | hard | Orbital |
+| N58 | Right Nose | NA_R | soft | Orbital |
+| N59 | Right Nasal Greater wing | NAG_R | hard | Orbital |
+| N60 | Right Nasal Inferior | NAI_R | hard | Orbital |
+| N61 | Right Inferior Concha | IC_R | hard | Coronal |
+| N62 | Right Nose | NA_R | soft | Coronal |
+| N63 | Right Nasal Greater wing | NAG_R | hard | Coronal |
+| N64 | Right Nasal Inferior | NAI_R | hard | Coronal |
+| N65 | Right Alar crease Superior | ACS_R | soft | Midsagittal |
+| N66 | Right Alar crease Posterior | ACP_R | soft | Midsagittal |
+| N67 | Right Nose | NA_R | soft | Midsagittal |
+| N68 | Right Alar crease Inferior | ACI_R | soft | Midsagittal |
+| N69 | Right Alar crease Superior | ACS_R | soft | Orbital |
+| N70 | Right Alar crease Posterior | ACP_R | soft | Orbital |
+| N71 | Right Nose | NA_R | soft | Orbital |
+| N72 | Right Alar crease Inferior | ACI_R | soft | Orbital |
+| N73 | Right Alar crease Superior | ACS_R | soft | Coronal |
+| N74 | Right Alar crease Posterior | ACP_R | soft | Coronal |
+| N75 | Right Nose | NA_R | soft | Coronal |
+| N76 | Right Alar crease Inferior | ACI_R | soft | Coronal |
+
+<details>
+<summary> Code for hard tissue planes and measurements </summary>
+
+``` python
+import slicer
+import numpy as np
+import vtk
+import os
+
+# Helper to force colors to stick
+def _ensure_display_node(node):
+    dn = node.GetDisplayNode()
+    if not dn:
+        dn = node.CreateDefaultDisplayNodes()
+    return dn
+
+def get_hard_tissue_node():
+    node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
+    if node is not None and node.IsA("vtkMRMLMarkupsFiducialNode"):
+        return node
+    default_path = os.path.join(os.path.expanduser("~"), "Ryu_hard_tissue.mrk.json")
+    if os.path.exists(default_path):
+        node = slicer.util.loadMarkups(default_path)
+        if node is not None:
+            node.SetName("Ryu_hard_tissue")
+            return node
+    slicer.util.errorDisplay("Load 'Ryu_hard_tissue.mrk.json' manually.")
+    return None
+
+def create_anatomical_planes(landmarksNode):
+    # Midsagittal
+    midsag_pts = np.array([landmarksNode.GetNthControlPointPosition(i) 
+                           for i in range(landmarksNode.GetNumberOfControlPoints()) 
+                           if landmarksNode.GetNthControlPointLabel(i) in ["N", "lambda", "prosthion"]])
+    centroid = midsag_pts.mean(axis=0)
+    _, _, vh = np.linalg.svd(midsag_pts - centroid)
+    normal = vh[2]
+    if normal[0] < 0: normal *= -1
+    midsagPlane = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "Midsagittal")
+    midsagPlane.SetOrigin(centroid); midsagPlane.SetNormal(normal)
+    dn = _ensure_display_node(midsagPlane)
+    dn.SetColor(0.31, 0.78, 0.47); dn.SetSelectedColor(0.31, 0.78, 0.47) # Emerald
+
+    # Orbital
+    au_L = au_R = O_L = O_R = None
+    for i in range(landmarksNode.GetNumberOfControlPoints()):
+        p = np.array(landmarksNode.GetNthControlPointPosition(i))
+        lbl = landmarksNode.GetNthControlPointLabel(i)
+        if lbl == "au_L": au_L = p
+        elif lbl == "au_R": au_R = p
+        elif lbl == "O_L": O_L = p
+        elif lbl == "O_R": O_R = p
+    au_mid = (au_L + au_R) / 2.0
+    pts = np.array([O_R, O_L, au_mid])
+    centroid = pts.mean(axis=0)
+    _, _, vh = np.linalg.svd(pts - centroid)
+    initial_n = vh[2]
+    midsag_n = np.array(midsagPlane.GetNormal())
+    orbital_n = initial_n - np.dot(initial_n, midsag_n) * midsag_n
+    orbital_n /= np.linalg.norm(orbital_n)
+    if orbital_n[2] > 0: orbital_n *= -1
+    orbPlane = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "Orbital")
+    orbPlane.SetOrigin(centroid); orbPlane.SetNormal(orbital_n)
+    dn = _ensure_display_node(orbPlane)
+    dn.SetColor(0.78, 0.31, 0.47); dn.SetSelectedColor(0.78, 0.31, 0.47) # Purple
+
+    # Coronal
+    bregma = None
+    for i in range(landmarksNode.GetNumberOfControlPoints()):
+        if landmarksNode.GetNthControlPointLabel(i) == "bregma":
+            bregma = np.array(landmarksNode.GetNthControlPointPosition(i)); break
+    coronal_n = np.cross(midsag_n, orbital_n)
+    coronal_n /= np.linalg.norm(coronal_n)
+    if coronal_n[1] < 0: coronal_n *= -1
+    corPlane = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "Coronal")
+    corPlane.SetOrigin(bregma); corPlane.SetNormal(coronal_n)
+    dn = _ensure_display_node(corPlane)
+    dn.SetColor(0.31, 0.47, 0.78); dn.SetSelectedColor(0.31, 0.47, 0.78) # Blue
+
+    # Rhinion
+    rhinion = None
+    for i in range(landmarksNode.GetNumberOfControlPoints()):
+        if landmarksNode.GetNthControlPointLabel(i) == "R":
+            rhinion = np.array(landmarksNode.GetNthControlPointPosition(i)); break
+    rhPlane = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", "Rhinion")
+    rhPlane.SetOrigin(rhinion); rhPlane.SetNormal(orbital_n)
+    dn = _ensure_display_node(rhPlane)
+    dn.SetColor(0.9, 0.7, 0.1); dn.SetSelectedColor(0.9, 0.7, 0.1) # Gold
+
+    # Alare Sagittal Planes
+    for lm, pn in [("A_L", "Left Alare Sagittal"), ("A_R", "Right Alare Sagittal")]:
+        p = None
+        for i in range(landmarksNode.GetNumberOfControlPoints()):
+            if landmarksNode.GetNthControlPointLabel(i) == lm:
+                p = np.array(landmarksNode.GetNthControlPointPosition(i)); break
+        plane = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", pn)
+        plane.SetOrigin(p); plane.SetNormal(midsag_n)
+        dn = _ensure_display_node(plane)
+        if "Left" in pn:
+            dn.SetColor(0.2, 0.8, 0.2); dn.SetSelectedColor(0.2, 0.8, 0.2)  # Green
+        else:
+            dn.SetColor(0.8, 0.2, 0.2); dn.SetSelectedColor(0.8, 0.2, 0.2)  # Red
+
+    print("Anatomical planes created.")
+
+def create_hard_tissue_measurements(landmarksNode):
+    measurements = [
+        ("N1", "AC", "Midsagittal"), ("N2", "AC", "Left Alare Sagittal"), ("N3", "AC", "Right Alare Sagittal"),
+        ("N4", "N", "Orbital"), ("N5", "AC", "Orbital"), ("N6", "N", "Coronal"), ("N7", "AC", "Coronal"),
+        ("N28", "R", "Coronal"), ("N29", "IC_L", "Midsagittal"), ("N30", "A_L", "Midsagittal"),
+        ("N31", "NAG_L", "Midsagittal"), ("N32", "NAI_L", "Midsagittal"), ("N33", "IC_L", "Orbital"),
+        ("N34", "A_L", "Orbital"), ("N35", "NAG_L", "Orbital"), ("N36", "NAI_L", "Orbital"),
+        ("N37", "IC_L", "Coronal"), ("N38", "A_L", "Coronal"), ("N39", "NAG_L", "Coronal"), ("N40", "NAI_L", "Coronal"),
+        ("N53", "IC_R", "Midsagittal"), ("N54", "A_R", "Midsagittal"), ("N55", "NAG_R", "Midsagittal"), ("N56", "NAI_R", "Midsagittal"),
+        ("N57", "IC_R", "Orbital"), ("N59", "NAG_R", "Orbital"), ("N60", "NAI_R", "Orbital"),
+        ("N61", "IC_R", "Coronal"), ("N63", "NAG_R", "Coronal"), ("N64", "NAI_R", "Coronal")
+    ]
+    for lname, lm, pn in measurements:
+        point = None
+        for i in range(landmarksNode.GetNumberOfControlPoints()):
+            if landmarksNode.GetNthControlPointLabel(i) == lm:
+                point = np.array(landmarksNode.GetNthControlPointPosition(i)); break
+        if point is None: continue
+        plane = slicer.mrmlScene.GetFirstNodeByName(pn)
+        if plane is None: continue
+        n = np.array(plane.GetNormal()); o = np.array(plane.GetOrigin())
+        proj = point - np.dot(point - o, n) * n
+        
+        line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", lname)
+        line.AddControlPoint(point); line.AddControlPoint(proj)
+        line.GetMeasurement('length').SetEnabled(True)
+        dn = _ensure_display_node(line)
+        dn.SetColor(0, 1, 1); dn.SetSelectedColor(0, 1, 1) # Cyan
+    print("Hard tissue measurement lines created (Cyan).")
+
+try:
+    hard_node = get_hard_tissue_node()
+    if hard_node is not None:
+        create_anatomical_planes(hard_node)
+        create_hard_tissue_measurements(hard_node)
+        slicer.util.delayDisplay("Setup Complete", 3000)
+except Exception as e:
+    slicer.util.errorDisplay(f"Error: {str(e)}")
+
+```
+</details>
+
+You can expect the following view after the code: 
+
+
+<img src="https://github.com/user-attachments/assets/e347e1f6-b189-4015-bb05-ea6da6182116" width="500">
+
+
+
+Feel free to adjust the size of the visible planes (in theory, they are infinite, so this is just for visuals).
+
+
+### Prediction regressions
+
+The original study distinguished their regression equations based on biological sex, therefore an graphic user interface will offer you to choose the biological sex of the skull. Then the following equations are applied to first estimate the soft tissue linear measurements, then landmarks. 
+
+| Sides   | Predicted Length | Regression for Males                | Regression for Females                | Common Plane |
+|---------|------------------|-------------------------------------|---------------------------------------|--------------|
+| midline | **N17**          | 0.92×**N4**−3.58                    | 0.85×**N4**−1.10                      | Orbital      |
+| midline | **N18**          | 0.91×**N5**−6.84                    | 1.01×**N5**−9.04                      | Orbital      |
+| midline | **N19**          | 0.91×**N5**+5.81                    | 1.00×**N5**+3.23                      | Orbital      |
+| midline | **N20**          | 0.93×**N6**+11.28                   | 0.96×**N6**+8.36                      | Coronal      |
+| midline | **N21**          | 0.96×**N7**+24.70                   | 1.00×**N7**+19.50                     | Coronal      |
+| midline | **N22**          | 0.96 × N7 + 11.20                  | 1.02×**N7**+5.18                      | Orbital      |
+| left    | **N45**          | 0.66×**N35**−3.97                   | 0.67×**N35**−3.71                     | Orbital      |
+| right   | **N69**          | 0.62×**N59**−2.63                   | 0.66×**N59**−3.60                     | Orbital      |
+| left    | **N46**          | 0.75×**N35**+3.07                   | 0.80×**N35**+3.27                     | Orbital      |
+| right   | **N70**          | 0.75×**N59**+3.70                   | 0.77×**N59**+3.85                     | Orbital      |
+| left    | **N47**          | 0.66×**N35**+6.72                   | 0.65×**N35**+6.73                     | Orbital      |
+| right   | **N71**          | 0.66×**N59**+6.77                   | 0.78×**N59**+3.82                     | Orbital      |
+| left    | **N48**          | 0.66×**N35**+14.01                  | 0.65×**N35**+13.58                    | Orbital      |
+| right   | **N72**          | 0.69×**N59**+13.52                  | 0.65×**N59**+13.15                    | Coronal      |
+| left    | **N49**          | 0.91×**N39**+19.98                  | 0.97×**N39**+14.07                    | Coronal      |
+| right   | **N73**          | 0.92×**N63**+18.62                  | 0.90×**N63**+18.81                    | Coronal      |
+| left    | **N50**          | 0.95×**N39**+10.59                  | 0.95×**N39**+10.26                    | Coronal      |
+| right   | **N74**          | 0.99×**N63**+8.11                   | 1.00×**N63**+6.55                     | Coronal      |
+| left    | **N51**          | 0.98×**N39**+12.26                  | 0.95×**N39**+12.71                    | Coronal      |
+| right   | **N75**          | 1.02×**N63**+9.19                   | 1.03×**N63**+7.54                     | Coronal      |
+| left    | **N52**          | 0.96×**N39**+15.18                  | 0.99×**N39**+11.45                    | Coronal      |
+| right   | **N76**          | 0.99×**N63**+13.23                  | 1.02×**N63**+9.06                     | Coronal      |
+
+
+  The code's logic is the following - approximated distances (from the regresion equations) of the soft tissue landmarks from the planes in the "framework" are simultaneously applied to predict the position of the soft tissue landmark. 
+
+
+
+<details>
+<summary> GUI code for prediction of soft tissue landmarks</summary>
+  
+``` python
+import qt
+import slicer
+import numpy as np
+import datetime
+
+def _ensure_display_node(node):
+    dn = node.GetDisplayNode()
+    if not dn:
+        dn = node.CreateDefaultDisplayNodes()
+    return dn
+
+class LengthPredictionDialog(qt.QDialog):
+    def __init__(self, main_gui, parent=None):
+        super(LengthPredictionDialog, self).__init__(parent)
+        self.main_gui = main_gui
+        self.setWindowTitle("Predict Soft Tissue Lengths")
+        self.setLayout(qt.QVBoxLayout())
+        self.layout().addWidget(qt.QLabel("<b>Select Biological Sex:</b>"))
+        self.sex_combo = qt.QComboBox()
+        self.sex_combo.addItems(["Male", "Female"])
+        self.layout().addWidget(self.sex_combo)
+        self.predict_btn = qt.QPushButton("Predict Lengths and Create Lines")
+        self.predict_btn.setStyleSheet("background-color: #CCFFCC; font-weight: bold; padding: 8px;")
+        self.predict_btn.clicked.connect(self.run_length_prediction)
+        self.layout().addWidget(self.predict_btn)
+
+    def get_regressions(self, sex, m):
+        if sex == "Male":
+            return {
+                "N17": 0.92 * m.get("N4", 0) - 3.58, "N18": 0.91 * m.get("N5", 0) - 6.84,
+                "N19": 0.91 * m.get("N5", 0) + 5.81, "N20": 0.93 * m.get("N6", 0) + 11.28,
+                "N21": 0.96 * m.get("N7", 0) + 24.70, "N22": 0.96 * m.get("N7", 0) + 11.20,
+                "N45": 0.66 * m.get("N35", 0) - 3.97, "N69": 0.62 * m.get("N59", 0) - 2.63,
+                "N46": 0.75 * m.get("N35", 0) + 3.07, "N70": 0.75 * m.get("N59", 0) + 3.70,
+                "N47": 0.66 * m.get("N35", 0) + 6.72, "N71": 0.66 * m.get("N59", 0) + 6.77,
+                "N48": 0.66 * m.get("N35", 0) + 14.01, "N72": 0.69 * m.get("N59", 0) + 13.52,
+                "N49": 0.84 * m.get("N7", 0) + 16.41, "N73": 0.83 * m.get("N7", 0) + 17.20,
+                "N50": 0.87 * m.get("N7", 0) + 8.61, "N74": 0.90 * m.get("N7", 0) + 6.34,
+                "N51": 0.92 * m.get("N7", 0) + 8.38, "N75": 0.94 * m.get("N7", 0) + 6.12,
+                "N52": 0.90 * m.get("N7", 0) + 11.41, "N76": 0.92 * m.get("N7", 0) + 9.52,
+                "N41": 0.56 * m.get("N30", 0) + 7.61, "N42": 0.68 * m.get("N30", 0) + 12.51,
+                "N43": 0.58 * m.get("N30", 0) + 13.39, "N44": 0.65 * m.get("N30", 0) + 6.57,
+                "N65": 0.0, "N66": 0.79 * m.get("N54", 0) + 11.13,
+                "N67": 0.68 * m.get("N54", 0) + 12.12, "N68": 0.48 * m.get("N54", 0) + 8.83
+            }
+        else:
+            return {
+                "N17": 0.85 * m.get("N4", 0) - 1.10, "N18": 1.01 * m.get("N5", 0) - 9.04,
+                "N19": 1.00 * m.get("N5", 0) + 3.23, "N20": 0.96 * m.get("N6", 0) + 8.36,
+                "N21": 1.00 * m.get("N7", 0) + 19.50, "N22": 1.02 * m.get("N7", 0) + 5.18,
+                "N45": 0.67 * m.get("N35", 0) - 3.71, "N69": 0.66 * m.get("N59", 0) - 3.60,
+                "N46": 0.80 * m.get("N35", 0) + 3.27, "N70": 0.77 * m.get("N59", 0) + 3.85,
+                "N47": 0.65 * m.get("N35", 0) + 6.73, "N71": 0.78 * m.get("N59", 0) + 3.82,
+                "N48": 0.65 * m.get("N35", 0) + 13.58, "N72": 0.65 * m.get("N59", 0) + 13.15,
+                "N49": 0.95 * m.get("N7", 0) + 7.65, "N73": 0.93 * m.get("N7", 0) + 9.62,
+                "N50": 0.93 * m.get("N7", 0) + 3.83, "N74": 1.03 * m.get("N7", 0) - 3.54,
+                "N51": 0.95 * m.get("N7", 0) + 4.62, "N75": 1.07 * m.get("N7", 0) - 3.82,
+                "N52": 0.97 * m.get("N7", 0) + 4.68, "N76": 1.05 * m.get("N7", 0) - 1.35,
+                "N41": 0.0, "N42": 0.0, "N43": 0.0, "N44": 0.0,
+                "N65": 0.0, "N66": 0.0, "N67": 0.0, "N68": 0.0
+            }
+
+    def run_length_prediction(self):
+        sex = self.sex_combo.currentText
+        self.main_gui.last_prediction_sex = sex
+        
+        measurements = {}
+        all_line_nodes = slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode")
+        for n in all_line_nodes:
+            name = n.GetName()
+            if name.startswith("N") and not name.startswith("Predicted_") and not name.startswith("True_"):
+                suffix = name[1:]
+                if suffix.isdigit():
+                    meas = n.GetMeasurement('length')
+                    if meas is not None: measurements[name] = meas.GetValue()
+        
+        pred_lengths = self.get_regressions(sex, measurements)
+
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+            if node.GetName().startswith("Predicted_"): slicer.mrmlScene.RemoveNode(node)
+
+        hard_map = {
+            "N17": "N4", "N18": "N5", "N19": "N5", "N20": "N6", "N21": "N7", "N22": "N7",
+            "N45": "N34", "N46": "N34", "N47": "N34", "N48": "N34",
+            "N49": "N7", "N50": "N7", "N51": "N7", "N52": "N7",
+            "N69": "N34", "N70": "N34", "N71": "N34", "N72": "N34",
+            "N73": "N7", "N74": "N7", "N75": "N7", "N76": "N7",
+            "N41": "N30", "N42": "N30", "N43": "N30", "N44": "N30",
+            "N65": "N54", "N66": "N54", "N67": "N54", "N68": "N54"
+        }
+        plane_map = {
+            "N17":"Orbital", "N18":"Orbital", "N19":"Orbital", "N20":"Coronal", "N21":"Coronal", "N22":"Coronal",
+            "N45":"Orbital","N46":"Orbital","N47":"Orbital","N48":"Orbital", "N49":"Coronal","N50":"Coronal","N51":"Coronal","N52":"Coronal",
+            "N69":"Orbital","N70":"Orbital","N71":"Orbital","N72":"Orbital", "N73":"Coronal","N74":"Coronal","N75":"Coronal","N76":"Coronal",
+            "N41":"Left Alare Sagittal", "N42":"Left Alare Sagittal", "N43":"Left Alare Sagittal", "N44":"Left Alare Sagittal",
+            "N65":"Right Alare Sagittal", "N66":"Right Alare Sagittal", "N67":"Right Alare Sagittal", "N68":"Right Alare Sagittal"
+        }
+        
+        hard_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
+        if not hard_node:
+            slicer.util.errorDisplay("Hard tissue node 'Ryu_hard_tissue' not found.")
+            return
+
+        for pred_name, length in pred_lengths.items():
+            plane_node = slicer.mrmlScene.GetFirstNodeByName(plane_map[pred_name])
+            if not plane_node: continue
+            n = np.array(plane_node.GetNormal())
+            o = np.array(plane_node.GetOrigin())
+            
+            num = int(pred_name[1:])
+            start_lm = "N" if num <= 22 else "A_L" if num <= 52 else "A_R"
+            
+            start_pos = None
+            for i in range(hard_node.GetNumberOfControlPoints()):
+                if hard_node.GetNthControlPointLabel(i) == start_lm:
+                    start_pos = np.array(hard_node.GetNthControlPointPosition(i)); break
+            if start_pos is None: continue
+            
+            hard_line = slicer.mrmlScene.GetFirstNodeByName(hard_map[pred_name])
+            if not hard_line or hard_line.GetNumberOfControlPoints() < 2: continue
+            
+            lm_pos = np.array(hard_line.GetNthControlPointPosition(0))
+            proj_pos = np.array(hard_line.GetNthControlPointPosition(1))
+            dir_vec = lm_pos - proj_pos
+            norm_val = np.linalg.norm(dir_vec)
+            if norm_val < 1e-6: continue
+            dir_vec /= norm_val
+            
+            proj_pt = start_pos - np.dot(start_pos - o, n) * n
+            end_pos = proj_pt + dir_vec * length
+            
+            line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", f"Predicted_{pred_name}")
+            line.AddControlPoint(proj_pt); line.AddControlPoint(end_pos)
+            line.GetMeasurement('length').SetEnabled(True)
+            dn = _ensure_display_node(line)
+            dn.SetColor(0, 0, 1)      # Blue
+            dn.SetSelectedColor(0, 0, 1)
+            
+        self.main_gui.steps_completed['predicted_lengths'] = True
+        slicer.util.infoDisplay("Blue predicted lines created.")
+        self.close()
+
+class RyuGUI:
+    def __init__(self):
+        self.main_widget = qt.QWidget(slicer.util.mainWindow())
+        self.main_widget.setWindowFlags(qt.Qt.Tool)
+        self.main_widget.setWindowTitle("Ryu et al. Prediction")
+        self.main_widget.setMinimumSize(400, 200)
+        self.vbox = qt.QVBoxLayout(self.main_widget)
+        self.vbox.addWidget(qt.QLabel("<b>Ryu et al. (2020) Prediction</b>"))
+        self.last_prediction_sex = None
+        self.steps_completed = {"predicted_lengths": False}
+        self.length_prediction_dialog = None
+        
+        self.btn_pred_len = qt.QPushButton("Step 1: Predict Blue Lines (Regression)")
+        self.btn_pred_len.clicked.connect(self.launch_length_prediction)
+        self.vbox.addWidget(self.btn_pred_len)
+        
+        self.btn_pred_lm = qt.QPushButton("Step 2: Create Pink Landmarks (Simultaneous)")
+        self.btn_pred_lm.clicked.connect(self.create_predicted_landmarks)
+        self.vbox.addWidget(self.btn_pred_lm)
+        
+        self.main_widget.show()
+
+    def launch_length_prediction(self):
+        if not self.length_prediction_dialog:
+            self.length_prediction_dialog = LengthPredictionDialog(self, parent=self.main_widget)
+        self.length_prediction_dialog.show()
+
+    def get_landmark_pos(self, node, name):
+        if not node: return None
+        for i in range(node.GetNumberOfControlPoints()):
+            if node.GetNthControlPointLabel(i) == name:
+                return np.array(node.GetNthControlPointPosition(i))
+        return None
+
+    def create_predicted_landmarks(self):
+        if self.last_prediction_sex is None:
+            slicer.util.errorDisplay("Run Step 1 first.")
+            return
+
+        hard_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
+        if not hard_node: return
+
+        planes = {}
+        for p_name in ["Midsagittal", "Orbital", "Coronal"]:
+            p_node = slicer.mrmlScene.GetFirstNodeByName(p_name)
+            if not p_node:
+                slicer.util.errorDisplay(f"Plane {p_name} not found!")
+                return
+            planes[p_name] = p_node
+            
+        origins = {n: np.array(p.GetOrigin()) for n, p in planes.items()}
+        normals = {n: np.array(p.GetNormal()) for n, p in planes.items()}
+        
+        node_name = f"Predicted_Soft_Tissue_{self.last_prediction_sex}"
+        pred_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", node_name)
+        pred_node.RemoveAllControlPoints()
+        dn = _ensure_display_node(pred_node)
+        dn.SetColor(1, 0.4, 0.7); dn.SetSelectedColor(1, 0.4, 0.7) # Pink
+
+        landmark_defs = {
+            "S": ("N", ["N8", "N17", "N20"]), "PN": ("N", ["N11", "N18", "N21"]), "SN": ("N", ["N14", "N19", "N22"]),
+            "ACS_L": ("A_L", ["N41", "N45", "N49"]), "ACP_L": ("A_L", ["N42", "N46", "N50"]),
+            "NA_L": ("A_L", ["N43", "N47", "N51"]), "ACI_L": ("A_L", ["N44", "N48", "N52"]),
+            "ACS_R": ("A_R", ["N65", "N69", "N73"]), "ACP_R": ("A_R", ["N66", "N70", "N74"]),
+            "NA_R": ("A_R", ["N67", "N71", "N75"]), "ACI_R": ("A_R", ["N68", "N72", "N76"])
+        }
+        plane_map = {
+            "N8":"Midsagittal","N17":"Orbital","N20":"Coronal", "N11":"Midsagittal","N18":"Orbital","N21":"Coronal",
+            "N14":"Midsagittal","N19":"Orbital","N22":"Coronal", "N41":"Midsagittal","N45":"Orbital","N49":"Coronal",
+            "N42":"Midsagittal","N46":"Orbital","N50":"Coronal", "N43":"Midsagittal","N47":"Orbital","N51":"Coronal",
+            "N44":"Midsagittal","N48":"Orbital","N52":"Coronal", "N65":"Midsagittal","N69":"Orbital","N73":"Coronal",
+            "N66":"Midsagittal","N70":"Orbital","N74":"Coronal", "N67":"Midsagittal","N71":"Orbital","N75":"Coronal",
+            "N68":"Midsagittal","N72":"Orbital","N76":"Coronal"
+        }
+
+        def get_pred_dist(code):
+            line = slicer.mrmlScene.GetFirstNodeByName(f"Predicted_{code}")
+            if not line or line.GetNumberOfControlPoints() < 2: return None
+            return line.GetMeasurement('length').GetValue()
+
+        for lm, (start_lm, codes) in landmark_defs.items():
+            side_sign = -1 if "L" in lm else 1 if "R" in lm else 1
+            dist_dict = {p: 0.0 for p in ["Midsagittal", "Orbital", "Coronal"]}
+            valid = 0
+            
+            for code in codes:
+                plane = plane_map.get(code)
+                if plane:
+                    d = get_pred_dist(code)
+                    if d is not None and d > 0.1:
+                        dist_dict[plane] = d * side_sign if plane == "Midsagittal" else d
+                        valid += 1
+            
+            if lm in ["S", "PN", "SN"]: dist_dict["Midsagittal"] = 0.0
+            
+            if valid >= 2:
+                final_pos = np.zeros(3)
+                for p_name, dist_val in dist_dict.items():
+                    o = origins[p_name]
+                    n_vec = normals[p_name]
+                    if o is not None and n_vec is not None:
+                        scalar = np.dot(o, n_vec) + dist_val
+                        final_pos += scalar * n_vec
+                pred_node.AddControlPoint(final_pos, lm)
+            else:
+                print(f"Skipping {lm} (insufficient predicted distances)")
+        slicer.util.infoDisplay("Pink landmarks created.")
+
+# ==========================================
+# CLEANUP & RUN - 100% SAFE
+# ==========================================
+if 'ryu_gui_instance' in globals() and ryu_gui_instance is not None:
+    try:
+        if hasattr(ryu_gui_instance, 'main_widget') and ryu_gui_instance.main_widget:
+            try:
+                ryu_gui_instance.main_widget.close()
+            except (RuntimeError, ValueError):
+                pass
+        if hasattr(ryu_gui_instance, 'length_prediction_dialog') and ryu_gui_instance.length_prediction_dialog:
+            try:
+                ryu_gui_instance.length_prediction_dialog.close()
+            except (RuntimeError, ValueError):
+                pass
+    except Exception:
+        pass
+    del ryu_gui_instance
+
+ryu_gui_instance = RyuGUI()
+```
+
+</details>
+
+![Picture3](https://github.com/user-attachments/assets/c6a5073e-f804-4cbd-8261-f2c08559bfbb)
+
+If you want to see how the prediction is created, copy and paste the following code: 
+
+<details>
+            <summary> Code to visualise bilateral soft tissue landmark (ACP_L) prediction </summary>
+
+``` python
+# ---------------------------
+# Bilateral ACP_L Visualization
+# ---------------------------
+def visualize_acpl_simultaneous():
+    for n in slicer.util.getNodesByClass('vtkMRMLMarkupsNode'):
+        if n.GetName().startswith('Step_ACP_L_') or n.GetName().startswith('Path_ACP_L_'): slicer.mrmlScene.RemoveNode(n)
+    
+    line_lat = slicer.mrmlScene.GetFirstNodeByName("Predicted_N42")
+    line_orb = slicer.mrmlScene.GetFirstNodeByName("Predicted_N46")
+    line_cor = slicer.mrmlScene.GetFirstNodeByName("Predicted_N50")
+    if not (line_lat and line_orb and line_cor):
+        return print("Predicted lines not found.")
+
+    d_lat = line_lat.GetMeasurement('length').GetValue()
+    d_orb = line_orb.GetMeasurement('length').GetValue()
+    d_cor = line_cor.GetMeasurement('length').GetValue()
+
+    planes = {n: slicer.mrmlScene.GetFirstNodeByName(n) for n in ["Midsagittal", "Orbital", "Coronal"]}
+    if None in planes.values(): return print("Planes missing!")
+    origins = {n: np.array(p.GetOrigin()) for n, p in planes.items()}
+    normals = {n: np.array(p.GetNormal()) for n, p in planes.items()}
+    dist = {"Midsagittal": -1.0 * d_lat, "Orbital": d_orb, "Coronal": d_cor}
+    
+    final_pos = np.zeros(3)
+    for p, d in dist.items(): final_pos += (np.dot(origins[p], normals[p]) + d) * normals[p]
+    
+    hard_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
+    a_l = np.array(hard_node.GetNthControlPointPosition(hard_node.GetNthControlPointIndex("A_L"))) if hard_node else np.zeros(3)
+
+    for p, d in dist.items():
+        o, n = origins[p], normals[p]
+        proj = o + (a_l - o) - np.dot(a_l - o, n) * n
+        offset = proj + n * d
+        line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", f"Step_ACP_L_Line_{p}")
+        line.AddControlPoint(proj); line.AddControlPoint(offset)
+        dn = _ensure_display_node(line)
+        dn.SetColor(1, 0.5, 0); dn.SetSelectedColor(1, 0.5, 0)  # Orange
+    
+    final = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "Step_ACP_L_Final")
+    final.AddControlPoint(final_pos)
+    dn = _ensure_display_node(final)
+    dn.SetColor(1, 0, 0); dn.SetSelectedColor(1, 0, 0)  # Red
+    print(f"Final ACP_L (Simultaneous): {final_pos}")
+
+visualize_acpl_simultaneous()
+```
+
+</details>
+
+
+<details>
+<summary> Code to visualise midline soft tissue landmark (pronasale) prediction </summary>
+
+``` python
+import slicer
+import numpy as np
+
+def _ensure_display_node(node):
+    dn = node.GetDisplayNode()
+    if not dn:
+        dn = node.CreateDefaultDisplayNodes()
+    return dn
+
+# ---------------------------
+# Midline PN Visualization
+# ---------------------------
+def visualize_pn_simultaneous():
+    for n in slicer.util.getNodesByClass('vtkMRMLMarkupsNode'):
+        if n.GetName().startswith('Step_PN_') or n.GetName().startswith('Path_PN_'): slicer.mrmlScene.RemoveNode(n)
+    
+    line_orb = slicer.mrmlScene.GetFirstNodeByName("Predicted_N18")
+    line_cor = slicer.mrmlScene.GetFirstNodeByName("Predicted_N21")
+    if not line_orb or not line_cor:
+        return print("Predicted_N18/N21 not found. Run Step 1.")
+
+    d_orb = line_orb.GetMeasurement('length').GetValue()
+    d_cor = line_cor.GetMeasurement('length').GetValue()
+
+    planes = {n: slicer.mrmlScene.GetFirstNodeByName(n) for n in ["Midsagittal", "Orbital", "Coronal"]}
+    if None in planes.values():
+        return print("Planes missing!")
+    origins = {n: np.array(p.GetOrigin()) for n, p in planes.items()}
+    normals = {n: np.array(p.GetNormal()) for n, p in planes.items()}
+    dist = {"Midsagittal": 0.0, "Orbital": d_orb, "Coronal": d_cor}
+    
+    final_pos = np.zeros(3)
+    for p, d in dist.items(): final_pos += (np.dot(origins[p], normals[p]) + d) * normals[p]
+    
+    hard_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
+    nasion = np.array(hard_node.GetNthControlPointPosition(0)) if hard_node else np.zeros(3)
+
+    for p, d in dist.items():
+        o, n = origins[p], normals[p]
+        proj = o + (nasion - o) - np.dot(nasion - o, n) * n
+        offset = proj + n * d
+        line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", f"Step_PN_Line_{p}")
+        line.AddControlPoint(proj); line.AddControlPoint(offset)
+        dn = _ensure_display_node(line)
+        dn.SetColor(1, 0.5, 0); dn.SetSelectedColor(1, 0.5, 0)  # Orange
+    
+    final = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "Step_PN_Final")
+    final.AddControlPoint(final_pos)
+    dn = _ensure_display_node(final)
+    dn.SetColor(1, 0, 0); dn.SetSelectedColor(1, 0, 0)  # Red
+    print(f"Final PN (Simultaneous): {final_pos}")
+
+visualize_pn_simultaneous()
+```
+
+</details>
+
+
+
+![image](https://github.com/user-attachments/assets/7638f90e-953d-4cde-b9cf-d04f644b2c72)
+
+
+```
+</details>
+
+
+ The code will produce predicted linear measurement and a new point list called **Predicted_Soft_Landmarks** containing the predicted landmarks.
+
+### Measuring the prediction errors
+
+To establish the difference between the predicted and true measurments as well as the placement of the predicted soft tissue landmarks to the true soft tissue landmarks, allocate the contents of the _Ryu_soft_tissue.mrk.json_. 
+
+
+The following code will create the true soft tissue measurements based on the true soft tissue landmarks (N8-N22, N25, N27, N41-52, N54, N58, N62, N65-76) and draws a line between the predicted soft tissue landmark stored in "Predicted_Soft_Landmarks" and the true landmarks in "Ryu_soft_tissue". 
+
+| Measurement Code | Landmark                  | Name in "Ryu_soft_tissue" | Landmark Tissue Type | Plane Name in Scene      |
+|------------------|--------------------------|---------------------------|---------------------|-------------------------|
+| N8               | Selion                   | S                         | soft                | Midsagittal             |
+| N9               | Selion                   | S                         | soft                | Left Alare Sagittal     |
+| N10              | Selion                   | S                         | soft                | Right Alare Sagittal    |
+| N11              | Pronasale                | PN                        | soft                | Midsagittal             |
+| N12              | Pronasale                | PN                        | soft                | Left Alare Sagittal     |
+| N13              | Pronasale                | PN                        | soft                | Right Alare Sagittal    |
+| N14              | Subnasale                | SN                        | soft                | Midsagittal             |
+| N15              | Subnasale                | SN                        | soft                | Left Alare Sagittal     |
+| N16              | Subnasale                | SN                        | soft                | Right Alare Sagittal    |
+| N17              | Selion                   | S                         | soft                | Orbital                 |
+| N18              | Pronasale                | PN                        | soft                | Orbital                 |
+| N19              | Subnasale                | SN                        | soft                | Orbital                 |
+| N20              | Selion                   | S                         | soft                | Coronal                 |
+| N21              | Pronasale                | PN                        | soft                | Coronal                 |
+| N22              | Subnasale                | SN                        | soft                | Coronal                 |
+| N25              | Selion                   | S                         | soft                | Rhinion                 |
+| N27              | Subnasale                | SN                        | soft                | Rhinion                 |
+| N41              | Left Alar curvature superior   | ACS_L                | soft                | Midsagittal             |
+| N42              | Left Alar curvature posterior  | ACP_L                | soft                | Midsagittal             |
+| N43              | Left Nose Alare               | NA_L                 | soft                | Midsagittal             |
+| N44              | Left Alar curvature inferior   | ACI_L                | soft                | Midsagittal             |
+| N45              | Left Alar curvature superior   | ACS_L                | soft                | Orbital                 |
+| N46              | Left Alar curvature posterior  | ACP_L                | soft                | Orbital                 |
+| N47              | Left Nose Alare               | NA_L                 | soft                | Orbital                 |
+| N48              | Left Alar curvature inferior   | ACI_L                | soft                | Orbital                 |
+| N49              | Left Alar curvature superior   | ACS_L                | soft                | Coronal                 |
+| N50              | Left Alar curvature posterior  | ACP_L                | soft                | Coronal                 |
+| N51              | Left Nose Alare               | NA_L                 | soft                | Coronal                 |
+| N52              | Left Alar curvature inferior   | ACI_L                | soft                | Coronal                 |
+| N54              | Right Nose Alare              | NA_R                 | soft                | Midsagittal             |
+| N58              | Right Nose Alare              | NA_R                 | soft                | Orbital                 |
+| N62              | Right Nose Alare              | NA_R                 | soft                | Coronal                 |
+| N65              | Right Alar curvature superior  | ACS_R                | soft                | Midsagittal             |
+| N66              | Right Alar curvature posterior | ACP_R                | soft                | Midsagittal             |
+| N67              | Right Nose Alare              | NA_R                 | soft                | Midsagittal             |
+| N68              | Right Alar curvature inferior  | ACI_R                | soft                | Midsagittal             |
+| N69              | Right Alar curvature superior  | ACS_R                | soft                | Orbital                 |
+| N70              | Right Alar curvature posterior | ACP_R                | soft                | Orbital                 |
+| N71              | Right Nose Alare              | NA_R                 | soft                | Orbital                 |
+| N72              | Right Alar curvature inferior  | ACI_R                | soft                | Orbital                 |
+| N73              | Right Alar curvature superior  | ACS_R                | soft                | Coronal                 |
+| N74              | Right Alar curvature posterior | ACP_R                | soft                | Coronal                 |
+| N75              | Right Nose Alare              | NA_R                 | soft                | Coronal                 |
+| N76              | Right Alar curvature inferior  | ACI_R                | soft                | Coronal                 |
+
+
+<details>
+<summary>Code for comparing the true vs predicted soft tissue landmarks </summary>
+
+```python
+
+import slicer
+import numpy as np
+
+def _ensure_display_node(node):
+    dn = node.GetDisplayNode()
+    if not dn:
+        dn = node.CreateDefaultDisplayNodes()
+    return dn
+
+def measure_prediction_errors():
+    true_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_soft_tissue")
+    pred_nodes = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode") if "Predicted_Soft_Tissue" in n.GetName()]
+    if not true_node or not pred_nodes:
+        return print("Ensure both Ryu_soft_tissue and Predicted_Soft_Tissue exist.")
+    pred_node = pred_nodes[-1]
+    
+    for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+        if n.GetName().startswith("error_"): slicer.mrmlScene.RemoveNode(n)
+
+    def get_pos(node, label):
+        for i in range(node.GetNumberOfControlPoints()):
+            if node.GetNthControlPointLabel(i) == label:
+                return np.array(node.GetNthControlPointPosition(i))
+        return None
+
+    for i in range(true_node.GetNumberOfControlPoints()):
+        label = true_node.GetNthControlPointLabel(i)
+        true_pos = get_pos(true_node, label)
+        pred_pos = get_pos(pred_node, label)
+        if true_pos is not None and pred_pos is not None:
+            line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", f"error_{label}")
+            line.AddControlPoint(true_pos)
+            line.AddControlPoint(pred_pos)
+            line.GetMeasurement('length').SetEnabled(True)
+            dn = _ensure_display_node(line)
+            dn.SetColor(0.5, 0, 0.125); dn.SetSelectedColor(0.7, 0, 0.175)  # Burgundy
+            print(f"Error for {label}: {np.linalg.norm(pred_pos - true_pos):.2f} mm")
+
+measure_prediction_errors()
+```
+
+</details>
+
+
+The picture below shows only the true soft tissue measurements:
+
+
+![image](https://github.com/user-attachments/assets/e0121e64-57a6-497f-b753-0e432d5a0b19)
+
+
+
+The picture below shows the distances between true and predicted soft tissue measurements:
+
+
+![image](https://github.com/user-attachments/assets/c017c407-d753-4673-a53d-0a40a046c3a0)
+
+
+
+## Output
+Below is a table of measurements to be expected once the linear measurements of the scene are copied onto the clipboard [Guide to copy measurements to clipboard](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/004_Copy%20measurements%20to%20clipboard.md#content-summary)
+
+
+<details>
+<summary>Example output </summary>
+
+| ID         | measurement     | in mm        |
+|------------|----------------|--------------|
+| (unknown)  | N1             | 1.390888299  |
+| (unknown)  | N2             | 14.39270332  |
+| (unknown)  | N3             | 14.82038597  |
+| (unknown)  | N4             | 25.35309405  |
+| (unknown)  | N5             | 22.00589708  |
+| (unknown)  | N6             | 72.62619371  |
+| (unknown)  | N7             | 78.07664694  |
+| (unknown)  | N23            | 14.71897288  |
+| (unknown)  | N24            | 12.01400919  |
+| (unknown)  | N26            | 35.40709597  |
+| (unknown)  | N28            | 81.59134763  |
+| (unknown)  | N29            | 14.68502648  |
+| (unknown)  | N30            | 15.78359162  |
+| (unknown)  | N31            | 15.14992376  |
+| (unknown)  | N32            | 5.975353906  |
+| (unknown)  | N33            | 10.71975353  |
+| (unknown)  | N34            | 13.16078047  |
+| (unknown)  | N35            | 18.7848349   |
+| (unknown)  | N36            | 23.1167537   |
+| (unknown)  | N37            | 72.29213352  |
+| (unknown)  | N38            | 71.8735073   |
+| (unknown)  | N39            | 71.15364679  |
+| (unknown)  | N40            | 72.9682245   |
+| (unknown)  | N53            | 12.81737384  |
+| (unknown)  | N55            | 11.8251401   |
+| (unknown)  | N56            | 4.075798939  |
+| (unknown)  | N57            | 10.70806529  |
+| (unknown)  | N59            | 20.21457881  |
+| (unknown)  | N60            | 23.50659263  |
+| (unknown)  | N61            | 68.84433055  |
+| (unknown)  | N63            | 70.59775209  |
+| (unknown)  | N64            | 73.03717297  |
+| (unknown)  | Predicted_N17  | 19.74484653  |
+| (unknown)  | Predicted_N18  | 13.18536634  |
+| (unknown)  | Predicted_N19  | 25.83536634  |
+| (unknown)  | Predicted_N20  | 78.82236015  |
+| (unknown)  | Predicted_N21  | 99.65358106  |
+| (unknown)  | Predicted_N45  | 8.427991034  |
+| (unknown)  | Predicted_N69  | 9.903038865  |
+| (unknown)  | Predicted_N46  | 17.15862617  |
+| (unknown)  | Predicted_N70  | 18.86093411  |
+| (unknown)  | Predicted_N47  | 19.11799103  |
+| (unknown)  | Predicted_N71  | 20.11162202  |
+| (unknown)  | Predicted_N48  | 26.40799103  |
+| (unknown)  | Predicted_N72  | 27.46805938  |
+| (unknown)  | Predicted_N49  | 84.72981857  |
+| (unknown)  | Predicted_N73  | 83.56993193  |
+| (unknown)  | Predicted_N50  | 78.18596445  |
+| (unknown)  | Predicted_N74  | 78.00177457  |
+| (unknown)  | Predicted_N51  | 81.99057385  |
+| (unknown)  | Predicted_N75  | 81.19970714  |
+| (unknown)  | Predicted_N52  | 83.48750091  |
+| (unknown)  | Predicted_N76  | 83.12177457  |
+| (unknown)  | N8             | 1.169986866  |
+| (unknown)  | N9             | 16.95357848  |
+| (unknown)  | N10            | 12.2595108   |
+| (unknown)  | N11            | 3.505687262  |
+| (unknown)  | N12            | 12.27790435  |
+| (unknown)  | N13            | 16.93518493  |
+| (unknown)  | N14            | 2.089071538  |
+| (unknown)  | N15            | 13.69452008  |
+| (unknown)  | N16            | 15.51856921  |
+| (unknown)  | N17            | 22.46431851  |
+| (unknown)  | N18            | 10.73636034  |
+| (unknown)  | N19            | 26.04666731  |
+| (unknown)  | N20            | 85.27229816  |
+| (unknown)  | N21            | 102.5948571  |
+| (unknown)  | N22            | 94.77451833  |
+| (unknown)  | N25            | 9.063119614  |
+| (unknown)  | N27            | 39.44786621  |
+| (unknown)  | N41            | 18.0945497   |
+| (unknown)  | N42            | 23.7636938   |
+| (unknown)  | N43            | 23.3544715   |
+| (unknown)  | N44            | 21.27605284  |
+| (unknown)  | N45            | 6.70163926   |
+| (unknown)  | N46            | 16.17323154  |
+| (unknown)  | N47            | 17.15651354  |
+| (unknown)  | N48            | 23.98379524  |
+| (unknown)  | N49            | 86.46806716  |
+| (unknown)  | N50            | 82.70435475  |
+| (unknown)  | N51            | 88.15692408  |
+| (unknown)  | N52            | 85.89946648  |
+| (unknown)  | N54            | 20.0562932   |
+| (unknown)  | N58            | 17.01394725  |
+| (unknown)  | N62            | 90.58750503  |
+| (unknown)  | N65            | 15.87827184  |
+| (unknown)  | N66            | 23.81839668  |
+| (unknown)  | N67            | 20.0562932   |
+| (unknown)  | N68            | 14.08707742  |
+| (unknown)  | N69            | 7.506258698  |
+| (unknown)  | N70            | 16.27411658  |
+| (unknown)  | N71            | 17.01394725  |
+| (unknown)  | N72            | 26.58370995  |
+| (unknown)  | N73            | 87.90171941  |
+| (unknown)  | N74            | 81.9385394   |
+| (unknown)  | N75            | 90.58750503  |
+| (unknown)  | N76            | 87.48696634  |
+| (unknown)  | error_S        | 7.096907602  |
+| (unknown)  | error_PN       | 4.372769124  |
+| (unknown)  | error_SN       | 16.71379721  |
+| (unknown)  | error_ACS_L    | 3.830485682  |
+| (unknown)  | error_ACS_R    | 6.39818841   |
+| (unknown)  | error_ACP_L    | 9.776701277  |
+| (unknown)  | error_ACP_R    | 12.88518318  |
+| (unknown)  | error_NA_L     | 10.44920441  |
+| (unknown)  | error_NA_R     | 12.86383378  |
+| (unknown)  | error_ACI_L    | 7.015964695  |
+| (unknown)  | error_ACI_R    | 4.995331176  |
+</details>
+
+
+#### Research ideas
+
+
+As noticed during the implementation of the method, the predicted lengths on soft tissue measurements are close to the true measurement, but misplaced - the only reference for their placements are the hard tissue landmark and plane, but not any other position of the line within the plane - this could be investigated by using the [Thitiorul (2020) method](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Thitiorul2020.md) that takes the 3d coordinates of the landmarks to create prediction equations. 
+
+
+As the original  Ryu et al. 2020[^2] method featured participants of Korean ancestry, other populations may have slightly different relationships between the same measurements/landmarks - therefore investigating whether a "recalibration" (see [Rynn's method](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Nose%20predictions/Rynn's%20(2010)%20method.md)) for other populations is necessary. 
+
+
+# Bibliography
+
+[^1]: 3D Slicer webpage https://www.slicer.org/
+[^2]: Ryu, J. Y., et al. (2020). "Craniofacial anthropometric investigation of relationships between the nose and nasal aperture using 3D computed tomography of Korean subjects." Scientific Reports 10(1): 16077.
+[^3]: Ridel et al. (2018). "Skeletal dimensions as predictors for the shape of the nose in a South African sample: A cone-beam computed tomography (CBCT) study." Forensic Science International 289: 18-26.
+[^4]: Lee, K.-M., et al. (2014). "Three-dimensional prediction of the nose for facial reconstruction using cone-beam computed tomoraphy." Forensic Science International 236: 194.e191-194.e195.
+[^5]: Caple, J. and C. N. Stephan (2016). "A standardized nomenclature for craniofacial and facial anthropometry." International Journal of Legal Medicine 130(3): 863-879.
+[^6]: Martin, R. (1928). Lehrbuch der Anthropologie in systematischer Darstellung: mit besonderer Berücksichtigung der anthropologischen Methoden ; für Studierende, Ärzte und Forschungsreisendechichte, Morphologische Methoden. Jena, Gustav Fisher.
+[^7]: Knussmann, R. (1988). Anthropologie: Handbuch der vergleichenden Biologie des Menschen, G. Fischer.
+[^8]: Pittayapat, P., et al. (2017). "Three-dimensional Frankfort horizontal plane for 3D cephalometry: a comparative assessment of conventional versus novel landmarks and horizontal planes." European Journal of Orthodontics 40(3): 239-248.
+[^9]: Howells, W. W. (1937). "The designation of the principle anthrometric landmarks on the head and skull." American Journal of Physical Anthropology 22(3): 477-494.
+[^10]: Howells, W. W. (1974). Cranial variation in man: A study by multivariate analysis of patterns of difference among recent human populations. Cambridge, Harvard University.
+[^11]: Kolar, J. and E. Salter (1997). Craniofacial anthropometry: practical measurement of the head and face for clinical, surgical, and research use. Springfield, Charles C Thomas.
+[^12]: Farkas, L. G. (1994). Anthropometry of the Head and Face, Lippincott Williams & Wilkins.	
+[^13]: Buikstra, J. E. and D. H. Ubelaker (1994). Standards for data collection from human skeletal remains. Fayetteville: Arkansas.
+Howells (1937)[^9]; Howells (1974)[^10]; Caple & Stephan (2016)[^5]
+
