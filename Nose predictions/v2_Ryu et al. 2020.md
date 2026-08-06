@@ -592,6 +592,15 @@ class RyuGUI:
         origins = {n: np.array(p.GetOrigin()) for n, p in planes.items()}
         normals = {n: np.array(p.GetNormal()) for n, p in planes.items()}
         
+        # --- CRITICAL OVERRIDE: FORCE MIDSAGITTAL NORMAL TO POINT RIGHT (+X) ---
+        if normals["Midsagittal"][0] < 0:
+            normals["Midsagittal"] *= -1
+        # ---------------------------------------------------------------------
+
+        # Used for initial lateral fallback
+        midsag_origin = origins.get("Midsagittal")
+        midsag_normal = normals.get("Midsagittal")
+        
         node_name = f"Predicted_Soft_Tissue_{self.last_prediction_sex}"
         pred_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", node_name)
         pred_node.RemoveAllControlPoints()
@@ -620,7 +629,14 @@ class RyuGUI:
             return line.GetMeasurement('length').GetValue()
 
         for lm, (start_lm, codes) in landmark_defs.items():
-            side_sign = -1 if "L" in lm else 1 if "R" in lm else 1
+            start_pos = self.get_landmark_pos(hard_node, start_lm)
+            if start_pos is None: continue
+
+            # Determine side sign for lateral movement (Left = -1, Right = 1)
+            side_sign = 1
+            if start_lm == "A_L": side_sign = -1
+            elif start_lm == "A_R": side_sign = 1
+
             dist_dict = {p: 0.0 for p in ["Midsagittal", "Orbital", "Coronal"]}
             valid = 0
             
@@ -631,6 +647,12 @@ class RyuGUI:
                     if d is not None and d > 0.1:
                         dist_dict[plane] = d * side_sign if plane == "Midsagittal" else d
                         valid += 1
+            
+            # --- CRITICAL FALLBACK FIX: APPLY side_sign TO BONY ANCHOR ---
+            if abs(dist_dict["Midsagittal"]) < 0.1:
+                lateral_offset = np.dot(start_pos - midsag_origin, midsag_normal)
+                dist_dict["Midsagittal"] = side_sign * lateral_offset
+            # ------------------------------------------------------------
             
             if lm in ["S", "PN", "SN"]: dist_dict["Midsagittal"] = 0.0
             
@@ -646,7 +668,6 @@ class RyuGUI:
             else:
                 print(f"Skipping {lm} (insufficient predicted distances)")
         slicer.util.infoDisplay("Pink landmarks created.")
-
 # ==========================================
 # CLEANUP & RUN - 100% SAFE
 # ==========================================
