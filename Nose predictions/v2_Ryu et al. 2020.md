@@ -712,7 +712,7 @@ The code will produce predicted linear measurement and a new point list called *
 If you want to see how the prediction is created, copy and paste the following code: 
 
 <details>
- <summary> Code to visualise bilateral soft tissue landmark (ACP_L) prediction </summary>
+<summary> Code to visualise bilateral soft tissue landmark (ACP_L) prediction </summary>
 
 ``` python
 # ---------------------------
