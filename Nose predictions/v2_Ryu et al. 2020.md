@@ -592,12 +592,10 @@ class RyuGUI:
         origins = {n: np.array(p.GetOrigin()) for n, p in planes.items()}
         normals = {n: np.array(p.GetNormal()) for n, p in planes.items()}
         
-        # --- CRITICAL OVERRIDE: FORCE MIDSAGITTAL NORMAL TO POINT RIGHT (+X) ---
+        # Critical Override: Force Midsagittal normal to point Right (+X)
         if normals["Midsagittal"][0] < 0:
             normals["Midsagittal"] *= -1
-        # ---------------------------------------------------------------------
 
-        # Used for initial lateral fallback
         midsag_origin = origins.get("Midsagittal")
         midsag_normal = normals.get("Midsagittal")
         
@@ -632,7 +630,6 @@ class RyuGUI:
             start_pos = self.get_landmark_pos(hard_node, start_lm)
             if start_pos is None: continue
 
-            # Determine side sign for lateral movement (Left = -1, Right = 1)
             side_sign = 1
             if start_lm == "A_L": side_sign = -1
             elif start_lm == "A_R": side_sign = 1
@@ -648,13 +645,19 @@ class RyuGUI:
                         dist_dict[plane] = d * side_sign if plane == "Midsagittal" else d
                         valid += 1
             
-            # --- CRITICAL FALLBACK FIX: APPLY side_sign TO BONY ANCHOR ---
+            # Fallback for lateral offset (applies side_sign)
             if abs(dist_dict["Midsagittal"]) < 0.1:
                 lateral_offset = np.dot(start_pos - midsag_origin, midsag_normal)
                 dist_dict["Midsagittal"] = side_sign * lateral_offset
-            # ------------------------------------------------------------
             
+            # Midline landmarks have 0 lateral offset
             if lm in ["S", "PN", "SN"]: dist_dict["Midsagittal"] = 0.0
+            
+            # --- CRITICAL EXCEPTION FOR SELION ---
+            # Orbital plane points DOWN (-Z). Adding pushes down, Subtracting pushes UP (Superior).
+            if lm == "S" and dist_dict["Orbital"] != 0.0:
+                dist_dict["Orbital"] = -1.0 * dist_dict["Orbital"]
+            # -------------------------------------
             
             if valid >= 2:
                 final_pos = np.zeros(3)
@@ -668,26 +671,25 @@ class RyuGUI:
             else:
                 print(f"Skipping {lm} (insufficient predicted distances)")
         slicer.util.infoDisplay("Pink landmarks created.")
+
+
 # ==========================================
 # CLEANUP & RUN - 100% SAFE
 # ==========================================
 if 'ryu_gui_instance' in globals() and ryu_gui_instance is not None:
     try:
         if hasattr(ryu_gui_instance, 'main_widget') and ryu_gui_instance.main_widget:
-            try:
-                ryu_gui_instance.main_widget.close()
-            except (RuntimeError, ValueError):
-                pass
+            try: ryu_gui_instance.main_widget.close()
+            except: pass
         if hasattr(ryu_gui_instance, 'length_prediction_dialog') and ryu_gui_instance.length_prediction_dialog:
-            try:
-                ryu_gui_instance.length_prediction_dialog.close()
-            except (RuntimeError, ValueError):
-                pass
+            try: ryu_gui_instance.length_prediction_dialog.close()
+            except: pass
     except Exception:
         pass
     del ryu_gui_instance
 
 ryu_gui_instance = RyuGUI()
+
 ```
 
 </details>
@@ -697,11 +699,15 @@ You can expect a window to pop up asking you to choose a biological sex for pred
 <img width="616" height="355" alt="image" src="https://github.com/user-attachments/assets/cf7ba9ef-c180-482c-883e-628870a98f92" />
 
 Once you chose and clicked the "Predict Lengths and Create Lines" button, the following should show up: 
-<img width="1304" height="1057" alt="image" src="https://github.com/user-attachments/assets/5a0e0d27-cf0e-45fc-8a4e-aa54a9ed565f" />
 
-Then, click the ""
+<img src="https://github.com/user-attachments/assets/5a0e0d27-cf0e-45fc-8a4e-aa54a9ed565f" width="500">
+
+Then, click the "Step 2" button to show the predicted soft tissue landmarks
 
 
+<img src="https://github.com/user-attachments/assets/40f2ba16-6286-4b46-81f0-0524a5f47a8e" width="500">
+
+The code will produce predicted linear measurement and a new point list called **Predicted_Soft_Landmarks** containing the predicted landmarks.
 
 If you want to see how the prediction is created, copy and paste the following code: 
 
@@ -767,6 +773,11 @@ visualize_acpl_simultaneous()
 
 </details>
 
+<img width="2757" height="2393" alt="help2" src="https://github.com/user-attachments/assets/d61e86f1-177d-440b-868b-88d2484607d7" />
+
+
+Please note that the equation for calculating N42 is not in the main body of text in the original article, but to be found in Supplementary material C. 
+
 
 <details>
 <summary> Code to visualise midline soft tissue landmark (pronasale) prediction </summary>
@@ -827,18 +838,10 @@ def visualize_pn_simultaneous():
 visualize_pn_simultaneous()
 ```
 
-</details>
+<img width="3746" height="2365" alt="help1" src="https://github.com/user-attachments/assets/06857534-226a-4f83-a5af-f05cbdb2cb3a" />
 
 
 
-![image](https://github.com/user-attachments/assets/7638f90e-953d-4cde-b9cf-d04f644b2c72)
-
-
-```
-</details>
-
-
- The code will produce predicted linear measurement and a new point list called **Predicted_Soft_Landmarks** containing the predicted landmarks.
 
 ### Measuring the prediction errors
 
@@ -894,12 +897,110 @@ The following code will create the true soft tissue measurements based on the tr
 | N75              | Right Nose Alare              | NA_R                 | soft                | Coronal                 |
 | N76              | Right Alar curvature inferior  | ACI_R                | soft                | Coronal                 |
 
+<details>
+<summary>Code for creating the true soft tissue measurements</summary>
+
+```python
+import slicer
+import numpy as np
+
+def _ensure_display_node(node):
+    dn = node.GetDisplayNode()
+    if not dn:
+        dn = node.CreateDefaultDisplayNodes()
+    return dn
+
+def create_true_soft_tissue_measurements():
+    # Get nodes
+    soft_tissue_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_soft_tissue")
+    if not soft_tissue_node:
+        return print("Error: 'Ryu_soft_tissue' not found. Please load the soft tissue landmarks.")
+
+    # Define soft tissue measurements based on your provided list
+    soft_tissue_measurements = [
+        ("N8", "S", "Midsagittal"), ("N9", "S", "Left Alare Sagittal"), ("N10", "S", "Right Alare Sagittal"),
+        ("N11", "PN", "Midsagittal"), ("N12", "PN", "Left Alare Sagittal"), ("N13", "PN", "Right Alare Sagittal"),
+        ("N14", "SN", "Midsagittal"), ("N15", "SN", "Left Alare Sagittal"), ("N16", "SN", "Right Alare Sagittal"),
+        ("N17", "S", "Orbital"), ("N18", "PN", "Orbital"), ("N19", "SN", "Orbital"),
+        ("N20", "S", "Coronal"), ("N21", "PN", "Coronal"), ("N22", "SN", "Coronal"),
+        ("N25", "S", "Rhinion"), ("N27", "SN", "Rhinion"),
+        ("N41", "ACS_L", "Midsagittal"), ("N42", "ACP_L", "Midsagittal"), ("N43", "NA_L", "Midsagittal"), ("N44", "ACI_L", "Midsagittal"),
+        ("N45", "ACS_L", "Orbital"), ("N46", "ACP_L", "Orbital"), ("N47", "NA_L", "Orbital"), ("N48", "ACI_L", "Orbital"),
+        ("N49", "ACS_L", "Coronal"), ("N50", "ACP_L", "Coronal"), ("N51", "NA_L", "Coronal"), ("N52", "ACI_L", "Coronal"),
+        ("N54", "NA_R", "Midsagittal"), ("N58", "NA_R", "Orbital"), ("N62", "NA_R", "Coronal"),
+        ("N65", "ACS_R", "Midsagittal"), ("N66", "ACP_R", "Midsagittal"), ("N67", "NA_R", "Midsagittal"), ("N68", "ACI_R", "Midsagittal"),
+        ("N69", "ACS_R", "Orbital"), ("N70", "ACP_R", "Orbital"), ("N71", "NA_R", "Orbital"), ("N72", "ACI_R", "Orbital"),
+        ("N73", "ACS_R", "Coronal"), ("N74", "ACP_R", "Coronal"), ("N75", "NA_R", "Coronal"), ("N76", "ACI_R", "Coronal")
+    ]
+
+    missing_landmarks = set()
+    missing_planes = set()
+    created_count = 0
+
+    for line_name, landmark_name, plane_name in soft_tissue_measurements:
+        point = None
+        for i in range(soft_tissue_node.GetNumberOfControlPoints()):
+            if soft_tissue_node.GetNthControlPointLabel(i) == landmark_name:
+                point = np.array(soft_tissue_node.GetNthControlPointPosition(i))
+                break
+
+        if point is None:
+            missing_landmarks.add(landmark_name)
+            continue
+
+        plane_node = slicer.mrmlScene.GetFirstNodeByName(plane_name)
+        if plane_node is None:
+            missing_planes.add(plane_name)
+            continue
+
+        # Create the line
+        line_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", line_name)
+        
+        # Calculate projected point
+        plane_normal = np.array(plane_node.GetNormal())
+        plane_origin = np.array(plane_node.GetOrigin())
+        v = point - plane_origin
+        distance = np.dot(v, plane_normal)
+        projected_point = point - distance * plane_normal
+        
+        # Add points
+        line_node.AddControlPoint(point)
+        line_node.AddControlPoint(projected_point)
+        
+        # Configure line
+        line_node.GetMeasurement('length').SetEnabled(True)
+        
+        # Force Color to Green (0, 1, 0)
+        dn = _ensure_display_node(line_node)
+        dn.SetColor(0, 1, 0)
+        dn.SetSelectedColor(0, 1, 0)
+        
+        created_count += 1
+
+    print(f"\n--- Results ---")
+    print(f"Created {created_count} true soft tissue measurement lines (Green).")
+    if missing_landmarks:
+        print(f"Missing {len(missing_landmarks)} landmarks in Ryu_soft_tissue:")
+        for name in sorted(missing_landmarks): print(f" - {name}")
+    if missing_planes:
+        print(f"Missing {len(missing_planes)} planes: {sorted(missing_planes)}")
+
+# Execute
+create_true_soft_tissue_measurements()
+
+```
+
+</details>
+
+<img width="670" height="640" alt="image" src="https://github.com/user-attachments/assets/99965c92-be36-42fa-bdf6-5326f97cc738" />
+
+
+
 
 <details>
 <summary>Code for comparing the true vs predicted soft tissue landmarks </summary>
 
 ```python
-
 import slicer
 import numpy as np
 
@@ -912,10 +1013,15 @@ def _ensure_display_node(node):
 def measure_prediction_errors():
     true_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_soft_tissue")
     pred_nodes = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode") if "Predicted_Soft_Tissue" in n.GetName()]
-    if not true_node or not pred_nodes:
-        return print("Ensure both Ryu_soft_tissue and Predicted_Soft_Tissue exist.")
+    
+    if not true_node:
+        return print("Error: Please allocate the soft tissue landmarks (Ryu_soft_tissue) first.")
+    if not pred_nodes:
+        return print("Error: Please run Step 2 in the GUI to generate the predicted pink landmarks first.")
+    
     pred_node = pred_nodes[-1]
     
+    # Clear any previous error lines
     for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
         if n.GetName().startswith("error_"): slicer.mrmlScene.RemoveNode(n)
 
@@ -925,36 +1031,42 @@ def measure_prediction_errors():
                 return np.array(node.GetNthControlPointPosition(i))
         return None
 
+    print("\n--- Calculating Prediction Errors ---")
     for i in range(true_node.GetNumberOfControlPoints()):
         label = true_node.GetNthControlPointLabel(i)
         true_pos = get_pos(true_node, label)
         pred_pos = get_pos(pred_node, label)
+        
         if true_pos is not None and pred_pos is not None:
+            dist = np.linalg.norm(pred_pos - true_pos)
+            
             line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", f"error_{label}")
             line.AddControlPoint(true_pos)
             line.AddControlPoint(pred_pos)
             line.GetMeasurement('length').SetEnabled(True)
+            
             dn = _ensure_display_node(line)
             dn.SetColor(0.5, 0, 0.125); dn.SetSelectedColor(0.7, 0, 0.175)  # Burgundy
-            print(f"Error for {label}: {np.linalg.norm(pred_pos - true_pos):.2f} mm")
+            
+            print(f"Error for {label}: {dist:.2f} mm")
+        else:
+            print(f"Warning: Could not find predicted landmark for {label}")
 
 measure_prediction_errors()
+
 ```
 
 </details>
 
 
-The picture below shows only the true soft tissue measurements:
 
-
-![image](https://github.com/user-attachments/assets/e0121e64-57a6-497f-b753-0e432d5a0b19)
 
 
 
 The picture below shows the distances between true and predicted soft tissue measurements:
 
 
-![image](https://github.com/user-attachments/assets/c017c407-d753-4673-a53d-0a40a046c3a0)
+<img width="915" height="1099" alt="image" src="https://github.com/user-attachments/assets/d28abc6e-e5f3-41cc-aa99-ec1487dba814" />
 
 
 
