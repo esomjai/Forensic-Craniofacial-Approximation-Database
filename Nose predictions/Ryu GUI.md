@@ -1,4 +1,5 @@
 ```python
+
 import slicer
 import qt
 import numpy as np
@@ -704,18 +705,30 @@ class LengthPredictionDialog(qt.QDialog):
         self.predict_btn.clicked.connect(self.run_length_prediction)
         self.layout().addWidget(self.predict_btn)
 
+    # --------------------------------------------------------------
+    # get_regressions with R²-prioritised picking for alar coronal
+    # --------------------------------------------------------------
     def get_regressions(self, sex, m):
+        # Helper: pick the best equation from a list of options
+        # options: list of (R², measurement_key, lambda_equation)
+        def pick_best(options):
+            for _, key, eq in options:
+                if m.get(key, 0) > 0.1:
+                    return eq(m.get(key, 0))
+            return 0.0
+
         if sex == "Male":
-            # N45-N48 / N69-N72 use Orbital Plane (N35, N59). 
-            # N49-N52 / N73-N76 use Coronal Plane (N7 - AC to Coronal).
-            # N41-N44 / N65-N68 use Alare Sagittal Plane (N30, N54).
-            return {
+            # --- Midline (single predictor) ---
+            pred = {
                 "N17": 0.92 * m.get("N4", 0) - 3.58,
                 "N18": 0.91 * m.get("N5", 0) - 6.84,
                 "N19": 0.91 * m.get("N5", 0) + 5.81,
                 "N20": 0.93 * m.get("N6", 0) + 11.28,
                 "N21": 0.96 * m.get("N7", 0) + 24.70,
                 "N22": 0.96 * m.get("N7", 0) + 11.20,
+            }
+            # --- Alare Orbital (single predictor) ---
+            pred.update({
                 "N45": 0.66 * m.get("N35", 0) - 3.97,
                 "N69": 0.62 * m.get("N59", 0) - 2.63,
                 "N46": 0.75 * m.get("N35", 0) + 3.07,
@@ -724,34 +737,73 @@ class LengthPredictionDialog(qt.QDialog):
                 "N71": 0.66 * m.get("N59", 0) + 6.77,
                 "N48": 0.66 * m.get("N35", 0) + 14.01,
                 "N72": 0.69 * m.get("N59", 0) + 13.52,
-                "N49": 0.84 * m.get("N7", 0) + 16.41,
-                "N73": 0.83 * m.get("N7", 0) + 17.20,
-                "N50": 0.87 * m.get("N7", 0) + 8.61,
-                "N74": 0.90 * m.get("N7", 0) + 6.34,
-                "N51": 0.92 * m.get("N7", 0) + 8.38,
-                "N75": 0.94 * m.get("N7", 0) + 6.12,
-                "N52": 0.90 * m.get("N7", 0) + 11.41,
-                "N76": 0.92 * m.get("N7", 0) + 9.52,
-                # LATERAL LEFT (Alare Sagittal)
+            })
+            # --- Alare Coronal (prioritised by R²) ---
+            pred.update({
+                "N49": pick_best([
+                    (85, "N39", lambda x: 0.91 * x + 19.98),
+                    (80, "N7",  lambda x: 0.84 * x + 16.41),
+                    (71, "N28", lambda x: 0.85 * x + 11.47)
+                ]),
+                "N50": pick_best([
+                    (90, "N39", lambda x: 0.95 * x + 10.59),
+                    (82, "N7",  lambda x: 0.87 * x + 8.61),
+                    (66, "N28", lambda x: 0.83 * x + 7.11)
+                ]),
+                "N51": pick_best([
+                    (87, "N39", lambda x: 0.98 * x + 12.26),
+                    (82, "N7",  lambda x: 0.92 * x + 8.38),
+                    (70, "N28", lambda x: 0.90 * x + 4.58)
+                ]),
+                "N52": pick_best([
+                    (88, "N39", lambda x: 0.96 * x + 15.18),
+                    (83, "N7",  lambda x: 0.90 * x + 11.41),
+                    (63, "N28", lambda x: 0.83 * x + 12.30)
+                ]),
+                "N73": pick_best([
+                    (84, "N63", lambda x: 0.92 * x + 18.62),
+                    (75, "N7",  lambda x: 0.83 * x + 17.20),
+                    (69, "N28", lambda x: 0.85 * x + 10.92)
+                ]),
+                "N74": pick_best([
+                    (90, "N63", lambda x: 0.99 * x + 8.11),
+                    (81, "N7",  lambda x: 0.90 * x + 6.34),
+                    (66, "N28", lambda x: 0.87 * x + 4.21)
+                ]),
+                "N75": pick_best([
+                    (88, "N63", lambda x: 1.02 * x + 9.19),
+                    (81, "N7",  lambda x: 0.94 * x + 6.12),
+                    (70, "N28", lambda x: 0.94 * x + 1.61)
+                ]),
+                "N76": pick_best([
+                    (88, "N63", lambda x: 0.99 * x + 13.23),
+                    (83, "N7",  lambda x: 0.92 * x + 9.52),
+                    (62, "N28", lambda x: 0.85 * x + 10.92)
+                ]),
+            })
+            # --- Alare Sagittal (Lateral) ---
+            pred.update({
                 "N41": 0.56 * m.get("N30", 0) + 7.61,
                 "N42": 0.68 * m.get("N30", 0) + 12.51,
                 "N43": 0.58 * m.get("N30", 0) + 13.39,
                 "N44": 0.65 * m.get("N30", 0) + 6.57,
-                # LATERAL RIGHT (Alare Sagittal) - N65 has no correlation (p>=0.05)
-                "N65": 0.0, 
+                "N65": 0.0,  # p>=0.05
                 "N66": 0.79 * m.get("N54", 0) + 11.13,
                 "N67": 0.68 * m.get("N54", 0) + 12.12,
-                "N68": 0.48 * m.get("N54", 0) + 8.83
-            }
-        else:
-            # Female equations (Note: N41-N44 & N65-N68 = 0 because p>=0.05)
-            return {
+                "N68": 0.48 * m.get("N54", 0) + 8.83,
+            })
+        else:  # Female
+            # --- Midline ---
+            pred = {
                 "N17": 0.85 * m.get("N4", 0) - 1.10,
                 "N18": 1.01 * m.get("N5", 0) - 9.04,
                 "N19": 1.00 * m.get("N5", 0) + 3.23,
                 "N20": 0.96 * m.get("N6", 0) + 8.36,
                 "N21": 1.00 * m.get("N7", 0) + 19.50,
                 "N22": 1.02 * m.get("N7", 0) + 5.18,
+            }
+            # --- Alare Orbital ---
+            pred.update({
                 "N45": 0.67 * m.get("N35", 0) - 3.71,
                 "N69": 0.66 * m.get("N59", 0) - 3.60,
                 "N46": 0.80 * m.get("N35", 0) + 3.27,
@@ -760,18 +812,57 @@ class LengthPredictionDialog(qt.QDialog):
                 "N71": 0.78 * m.get("N59", 0) + 3.82,
                 "N48": 0.65 * m.get("N35", 0) + 13.58,
                 "N72": 0.65 * m.get("N59", 0) + 13.15,
-                "N49": 0.95 * m.get("N7", 0) + 7.65,
-                "N73": 0.93 * m.get("N7", 0) + 9.62,
-                "N50": 0.93 * m.get("N7", 0) + 3.83,
-                "N74": 1.03 * m.get("N7", 0) - 3.54,
-                "N51": 0.95 * m.get("N7", 0) + 4.62,
-                "N75": 1.07 * m.get("N7", 0) - 3.82,
-                "N52": 0.97 * m.get("N7", 0) + 4.68,
-                "N76": 1.05 * m.get("N7", 0) - 1.35,
-                # LATERAL (All p>=0.05, set to 0)
+            })
+            # --- Alare Coronal (prioritised by R²) ---
+            pred.update({
+                "N49": pick_best([
+                    (93, "N39", lambda x: 0.97 * x + 14.07),
+                    (87, "N28", lambda x: 0.96 * x + 1.71),
+                    (86, "N7",  lambda x: 0.95 * x + 7.65)
+                ]),
+                "N50": pick_best([
+                    (97, "N39", lambda x: 0.95 * x + 10.26),
+                    (90, "N7",  lambda x: 0.93 * x + 3.83),
+                    (87, "N28", lambda x: 0.92 * x - 0.61)
+                ]),
+                "N51": pick_best([
+                    (95, "N39", lambda x: 0.95 * x + 12.71),
+                    (93, "N7",  lambda x: 0.95 * x + 4.62),
+                    (93, "N28", lambda x: 0.96 * x - 0.93)
+                ]),
+                "N52": pick_best([
+                    (99, "N39", lambda x: 0.99 * x + 11.45),
+                    (89, "N7",  lambda x: 0.97 * x + 4.68),
+                    (86, "N28", lambda x: 0.96 * x + 0.16)
+                ]),
+                "N73": pick_best([
+                    (95, "N63", lambda x: 0.90 * x + 18.81),
+                    (91, "N7",  lambda x: 0.93 * x + 9.62),
+                    (89, "N28", lambda x: 0.92 * x + 4.71)
+                ]),
+                "N74": pick_best([
+                    (96, "N63", lambda x: 1.00 * x + 6.55),
+                    (91, "N7",  lambda x: 1.03 * x - 3.54),
+                    (89, "N28", lambda x: 1.02 * x - 8.55)
+                ]),
+                "N75": pick_best([
+                    (94, "N63", lambda x: 1.03 * x + 7.54),
+                    (92, "N7",  lambda x: 1.07 * x - 3.82),
+                    (88, "N28", lambda x: 1.05 * x - 8.27)
+                ]),
+                "N76": pick_best([
+                    (95, "N63", lambda x: 1.02 * x + 9.06),
+                    (91, "N7",  lambda x: 1.05 * x - 1.35),
+                    (87, "N28", lambda x: 1.03 * x - 5.60)
+                ]),
+            })
+            # --- Alare Sagittal (Lateral) — all p>=0.05 ---
+            pred.update({
                 "N41": 0.0, "N42": 0.0, "N43": 0.0, "N44": 0.0,
-                "N65": 0.0, "N66": 0.0, "N67": 0.0, "N68": 0.0
-            }
+                "N65": 0.0, "N66": 0.0, "N67": 0.0, "N68": 0.0,
+            })
+
+        return pred
 
     def run_length_prediction(self):
         sex = str(self.sex_combo.currentText)
@@ -796,17 +887,16 @@ class LengthPredictionDialog(qt.QDialog):
             slicer.mrmlScene.RemoveNode(node)
 
         # Map predicted measurements to their corresponding hard tissue measurements for direction
-        # UPDATED: Alare depth (N49-N52, N73-N76) now uses N7 (AC to Coronal) instead of NAG.
         hard_measurement_map = {
-        "N17": "N4", "N18": "N5", "N19": "N5",
-        "N20": "N6", "N21": "N7", "N22": "N7",
-        "N45": "N34", "N46": "N34", "N47": "N34", "N48": "N34",
-        "N49": "N7", "N50": "N7", "N51": "N7", "N52": "N7",
-        "N69": "N34", "N70": "N34", "N71": "N34", "N72": "N34",
-        "N73": "N7", "N74": "N7", "N75": "N7", "N76": "N7",
-        "N41": "N30", "N42": "N30", "N43": "N30", "N44": "N30",
-        "N65": "N54", "N66": "N54", "N67": "N54", "N68": "N54"
-    }
+            "N17": "N4", "N18": "N5", "N19": "N5",
+            "N20": "N6", "N21": "N7", "N22": "N7",
+            "N45": "N34", "N46": "N34", "N47": "N34", "N48": "N34",
+            "N49": "N7", "N50": "N7", "N51": "N7", "N52": "N7",
+            "N69": "N34", "N70": "N34", "N71": "N34", "N72": "N34",
+            "N73": "N7", "N74": "N7", "N75": "N7", "N76": "N7",
+            "N41": "N30", "N42": "N30", "N43": "N30", "N44": "N30",
+            "N65": "N54", "N66": "N54", "N67": "N54", "N68": "N54"
+        }
 
         # Plane mapping
         plane_map = {
@@ -1302,5 +1392,7 @@ try:
 except:
     pass
 ryu_gui_instance = RyuGUI()
+
+
 
 ```
