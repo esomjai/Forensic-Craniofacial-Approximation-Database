@@ -781,7 +781,6 @@ Please note that the equation for calculating N42 is not in the main body of tex
 
 <details>
 <summary> Code to visualise midline soft tissue landmark (pronasale) prediction </summary>
-
 ``` python
 import slicer
 import numpy as np
@@ -836,6 +835,7 @@ def visualize_pn_simultaneous():
     print(f"Final PN (Simultaneous): {final_pos}")
 
 visualize_pn_simultaneous()
+
 ```
 
 <img width="3746" height="2365" alt="help1" src="https://github.com/user-attachments/assets/06857534-226a-4f83-a5af-f05cbdb2cb3a" />
