@@ -370,7 +370,7 @@ The original study distinguished their regression equations based on biological 
 | midline | **N19**          | 0.91×**N5**+5.81                    | 1.00×**N5**+3.23                      | Orbital      |
 | midline | **N20**          | 0.93×**N6**+11.28                   | 0.96×**N6**+8.36                      | Coronal      |
 | midline | **N21**          | 0.96×**N7**+24.70                   | 1.00×**N7**+19.50                     | Coronal      |
-| midline | **N22**          | 0.96 × N7 + 11.20                  | 1.02×**N7**+5.18                      | Orbital      |
+| midline | **N22**          | 0.96 × **N7** + 11.20               | 1.02×**N7**+5.18                      | Orbital      |
 | left    | **N45**          | 0.66×**N35**−3.97                   | 0.67×**N35**−3.71                     | Orbital      |
 | right   | **N69**          | 0.62×**N59**−2.63                   | 0.66×**N59**−3.60                     | Orbital      |
 | left    | **N46**          | 0.75×**N35**+3.07                   | 0.80×**N35**+3.27                     | Orbital      |
@@ -671,16 +671,25 @@ ryu_gui_instance = RyuGUI()
 
 </details>
 
-![Picture3](https://github.com/user-attachments/assets/c6a5073e-f804-4cbd-8261-f2c08559bfbb)
+You can expect a window to pop up asking you to choose a biological sex for predictions - this is due to the original paper providing sexually dimorphic equations.
+
+<img width="616" height="355" alt="image" src="https://github.com/user-attachments/assets/cf7ba9ef-c180-482c-883e-628870a98f92" />
+
+Once you chose and clicked the "Predict Lengths and Create Lines" button, the following should show up: 
+<img width="1304" height="1057" alt="image" src="https://github.com/user-attachments/assets/5a0e0d27-cf0e-45fc-8a4e-aa54a9ed565f" />
+
+Then, click the ""
+
+
 
 If you want to see how the prediction is created, copy and paste the following code: 
 
 <details>
-            <summary> Code to visualise bilateral soft tissue landmark (ACP_L) prediction </summary>
+ <summary> Code to visualise bilateral soft tissue landmark (ACP_L) prediction </summary>
 
 ``` python
 # ---------------------------
-# Bilateral ACP_L Visualization
+# Bilateral ACP_L Visualization (CORRECTED)
 # ---------------------------
 def visualize_acpl_simultaneous():
     for n in slicer.util.getNodesByClass('vtkMRMLMarkupsNode'):
@@ -705,8 +714,17 @@ def visualize_acpl_simultaneous():
     final_pos = np.zeros(3)
     for p, d in dist.items(): final_pos += (np.dot(origins[p], normals[p]) + d) * normals[p]
     
+    # --- CORRECTED SAFE LOOKUP FOR A_L ---
     hard_node = slicer.mrmlScene.GetFirstNodeByName("Ryu_hard_tissue")
-    a_l = np.array(hard_node.GetNthControlPointPosition(hard_node.GetNthControlPointIndex("A_L"))) if hard_node else np.zeros(3)
+    a_l = None
+    if hard_node:
+        for i in range(hard_node.GetNumberOfControlPoints()):
+            if hard_node.GetNthControlPointLabel(i) == "A_L":
+                a_l = np.array(hard_node.GetNthControlPointPosition(i))
+                break
+    if a_l is None:
+        a_l = np.zeros(3)
+    # -------------------------------------
 
     for p, d in dist.items():
         o, n = origins[p], normals[p]
