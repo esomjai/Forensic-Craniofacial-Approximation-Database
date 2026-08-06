@@ -1,4 +1,4 @@
-# Forensic Craniofacial Approximation Database
+# Forensic Craniofacial Approximation Guidelines Database
 Often comparisons of the theoretical and anatomical basis, data collection methods, reliability and success rates, as well as details of the sample population used to establish these guides cannot be readily made due to their heterogeneity, leaving them to interpret these recommendations and assess their limitations.
 To improve repeatibility of forensic craniofacial approximation methods, this project aims to “translate” well-known techniques into the world of medical imaging and Python with the help of the open-source programme, 3D Slicer. Please visit their official website for  more information and free download.
 
@@ -13,9 +13,9 @@ This is a work in progress repository, so take everything with a pinch of salt :
 > [!IMPORTANT]
 > Please note that these guidelines are the researcher’s interpretation of the cited literature. If you notice any errors or have any questions, please do not hesitate to get in touch at [e.m.somjai@dundee.ac.uk](mailto:e.m.somjai@dundee.ac.uk). 
 
-For most protocols, the first step is the re-orientation of the scan in the Frankfort Horizontal Plane (FHP), so that navigating the models become easier. 
+For most protocols, the first step is the re-orientation of the scan in the Frankfort Horizontal Plane (FHP) (and translating the scan so that nasion is at coordinates 0,0,0) so that navigating the models becomes easier. 
   - For a step-by-step tutorial,  please visit [this page](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/002_Realign%20CT%20in%20the%20standard%20FHP.md)
-  - For the .json file and code only, go to [this release](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/tree/001_CodeForFHPAlignment))
+  - For the .json file and code only, go to [this release](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/002_Realignment%20GUI.md))
 If you choose to do a segmentation, follow the tutorial at [ROI vs Segmentation](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/003_Roi%20vs%20Segmentation.md)
 
 Do not forget to re-visit the [tutorial](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md) or [code](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/releases/tag/CopyMeasurementsToClipboard) for copying measurements to the clipboard
