@@ -781,6 +781,7 @@ Please note that the equation for calculating N42 is not in the main body of tex
 
 <details>
 <summary> Code to visualise midline soft tissue landmark (pronasale) prediction </summary>
+  
 ``` python
 import slicer
 import numpy as np
@@ -998,8 +999,6 @@ create_true_soft_tissue_measurements()
 <img width="670" height="640" alt="image" src="https://github.com/user-attachments/assets/99965c92-be36-42fa-bdf6-5326f97cc738" />
 
 
-
-
 <details>
 <summary>Code for comparing the true vs predicted soft tissue landmarks </summary>
 
@@ -1060,9 +1059,6 @@ measure_prediction_errors()
 ```
 
 </details>
-
-
-
 
 
 
