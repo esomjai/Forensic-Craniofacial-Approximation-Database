@@ -16,7 +16,7 @@ class ThitiorulGUI:
         self.mainWidget = qt.QWidget()
         self.mainWidget.setWindowTitle("Thitiorul (2020) Nose Prediction Method")
         self.mainWidget.setMinimumSize(650, 800)
-        self.mainWidget.setWindowFlags(qt.Qt.Tool | qt.Qt.WindowStaysOnTopHint)
+        self.mainWidget.setWindowFlags(qt.Qt.Tool)
         scrollArea = qt.QScrollArea()
         scrollArea.setWidgetResizable(True)
         scrollContent = qt.QWidget()
