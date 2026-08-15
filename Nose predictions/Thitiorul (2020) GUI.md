@@ -10,29 +10,29 @@ from collections import OrderedDict
 
 class ThitiorulGUI:
     def __init__(self):
-    main_window = slicer.util.mainWindow()
-    self.mainWidget = qt.QWidget(main_window)
-    self.mainWidget.setWindowTitle("Thitiorul (2020) Nose Prediction Method")
-    self.mainWidget.setMinimumSize(650, 800)
-    self.mainWidget.setWindowFlags(qt.Qt.Window)
-
-    scrollArea = qt.QScrollArea()
-    scrollArea.setWidgetResizable(True)
-    scrollContent = qt.QWidget()
-    mainLayout = qt.QVBoxLayout(scrollContent)
-    mainLayout.setContentsMargins(10, 10, 10, 10)
-    mainLayout.setSpacing(10)
-
-    titleLabel = qt.QLabel("Thitiorul et al. (2020) Method")
-    titleLabel.setStyleSheet("font-weight: bold; font-size: 16px;")
-    titleLabel.setAlignment(qt.Qt.AlignCenter)
-    mainLayout.addWidget(titleLabel)
+        main_window = slicer.util.mainWindow()
+        self.mainWidget = qt.QWidget(main_window)
+        self.mainWidget.setWindowTitle("Thitiorul (2020) Nose Prediction Method")
+        self.mainWidget.setMinimumSize(650, 800)
+        self.mainWidget.setWindowFlags(qt.Qt.Window)
+    
+        scrollArea = qt.QScrollArea()
+        scrollArea.setWidgetResizable(True)
+        scrollContent = qt.QWidget()
+        mainLayout = qt.QVBoxLayout(scrollContent)
+        mainLayout.setContentsMargins(10, 10, 10, 10)
+        mainLayout.setSpacing(10)
+    
+        titleLabel = qt.QLabel("Thitiorul et al. (2020) Method")
+        titleLabel.setStyleSheet("font-weight: bold; font-size: 16px;")
+        titleLabel.setAlignment(qt.Qt.AlignCenter)
+        mainLayout.addWidget(titleLabel)
 
     # ---- NEW: Stay-on-top checkbox ----
-    self.stayOnTopCheckbox = qt.QCheckBox("Keep window on top (toggle to avoid losing the GUI)")
-    self.stayOnTopCheckbox.setChecked(False)
-    self.stayOnTopCheckbox.stateChanged.connect(self.toggleStayOnTop)
-    mainLayout.addWidget(self.stayOnTopCheckbox)
+        self.stayOnTopCheckbox = qt.QCheckBox("Keep window on top (toggle to avoid losing the GUI)")
+        self.stayOnTopCheckbox.setChecked(False)
+        self.stayOnTopCheckbox.stateChanged.connect(self.toggleStayOnTop)
+        mainLayout.addWidget(self.stayOnTopCheckbox)
 
 
         self.prediction_runs = OrderedDict()
