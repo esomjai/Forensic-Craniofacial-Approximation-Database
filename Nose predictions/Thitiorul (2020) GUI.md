@@ -28,7 +28,7 @@ class ThitiorulGUI:
         titleLabel.setAlignment(qt.Qt.AlignCenter)
         mainLayout.addWidget(titleLabel)
 
-        # ---- NEW: Stay-on-top checkbox ----
+        # Stay-on-top checkbox
         self.stayOnTopCheckbox = qt.QCheckBox("Keep window on top (toggle to avoid losing the GUI)")
         self.stayOnTopCheckbox.setChecked(False)
         self.stayOnTopCheckbox.stateChanged.connect(self.toggleStayOnTop)
@@ -173,6 +173,13 @@ class ThitiorulGUI:
         self.applyTransformButton.setFixedWidth(buttonWidth)
         self.applyTransformButton.clicked.connect(self.onApplyTransformClicked)
         step2Layout.addWidget(self.applyTransformButton, 0, qt.Qt.AlignHCenter)
+
+        # ---- NEW: Transform Soft Tissue Only ----
+        self.transformSoftButton = qt.QPushButton("Transform Soft Tissue Landmarks Now")
+        self.transformSoftButton.setStyleSheet("background-color: #FFA500; color: white; padding: 8px;")
+        self.transformSoftButton.setFixedWidth(buttonWidth)
+        self.transformSoftButton.clicked.connect(self.transformSoftTissueNow)
+        step2Layout.addWidget(self.transformSoftButton, 0, qt.Qt.AlignHCenter)
 
         # ---- Step 3 ----
         step3Layout = self.step3GroupBox.layout()
@@ -330,23 +337,20 @@ class ThitiorulGUI:
 
     # -------------------- Utility Methods --------------------
     def toggleStayOnTop(self, state):
-        """Toggle the 'always on top' window flag."""
         flags = self.mainWidget.windowFlags()
         if state == qt.Qt.Checked:
             flags |= qt.Qt.WindowStaysOnTopHint
         else:
             flags &= ~qt.Qt.WindowStaysOnTopHint
         self.mainWidget.setWindowFlags(flags)
-        self.mainWidget.show()   # re-apply the flags
+        self.mainWidget.show()
         self.raiseMainWindow()
 
     def raiseMainWindow(self):
-        """Bring the main GUI window to the front."""
         self.mainWidget.raise_()
         self.mainWidget.activateWindow()
 
     def clearTemporaryNodes(self):
-        """Remove all temporary nodes created by this module."""
         to_remove = []
         for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
             name = node.GetName()
@@ -361,7 +365,6 @@ class ThitiorulGUI:
         self.raiseMainWindow()
 
     def onToggleErrorLines(self, state):
-        """Show/hide error lines based on checkbox."""
         for node in slicer.util.getNodesByClass('vtkMRMLMarkupsLineNode'):
             if node.GetName().startswith('error_line_'):
                 node.GetDisplayNode().SetVisibility(state == qt.Qt.Checked)
@@ -379,13 +382,11 @@ class ThitiorulGUI:
         raise ValueError(f"Landmark '{label}' not found in {node.GetName()}")
 
     def get_msp_plane_normal(self):
-        """Return the normal of the MSP plane if it exists, else None."""
         if self.mspPlaneNode:
             return np.array(self.mspPlaneNode.GetNormal())
         return None
 
     def mirror_point_across_msp(self, point):
-        """Mirror a point across the MSP plane if available, else flip x."""
         normal = self.get_msp_plane_normal()
         if normal is not None and self.mspPlaneNode:
             origin = np.array(self.mspPlaneNode.GetOrigin())
@@ -393,12 +394,10 @@ class ThitiorulGUI:
             d = np.dot(p - origin, normal)
             return p - 2 * d * normal
         else:
-            # Fallback: simple x sign flip (assumes MSP is YZ plane)
+            # Fallback: simple x sign flip
             return np.array([-point[0], point[1], point[2]])
 
-    # ------- Nasion at origin check -------
     def isNasionAtOrigin(self, tolerance=0.1):
-        """Check if hard tissue nasion is within tolerance of (0,0,0)."""
         hard = self.hardTissueSelector.currentNode()
         if not hard:
             return False
@@ -407,6 +406,29 @@ class ThitiorulGUI:
             return False
         pos = hard.GetNthControlPointPosition(n_idx)
         return np.linalg.norm(pos) < tolerance
+
+    # -------------------- Transform Soft Tissue --------------------
+    def transformSoftTissueNow(self):
+        """Apply the current transform to the selected soft tissue landmarks only."""
+        if not self.transformNode:
+            slicer.util.warningDisplay("No transform node found. Run Step 2 first.")
+            self.raiseMainWindow()
+            return
+        soft = self.softTissueSelector.currentNode()
+        if not soft:
+            slicer.util.warningDisplay("No soft tissue landmarks selected.")
+            self.raiseMainWindow()
+            return
+        # Check if already transformed
+        if soft.GetTransformNodeID() is not None:
+            # We'll harden it again to be safe
+            pass
+        soft.SetAndObserveTransformNodeID(self.transformNode.GetID())
+        slicer.vtkSlicerTransformLogic().hardenTransform(soft)
+        self.softTissueNode = soft
+        self.softTissueSelector.setCurrentNode(soft)
+        slicer.util.showStatusMessage("Soft tissue landmarks transformed to nasion origin.", 3000)
+        self.raiseMainWindow()
 
     # -------------------- Download and Load --------------------
     def download_and_load_markup(self, url, name, color, scale, harden=False):
@@ -518,10 +540,8 @@ class ThitiorulGUI:
                 self.raiseMainWindow()
                 return
 
-            # ---- Nasion at origin check ----
             if self.isNasionAtOrigin(0.01):
                 if not self.transform_applied:
-                    # Create an identity transform so subsequent hardening works
                     oldTransform = slicer.mrmlScene.GetFirstNodeByName("MoveToOrigin")
                     if oldTransform:
                         slicer.mrmlScene.RemoveNode(oldTransform)
@@ -529,7 +549,6 @@ class ThitiorulGUI:
                     identity = vtk.vtkMatrix4x4()
                     identity.Identity()
                     self.transformNode.SetMatrixTransformToParent(identity)
-                    # Apply identity to all fiducials (harden does nothing but marks them)
                     all_fiducials = slicer.util.getNodesByClass('vtkMRMLMarkupsFiducialNode')
                     for fid in all_fiducials:
                         if fid.GetName() != "reference_nasion":
@@ -542,7 +561,6 @@ class ThitiorulGUI:
                 self.raiseMainWindow()
                 return
 
-            # ---- Regular transform (nasion not at origin) ----
             if self.transform_applied:
                 if not self.show_yes_no_popup(
                     "Transform Already Applied",
@@ -553,7 +571,6 @@ class ThitiorulGUI:
                     return
 
             n_coord = hard_tissue.GetNthControlPointPosition(n_idx)
-
             oldTransform = slicer.mrmlScene.GetFirstNodeByName("MoveToOrigin")
             if oldTransform:
                 slicer.mrmlScene.RemoveNode(oldTransform)
@@ -649,7 +666,6 @@ class ThitiorulGUI:
             self.raiseMainWindow()
             return
 
-        # ---- Warn if nasion not at origin ----
         if not self.isNasionAtOrigin(0.5):
             if not self.show_yes_no_popup(
                 "Nasion not at origin",
@@ -769,68 +785,104 @@ class ThitiorulGUI:
             self.raiseMainWindow()
             return None
 
-        ss_y = ss[1]; ss_z = abs(ss[2])
-        nr_y = nr[1]; nr_z = abs(nr[2])
-        pr_y = pr[1]; pr_z = abs(pr[2])
-        iof_L_x = abs(iof_L[0]); iof_L_y = iof_L[1]
-        ecm_L_y = ecm_L[1]; ecm_L_z = abs(ecm_L[2])
-        zy_L_x = abs(zy_L[0]); zy_L_y = zy_L[1]; zy_L_z = abs(zy_L[2])
+        # ---- Variables: y signed, x and z absolute ----
+        ss_y = ss[1]
+        ss_z_abs = abs(ss[2])
+        nr_y = nr[1]
+        nr_z_abs = abs(nr[2])
+        pr_y = pr[1]
+        pr_z_abs = abs(pr[2])
 
-        se_y = -0.869 + 0.212*ss_y + 0.139*zy_L_z - 0.073*ecm_L_y
-        se_z = -1.198 - 1.159*nr_y + 0.691*nr_z - 0.208*iof_L_y
+        iof_L_x_abs = abs(iof_L[0])
+        iof_L_y = iof_L[1]
+        ecm_L_y = ecm_L[1]
+        ecm_L_z_abs = abs(ecm_L[2])
+        zy_L_x_abs = abs(zy_L[0])
+        zy_L_y = zy_L[1]
+        zy_L_z_abs = abs(zy_L[2])
+
+        # ---- Midline landmarks ----
+        se_y = -0.869 + 0.212*ss_y + 0.139*zy_L_z_abs - 0.073*ecm_L_y
+        se_z = -1.198 - 1.159*nr_y + 0.691*nr_z_abs - 0.208*iof_L_y
+
         npp_y = 3.182 + 0.271*ss_y + 0.423*nr_y - 0.098*ecm_L_y
-        npp_z = 5.345 - 0.607*nr_y + 0.840*nr_z
-        npa_y = 0.587 + 0.739*ss_y + 0.109*pr_z + 0.242*zy_L_x
-        npa_z = 4.315 - 0.371*ss_y + 0.573*ss_z + 0.285*nr_z
-        pn_y = -2.091 + 0.818*ss_y + 0.152*pr_z + 0.251*zy_L_x
-        pn_z = 2.095 - 0.288*ss_y + 0.456*ss_z + 0.250*pr_z
-        nd_y = -2.040 + 0.865*ss_y + 0.120*pr_z + 0.241*zy_L_x
-        nd_z = 3.626 - 0.392*ss_y + 0.842*ss_z
-        sn_y = -1.902 + 0.676*ss_y + 0.260*pr_y + 0.198*zy_L_x
-        sn_z = 6.455 - 0.269*ss_y + 0.551*ss_z + 0.277*pr_z
-        alL_x = -(7.101 + 0.107*pr_y + 0.316*iof_L_x - 0.076*zy_L_y)
-        alL_y = 2.427 - 0.320*nr_z + 0.733*ss_y + 0.129*pr_z
-        alL_z = 2.897 - 0.218*ss_y + 0.464*ss_z + 0.305*pr_z
-        alsL_x = -(3.167 + 0.174*iof_L_x + 0.097*zy_L_x)
-        alsL_y = 3.993 + 0.453*ss_y + 0.270*pr_y + 0.072*pr_z
-        alsL_z = 3.827 - 0.466*ss_y + 0.674*ss_z + 0.257*iof_L_y
-        alpL_x = -(7.885 + 0.060*pr_z + 0.310*iof_L_x)
+        npp_z = 5.345 - 0.607*nr_y + 0.840*nr_z_abs
+
+        npa_y = 0.587 + 0.739*ss_y + 0.109*pr_z_abs + 0.242*zy_L_x_abs
+        npa_z = 4.315 - 0.371*ss_y + 0.573*ss_z_abs + 0.285*nr_z_abs
+
+        pn_y = -2.091 + 0.818*ss_y + 0.152*pr_z_abs + 0.251*zy_L_x_abs
+        pn_z = 2.095 - 0.288*ss_y + 0.456*ss_z_abs + 0.250*pr_z_abs
+
+        nd_y = -2.040 + 0.865*ss_y + 0.120*pr_z_abs + 0.241*zy_L_x_abs
+        nd_z = 3.626 - 0.392*ss_y + 0.842*ss_z_abs
+
+        sn_y = -1.902 + 0.676*ss_y + 0.260*pr_y + 0.198*zy_L_x_abs
+        sn_z = 6.455 - 0.269*ss_y + 0.551*ss_z_abs + 0.277*pr_z_abs
+
+        # ---- Left side ----
+        alL_x = -(7.101 + 0.107*pr_y + 0.316*iof_L_x_abs - 0.076*zy_L_y)
+        alL_y = 2.427 - 0.320*nr_z_abs + 0.733*ss_y + 0.129*pr_z_abs
+        alL_z = 2.897 - 0.218*ss_y + 0.464*ss_z_abs + 0.305*pr_z_abs
+
+        alsL_x = -(3.167 + 0.174*iof_L_x_abs + 0.097*zy_L_x_abs)
+        alsL_y = 3.993 + 0.453*ss_y + 0.270*pr_y + 0.072*pr_z_abs
+        alsL_z = 3.827 - 0.466*ss_y + 0.674*ss_z_abs + 0.257*iof_L_y
+
+        alpL_x = -(7.885 + 0.060*pr_z_abs + 0.310*iof_L_x_abs)
         alpL_y = 4.199 + 0.398*ss_y + 0.224*pr_y + 0.247*iof_L_y
-        alpL_z = 2.054 - 0.419*ss_y + 0.433*ss_z + 0.332*pr_z
-        aliL_x = -(4.611 + 0.239*iof_L_x - 0.070*zy_L_y)
-        aliL_y = -0.890 + 0.476*pr_y + 0.377*ss_y + 0.089*zy_L_x
-        aliL_z = 0.404 + 0.499*ss_y + 0.312*pr_z - 0.119*zy_L_y
+        alpL_z = 2.054 - 0.419*ss_y + 0.433*ss_z_abs + 0.332*pr_z_abs
 
-        alR_x = -alL_x; alR_y = alL_y; alR_z = alL_z
-        alsR_x = -alsL_x; alsR_y = alsL_y; alsR_z = alsL_z
-        alpR_x = -alpL_x; alpR_y = alpL_y; alpR_z = alpL_z
-        aliR_x = -aliL_x; aliR_y = aliL_y; aliR_z = aliL_z
+        aliL_x = -(4.611 + 0.239*iof_L_x_abs - 0.070*zy_L_y)
+        aliL_y = -0.890 + 0.476*pr_y + 0.377*ss_y + 0.089*zy_L_x_abs
+        # ----- FIX: paper typo – ss_z_abs instead of ss_y -----
+        aliL_z = 0.404 + 0.499*ss_z_abs + 0.312*pr_z_abs - 0.119*zy_L_y
 
+        # ---- Right side ----
+        alR_x = 8.967 + 0.125*pr_y + 0.249*iof_L_x_abs - 0.079*zy_L_y
+        alR_y = 0.338 - 0.264*nr_z_abs + 0.760*ss_y + 0.151*pr_z_abs
+        alR_z = 2.778 - 0.223*ss_y + 0.437*ss_z_abs + 0.325*pr_z_abs
+
+        alsR_x = 3.244 + 0.225*iof_L_x_abs + 0.079*zy_L_x_abs
+        alsR_y = -1.183 + 0.628*pr_y + 0.151*ecm_L_z_abs
+        alsR_z = 3.864 - 0.499*ss_y + 0.685*ss_z_abs + 0.350*iof_L_y
+
+        alpR_x = 12.069 + 0.045*pr_z_abs + 0.207*iof_L_x_abs
+        alpR_y = 6.126 + 0.626*ss_y + 0.323*iof_L_y
+        alpR_z = 2.578 - 0.404*ss_y + 0.403*ss_z_abs + 0.350*pr_z_abs
+
+        aliR_x = 6.729 + 0.100*pr_y + 0.165*iof_L_x_abs - 0.062*zy_L_y
+        aliR_y = -2.325 + 0.504*pr_y + 0.345*ss_y + 0.112*zy_L_x_abs
+        aliR_z = 6.363 - 0.161*ss_y + 0.468*ss_z_abs + 0.350*pr_z_abs
+
+        # ---- Create output node ----
         try:
             old = slicer.util.getNode(outputName)
             slicer.mrmlScene.RemoveNode(old)
         except:
             pass
+
         result_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", outputName)
         landmarks = [
-            ("se'", [0, se_y, se_z]),
-            ("npp'", [0, npp_y, npp_z]),
-            ("npa'", [0, npa_y, npa_z]),
-            ("pn'", [0, pn_y, pn_z]),
-            ("nd'", [0, nd_y, nd_z]),
-            ("sn'", [0, sn_y, sn_z]),
-            ("al'L", [alL_x, alL_y, alL_z]),
+            ("se'",   [0, se_y, se_z]),
+            ("npp'",  [0, npp_y, npp_z]),
+            ("npa'",  [0, npa_y, npa_z]),
+            ("pn'",   [0, pn_y, pn_z]),
+            ("nd'",   [0, nd_y, nd_z]),
+            ("sn'",   [0, sn_y, sn_z]),
+            ("al'L",  [alL_x, alL_y, alL_z]),
             ("als'L", [alsL_x, alsL_y, alsL_z]),
             ("alp'L", [alpL_x, alpL_y, alpL_z]),
             ("ali'L", [aliL_x, aliL_y, aliL_z]),
-            ("al'R", [alR_x, alR_y, alR_z]),
+            ("al'R",  [alR_x, alR_y, alR_z]),
             ("als'R", [alsR_x, alsR_y, alsR_z]),
             ("alp'R", [alpR_x, alpR_y, alpR_z]),
             ("ali'R", [aliR_x, aliR_y, aliR_z])
         ]
         for i, (label, coords) in enumerate(landmarks):
-            result_node.AddControlPoint([coords[0], coords[1], -coords[2]])
+            result_node.AddControlPoint([coords[0], coords[1], -coords[2]])   # z sign flip
             result_node.SetNthControlPointLabel(i, label)
+
         result_node.GetDisplayNode().SetSelectedColor(color[0], color[1], color[2])
         return result_node
 
@@ -953,15 +1005,13 @@ class ThitiorulGUI:
             "als'L": ["x = -(3.167+0.174*iof_x+0.097*zy_x)", "y = 3.993+0.453*ss_y+0.270*pr_y+0.072*pr_z", "z = 3.827-0.466*ss_y+0.674*ss_z+0.257*iof_y"],
             "alp'L": ["x = -(7.885+0.060*pr_z+0.310*iof_x)", "y = 4.199+0.398*ss_y+0.224*pr_y+0.247*iof_y", "z = 2.054-0.419*ss_y+0.433*ss_z+0.332*pr_z"],
             "ali'L": ["x = -(4.611+0.239*iof_x-0.070*zy_y)", "y = -0.890+0.476*pr_y+0.377*ss_y+0.089*zy_x", "z = 0.404+0.499*ss_y+0.312*pr_z-0.119*zy_y"],
-            "al'R": ["Mirrored from LEFT"],
-            "als'R": ["Mirrored from LEFT"],
-            "alp'R": ["Mirrored from LEFT"],
-            "ali'R": ["Mirrored from LEFT"]
+            "al'R": ["x = 8.967+0.125*pr_y+0.249*iof_x-0.079*zy_y", "y = 0.338-0.264*nr_z+0.760*ss_y+0.151*pr_z", "z = 2.778-0.223*ss_y+0.437*ss_z+0.325*pr_z"],
+            "als'R": ["x = 3.244+0.225*iof_x+0.079*zy_x", "y = -1.183+0.628*pr_y+0.151*ecm_z", "z = 3.864-0.499*ss_y+0.685*ss_z+0.350*iof_y"],
+            "alp'R": ["x = 12.069+0.045*pr_z+0.207*iof_x", "y = 6.126+0.626*ss_y+0.323*iof_y", "z = 2.578-0.404*ss_y+0.403*ss_z+0.350*pr_z"],
+            "ali'R": ["x = 6.729+0.100*pr_y+0.165*iof_x-0.062*zy_y", "y = -2.325+0.504*pr_y+0.345*ss_y+0.112*zy_x", "z = 6.363-0.161*ss_y+0.468*ss_z+0.350*pr_z"]
         }
 
-        # ----- FIX: only show predicted landmarks -----
-        all_landmarks = sorted(pred_dict.keys())   # <-- changed from union to pred only
-
+        all_landmarks = sorted(pred_dict.keys())
         table.setRowCount(len(all_landmarks))
         row = 0
         for landmark in all_landmarks:
@@ -981,7 +1031,6 @@ class ThitiorulGUI:
                 table.setItem(row, 7, qt.QTableWidgetItem(f"{err:.2f}"))
                 direction = self.get_error_direction_string(true_dict[landmark] - pred_dict[landmark])
                 table.setItem(row, 8, qt.QTableWidgetItem(direction))
-            # ----- FIX: flatten equations to one line -----
             eq = "\n".join(formulas.get(landmark, ["Not available"]))
             eq_single_line = eq.replace("\n", "; ")
             table.setItem(row, 9, qt.QTableWidgetItem(eq_single_line))
