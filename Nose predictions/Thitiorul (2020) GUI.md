@@ -33,7 +33,7 @@ class ThitiorulGUI:
         self.stayOnTopCheckbox.setChecked(False)
         self.stayOnTopCheckbox.stateChanged.connect(self.toggleStayOnTop)
         mainLayout.addWidget(self.stayOnTopCheckbox)
-        
+
         self.prediction_runs = OrderedDict()
         self.colors = [[1, 0, 1], [1, 1, 0], [0, 1, 1], [1, 0.5, 0], [0.5, 1, 0.5]]
 
@@ -329,6 +329,17 @@ class ThitiorulGUI:
         layout6.addWidget(self.clearTempButton)
 
     # -------------------- Utility Methods --------------------
+    def toggleStayOnTop(self, state):
+        """Toggle the 'always on top' window flag."""
+        flags = self.mainWidget.windowFlags()
+        if state == qt.Qt.Checked:
+            flags |= qt.Qt.WindowStaysOnTopHint
+        else:
+            flags &= ~qt.Qt.WindowStaysOnTopHint
+        self.mainWidget.setWindowFlags(flags)
+        self.mainWidget.show()   # re-apply the flags
+        self.raiseMainWindow()
+
     def raiseMainWindow(self):
         """Bring the main GUI window to the front."""
         self.mainWidget.raise_()
