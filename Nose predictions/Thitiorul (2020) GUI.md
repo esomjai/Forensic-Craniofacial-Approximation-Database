@@ -835,8 +835,7 @@ class ThitiorulGUI:
 
         aliL_x = -(4.611 + 0.239*iof_L_x_abs - 0.070*zy_L_y)
         aliL_y = -0.890 + 0.476*pr_y + 0.377*ss_y + 0.089*zy_L_x_abs
-        # ----- FIX: paper typo – ss_z_abs instead of ss_y -----
-        aliL_z = 0.404 + 0.499*ss_z_abs + 0.312*pr_z_abs - 0.119*zy_L_y
+        aliL_z = 0.404 + 0.499*ss_y + 0.312*pr_z_abs - 0.119*zy_L_y
 
         # ---- Right side ----
         alR_x = 8.967 + 0.125*pr_y + 0.249*iof_L_x_abs - 0.079*zy_L_y
