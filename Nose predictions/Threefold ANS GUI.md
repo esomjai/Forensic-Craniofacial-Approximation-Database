@@ -1,6 +1,5 @@
 ```python
-# Threefold ANS Method GUI - Version 45 (Bug Fixes)
-
+# Threefold ANS Method GUI - Version 58 (Auto-step detection)
 
 import os
 import vtk
@@ -14,7 +13,7 @@ class ThreefoldANSGUI(qt.QWidget):
     def __init__(self, parent=None):
         qt.QWidget.__init__(self, parent)
         self.setWindowTitle("Threefold ANS Method")
-        self.setObjectName("ThreefoldANSGUI") # Give the widget a unique name
+        self.setObjectName("ThreefoldANSGUI")
         
         self.mainLayout = qt.QVBoxLayout(self)
         self.mainLayout.setSpacing(10)
@@ -26,13 +25,14 @@ class ThreefoldANSGUI(qt.QWidget):
         self.landmarksNode = None
         self.referencePlane = None
         self.boneModel = None
+        self.volumeNode = None
         self.boneLeftModel = None
         self.boneRightModel = None
         self.vmjAcaLine = None
         self.nasalSpineVector = None
         self.subProLine = None
         self.predictedPronasaleNode = None
-        self.trueSoftTissueNode = None # Added for Step 8
+        self.trueSoftTissueNode = None
         
         # Observers and flags
         self.vmjObserver = None
@@ -45,17 +45,33 @@ class ThreefoldANSGUI(qt.QWidget):
         self._mp_index = -1
         self.step6_complete = False
         self.step5_complete = False
+        self.step4_skipped = False
+        self.manualVolumeRendering = False
         
-        # --- This is the corrected structure ---
+        # Cylinder radius - default 2.0 mm (also used as search radius)
+        self.cylinderRadius = 2.0
+        
         self.createAllStepWidgets()
         self.setupNavigation()
         self.checkDependencies()
         self.syncWithScene()
         
-        self.currentStep = 0
+        # Auto-determine initial step
+        self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
-
-
+        
+        # Add scene observers for auto-step detection - FIXED
+        self.sceneObserver = slicer.mrmlScene.AddObserver(
+            slicer.vtkMRMLScene.NodeAddedEvent, self.onSceneChanged
+        )
+        self.sceneObserver2 = slicer.mrmlScene.AddObserver(
+            slicer.vtkMRMLScene.NodeRemovedEvent, self.onSceneChanged
+        )
+        # Use EndBatchProcessEvent to detect modifications
+        self.sceneObserver3 = slicer.mrmlScene.AddObserver(
+            slicer.vtkMRMLScene.EndBatchProcessEvent, self.onSceneChanged
+        )
+        self._sceneChangeTimer = None
 
     def createAllStepWidgets(self):
         self.createStep1_Welcome()
@@ -69,7 +85,6 @@ class ThreefoldANSGUI(qt.QWidget):
         self.createStep9_Results()
 
     def cleanup(self):
-        """A dedicated method to remove all observers."""
         if self.vmjObserver and self.landmarksNode:
             self.landmarksNode.RemoveObserver(self.vmjObserver)
             self.vmjObserver = None
@@ -79,23 +94,33 @@ class ThreefoldANSGUI(qt.QWidget):
         if self.mpObserver and self.landmarksNode:
             self.landmarksNode.RemoveObserver(self.mpObserver)
             self.mpObserver = None
+            
+        # Remove scene observers
+        if hasattr(self, 'sceneObserver') and self.sceneObserver:
+            slicer.mrmlScene.RemoveObserver(self.sceneObserver)
+            self.sceneObserver = None
+        if hasattr(self, 'sceneObserver2') and self.sceneObserver2:
+            slicer.mrmlScene.RemoveObserver(self.sceneObserver2)
+            self.sceneObserver2 = None
+        if hasattr(self, 'sceneObserver3') and self.sceneObserver3:
+            slicer.mrmlScene.RemoveObserver(self.sceneObserver3)
+            self.sceneObserver3 = None
 
     def checkDependencies(self):
-        moduleName = "DynamicModeler" 
+        moduleName = "DynamicModeler"
         if moduleName in slicer.app.moduleManager().factoryManager().registeredModuleNames():
             self.isDynamicModelerInstalled = True
         else:
             self.isDynamicModelerInstalled = False
-            msgBox = qt.QMessageBox(); msgBox.setWindowTitle("Missing Required Extension")
-            msgBox.setIcon(qt.QMessageBox.Warning); msgBox.setTextFormat(qt.Qt.RichText)
+            msgBox = qt.QMessageBox()
+            msgBox.setWindowTitle("Missing Required Extension")
+            msgBox.setIcon(qt.QMessageBox.Warning)
+            msgBox.setTextFormat(qt.Qt.RichText)
             msgBox.setText(
-                "The <b>Dynamic Modeler</b> extension is required for this tool, but it was not found.<br><br>"
-                "Please install it to continue:<br>"
-                "1. Go to the menu: <b>View -> Extension Manager</b>.<br>"
-                "2. In the 'Search' bar, type <b>Dynamic Modeler</b>.<br>"
-                "3. Click the <b>'Install'</b> button.<br>"
-                "4. <b>Restart 3D Slicer</b> after the installation is complete.<br><br>"
-                "This tool will not function correctly until the extension is installed and Slicer is restarted.")
+                "The <b>Dynamic Modeler</b> extension is required for skull cutting (Step 4), but it was not found.<br><br>"
+                "Please install it to use that step.<br><br>"
+                "If you chose the Volume Rendering option, you can skip cutting and continue without it."
+            )
             msgBox.exec_()
 
     def setupNavigation(self):
@@ -105,7 +130,7 @@ class ThreefoldANSGUI(qt.QWidget):
         self.prevButton = qt.QPushButton("Previous")
         self.prevButton.setToolTip("Go to the previous step.")
         self.prevButton.clicked.connect(self.onPrevButtonClicked)
-        self.stepLabel = qt.QLabel("Step 1/9")  # Changed from 1/8 to 1/9
+        self.stepLabel = qt.QLabel("Step 1/9")
         self.stepLabel.setAlignment(qt.Qt.AlignCenter)
         self.stepLabel.setStyleSheet("font-weight: bold; font-size: 14px;")
         self.nextButton = qt.QPushButton("Next")
@@ -118,20 +143,132 @@ class ThreefoldANSGUI(qt.QWidget):
         navLayout.addWidget(self.nextButton)
         self.mainLayout.addWidget(navWidget)
 
-    def createStep1_Welcome(self):
-        widget = qt.QWidget(); layout = qt.QVBoxLayout(widget); layout.setSpacing(15)
-        title = qt.QLabel("Welcome to the Threefold ANS Method"); title.setStyleSheet("font-weight: bold; font-size: 18px;"); title.setAlignment(qt.Qt.AlignCenter); layout.addWidget(title)
-        desc = qt.QLabel("This tool will guide you through the workflow step-by-step.\n\nPlease begin by loading the required hard tissue landmarks using one of the options below."); desc.setWordWrap(True); layout.addWidget(desc)
-        buttonLayout = qt.QVBoxLayout(); buttonLayout.setSpacing(10)
-        self.loadLocalButton = qt.QPushButton("Load Landmarks from Local File"); self.loadLocalButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;"); self.loadLocalButton.setToolTip("Recommended: Load the '.mrk.json' file you saved on your computer."); self.loadLocalButton.clicked.connect(self.onLoadLocalLandmarks); buttonLayout.addWidget(self.loadLocalButton, 0, qt.Qt.AlignHCenter)
-        self.downloadButton = qt.QPushButton("Download from Web"); self.downloadButton.setStyleSheet("background-color: #6c757d; color: white; padding: 8px;"); self.downloadButton.setToolTip("Convenient, but may fail if the temporary link expires."); self.downloadButton.clicked.connect(self.onDownloadLandmarks); buttonLayout.addWidget(self.downloadButton, 0, qt.Qt.AlignHCenter)
-        layout.addLayout(buttonLayout)
-        self.step1StatusLabel = qt.QLabel("Status: Waiting for user."); self.step1StatusLabel.setWordWrap(True); layout.addWidget(self.step1StatusLabel)
-        layout.addStretch(1); self.stepStack.addWidget(widget)
+    # ==================== SCENE CHANGE HANDLING ====================
+    def onSceneChanged(self, caller, event):
+        """Handle scene changes by updating step detection."""
+        if not self.isVisible():
+            return
+        # Use a timer to avoid excessive updates
+        if self._sceneChangeTimer is None:
+            self._sceneChangeTimer = qt.QTimer()
+            self._sceneChangeTimer.setSingleShot(True)
+            self._sceneChangeTimer.timeout.connect(self._delayedSceneUpdate)
+        self._sceneChangeTimer.start(200)  # 200ms delay
 
+    def _delayedSceneUpdate(self):
+        """Delayed update after scene changes."""
+        if self.isVisible():
+            self.syncWithScene()
+            # Re-determine current step
+            newStep = self.determineCurrentStep()
+            if newStep != self.currentStep:
+                self.currentStep = newStep
+                self.updateStepUI()
+
+    # ==================== AUTO STEP DETECTION ====================
+    def determineCurrentStep(self):
+        """
+        Automatically determine which step the user is at based on scene contents.
+        Returns the step index (0-8).
+        """
+        # Step 0: Check if landmarks are loaded
+        if self.landmarksNode is None:
+            return 0
+        
+        # Step 1: Check if reference plane exists
+        if self.referencePlane is None:
+            return 1
+        
+        # Step 2: Check if we have a bone model OR volume rendering mode
+        if self.boneModel is None and not self.manualVolumeRendering:
+            # If no model and not in volume mode, we might be at Step 2
+            # But check if we have a volume (for volume rendering mode)
+            if self.volumeNode is None:
+                return 2
+            # If we have a volume, we're in volume rendering mode, proceed
+        
+        # Step 3: Check if models are cut (or skipped)
+        if self.boneLeftModel is None or self.boneRightModel is None:
+            if not self.step4_skipped:
+                return 3
+        
+        # Step 4: Check if VMJ-aca line exists
+        if self.vmjAcaLine is None:
+            return 4
+        
+        # Step 5: Check if nasal spine vector and mp exist
+        if self.nasalSpineVector is None:
+            return 5
+        
+        # Check if mp point exists
+        if self.landmarksNode and self.findPointIndex("mp") == -1:
+            return 5
+        
+        # Step 6: Check if prediction has been done
+        if self.predictedPronasaleNode is None:
+            return 6
+        
+        # Step 7/8: Check if comparison has been done
+        error_line = slicer.util.getFirstNodeByName("prediction_error")
+        if error_line is not None:
+            return 8  # Results with comparison
+        else:
+            return 7  # Prediction done, ready for validation
+        
+        # Default fallback
+        return 0
+
+    # ==================== STEP 1 ====================
+    def createStep1_Welcome(self):
+        widget = qt.QWidget()
+        layout = qt.QVBoxLayout(widget)
+        layout.setSpacing(15)
+        title = qt.QLabel("Welcome to the Threefold ANS Method")
+        title.setStyleSheet("font-weight: bold; font-size: 18px;")
+        title.setAlignment(qt.Qt.AlignCenter)
+        layout.addWidget(title)
+        desc = qt.QLabel(
+            "This tool will guide you through the workflow step-by-step.\n\n"
+            "Please begin by loading the required hard tissue landmarks using one of the options below."
+        )
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+        buttonLayout = qt.QVBoxLayout()
+        buttonLayout.setSpacing(10)
+        
+        self.loadLocalButton = qt.QPushButton("Load Landmarks from Local File")
+        self.loadLocalButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
+        self.loadLocalButton.setToolTip("Recommended: Load the '.mrk.json' file you saved on your computer.")
+        self.loadLocalButton.clicked.connect(self.onLoadLocalLandmarks)
+        buttonLayout.addWidget(self.loadLocalButton, 0, qt.Qt.AlignHCenter)
+        
+        self.downloadHardButton = qt.QPushButton("Download hard tissue landmarks")
+        self.downloadHardButton.setStyleSheet("background-color: #6c757d; color: white; padding: 8px;")
+        self.downloadHardButton.setToolTip("Download the hard tissue landmarks from a public repository.")
+        self.downloadHardButton.clicked.connect(self.onDownloadHardLandmarks)
+        buttonLayout.addWidget(self.downloadHardButton, 0, qt.Qt.AlignHCenter)
+        
+        self.downloadSoftButton = qt.QPushButton("Download soft tissue landmarks")
+        self.downloadSoftButton.setStyleSheet("background-color: #6c757d; color: white; padding: 8px;")
+        self.downloadSoftButton.setToolTip("Download the soft tissue landmarks (true pronasale) from a public repository.")
+        self.downloadSoftButton.clicked.connect(self.onDownloadSoftLandmarks)
+        buttonLayout.addWidget(self.downloadSoftButton, 0, qt.Qt.AlignHCenter)
+        
+        layout.addLayout(buttonLayout)
+        self.step1StatusLabel = qt.QLabel("Status: Waiting for user.")
+        self.step1StatusLabel.setWordWrap(True)
+        layout.addWidget(self.step1StatusLabel)
+        layout.addStretch(1)
+        self.stepStack.addWidget(widget)
+
+    # ==================== STEP 2 ====================
     def createStep2_PlaneSetup(self):
-        widget = qt.QWidget(); layout = qt.QVBoxLayout(widget); layout.setSpacing(15)
-        title = qt.QLabel("Step 2: Create a Reference Plane"); title.setStyleSheet("font-weight: bold; font-size: 16px;"); layout.addWidget(title)
+        widget = qt.QWidget()
+        layout = qt.QVBoxLayout(widget)
+        layout.setSpacing(15)
+        title = qt.QLabel("Step 2: Create a Reference Plane")
+        title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        layout.addWidget(title)
         desc_html = """
         <p>Now, create a reference plane using the landmarks you just loaded.</p>
         <p>
@@ -139,46 +276,70 @@ class ThreefoldANSGUI(qt.QWidget):
             • <b>MSP (Best-Fit) Plane</b>: Uses multiple midsagittal landmarks (nasion, acanthion, prosthion, subspinale) to calculate a more robust, best-fit midsagittal plane.
         </p>
         """
-        desc = qt.QLabel(desc_html); desc.setTextFormat(qt.Qt.RichText); desc.setWordWrap(True); layout.addWidget(desc)
-        planeChoiceLayout = qt.QVBoxLayout(); planeChoiceLayout.setSpacing(10)
-        self.planeChoiceComboBox = qt.QComboBox(); self.planeChoiceComboBox.addItems(["Select a method...", "INB (Inion-Nasion-Bregma)", "MSP (Midsagittal Best-Fit)"])
-        self.createPlaneButton = qt.QPushButton("Create Plane"); self.createPlaneButton.clicked.connect(self.onCreatePlane)
-        planeChoiceLayout.addWidget(self.planeChoiceComboBox); planeChoiceLayout.addWidget(self.createPlaneButton); layout.addLayout(planeChoiceLayout)
-        self.step2StatusLabel = qt.QLabel("Status: Please choose a plane creation method."); self.step2StatusLabel.setWordWrap(True); layout.addWidget(self.step2StatusLabel)
-        layout.addStretch(1); self.stepStack.addWidget(widget)
+        desc = qt.QLabel(desc_html)
+        desc.setTextFormat(qt.Qt.RichText)
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+        planeChoiceLayout = qt.QVBoxLayout()
+        planeChoiceLayout.setSpacing(10)
+        self.planeChoiceComboBox = qt.QComboBox()
+        self.planeChoiceComboBox.addItems(["Select a method...", "INB (Inion-Nasion-Bregma)", "MSP (Midsagittal Best-Fit)"])
+        self.createPlaneButton = qt.QPushButton("Create Plane")
+        self.createPlaneButton.clicked.connect(self.onCreatePlane)
+        planeChoiceLayout.addWidget(self.planeChoiceComboBox)
+        planeChoiceLayout.addWidget(self.createPlaneButton)
+        layout.addLayout(planeChoiceLayout)
+        self.step2StatusLabel = qt.QLabel("Status: Please choose a plane creation method.")
+        self.step2StatusLabel.setWordWrap(True)
+        layout.addWidget(self.step2StatusLabel)
+        layout.addStretch(1)
+        self.stepStack.addWidget(widget)
 
+    # ==================== STEP 3 ====================
     def createStep3_Segmentation(self):
         widget = qt.QWidget()
         mainLayout = qt.QVBoxLayout(widget)
         mainLayout.setSpacing(15)
-        
-        title = qt.QLabel("Step 3: Segment, Export, and Re-import the Skull Model")
+
+        title = qt.QLabel("Step 3: Obtain a Skull Model (or Volume)")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         mainLayout.addWidget(title)
-        
-        # Create scroll area for the detailed instructions
-        scrollArea = qt.QScrollArea()
-        scrollArea.setWidgetResizable(True)
-        instructions_container = qt.QWidget()
-        instructions_layout = qt.QVBoxLayout(instructions_container)
-        instructions_layout.setContentsMargins(0,0,0,0)
-        scrollArea.setWidget(instructions_container)
-        
-        # Original detailed instructions
+
+        methodGroup = qt.QGroupBox("Choose how to get the Bone model")
+        methodLayout = qt.QVBoxLayout(methodGroup)
+
+        self.segmentationRadio = qt.QRadioButton("Perform Segmentation (detailed instructions)")
+        self.segmentationRadio.setChecked(True)
+        self.loadModelRadio = qt.QRadioButton("Load existing Bone model")
+        self.volumeRenderRadio = qt.QRadioButton("Use Volume Rendering (skip model loading)")
+        self.volumeRenderRadio.toggled.connect(self.onVolumeRenderToggled)
+        self.loadModelRadio.toggled.connect(self.onLoadModelToggled)
+        self.segmentationRadio.toggled.connect(self.onSegmentationToggled)
+
+        methodLayout.addWidget(self.segmentationRadio)
+        methodLayout.addWidget(self.loadModelRadio)
+        methodLayout.addWidget(self.volumeRenderRadio)
+        mainLayout.addWidget(methodGroup)
+
+        # ---- Segmentation container ----
+        self.segmentationContainer = qt.QWidget()
+        segLayout = qt.QVBoxLayout(self.segmentationContainer)
+        segLayout.setContentsMargins(0, 0, 0, 0)
+
         instructions = qt.QLabel()
         instructions.setTextFormat(qt.Qt.RichText)
         instructions.setOpenExternalLinks(True)
         instructions.setWordWrap(True)
         instructions.setText(
-            "Follow these steps carefully to create a clean 'Bone' model for the next steps.<br><br>"
+            "Follow these steps carefully to create a clean 'Bone' model.<br><br>"
             "<b>1. Open Segment Editor:</b> Click this button to open the module.<br>"
         )
-        instructions_layout.addWidget(instructions)
-        
+        segLayout.addWidget(instructions)
+
         self.openSegmentEditorButton = qt.QPushButton("Open Segment Editor Module")
         self.openSegmentEditorButton.clicked.connect(lambda: slicer.util.selectModule('SegmentEditor'))
-        instructions_layout.addWidget(self.openSegmentEditorButton)
-        
+        segLayout.addWidget(self.openSegmentEditorButton)
+
         instructions2 = qt.QLabel()
         instructions2.setTextFormat(qt.Qt.RichText)
         instructions2.setOpenExternalLinks(True)
@@ -192,19 +353,17 @@ class ThreefoldANSGUI(qt.QWidget):
             "<b>7. Click 'Apply'</b> (in the Local histogram menu), then find the <b>'Show 3D'</b> button on the top, near to where the 'Add' button was. Click it and wait for the model to appear.<br><br>"
             "<b>8. If you're happy with the details,</b> click on the green right arrow to go to the 'Segmentations' module.<br><br>"
             "<b>9. Double click on the row below 'Name'</b> and in the pop-up, edit the model name into <b>'Bone'</b>.<br><br>"
-            "<b>10. Scroll to the dropdown menu 'Export/import models and labelmaps':</b> Make sure the <b>Operation</b> is 'Export' and the <b>Output type</b> is 'Models'. Then move down to the next menu (Export to files), choose the destination folder and click the 'Export' button in this submenu. (You may have to check the Size scale to be 1.000).<br><br>"
-            "<b>11. IMPORTANT:</b> You need to import this model back into the scene by clicking the <b>'Data'</b> button (very top of the Slicer window, under 'File'), 'Choose file(s) to add...', and finding the model you just exported, named something like 'Bone_Bone.stl'. Let the description be 'Model' and click 'OK'."
+            "<b>10. Scroll to the dropdown menu 'Export/import models and labelmaps':</b> Make sure the <b>Operation</b> is 'Export' and the <b>Output type</b> is 'Models'. Then move down to the next menu (Export to files), choose the destination folder and click the 'Export' button in this submenu.<br><br>"
+            "<b>11. IMPORTANT:</b> You need to import this model back into the scene by clicking the <b>'Data'</b> button (very top of the Slicer window, under 'File'), 'Choose file(s) to add...', and finding the model you just exported.<br><br>"
+            "<b>12. Select the re-imported model below.</b>"
         )
-        instructions_layout.addWidget(instructions2)
-        
-        mainLayout.addWidget(scrollArea)
-        mainLayout.addStretch(1)
-        
+        segLayout.addWidget(instructions2)
+
         confirmGroup = qt.QGroupBox("Final Confirmation")
         confirmLayout = qt.QFormLayout(confirmGroup)
         confirmLabel = qt.QLabel("Once the model is re-imported, please select it below:")
         confirmLabel.setWordWrap(True)
-        
+
         self.boneModelSelector = slicer.qMRMLNodeComboBox()
         self.boneModelSelector.nodeTypes = ["vtkMRMLModelNode"]
         self.boneModelSelector.setMRMLScene(slicer.mrmlScene)
@@ -213,29 +372,196 @@ class ThreefoldANSGUI(qt.QWidget):
         self.boneModelSelector.noneEnabled = True
         self.boneModelSelector.setToolTip("Select the 'Bone' model you just re-imported.")
         self.boneModelSelector.currentNodeChanged.connect(self.onConfirmSegmentation)
-        
+
         confirmLayout.addRow(confirmLabel)
         confirmLayout.addRow("Re-imported Bone Model:", self.boneModelSelector)
-        mainLayout.addWidget(confirmGroup)
-        
-        self.step3StatusLabel = qt.QLabel("Status: Waiting for user to select the re-imported 'Bone' model.")
+        segLayout.addWidget(confirmGroup)
+
+        mainLayout.addWidget(self.segmentationContainer)
+
+        # ---- Load existing model container ----
+        self.loadContainer = qt.QWidget()
+        loadLayout = qt.QVBoxLayout(self.loadContainer)
+        loadLayout.setContentsMargins(0, 0, 0, 0)
+
+        loadLabel = qt.QLabel(
+            "If you already have a bone model (e.g., from a previous segmentation or external file), "
+            "you can load it here and skip the segmentation steps."
+        )
+        loadLabel.setWordWrap(True)
+        loadLayout.addWidget(loadLabel)
+
+        self.existingModelSelector = slicer.qMRMLNodeComboBox()
+        self.existingModelSelector.nodeTypes = ["vtkMRMLModelNode"]
+        self.existingModelSelector.setMRMLScene(slicer.mrmlScene)
+        self.existingModelSelector.addEnabled = False
+        self.existingModelSelector.removeEnabled = False
+        self.existingModelSelector.noneEnabled = True
+        self.existingModelSelector.setToolTip("Select an existing model from the scene.")
+        loadLayout.addWidget(self.existingModelSelector)
+
+        self.loadModelButton = qt.QPushButton("Set selected as Bone model")
+        self.loadModelButton.clicked.connect(self.onLoadExistingModel)
+        loadLayout.addWidget(self.loadModelButton)
+
+        self.importModelButton = qt.QPushButton("Load model from file (STL, VTK, PLY, ...)")
+        self.importModelButton.clicked.connect(self.onImportModelFromFile)
+        loadLayout.addWidget(self.importModelButton)
+
+        mainLayout.addWidget(self.loadContainer)
+
+        # ---- Volume rendering container ----
+        self.volumeContainer = qt.QWidget()
+        volLayout = qt.QVBoxLayout(self.volumeContainer)
+        volLayout.setContentsMargins(0, 0, 0, 0)
+
+        volLabel = qt.QLabel(
+            "You can use Volume Rendering to visualise the skull without creating a permanent model.\n\n"
+            "Select the CT volume you are working with (this will be used for normal detection if no model is loaded)."
+        )
+        volLabel.setWordWrap(True)
+        volLayout.addWidget(volLabel)
+
+        self.volumeSelectorVR = slicer.qMRMLNodeComboBox()
+        self.volumeSelectorVR.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+        self.volumeSelectorVR.setMRMLScene(slicer.mrmlScene)
+        self.volumeSelectorVR.addEnabled = False
+        self.volumeSelectorVR.removeEnabled = False
+        self.volumeSelectorVR.noneEnabled = True
+        self.volumeSelectorVR.setToolTip("Select the CT volume for surface normal detection")
+        self.volumeSelectorVR.currentNodeChanged.connect(self.onVolumeSelectedVR)
+        volLayout.addWidget(qt.QLabel("CT Volume:"))
+        volLayout.addWidget(self.volumeSelectorVR)
+
+        self.openVolumeRenderingButton = qt.QPushButton("Open Volume Rendering Module")
+        self.openVolumeRenderingButton.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; padding: 8px;")
+        self.openVolumeRenderingButton.clicked.connect(lambda: slicer.util.selectModule('VolumeRendering'))
+        volLayout.addWidget(self.openVolumeRenderingButton)
+
+        self.continueWithoutModelButton = qt.QPushButton("Continue without model")
+        self.continueWithoutModelButton.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        self.continueWithoutModelButton.clicked.connect(self.onContinueWithoutModel)
+        volLayout.addWidget(self.continueWithoutModelButton)
+
+        mainLayout.addWidget(self.volumeContainer)
+
+        # Initially show segmentation container, hide others
+        self.segmentationContainer.setVisible(True)
+        self.loadContainer.setVisible(False)
+        self.volumeContainer.setVisible(False)
+
+        self.step3StatusLabel = qt.QLabel("Status: Waiting for user to obtain a bone model or select volume.")
         self.step3StatusLabel.setWordWrap(True)
         mainLayout.addWidget(self.step3StatusLabel)
-        
+
+        mainLayout.addStretch(1)
         self.stepStack.addWidget(widget)
+
+        self.onSegmentationToggled()
+
+    # ------- Toggle handlers -------
+    def onSegmentationToggled(self):
+        if self.segmentationRadio.isChecked():
+            self.segmentationContainer.setVisible(True)
+            self.loadContainer.setVisible(False)
+            self.volumeContainer.setVisible(False)
+            self.step3StatusLabel.setText("Status: Follow the segmentation instructions above.")
+            self.manualVolumeRendering = False
+
+    def onLoadModelToggled(self):
+        if self.loadModelRadio.isChecked():
+            self.segmentationContainer.setVisible(False)
+            self.loadContainer.setVisible(True)
+            self.volumeContainer.setVisible(False)
+            self.step3StatusLabel.setText("Status: Load an existing model or import from file.")
+            self.manualVolumeRendering = False
+
+    def onVolumeRenderToggled(self):
+        if self.volumeRenderRadio.isChecked():
+            self.segmentationContainer.setVisible(False)
+            self.loadContainer.setVisible(False)
+            self.volumeContainer.setVisible(True)
+            self.step3StatusLabel.setText("Status: Volume Rendering mode selected. Select a volume and click 'Continue'.")
+            self.manualVolumeRendering = True
+
+    def onVolumeSelectedVR(self, node):
+        if node:
+            self.volumeNode = node
+            self.step3StatusLabel.setText(f"Status: Volume '{node.GetName()}' selected. You can continue.")
+        else:
+            self.volumeNode = None
+            self.step3StatusLabel.setText("Status: Please select a volume or continue without one (will prompt later).")
+
+    def onContinueWithoutModel(self):
+        self.step3StatusLabel.setText("Status: Continuing without bone model. Prediction will use volume if available.")
+        self.manualVolumeRendering = True
+        self.nextButton.click()
+
+    # ------- Load existing model helpers -------
+    def onLoadExistingModel(self):
+        node = self.existingModelSelector.currentNode()
+        if node:
+            self.boneModel = node
+            self.step3StatusLabel.setText(f"Status: Loaded '{node.GetName()}' as the bone model. Ready to proceed!")
+            slicer.util.showStatusMessage(f"Bone model set to '{node.GetName()}'", 3000)
+            self.manualVolumeRendering = False
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
+        else:
+            slicer.util.warningDisplay("Please select a model from the list first.")
+
+    def onImportModelFromFile(self):
+        fileNames = qt.QFileDialog.getOpenFileNames(
+            self,
+            "Select Bone Model File",
+            "",
+            "Model Files (*.stl *.vtk *.ply *.obj);;All Files (*)"
+        )
+        if fileNames:
+            fileName = fileNames[0]
+            try:
+                loadedNode = slicer.util.loadModel(fileName)
+                if loadedNode:
+                    loadedNode.SetName("Bone")
+                    self.boneModel = loadedNode
+                    self.step3StatusLabel.setText(f"Status: Loaded '{loadedNode.GetName()}' from file. Ready to proceed!")
+                    slicer.util.showStatusMessage(f"Bone model loaded from {fileName}", 3000)
+                    self.existingModelSelector.setCurrentNode(loadedNode)
+                    self.manualVolumeRendering = False
+                    # Auto-update step
+                    self.currentStep = self.determineCurrentStep()
+                    self.updateStepUI()
+                else:
+                    raise RuntimeError("Failed to load model.")
+            except Exception as e:
+                slicer.util.errorDisplay(f"Could not load model from file: {e}")
+
+    # ==================== STEP 4 ====================
     def createStep4_CutModel(self):
-        widget = qt.QWidget(); layout = qt.QVBoxLayout(widget); layout.setSpacing(10)
-        title = qt.QLabel("Step 4: Cut the Bone Model"); title.setStyleSheet("font-weight: bold; font-size: 16px;"); layout.addWidget(title)
-        
+        widget = qt.QWidget()
+        layout = qt.QVBoxLayout(widget)
+        layout.setSpacing(10)
+        title = qt.QLabel("Step 4: Cut the Bone Model (Optional)")
+        title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        layout.addWidget(title)
+
+        self.cutWarningLabel = qt.QLabel()
+        self.cutWarningLabel.setWordWrap(True)
+        self.cutWarningLabel.setStyleSheet("color: #FF5722; font-weight: bold;")
+        layout.addWidget(self.cutWarningLabel)
+
         open_modeller_layout = qt.QHBoxLayout()
         open_modeller_label = qt.QLabel("<b>1.</b> First, click the button to open the Dynamic Modeler module.")
         open_modeller_label.setTextFormat(qt.Qt.RichText)
         self.openDynamicModelerButton = qt.QPushButton("Open Dynamic Modeler")
         self.openDynamicModelerButton.clicked.connect(self.onOpenDynamicModeler)
-        open_modeller_layout.addWidget(open_modeller_label); open_modeller_layout.addStretch(); open_modeller_layout.addWidget(self.openDynamicModelerButton)
+        open_modeller_layout.addWidget(open_modeller_label)
+        open_modeller_layout.addStretch()
+        open_modeller_layout.addWidget(self.openDynamicModelerButton)
         layout.addLayout(open_modeller_layout)
-        
-        layout.addSpacing(15) 
+
+        layout.addSpacing(15)
 
         roi_tip_label = qt.QLabel()
         roi_tip_label.setTextFormat(qt.Qt.RichText)
@@ -249,10 +575,12 @@ class ThreefoldANSGUI(qt.QWidget):
             "&bull; Click 'Apply' to finish."
         )
         layout.addWidget(roi_tip_label)
-        
+
         layout.addSpacing(15)
 
-        plane_cut_label = qt.QLabel(); plane_cut_label.setTextFormat(qt.Qt.RichText); plane_cut_label.setWordWrap(True)
+        plane_cut_label = qt.QLabel()
+        plane_cut_label.setTextFormat(qt.Qt.RichText)
+        plane_cut_label.setWordWrap(True)
         plane_cut_label.setText(
             "<b>2.</b> Now, for the main task, use the '<b>Plane Cut</b>' option in the Dynamic Modeler:<br><br>"
             "&bull; Set the 'Input Model' to your re-imported 'Bone' model and the 'Input Plane' to the reference plane you created in Step 2.<br><br>"
@@ -263,79 +591,123 @@ class ThreefoldANSGUI(qt.QWidget):
         )
         layout.addWidget(plane_cut_label)
 
-        layout.addSpacing(15) 
+        layout.addSpacing(15)
 
-        confirm_label = qt.QLabel("<b>3.</b> If you've created the cut models you're happy with, please choose the button below to proceed.")
-        confirm_label.setTextFormat(qt.Qt.RichText); confirm_label.setWordWrap(True)
+        confirm_label = qt.QLabel("<b>3.</b> If you've created the cut models you're happy with, please click 'Confirm' below.")
+        confirm_label.setTextFormat(qt.Qt.RichText)
+        confirm_label.setWordWrap(True)
         layout.addWidget(confirm_label)
-        
+
         self.confirmCutButton = qt.QPushButton("Confirm Model Cut")
         self.confirmCutButton.clicked.connect(self.onConfirmCut)
         layout.addWidget(self.confirmCutButton, 0, qt.Qt.AlignHCenter)
-        
+
+        self.skipCutButton = qt.QPushButton("Skip Cutting (Volume Rendering mode)")
+        self.skipCutButton.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; padding: 8px;")
+        self.skipCutButton.clicked.connect(self.onSkipCut)
+        layout.addWidget(self.skipCutButton, 0, qt.Qt.AlignHCenter)
+        self.skipCutButton.setVisible(False)
+
         layout.addSpacing(10)
 
         self.step4StatusLabel = qt.QLabel("Status: Waiting for user to cut the model.")
         self.step4StatusLabel.setWordWrap(True)
         layout.addWidget(self.step4StatusLabel)
-        
+
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
 
+        self.updateStep4UI()
+
+    def updateStep4UI(self):
+        if self.boneModel is None:
+            self.cutWarningLabel.setText("⚠️ No bone model loaded. You can still proceed using Volume Rendering mode.")
+            self.openDynamicModelerButton.setEnabled(False)
+            self.confirmCutButton.setEnabled(False)
+            self.skipCutButton.setVisible(True)
+            self.step4StatusLabel.setText("Status: No model loaded. Click 'Skip Cutting' to proceed.")
+        else:
+            self.cutWarningLabel.setText("")
+            self.openDynamicModelerButton.setEnabled(True)
+            self.confirmCutButton.setEnabled(True)
+            self.skipCutButton.setVisible(False)
+            self.step4StatusLabel.setText("Status: Model loaded. Please cut the model using the instructions above.")
+
+    def onSkipCut(self):
+        self.step4_skipped = True
+        self.step4StatusLabel.setText("Status: Cutting skipped. Proceeding to next step.")
+        slicer.util.showStatusMessage("Cutting skipped", 2000)
+        # Auto-update step
+        self.currentStep = self.determineCurrentStep()
+        self.updateStepUI()
+
+    # ==================== STEPS 5-9 ====================
     def createStep5_VMJ_Line(self):
-        widget = qt.QWidget(); layout = qt.QVBoxLayout(widget); layout.setSpacing(15)
-        title = qt.QLabel("Step 5: Confirm VMJ Landmark and Create the ANS measurement"); title.setStyleSheet("font-weight: bold; font-size: 16px;"); layout.addWidget(title)
-        
+        widget = qt.QWidget()
+        layout = qt.QVBoxLayout(widget)
+        layout.setSpacing(15)
+        title = qt.QLabel("Step 5: Confirm VMJ Landmark and Create the ANS measurement")
+        title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        layout.addWidget(title)
+
         layout.addWidget(qt.QLabel("1. Manually adjust the 'VMJ' point position if needed."))
         layout.addWidget(qt.QLabel("2. Click to confirm the VMJ position."))
-        self.confirmVMJButton = qt.QPushButton("Confirm VMJ Position"); self.confirmVMJButton.clicked.connect(self.onConfirmVMJ)
+        self.confirmVMJButton = qt.QPushButton("Confirm VMJ Position")
+        self.confirmVMJButton.clicked.connect(self.onConfirmVMJ)
         layout.addWidget(self.confirmVMJButton)
 
         layout.addWidget(qt.QLabel("3. Click to create the 'VMJ-aca' line."))
-        self.measureANSButton = qt.QPushButton("Create VMJ-aca Line"); self.measureANSButton.clicked.connect(self.onMeasureANS)
-        self.measureANSButton.setEnabled(False) # Starts disabled
+        self.measureANSButton = qt.QPushButton("Create VMJ-aca Line")
+        self.measureANSButton.clicked.connect(self.onMeasureANS)
+        self.measureANSButton.setEnabled(False)
         layout.addWidget(self.measureANSButton)
-        
-        self.step5StatusLabel = qt.QLabel("Status: Please manually adjust VMJ point if needed, then confirm."); layout.addWidget(self.step5StatusLabel)
+
+        self.step5StatusLabel = qt.QLabel("Status: Please manually adjust VMJ point if needed, then confirm.")
+        layout.addWidget(self.step5StatusLabel)
         self.stepStack.addWidget(widget)
 
     def createStep6_VectorAndMidphiltrum(self):
-        # --- UI CHANGE: All sections and buttons are visible, but disabled initially ---
-        widget = qt.QWidget(); layout = qt.QVBoxLayout(widget); layout.setSpacing(15)
+        widget = qt.QWidget()
+        layout = qt.QVBoxLayout(widget)
+        layout.setSpacing(15)
         layout.addWidget(qt.QLabel("Step 6: Define ANS direction and Midphiltrum Point"))
 
-        # Part A: Vector
         layout.addWidget(qt.QLabel("<b>Part A: Define the Nasal Spine Vector</b><br>Manipulate the purple vector to follow the nasal spine."))
-        
-        # Part B: Midphiltrum
         layout.addWidget(qt.QLabel("<b>Part B: Place the Midphiltrum (mp) Point</b>"))
-        
+
         self.createMPGuideButton = qt.QPushButton("1. Create 'mp' Guide Point")
         self.createMPGuideButton.setToolTip("Creates the 'mp' point between subspinale and prosthion.")
         self.createMPGuideButton.clicked.connect(self.onCreateMPGuide)
         layout.addWidget(self.createMPGuideButton)
 
-        self.adjustMPButton = qt.QPushButton("2. Adjust 'mp' Point"); self.adjustMPButton.clicked.connect(self.onAdjustMP)
-        self.adjustMPButton.setEnabled(False) # --- Starts disabled
+        self.adjustMPButton = qt.QPushButton("2. Adjust 'mp' Point")
+        self.adjustMPButton.clicked.connect(self.onAdjustMP)
+        self.adjustMPButton.setEnabled(False)
         layout.addWidget(self.adjustMPButton)
-        
-        self.confirmMPButton = qt.QPushButton("3. Confirm 'mp' Placement"); self.confirmMPButton.clicked.connect(self.onConfirmMP)
-        self.confirmMPButton.setEnabled(False) # --- Starts disabled
+
+        self.confirmMPButton = qt.QPushButton("3. Confirm 'mp' Placement")
+        self.confirmMPButton.clicked.connect(self.onConfirmMP)
+        self.confirmMPButton.setEnabled(False)
         layout.addWidget(self.confirmMPButton)
 
-        self.step6StatusLabel = qt.QLabel("Status: Align the purple vector, then create 'mp' point."); layout.addWidget(self.step6StatusLabel)
+        self.step6StatusLabel = qt.QLabel("Status: Align the purple vector, then create 'mp' point.")
+        layout.addWidget(self.step6StatusLabel)
         self.stepStack.addWidget(widget)
 
-    
     def createStep7_PronasalePrediction(self):
         widget = qt.QWidget()
         layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
-        
+
         title = qt.QLabel("Step 7: Predict Pronasale")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
-        
+
+        self.predictionWarningLabel = qt.QLabel()
+        self.predictionWarningLabel.setWordWrap(True)
+        self.predictionWarningLabel.setStyleSheet("color: #FF5722; font-weight: bold;")
+        layout.addWidget(self.predictionWarningLabel)
+
         instructions = qt.QLabel()
         instructions.setTextFormat(qt.Qt.RichText)
         instructions.setOpenExternalLinks(True)
@@ -346,176 +718,151 @@ class ThreefoldANSGUI(qt.QWidget):
             "<a href='https://link.springer.com/article/10.1007/s00414-023-03087-x'>Hona and Stephan 2024</a>."
         )
         layout.addWidget(instructions)
-        
+
         formLayout = qt.QFormLayout()
-        
+
         self.perpDistanceSpinBox = qt.QDoubleSpinBox()
         self.perpDistanceSpinBox.setRange(0, 100)
         self.perpDistanceSpinBox.setValue(11.5)
         self.perpDistanceSpinBox.setSuffix(" mm")
         formLayout.addRow("Perpendicular Distance from 'mp':", self.perpDistanceSpinBox)
-        
+
         self.multiplierComboBox = qt.QComboBox()
         self.multiplierComboBox.addItem("3.0 × ANS (Krogman and Iscan, 1986)")
         self.multiplierComboBox.addItem("1.9 × ANS (Matsuda et al., 2023)")
-        self.multiplierComboBox.currentIndex = 0  # Set 3x as default
+        self.multiplierComboBox.currentIndex = 0
         formLayout.addRow("Multiplier Method:", self.multiplierComboBox)
-        
+
+        # Cylinder radius control
+        self.cylinderRadiusSpinBox = qt.QDoubleSpinBox()
+        self.cylinderRadiusSpinBox.setRange(0.5, 10.0)
+        self.cylinderRadiusSpinBox.setValue(3.0)  # Increased from 2.0 to 3.0
+        self.cylinderRadiusSpinBox.setSuffix(" mm")
+        self.cylinderRadiusSpinBox.setToolTip("Radius of the cylinder (also used as search radius for surface detection)")
+        formLayout.addRow("Cylinder/Search Radius:", self.cylinderRadiusSpinBox)
         self.showCylinderCheckbox = qt.QCheckBox("Show FSTT cylinder")
         self.showCylinderCheckbox.setToolTip("Visualize the FSTT as a 3D cylinder.")
+        self.showCylinderCheckbox.setChecked(True)
         formLayout.addRow(self.showCylinderCheckbox)
-        
+
         layout.addLayout(formLayout)
-        
+
         self.predictPronasaleButton = qt.QPushButton("Predict Pronasale")
         self.predictPronasaleButton.clicked.connect(self.onPredictPronasale)
         layout.addWidget(self.predictPronasaleButton, 0, qt.Qt.AlignHCenter)
-        
+
         self.step7StatusLabel = qt.QLabel("Status: Waiting for user to set parameters.")
         self.step7StatusLabel.setWordWrap(True)
         layout.addWidget(self.step7StatusLabel)
-        
+
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
-    
-    def onAdjustMP(self):
-        try:
-            # Find the existing mp point
-            self._mp_index = self.findPointIndex("mp")
-            
-            # If mp point doesn't exist, create it first
-            if self._mp_index == -1:
-                self.createMidphiltrumGuide()
-                self._mp_index = self.findPointIndex("mp")
-                if self._mp_index == -1:
-                    raise ValueError("Failed to create 'mp' point.")
 
-            # Store initial position for constraint
-            self._initialMPPos = np.zeros(3)
-            self.landmarksNode.GetNthControlPointPositionWorld(self._mp_index, self._initialMPPos)
+        self.updatePredictionUI()
 
-            # Just refocus on the point without activating placement mode
-            slicer.modules.markups.logic().JumpSlicesToNthPointInMarkup(self.landmarksNode.GetID(), self._mp_index)
-
-            # Remove any existing observer first
-            if self.mpObserver and self.landmarksNode:
-                self.landmarksNode.RemoveObserver(self.mpObserver)
-                self.mpObserver = None
-
-            # Add observer for constraint
-            self.mpObserver = self.landmarksNode.AddObserver(
-                slicer.vtkMRMLMarkupsNode.PointModifiedEvent, self.onMPModified
-            )
-
-            self.confirmMPButton.setEnabled(True)
-            self.adjustMPButton.setEnabled(False)
-            self.step6StatusLabel.setText("Status: Ready to adjust 'mp' point. Click and drag the point in the 3D view (movement is constrained to Y-axis).")
-            
-        except Exception as e:
-            slicer.util.warningDisplay(f"Cannot start adjustment: {e}")
-
-            
+    def updatePredictionUI(self):
+        if self.boneModel is None and self.volumeNode is None:
+            self.predictionWarningLabel.setText("⚠️ No bone model or volume loaded. Prediction requires either a model or a CT volume. Please load one in Step 3.")
+            self.predictPronasaleButton.setEnabled(False)
+        elif self.boneModel is None and self.volumeNode is not None:
+            self.predictionWarningLabel.setText("ℹ️ Using CT volume for surface normal detection (no bone model).")
+            self.predictPronasaleButton.setEnabled(True)
+        else:
+            self.predictionWarningLabel.setText("")
+            self.predictPronasaleButton.setEnabled(True)
 
     def createStep8_Validation(self):
-        # --- UI CHANGE: Buttons are enabled/disabled based on logic ---
         widget = qt.QWidget()
-        layout = qt.QVBoxLayout(widget)  # This is the main layout
+        layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
-        
+
         title = qt.QLabel("Step 8: Validate Prediction (Optional)")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
-        
+
         self.downloadTrueButton = qt.QPushButton("Download/Load True Landmarks")
         self.downloadTrueButton.clicked.connect(self.onDownloadTrueLandmarks)
         layout.addWidget(self.downloadTrueButton)
-        
+
         self.trueLandmarksSelector = slicer.qMRMLNodeComboBox()
         self.trueLandmarksSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
         self.trueLandmarksSelector.setMRMLScene(slicer.mrmlScene)
         self.trueLandmarksSelector.currentNodeChanged.connect(self.onTrueLandmarkSelected)
         layout.addWidget(self.trueLandmarksSelector)
 
-        # Add instruction before the compare button:
         step8Instruction = qt.QLabel("Please allocate the true pronasale point on your CT scan or segmented model before proceeding")
         step8Instruction.wordWrap = True
-        layout.addWidget(step8Instruction)  # Use 'layout' not 'self.step8Layout'
-        
+        layout.addWidget(step8Instruction)
+
         self.compareButton = qt.QPushButton("Compare True vs. Predicted")
         self.compareButton.clicked.connect(self.onComparePronasale)
-        self.compareButton.setEnabled(False)  # Starts disabled
+        self.compareButton.setEnabled(False)
         layout.addWidget(self.compareButton)
-        
+
         self.step8StatusLabel = qt.QLabel("Status: Waiting for user.")
         layout.addWidget(self.step8StatusLabel)
-        
+
         self.stepStack.addWidget(widget)
 
     def createStep9_Results(self):
         widget = qt.QWidget()
         layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
-        
+
         title = qt.QLabel("Step 9: Results and Validation")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
-        
-        # Results table
+
         resultsLabel = qt.QLabel("Prediction Results:")
         layout.addWidget(resultsLabel)
-        
-        # Create table widget with checkbox column
+
         self.resultsTable = qt.QTableWidget()
         self.resultsTable.setRowCount(3)
-        self.resultsTable.setColumnCount(5)  # Added one column for checkboxes
+        self.resultsTable.setColumnCount(5)
         self.resultsTable.setHorizontalHeaderLabels(["Select", "Metric", "X", "Y", "Z"])
-        
-        # Set row data with checkboxes in first column
+
         row_metrics = ["Predicted Pronasale", "True Pronasale", "Error Distance"]
-        
+
         for i, metric in enumerate(row_metrics):
-            # Checkbox in first column
             checkbox_item = qt.QTableWidgetItem()
             checkbox_item.setFlags(qt.Qt.ItemIsUserCheckable | qt.Qt.ItemIsEnabled)
             checkbox_item.setCheckState(qt.Qt.Checked)
             self.resultsTable.setItem(i, 0, checkbox_item)
-            
-            # Metric in second column
+
             metric_item = qt.QTableWidgetItem(metric)
-            metric_item.setFlags(qt.Qt.ItemIsEnabled)  # Not editable
+            metric_item.setFlags(qt.Qt.ItemIsEnabled)
             self.resultsTable.setItem(i, 1, metric_item)
-            
-            # Initialize empty data columns
+
             self.resultsTable.setItem(i, 2, qt.QTableWidgetItem(""))
             self.resultsTable.setItem(i, 3, qt.QTableWidgetItem(""))
             self.resultsTable.setItem(i, 4, qt.QTableWidgetItem(""))
-        
+
         self.resultsTable.horizontalHeader().setStretchLastSection(True)
         self.resultsTable.setMinimumHeight(150)
         layout.addWidget(self.resultsTable)
-        
-        # Copy to clipboard button
+
         self.copyButton = qt.QPushButton("Copy Selected to Clipboard")
         self.copyButton.clicked.connect(self.onCopyToClipboard)
         layout.addWidget(self.copyButton)
-        
-        # Finish button
+
         self.finishButton = qt.QPushButton("Finish")
         self.finishButton.clicked.connect(self.onFinish)
         layout.addWidget(self.finishButton)
-        
+
         self.step9StatusLabel = qt.QLabel("Status: Complete! Review results above.")
         layout.addWidget(self.step9StatusLabel)
-        
+
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
 
+    # ==================== HELPER METHODS ====================
+    
     def onCopyToClipboard(self):
         """Copy selected results to clipboard"""
         try:
             clipboard_text = "Metric\tX\tY\tZ\n"
             
-            for row in range(self.resultsTable.rowCount()):
+            for row in range(self.resultsTable.rowCount):
                 # Check if checkbox in first column is checked
                 checkbox_item = self.resultsTable.item(row, 0)
                 if checkbox_item and checkbox_item.checkState() == qt.Qt.Checked:
@@ -531,29 +878,25 @@ class ThreefoldANSGUI(qt.QWidget):
                     
                     clipboard_text += f"{metric}\t{x_val}\t{y_val}\t{z_val}\n"
             
-            # Copy to clipboard - FIXED: Use different variable name to avoid conflict
-            from qt import QApplication
-            app_clipboard = QApplication.clipboard()  # Changed variable name
-            app_clipboard.setText(clipboard_text)     # Use the new variable name
+            # Copy to clipboard - FIXED: Use QApplication.clipboard() correctly
+            app_clipboard = qt.QApplication.clipboard()  # Use qt.QApplication, not importing QApplication
+            app_clipboard.setText(clipboard_text)
             slicer.util.infoDisplay("Selected results copied to clipboard!")
             
         except Exception as e:
             slicer.util.errorDisplay(f"Failed to copy to clipboard: {e}")
+
     def updateResultsTable(self):
-        """Update the results table with current data"""
         try:
-            # Get predicted pronasale position
             if self.predictedPronasaleNode and self.predictedPronasaleNode.GetNumberOfControlPoints() > 0:
                 pred_pos = [0, 0, 0]
                 self.predictedPronasaleNode.GetNthControlPointPositionWorld(0, pred_pos)
                 self.resultsTable.item(0, 2).setText(f"{pred_pos[0]:.2f}")
                 self.resultsTable.item(0, 3).setText(f"{pred_pos[1]:.2f}")
                 self.resultsTable.item(0, 4).setText(f"{pred_pos[2]:.2f}")
-            
-            # Get true pronasale position
+
             if self.trueSoftTissueNode:
                 true_pos = [0, 0, 0]
-                # Find the pronasale point in true landmarks
                 for i in range(self.trueSoftTissueNode.GetNumberOfControlPoints()):
                     label = self.trueSoftTissueNode.GetNthControlPointLabel(i)
                     if "pronasale" in label.lower():
@@ -561,54 +904,51 @@ class ThreefoldANSGUI(qt.QWidget):
                         self.resultsTable.item(1, 2).setText(f"{true_pos[0]:.2f}")
                         self.resultsTable.item(1, 3).setText(f"{true_pos[1]:.2f}")
                         self.resultsTable.item(1, 4).setText(f"{true_pos[2]:.2f}")
-                        
-                        # Calculate error distance
+
                         if self.predictedPronasaleNode and self.predictedPronasaleNode.GetNumberOfControlPoints() > 0:
                             pred_pos = [0, 0, 0]
                             self.predictedPronasaleNode.GetNthControlPointPositionWorld(0, pred_pos)
                             error_distance = np.linalg.norm(np.array(pred_pos) - np.array(true_pos))
                             self.resultsTable.item(2, 2).setText(f"{error_distance:.2f}")
-                            self.resultsTable.item(2, 3).setText("")  # Clear Y column for error distance
-                            self.resultsTable.item(2, 4).setText("")  # Clear Z column for error distance
+                            self.resultsTable.item(2, 3).setText("")
+                            self.resultsTable.item(2, 4).setText("")
                         break
             else:
-                # If no true landmarks, clear the true pronasale and error rows
                 self.resultsTable.item(1, 2).setText("")
                 self.resultsTable.item(1, 3).setText("")
                 self.resultsTable.item(1, 4).setText("")
                 self.resultsTable.item(2, 2).setText("")
                 self.resultsTable.item(2, 3).setText("")
                 self.resultsTable.item(2, 4).setText("")
-            
         except Exception as e:
             print(f"Error updating results table: {e}")
 
     def onFinish(self):
-        """Close the GUI"""
         self.close()
-    
-    def onShowMidphiltrumSection(self):
-        """Reveals the midphiltrum placement section within Step 6."""
-        self.midphiltrumContainer.setVisible(True)
-        self.guideForMidphiltrumButton.setEnabled(False)
-        self.guideForMidphiltrumButton.setText("Midphiltrum Section Unlocked")
-        self.step6StatusLabel.setText("Status: Vector set. Now check the 'mp' point.")
-        self.createMidphiltrumGuide()
-
 
     def syncWithScene(self):
         self.landmarksNode = slicer.util.getFirstNodeByName("KrogmanIscan_hard_tissue")
-        if self.landmarksNode: self.step1StatusLabel.setText("Status: Found 'KrogmanIscan_hard_tissue'.")
-        
+        if self.landmarksNode:
+            self.step1StatusLabel.setText("Status: Found 'KrogmanIscan_hard_tissue'.")
+
         self.referencePlane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
-        if self.referencePlane: self.step2StatusLabel.setText(f"Status: Found '{self.referencePlane.GetName()}'.")
-        
+        if self.referencePlane:
+            self.step2StatusLabel.setText(f"Status: Found '{self.referencePlane.GetName()}'.")
+
         self.boneModel = slicer.util.getFirstNodeByName("Bone")
-        if self.boneModel: self.boneModelSelector.setCurrentNode(self.boneModel)
-        
+        if self.boneModel:
+            self.boneModelSelector.setCurrentNode(self.boneModel)
+
+        if not self.volumeNode:
+            vols = slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode")
+            for vol in vols:
+                if not vol.GetName().endswith("_seg") and "label" not in vol.GetName().lower():
+                    self.volumeNode = vol
+                    self.volumeSelectorVR.setCurrentNode(vol)
+                    break
+
         self.onConfirmCut(updateStatusOnly=True)
-        
-        # Updated Step 5 logic
+
         self.vmjAcaLine = slicer.util.getFirstNodeByName("VMJ-aca")
         if self.vmjAcaLine:
             self.confirmVMJButton.setEnabled(False)
@@ -616,53 +956,50 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step5_complete = True
             self.step5StatusLabel.setText("Status: Found 'VMJ-aca' line. Step complete.")
         elif self.landmarksNode and self.findPointIndex("vmj") != -1:
-            # VMJ point exists but line not created yet
             self.confirmVMJButton.setEnabled(True)
             self.measureANSButton.setEnabled(False)
             self.step5StatusLabel.setText("Status: Found VMJ point. Please confirm position.")
 
         self.nasalSpineVector = slicer.util.getFirstNodeByName("nasal spine vector")
-        
-        # This is the key logic for saved scenes:
+
         if self.landmarksNode and self.findPointIndex("mp") != -1:
             self._mp_index = self.findPointIndex("mp")
             self.createMPGuideButton.setEnabled(False)
             self.adjustMPButton.setEnabled(True)
             self.confirmMPButton.setEnabled(True)
             self.step6StatusLabel.setText("Status: Found existing 'mp' point. Please adjust and/or confirm.")
-        
+
         self.predictedPronasaleNode = slicer.util.getFirstNodeByName("predicted pronasale")
         self.trueSoftTissueNode = slicer.util.getFirstNodeByName("KrogmanIscan_soft_tissue")
-        if self.trueSoftTissueNode: self.trueLandmarksSelector.setCurrentNode(self.trueSoftTissueNode)
+        if self.trueSoftTissueNode:
+            self.trueLandmarksSelector.setCurrentNode(self.trueSoftTissueNode)
+
+        self.updateStep4UI()
+        self.updatePredictionUI()
 
     def findPointIndex(self, name):
-        """Helper function to find the index of a point by name."""
         if not self.landmarksNode:
             return -1
-
         for i in range(self.landmarksNode.GetNumberOfControlPoints()):
             label = self.landmarksNode.GetNthControlPointLabel(i)
             if name.lower() in label.lower():
                 return i
-
         return -1
 
     def getPos(self, name, node=None):
-        """Get the position of a landmark by name from the specified node or the default landmarks node."""
         landmark_node = node if node is not None else self.landmarksNode
         if not landmark_node:
             raise ValueError("Landmarks node not found.")
-        
         for i in range(landmark_node.GetNumberOfControlPoints()):
             if name.lower() in landmark_node.GetNthControlPointLabel(i).lower():
                 pos = np.zeros(3)
                 landmark_node.GetNthControlPointPositionWorld(i, pos)
                 return pos
-        
         raise ValueError(f"Landmark '{name}' not found in the specified node!")
 
     def onLoadLocalLandmarks(self, fileName=None, nodeName=None):
-        if not fileName: fileName, _ = qt.QFileDialog.getOpenFileName(self, "Load Landmarks", "", "Markup JSON Files (*.mrk.json)")
+        if not fileName:
+            fileName, _ = qt.QFileDialog.getOpenFileName(self, "Load Landmarks", "", "Markup JSON Files (*.mrk.json)")
         if fileName:
             loadedNode = slicer.util.loadMarkups(fileName)
             if loadedNode:
@@ -676,60 +1013,116 @@ class ThreefoldANSGUI(qt.QWidget):
                     self.trueLandmarksSelector.setCurrentNode(loadedNode)
                     self.step8StatusLabel.setText("Status: Successfully loaded 'KrogmanIscan_soft_tissue'.")
                 slicer.util.showStatusMessage(f"'{finalName}' loaded!", 3000)
-            else: slicer.util.errorDisplay(f"Failed to load landmarks from {fileName}.")
+                # Auto-update step
+                self.currentStep = self.determineCurrentStep()
+                self.updateStepUI()
+            else:
+                slicer.util.errorDisplay(f"Failed to load landmarks from {fileName}.")
 
-    def onDownloadLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json", "KrogmanIscan_hard_tissue", self.step1StatusLabel)
+    def onDownloadHardLandmarks(self):
+        self.onDownloadAndLoad(
+            "https://github.com/user-attachments/files/20212533/KrogmanIscan_hard_tissue.mrk.json",
+            "KrogmanIscan_hard_tissue",
+            self.step1StatusLabel
+        )
 
-    def onDownloadTrueLandmarks(self):
-        self.onDownloadAndLoad("https://github.com/user-attachments/files/20234679/KrogmanIscan_soft_tissue.mrk.json", "KrogmanIscan_soft_tissue", self.step8StatusLabel)
+    def onDownloadSoftLandmarks(self):
+        self.onDownloadAndLoad(
+            "https://github.com/user-attachments/files/20234679/KrogmanIscan_soft_tissue.mrk.json",
+            "KrogmanIscan_soft_tissue",
+            self.step1StatusLabel
+        )
 
     def onDownloadAndLoad(self, url, nodeName, statusLabel):
-        statusLabel.setText("Status: Downloading..."); slicer.app.processEvents()
+        statusLabel.setText("Status: Downloading...")
+        slicer.app.processEvents()
         try:
-            with urllib.request.urlopen(url) as response: fileData = response.read()
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.mrk.json', mode='wb') as tempFile: tempFile.write(fileData); tempFilePath = tempFile.name
+            with urllib.request.urlopen(url) as response:
+                fileData = response.read()
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mrk.json', mode='wb') as tempFile:
+                tempFile.write(fileData)
+                tempFilePath = tempFile.name
             self.onLoadLocalLandmarks(tempFilePath, nodeName)
         except Exception as e:
-            statusLabel.setText(f"Status: Error! Could not download. Error: {e}"); slicer.util.errorDisplay(f"Failed to download from the web. Error: {e}")
+            statusLabel.setText(f"Status: Error! Could not download. Error: {e}")
+            slicer.util.errorDisplay(f"Failed to download from the web. Error: {e}")
         finally:
-            if 'tempFilePath' in locals() and os.path.exists(tempFilePath): os.remove(tempFilePath)
+            if 'tempFilePath' in locals() and os.path.exists(tempFilePath):
+                os.remove(tempFilePath)
+
+    def onDownloadTrueLandmarks(self):
+        self.onDownloadAndLoad(
+            "https://github.com/user-attachments/files/20234679/KrogmanIscan_soft_tissue.mrk.json",
+            "KrogmanIscan_soft_tissue",
+            self.step8StatusLabel
+        )
 
     def onCreatePlane(self):
-        if not self.landmarksNode: self.syncWithScene()
-        if not self.landmarksNode: self.step2StatusLabel.setText("Status: Error! Please go back and load the landmarks first."); return
+        if not self.landmarksNode:
+            self.syncWithScene()
+        if not self.landmarksNode:
+            self.step2StatusLabel.setText("Status: Error! Please go back and load the landmarks first.")
+            return
         choice_index = self.planeChoiceComboBox.currentIndex
-        if choice_index == 0: self.step2StatusLabel.setText("Status: Error! Please select a plane creation method."); return
-        self.step2StatusLabel.setText("Status: Creating plane..."); slicer.app.processEvents()
+        if choice_index == 0:
+            self.step2StatusLabel.setText("Status: Error! Please select a plane creation method.")
+            return
+        self.step2StatusLabel.setText("Status: Creating plane...")
+        slicer.app.processEvents()
         try:
             plane_name = ""
             if choice_index == 1:
-                plane_name = "INB"; p_inion, p_nasion, p_bregma = self.getPos("inion"), self.getPos("nasion"), self.getPos("bregma")
-                v1, v2 = p_nasion - p_inion, p_bregma - p_inion; normal, origin = np.cross(v1, v2), p_inion
+                plane_name = "INB"
+                p_inion, p_nasion, p_bregma = self.getPos("inion"), self.getPos("nasion"), self.getPos("bregma")
+                v1, v2 = p_nasion - p_inion, p_bregma - p_inion
+                normal, origin = np.cross(v1, v2), p_inion
             elif choice_index == 2:
-                plane_name = "MSP"; required = ["nasion", "acanthion", "prosthion", "subspinale"]
-                points = np.array([self.getPos(name) for name in required]); centroid = np.mean(points, axis=0)
-                covariance_matrix = np.cov(points - centroid, rowvar=False); eigenvalues, eigenvectors = np.linalg.eigh(covariance_matrix)
+                plane_name = "MSP"
+                required = ["nasion", "acanthion", "prosthion", "subspinale"]
+                points = np.array([self.getPos(name) for name in required])
+                centroid = np.mean(points, axis=0)
+                covariance_matrix = np.cov(points - centroid, rowvar=False)
+                eigenvalues, eigenvectors = np.linalg.eigh(covariance_matrix)
                 normal, origin = eigenvectors[:, np.argmin(eigenvalues)], centroid
-            try: oldPlane = slicer.util.getNode(plane_name); slicer.mrmlScene.RemoveNode(oldPlane)
-            except: pass
+            try:
+                oldPlane = slicer.util.getNode(plane_name)
+                slicer.mrmlScene.RemoveNode(oldPlane)
+            except:
+                pass
             planeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', plane_name)
-            planeNode.SetOrigin(origin); planeNode.SetNormal(normal); planeNode.SetSize(300, 300); planeNode.GetDisplayNode().SetOpacity(1.0)
+            planeNode.SetOrigin(origin)
+            planeNode.SetNormal(normal)
+            planeNode.SetSize(300, 300)
+            planeNode.GetDisplayNode().SetOpacity(1.0)
             self.referencePlane = planeNode
             self.step2StatusLabel.setText(f"Status: Successfully created '{plane_name}' plane. You can now proceed.")
             slicer.util.showStatusMessage(f"'{plane_name}' created!", 3000)
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
         except Exception as e:
-            self.step2StatusLabel.setText(f"Status: Error! Could not create plane. Error: {e}"); slicer.util.errorDisplay(f"Failed to create plane: {e}")
+            self.step2StatusLabel.setText(f"Status: Error! Could not create plane. Error: {e}")
+            slicer.util.errorDisplay(f"Failed to create plane: {e}")
 
     def onConfirmSegmentation(self, node):
         if node:
-            self.boneModel = node; self.step3StatusLabel.setText(f"Status: Confirmed '{self.boneModel.GetName()}' as the bone model. Ready to proceed!")
+            self.boneModel = node
+            self.step3StatusLabel.setText(f"Status: Confirmed '{self.boneModel.GetName()}' as the bone model. Ready to proceed!")
             slicer.util.showStatusMessage("Bone model confirmed!", 3000)
+            self.manualVolumeRendering = False
+            self.updateStep4UI()
+            self.updatePredictionUI()
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
         else:
-            self.boneModel = None; self.step3StatusLabel.setText("Status: Waiting for user to select the re-imported 'Bone' model.")
-            
+            self.boneModel = None
+            self.step3StatusLabel.setText("Status: Waiting for user to select the re-imported 'Bone' model.")
+
     def onOpenDynamicModeler(self):
-        if not self.boneModel: slicer.util.warningDisplay("Please select the re-imported 'Bone' model in Step 3 before proceeding."); return
+        if not self.boneModel:
+            slicer.util.warningDisplay("Please load a bone model before using Dynamic Modeler.")
+            return
         if self.isDynamicModelerInstalled:
             slicer.util.selectModule('DynamicModeler')
             dynamicModelerWidget = slicer.modules.dynamicmodeler.widgetRepresentation()
@@ -737,138 +1130,149 @@ class ThreefoldANSGUI(qt.QWidget):
                 modelSelectors = dynamicModelerWidget.findChildren(slicer.qMRMLNodeComboBox)
                 for selector in modelSelectors:
                     if "vtkMRMLModelNode" in selector.nodeTypes:
-                        selector.setCurrentNode(self.boneModel); return
+                        selector.setCurrentNode(self.boneModel)
+                        return
         else:
             qt.QMessageBox.warning(self, "Extension Not Found", "The 'Dynamic Modeler' extension is not installed.")
 
     def onConfirmCut(self, updateStatusOnly=False):
-        if not updateStatusOnly: self.step4StatusLabel.setText("Status: Checking for cut models...")
+        if not updateStatusOnly:
+            self.step4StatusLabel.setText("Status: Checking for cut models...")
         left_model_found, right_model_found = None, None
         all_models = slicer.util.getNodesByClass('vtkMRMLModelNode')
         for model in all_models:
             model_name = model.GetName().lower()
-            if "bone" in model_name and "left" in model_name: left_model_found = model
-            if "bone" in model_name and "right" in model_name: right_model_found = model
-        
+            if "bone" in model_name and "left" in model_name:
+                left_model_found = model
+            if "bone" in model_name and "right" in model_name:
+                right_model_found = model
+
         if left_model_found and right_model_found:
-            self.boneLeftModel = left_model_found; self.boneRightModel = right_model_found
+            self.boneLeftModel = left_model_found
+            self.boneRightModel = right_model_found
             self.step4StatusLabel.setText(f"Status: Found '{left_model_found.GetName()}' and '{right_model_found.GetName()}'!")
-            if not updateStatusOnly: slicer.util.showStatusMessage("Model cut confirmed!", 3000)
+            if not updateStatusOnly:
+                slicer.util.showStatusMessage("Model cut confirmed!", 3000)
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
         elif not updateStatusOnly:
             self.step4StatusLabel.setText("Status: Error! Could not find models with 'bone' and 'left'/'right' in their names.")
             slicer.util.errorDisplay("Could not find the left and right bone models.")
 
-    
-    
     def onConfirmVMJ(self):
         try:
-            # Simply confirm that VMJ exists and enable next step
-            if not self.landmarksNode: 
+            if not self.landmarksNode:
                 self.syncWithScene()
             if not self.landmarksNode:
                 raise ValueError("Landmarks node not found.")
-                
             vmj_index = self.findPointIndex("vmj")
             if vmj_index == -1:
                 raise ValueError("VMJ point not found. Please ensure it exists in the landmarks.")
-                
             self.step5StatusLabel.setText("Status: VMJ position confirmed. You can now create the line.")
             self.confirmVMJButton.setEnabled(False)
             self.measureANSButton.setEnabled(True)
-            
         except Exception as e:
             self.step5StatusLabel.setText(f"Status: Error! {e}")
             slicer.util.errorDisplay(f"Failed to confirm VMJ: {e}")
 
-
     def onMeasureANS(self):
         self.step5StatusLabel.setText("Status: Searching for VMJ and acanthion landmarks...")
         try:
-            if not self.landmarksNode: self.syncWithScene()
-            if not self.landmarksNode: raise ValueError("Landmarks node 'KrogmanIscan_hard_tissue' not found.")
+            if not self.landmarksNode:
+                self.syncWithScene()
+            if not self.landmarksNode:
+                raise ValueError("Landmarks node 'KrogmanIscan_hard_tissue' not found.")
             acanthion_pos = self.getPos("acanthion")
             vmj_pos = self.getPos("vmj")
             self.step5StatusLabel.setText("Status: Landmarks found. Creating line...")
-            try: oldLine = slicer.util.getNode('VMJ-aca'); slicer.mrmlScene.RemoveNode(oldLine)
-            except: pass
+            try:
+                oldLine = slicer.util.getNode('VMJ-aca')
+                slicer.mrmlScene.RemoveNode(oldLine)
+            except:
+                pass
             lineNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'VMJ-aca')
-            lineNode.AddControlPoint(vmj_pos); lineNode.AddControlPoint(acanthion_pos)
-            lineNode.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0); lineNode.GetDisplayNode().SetLineThickness(0.5)
+            lineNode.AddControlPoint(vmj_pos)
+            lineNode.AddControlPoint(acanthion_pos)
+            lineNode.GetDisplayNode().SetSelectedColor(1.0, 1.0, 0.0)
+            lineNode.GetDisplayNode().SetLineThickness(0.5)
             self.vmjAcaLine = lineNode
             self.step5StatusLabel.setText("Status: 'VMJ-aca' line created successfully! You can now proceed to the next step.")
-            self.measureANSButton.setEnabled(False) # --- Disable the button after use
+            self.measureANSButton.setEnabled(False)
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
         except Exception as e:
-            self.step5StatusLabel.setText(f"Status: Error! Could not create VMJ-aca line. {e}"); slicer.util.errorDisplay(f"Failed to create line: {e}")
+            self.step5StatusLabel.setText(f"Status: Error! Could not create VMJ-aca line. {e}")
+            slicer.util.errorDisplay(f"Failed to create line: {e}")
 
     def createNasalSpineVector(self):
         self.step6StatusLabel.setText("Status: Creating nasal spine vector...")
         try:
-            if not self.referencePlane: raise ValueError("Reference plane not found.")
-            if not self.landmarksNode: raise ValueError("Landmarks node not found.")
-            
+            if not self.referencePlane:
+                raise ValueError("Reference plane not found.")
+            if not self.landmarksNode:
+                raise ValueError("Landmarks node not found.")
             aca_pos = self.getPos("acanthion")
-
             plane_origin = np.array(self.referencePlane.GetOrigin())
             plane_normal = np.array(self.referencePlane.GetNormal())
-
             arbitrary_vec = np.array([0, 1, 0])
             direction_on_plane = arbitrary_vec - np.dot(arbitrary_vec, plane_normal) * plane_normal
             direction_on_plane /= np.linalg.norm(direction_on_plane)
-
             p1 = aca_pos + 30 * direction_on_plane
             p2 = aca_pos - 30 * direction_on_plane
-
-            try: oldVector = slicer.util.getNode('nasal spine vector'); slicer.mrmlScene.RemoveNode(oldVector)
-            except: pass
-            
+            try:
+                oldVector = slicer.util.getNode('nasal spine vector')
+                slicer.mrmlScene.RemoveNode(oldVector)
+            except:
+                pass
             self.nasalSpineVector = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', 'nasal spine vector')
-            self.nasalSpineVector.AddControlPoint(p1); self.nasalSpineVector.AddControlPoint(p2)
-            
+            self.nasalSpineVector.AddControlPoint(p1)
+            self.nasalSpineVector.AddControlPoint(p2)
             displayNode = self.nasalSpineVector.GetDisplayNode()
-            displayNode.SetSelectedColor(0.8, 0.4, 0.8); displayNode.SetLineThickness(0.5)
-
-            if self.vectorObserver: self.nasalSpineVector.RemoveObserver(self.vectorObserver)
+            displayNode.SetSelectedColor(0.8, 0.4, 0.8)
+            displayNode.SetLineThickness(0.5)
+            if self.vectorObserver:
+                self.nasalSpineVector.RemoveObserver(self.vectorObserver)
             self.vectorObserver = self.nasalSpineVector.AddObserver(slicer.vtkMRMLMarkupsNode.PointModifiedEvent, self.onNasalSpineVectorModified)
             self.step6StatusLabel.setText("Status: Please align the purple vector.")
-            
         except Exception as e:
             self.step6StatusLabel.setText(f"Status: Error creating vector! {e}")
             slicer.util.errorDisplay(f"Failed to create nasal spine vector: {e}")
 
     def onNasalSpineVectorModified(self, caller, event):
-        if self._isUpdatingVector: return
+        if self._isUpdatingVector:
+            return
         self._isUpdatingVector = True
         try:
             lineNode = caller
-            if not lineNode or lineNode.GetNumberOfControlPoints() != 2: self._isUpdatingVector = False; return
-
+            if not lineNode or lineNode.GetNumberOfControlPoints() != 2:
+                self._isUpdatingVector = False
+                return
             plane_origin = np.array(self.referencePlane.GetOrigin())
             plane_normal = np.array(self.referencePlane.GetNormal())
-            
             aca_pos = self.getPos("acanthion")
-
             lastModified = lineNode.GetDisplayNode().GetActiveControlPoint()
             p_moved = np.zeros(3)
             lineNode.GetNthControlPointPositionWorld(lastModified, p_moved)
-
             p_moved_on_plane = p_moved - (np.dot(p_moved - plane_origin, plane_normal) * plane_normal)
-            
             new_dir = p_moved_on_plane - aca_pos
-            if np.linalg.norm(new_dir) < 1e-6: self._isUpdatingVector = False; return
+            if np.linalg.norm(new_dir) < 1e-6:
+                self._isUpdatingVector = False
+                return
             new_dir /= np.linalg.norm(new_dir)
-            
-            p1 = np.zeros(3); lineNode.GetNthControlPointPositionWorld(0, p1)
-            p2 = np.zeros(3); lineNode.GetNthControlPointPositionWorld(1, p2)
+            p1 = np.zeros(3)
+            lineNode.GetNthControlPointPositionWorld(0, p1)
+            p2 = np.zeros(3)
+            lineNode.GetNthControlPointPositionWorld(1, p2)
             dist = np.linalg.norm(p1 - p2) / 2.0
-            
             new_p1 = aca_pos + dist * new_dir
             new_p2 = aca_pos - dist * new_dir
-
             lineNode.SetNthControlPointPositionWorld(0, new_p1)
             lineNode.SetNthControlPointPositionWorld(1, new_p2)
         finally:
             self._isUpdatingVector = False
-            
+
     def createMidphiltrumGuide(self):
         try:
             sub_pos, pro_pos = self.getPos("subspinale"), self.getPos("prosthion")
@@ -878,16 +1282,15 @@ class ThreefoldANSGUI(qt.QWidget):
             self.subProLine.AddControlPoint(pro_pos)
             self.subProLine.GetDisplayNode().SetVisibility(True)
             mid_pos = (sub_pos + pro_pos) / 2.0
-            
-            # If mp point already exists, just update its position. Otherwise, create it.
             self._mp_index = self.findPointIndex("mp")
             if self._mp_index != -1:
                 self.landmarksNode.SetNthControlPointPositionWorld(self._mp_index, mid_pos)
             else:
                 self._mp_index = self.landmarksNode.AddControlPoint(mid_pos, "mp")
-            
             self._initialMPPos = mid_pos.copy()
-            
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
         except Exception as e:
             slicer.util.errorDisplay(f"Failed to create 'mp' guide: {e}")
 
@@ -897,142 +1300,461 @@ class ThreefoldANSGUI(qt.QWidget):
         self.createMPGuideButton.setEnabled(False)
         self.step6StatusLabel.setText("Status: 'mp' point created. You may now adjust it.")
 
+    def onAdjustMP(self):
+        try:
+            self._mp_index = self.findPointIndex("mp")
+            if self._mp_index == -1:
+                self.createMidphiltrumGuide()
+                self._mp_index = self.findPointIndex("mp")
+                if self._mp_index == -1:
+                    raise ValueError("Failed to create 'mp' point.")
+            self._initialMPPos = np.zeros(3)
+            self.landmarksNode.GetNthControlPointPositionWorld(self._mp_index, self._initialMPPos)
+            slicer.modules.markups.logic().JumpSlicesToNthPointInMarkup(self.landmarksNode.GetID(), self._mp_index)
+            if self.mpObserver and self.landmarksNode:
+                self.landmarksNode.RemoveObserver(self.mpObserver)
+                self.mpObserver = None
+            self.mpObserver = self.landmarksNode.AddObserver(
+                slicer.vtkMRMLMarkupsNode.PointModifiedEvent, self.onMPModified
+            )
+            self.confirmMPButton.setEnabled(True)
+            self.adjustMPButton.setEnabled(False)
+            self.step6StatusLabel.setText("Status: Ready to adjust 'mp' point. Click and drag the point in the 3D view (movement is constrained to Y-axis).")
+        except Exception as e:
+            slicer.util.warningDisplay(f"Cannot start adjustment: {e}")
 
     def onMPModified(self, caller, event):
         if self._isUpdatingMP or self._mp_index == -1:
             return
-            
         self._isUpdatingMP = True
         try:
-            # Get current position of mp point
             current_pos = np.zeros(3)
             self.landmarksNode.GetNthControlPointPositionWorld(self._mp_index, current_pos)
-            
-            # Constrain to Y-axis only movement (keep X and Z at initial position)
             constrained_pos = [self._initialMPPos[0], current_pos[1], self._initialMPPos[2]]
-            
-            # Only update if the position actually changed
             if not np.allclose(current_pos, constrained_pos, atol=0.01):
                 self.landmarksNode.SetNthControlPointPositionWorld(self._mp_index, constrained_pos)
-            
         except Exception:
-            # Silent fail - don't show error messages during normal operation
             pass
         finally:
             self._isUpdatingMP = False
 
     def onConfirmMP(self):
         self.step6StatusLabel.setText("Status: 'mp' point placement confirmed. Step complete!")
-        
-        # Remove observer
         if self.mpObserver and self.landmarksNode:
             self.landmarksNode.RemoveObserver(self.mpObserver)
             self.mpObserver = None
-        
-        # Reset flags
         self._isUpdatingMP = False
-        
         self.confirmMPButton.setEnabled(False)
         self.step6_complete = True
+        # Auto-update step
+        self.currentStep = self.determineCurrentStep()
+        self.updateStepUI()
 
+    # ==================== PATCH-BASED SURFACE NORMAL FROM CT ====================
+    def computeSurfaceNormalFromVolumePatch(self, landmarkPos, searchRadius=3.0, boneThreshold=200):
+        """
+        Detect the OUTER BONE SURFACE within a sphere of radius searchRadius around the landmark.
+        Returns: (normal, baseCenter)
+        Normal is FORCED to point in the anterior direction (from reference plane).
+        """
+        if self.volumeNode is None:
+            return None, None
+
+        imageData = self.volumeNode.GetImageData()
+        spacing = self.volumeNode.GetSpacing()
+        dims = imageData.GetDimensions()
+
+        worldToIJK = vtk.vtkMatrix4x4()
+        self.volumeNode.GetRASToIJKMatrix(worldToIJK)
+        ijkToWorld = vtk.vtkMatrix4x4()
+        self.volumeNode.GetIJKToRASMatrix(ijkToWorld)
+
+        # Get anterior direction from reference plane
+        if self.referencePlane is not None:
+            plane_normal = np.zeros(3)
+            self.referencePlane.GetNormalWorld(plane_normal)
+            plane_normal = np.array(plane_normal)
+            superior = np.array([0, 0, 1])
+            anterior = np.cross(plane_normal, superior)
+            if np.linalg.norm(anterior) < 0.001:
+                anterior = np.array([0, 1, 0])
+            anterior = anterior / np.linalg.norm(anterior)
+            if np.dot(anterior, np.array([0, 1, 0])) < 0:
+                anterior = -anterior
+        else:
+            anterior = np.array([0, 1, 0])
+        
+        print(f"DEBUG: Anterior direction: {anterior}")
+
+        # Convert landmark to IJK
+        landmarkIJK = [0, 0, 0, 1]
+        worldToIJK.MultiplyPoint([landmarkPos[0], landmarkPos[1], landmarkPos[2], 1], landmarkIJK)
+        i0, j0, k0 = int(round(landmarkIJK[0])), int(round(landmarkIJK[1])), int(round(landmarkIJK[2]))
+        
+        # Get the value at the landmark position
+        val_at_mp = imageData.GetScalarComponentAsDouble(i0, j0, k0, 0)
+        print(f"DEBUG: HU value at mp: {val_at_mp}")
+
+        # If mp is not in bone, find the bone surface by marching outward
+        if val_at_mp < boneThreshold:
+            print("DEBUG: mp is not in bone. Searching for bone surface...")
+            found_bone = False
+            for radius in range(1, 20):
+                for di in range(-radius, radius + 1):
+                    for dj in range(-radius, radius + 1):
+                        for dk in range(-radius, radius + 1):
+                            if (di*di + dj*dj + dk*dk) > radius * radius:
+                                continue
+                            i = i0 + di
+                            j = j0 + dj
+                            k = k0 + dk
+                            if (i < 0 or i >= dims[0] or j < 0 or j >= dims[1] or k < 0 or k >= dims[2]):
+                                continue
+                            val = imageData.GetScalarComponentAsDouble(i, j, k, 0)
+                            if val >= boneThreshold:
+                                i0, j0, k0 = i, j, k
+                                found_bone = True
+                                print(f"DEBUG: Found bone at IJK: ({i0}, {j0}, {k0}) with HU: {val}")
+                                break
+                        if found_bone:
+                            break
+                    if found_bone:
+                        break
+                if found_bone:
+                    break
+
+        # Sample ALL voxels in the sphere to find bone surface
+        radiusIJK = max(2, int(searchRadius / max(spacing)))
+        print(f"DEBUG: radiusIJK: {radiusIJK}")
+        
+        surfacePoints = []
+        totalVoxels = 0
+        
+        for di in range(-radiusIJK, radiusIJK + 1):
+            for dj in range(-radiusIJK, radiusIJK + 1):
+                for dk in range(-radiusIJK, radiusIJK + 1):
+                    if (di*di + dj*dj + dk*dk) > radiusIJK * radiusIJK:
+                        continue
+                    i = i0 + di
+                    j = j0 + dj
+                    k = k0 + dk
+                    totalVoxels += 1
+                    if (i < 0 or i >= dims[0] or j < 0 or j >= dims[1] or k < 0 or k >= dims[2]):
+                        continue
+                    val = imageData.GetScalarComponentAsDouble(i, j, k, 0)
+                    if val >= boneThreshold:
+                        rasPos = [0, 0, 0, 1]
+                        ijkToWorld.MultiplyPoint([i, j, k, 1], rasPos)
+                        surfacePoints.append(np.array(rasPos[:3]))
+
+        print(f"DEBUG: Found {len(surfacePoints)} bone voxels out of {totalVoxels} sampled")
+
+        if len(surfacePoints) < 4:
+            print("DEBUG: Not enough surface points. Trying with lower threshold...")
+            surfacePoints = []
+            for di in range(-radiusIJK, radiusIJK + 1):
+                for dj in range(-radiusIJK, radiusIJK + 1):
+                    for dk in range(-radiusIJK, radiusIJK + 1):
+                        if (di*di + dj*dj + dk*dk) > radiusIJK * radiusIJK:
+                            continue
+                        i = i0 + di
+                        j = j0 + dj
+                        k = k0 + dk
+                        if (i < 0 or i >= dims[0] or j < 0 or j >= dims[1] or k < 0 or k >= dims[2]):
+                            continue
+                        val = imageData.GetScalarComponentAsDouble(i, j, k, 0)
+                        if val >= 150:
+                            rasPos = [0, 0, 0, 1]
+                            ijkToWorld.MultiplyPoint([i, j, k, 1], rasPos)
+                            surfacePoints.append(np.array(rasPos[:3]))
+            print(f"DEBUG: Found {len(surfacePoints)} bone voxels with lower threshold")
+
+        if len(surfacePoints) < 4:
+            print("DEBUG: Still not enough surface points. Using gradient fallback.")
+            return None, None
+
+        points = np.array(surfacePoints)
+        baseCenter = np.mean(points, axis=0)
+        
+        # CRITICAL FIX: Use the anterior direction as the normal, NOT PCA
+        # The cylinder should point anteriorly, not follow the surface curvature
+        normal = anterior.copy()
+        
+        # But we also want to ensure it's not exactly parallel to the surface
+        # We can use the PCA normal to determine the surface orientation,
+        # but we want the component that points anteriorly
+        
+        # Compute the surface normal from PCA (just for reference)
+        centered = points - baseCenter
+        cov = np.cov(centered.T)
+        eigenvalues, eigenvectors = np.linalg.eigh(cov)
+        pca_normal = eigenvectors[:, np.argmin(eigenvalues)]
+        if np.dot(pca_normal, anterior) < 0:
+            pca_normal = -pca_normal
+        
+        # Combine PCA normal with anterior direction
+        # Weighted average: 70% anterior, 30% PCA normal
+        # This gives a direction that points anteriorly but also respects surface orientation
+        combined_normal = 0.7 * anterior + 0.3 * pca_normal
+        combined_normal = combined_normal / np.linalg.norm(combined_normal)
+        
+        # Ensure it points anteriorly
+        if combined_normal[1] < 0:
+            combined_normal = -combined_normal
+        
+        print(f"DEBUG: PCA normal: {pca_normal}")
+        print(f"DEBUG: Anterior direction: {anterior}")
+        print(f"DEBUG: Combined normal: {combined_normal}")
+        print(f"DEBUG: baseCenter: {baseCenter}")
+
+        return combined_normal, baseCenter
+
+    def computeGradientNormal(self, landmarkPos, sampleRadius=3.0):
+        """Fallback: simple gradient normal (returns only normal)"""
+        if self.volumeNode is None:
+            return None
+        
+        # Get anterior direction from reference plane
+        if self.referencePlane is not None:
+            plane_normal = np.zeros(3)
+            self.referencePlane.GetNormalWorld(plane_normal)
+            plane_normal = np.array(plane_normal)
+            superior = np.array([0, 0, 1])
+            anterior = np.cross(plane_normal, superior)
+            if np.linalg.norm(anterior) < 0.001:
+                anterior = np.array([0, 1, 0])
+            anterior = anterior / np.linalg.norm(anterior)
+            if np.dot(anterior, np.array([0, 1, 0])) < 0:
+                anterior = -anterior
+        else:
+            anterior = np.array([0, 1, 0])
+        
+        imageData = self.volumeNode.GetImageData()
+        spacing = self.volumeNode.GetSpacing()
+        worldToIJK = vtk.vtkMatrix4x4()
+        self.volumeNode.GetRASToIJKMatrix(worldToIJK)
+
+        ijk = [0,0,0,1]
+        worldToIJK.MultiplyPoint(np.append(landmarkPos, 1), ijk)
+        i, j, k = int(round(ijk[0])), int(round(ijk[1])), int(round(ijk[2]))
+        dims = imageData.GetDimensions()
+        margin = 5
+        if (i < margin or i >= dims[0]-margin or
+            j < margin or j >= dims[1]-margin or
+            k < margin or k >= dims[2]-margin):
+            return None
+
+        grad = np.zeros(3)
+        sampleDist = max(2, int(sampleRadius / max(spacing)))
+        for axis in range(3):
+            offset = [0,0,0]; offset[axis] = sampleDist
+            i_plus = i+offset[0]; j_plus = j+offset[1]; k_plus = k+offset[2]
+            i_minus = i-offset[0]; j_minus = j-offset[1]; k_minus = k-offset[2]
+            # Clamp to bounds
+            i_plus = max(0, min(dims[0]-1, i_plus))
+            j_plus = max(0, min(dims[1]-1, j_plus))
+            k_plus = max(0, min(dims[2]-1, k_plus))
+            i_minus = max(0, min(dims[0]-1, i_minus))
+            j_minus = max(0, min(dims[1]-1, j_minus))
+            k_minus = max(0, min(dims[2]-1, k_minus))
+            val_plus = imageData.GetScalarComponentAsDouble(i_plus, j_plus, k_plus, 0)
+            val_minus = imageData.GetScalarComponentAsDouble(i_minus, j_minus, k_minus, 0)
+            grad[axis] = (val_plus - val_minus) / (2 * sampleDist * spacing[axis])
+        mag = np.linalg.norm(grad)
+        if mag < 0.001:
+            return None
+        normal = -grad / mag
+        
+        # Force normal to point anteriorly
+        if normal[1] < 0:
+            normal = -normal
+        
+        # Also ensure it's generally in the anterior direction
+        if np.dot(normal, anterior) < 0:
+            normal = -normal
+        
+        # If the normal is still pointing mostly UP (Z), blend with anterior
+        if abs(normal[2]) > 0.7:
+            # Too much Z component, blend with anterior
+            normal = 0.5 * normal + 0.5 * anterior
+            normal = normal / np.linalg.norm(normal)
+        
+        return normal
+
+    # ==================== PREDICTION METHOD ====================
     def onPredictPronasale(self):
         try:
             self.step7StatusLabel.setText("Status: Starting prediction...")
-            if not all([self.boneModel, self.landmarksNode, self.vmjAcaLine, self.nasalSpineVector]): 
+
+            if self.volumeNode is None and self.boneModel is None:
+                raise ValueError("No volume or bone model available. Please load one in Step 3.")
+
+            if not all([self.landmarksNode, self.vmjAcaLine, self.nasalSpineVector]):
                 raise ValueError("A required node from a previous step is missing.")
-            
+
+            # Get cylinder radius (also used as search radius)
+            cylinderRadius = self.cylinderRadiusSpinBox.value
+
             mp_pos = self.getPos("mp")
+            baseCenter = None
+            normal = None
+
+            # Compute surface normal and base center
+            if self.volumeNode is not None:
+                normal, baseCenter = self.computeSurfaceNormalFromVolumePatch(
+                    mp_pos, searchRadius=cylinderRadius, boneThreshold=200
+                )
+                
+            # If surface detection failed or we have no volume, use fallback
+            if baseCenter is None or normal is None:
+                print("DEBUG: Surface detection failed, using gradient method")
+                normal = self.computeGradientNormal(mp_pos)
+                if normal is None:
+                    raise ValueError("Could not compute normal from CT volume.")
+                baseCenter = mp_pos
             
-            # Use 3D Slicer's coordinate system anterior direction
-            # In RAS coordinate system: 
-            # - Anterior is typically +Y axis (but let's verify)
-            # - Let's use the actual scene coordinate system
-            anterior_dir = np.array([0, 1, 0])  # Y-axis in RAS is usually anterior
+            # CRITICAL: Ensure normal points anteriorly (positive Y in RAS)
+            # If normal[1] < 0, flip it
+            if normal[1] < 0:
+                normal = -normal
             
-            # Alternative: If you want to be more explicit about coordinate system:
-            # anterior_dir = np.array([0, 1, 0])  # RAS: Y = Anterior
-            # Or if using LPS: anterior_dir = np.array([0, -1, 0])
+            # Also ensure it's generally in the anterior direction using reference plane
+            if self.referencePlane is not None:
+                plane_normal = np.zeros(3)
+                self.referencePlane.GetNormalWorld(plane_normal)
+                plane_normal = np.array(plane_normal)
+                superior = np.array([0, 0, 1])
+                anterior = np.cross(plane_normal, superior)
+                if np.linalg.norm(anterior) < 0.001:
+                    anterior = np.array([0, 1, 0])
+                anterior = anterior / np.linalg.norm(anterior)
+                if np.dot(anterior, np.array([0, 1, 0])) < 0:
+                    anterior = -anterior
+                if np.dot(normal, anterior) < 0:
+                    normal = -normal
             
-            # Make sure it's pointing in the correct anterior direction
-            # We want it to point away from the skull surface (anterior)
-            point_locator = vtk.vtkPointLocator()
-            point_locator.SetDataSet(self.boneModel.GetPolyData())
-            point_locator.BuildLocator()
-            
-            normals_filter = vtk.vtkPolyDataNormals()
-            normals_filter.SetInputData(self.boneModel.GetPolyData())
-            normals_filter.ComputePointNormalsOn()
-            normals_filter.Update()
-            
-            avg_normal = np.array(normals_filter.GetOutput().GetPointData().GetNormals().GetTuple(
-                point_locator.FindClosestPoint(mp_pos)))
-            
-            # FIX: Ensure the normal points ANTERIORLY (in the same general direction as anterior_dir)
-            if np.dot(avg_normal, anterior_dir) < 0:
-                avg_normal = -avg_normal
-            
+            # Snap the mp landmark to the base center
+            if self.landmarksNode is not None:
+                idx = self.findPointIndex("mp")
+                if idx != -1:
+                    self.landmarksNode.SetNthControlPointPositionWorld(idx, baseCenter)
+
+            # If we have a bone model but no volume, use the model
+            if self.volumeNode is None and self.boneModel is not None:
+                polyData = self.boneModel.GetPolyData()
+                locator = vtk.vtkPointLocator()
+                locator.SetDataSet(polyData)
+                locator.BuildLocator()
+                closestId = locator.FindClosestPoint(mp_pos)
+                baseCenter = np.array(polyData.GetPoint(closestId))
+                idx = self.findPointIndex("mp")
+                if idx != -1:
+                    self.landmarksNode.SetNthControlPointPositionWorld(idx, baseCenter)
+                normals_filter = vtk.vtkPolyDataNormals()
+                normals_filter.SetInputData(polyData)
+                normals_filter.ComputePointNormalsOn()
+                normals_filter.Update()
+                normal = np.array(normals_filter.GetOutput().GetPointData().GetNormals().GetTuple(closestId))
+                # Orient using reference plane
+                if self.referencePlane is not None:
+                    plane_normal = np.zeros(3)
+                    self.referencePlane.GetNormalWorld(plane_normal)
+                    plane_normal = np.array(plane_normal)
+                    superior = np.array([0,0,1])
+                    anterior = np.cross(plane_normal, superior)
+                    if np.linalg.norm(anterior) < 0.001:
+                        anterior = np.array([0,1,0])
+                    anterior = anterior / np.linalg.norm(anterior)
+                    if np.dot(anterior, np.array([0,1,0])) < 0:
+                        anterior = -anterior
+                    if np.dot(normal, anterior) < 0:
+                        normal = -normal
+
+            # Now we have normal and baseCenter
             perp_distance = self.perpDistanceSpinBox.value
-            end_point_perp = mp_pos + avg_normal * perp_distance
-            
-            # Create FSTT line (perpendicular from mp)
+            end_point_perp = baseCenter + normal * perp_distance
+
+            print(f"DEBUG: Final normal for cylinder: {normal}")
+            print(f"DEBUG: baseCenter: {baseCenter}")
+            print(f"DEBUG: end_point_perp: {end_point_perp}")
+
+            # Create FSTT line from baseCenter to end point
             fstt_line = slicer.util.getFirstNodeByName("FSTT mp")
             if not fstt_line:
                 fstt_line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "FSTT mp")
             fstt_line.RemoveAllControlPoints()
-            fstt_line.AddControlPoint(mp_pos)
+            fstt_line.AddControlPoint(baseCenter)
             fstt_line.AddControlPoint(end_point_perp)
             fstt_line.GetDisplayNode().SetSelectedColor(0, 1, 0)
             fstt_line.GetDisplayNode().SetLineThickness(0.3)
-            
-            # Create cylinder if requested
+
+            # Create cylinder with base circle centered at baseCenter
             cylinder_model = slicer.util.getFirstNodeByName("FSTT mp cylinder")
             if self.showCylinderCheckbox.checked:
-                if not cylinder_model: 
+                if not cylinder_model:
                     cylinder_model = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLModelNode", "FSTT mp cylinder")
-                
-                # Ensure display node exists and is visible
                 if not cylinder_model.GetDisplayNode():
                     cylinder_model.CreateDefaultDisplayNodes()
                 display_node = cylinder_model.GetDisplayNode()
                 display_node.SetVisibility(True)
 
                 cylinder = vtk.vtkCylinderSource()
-                cylinder.SetRadius(2.0)
+                cylinder.SetRadius(cylinderRadius)
                 cylinder.SetHeight(perp_distance)
                 cylinder.SetResolution(30)
-                
-                direction = end_point_perp - mp_pos
+                cylinder.CappingOn()
+                cylinder.Update()
+
+                direction = end_point_perp - baseCenter
                 vtk.vtkMath.Normalize(direction)
-                center = mp_pos + 0.5 * perp_distance * direction
                 
+                cylinderCenter = baseCenter + 0.5 * perp_distance * direction
+
                 transform = vtk.vtkTransform()
-                initial_axis = [0, 1, 0]  # Cylinder initially along Y-axis
+                initial_axis = np.array([0, 1, 0])
                 rotation_axis = np.cross(initial_axis, direction)
-                angle_rad = np.arccos(np.dot(initial_axis, direction))
-                transform.Translate(center)
-                transform.RotateWXYZ(np.rad2deg(angle_rad), rotation_axis)
+                rot_axis_mag = np.linalg.norm(rotation_axis)
                 
+                if rot_axis_mag > 0.001:
+                    rotation_axis = rotation_axis / rot_axis_mag
+                    angle_rad = np.arccos(np.clip(np.dot(initial_axis, direction), -1.0, 1.0))
+                    transform.Translate(cylinderCenter)
+                    transform.RotateWXYZ(np.rad2deg(angle_rad), rotation_axis)
+                else:
+                    transform.Translate(cylinderCenter)
+                    if direction[1] < 0:
+                        transform.RotateWXYZ(180, 1, 0, 0)
+
                 transform_polydata = vtk.vtkTransformPolyDataFilter()
                 transform_polydata.SetTransform(transform)
                 transform_polydata.SetInputConnection(cylinder.GetOutputPort())
                 transform_polydata.Update()
-                
+
                 cylinder_model.SetAndObservePolyData(transform_polydata.GetOutput())
                 
-                # Safe color setting
                 if display_node:
-                    display_node.SetColor(1, 1, 0)  # Yellow
+                    display_node.SetColor(1, 1, 0)
+                    display_node.SetOpacity(0.7)
+                    
             elif cylinder_model:
-                # Hide cylinder if checkbox is unchecked
                 display_node = cylinder_model.GetDisplayNode()
                 if display_node:
                     display_node.SetVisibility(False)
-            
-            # Calculate pronasale position (anterior projection)
+
+            # --- Pronasale direction from nasal spine vector ---
+            spine_start = np.zeros(3)
+            spine_end = np.zeros(3)
+            self.nasalSpineVector.GetNthControlPointPositionWorld(0, spine_start)
+            self.nasalSpineVector.GetNthControlPointPositionWorld(1, spine_end)
+            spine_dir = spine_end - spine_start
+            spine_dir = spine_dir / np.linalg.norm(spine_dir)
+            if spine_dir[1] < 0:
+                spine_dir = -spine_dir
+
             multiplier = 3.0 if self.multiplierComboBox.currentIndex == 0 else 1.9
-            pronasale_pos = end_point_perp + anterior_dir * (self.vmjAcaLine.GetLineLengthWorld() * multiplier)
-            
-            # Create final prediction line
+            pronasale_pos = end_point_perp + spine_dir * (self.vmjAcaLine.GetLineLengthWorld() * multiplier)
+
+            # Final line
             final_line = slicer.util.getFirstNodeByName("pronasale_vector")
             if not final_line:
                 final_line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "pronasale_vector")
@@ -1041,8 +1763,8 @@ class ThreefoldANSGUI(qt.QWidget):
             final_line.AddControlPoint(pronasale_pos)
             final_line.GetDisplayNode().SetSelectedColor(0, 0, 1)
             final_line.GetDisplayNode().SetLineThickness(0.3)
-            
-            # Create predicted pronasale point
+
+            # Predicted point
             self.predictedPronasaleNode = slicer.util.getFirstNodeByName("predicted pronasale")
             if not self.predictedPronasaleNode:
                 self.predictedPronasaleNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "predicted pronasale")
@@ -1050,26 +1772,31 @@ class ThreefoldANSGUI(qt.QWidget):
             self.predictedPronasaleNode.AddControlPoint(pronasale_pos, "pronasale")
             self.predictedPronasaleNode.GetDisplayNode().SetSelectedColor(1, 0, 0)
             self.predictedPronasaleNode.GetDisplayNode().SetGlyphScale(3.0)
-            
+
             self.step7StatusLabel.setText("Status: Prediction complete!")
-            
-            # Enable comparison if true landmarks exist
-            if self.trueSoftTissueNode: 
+
+            if self.trueSoftTissueNode:
                 self.compareButton.setEnabled(True)
-                self.updateResultsTable() 
-                
-        except Exception as e: 
+                self.updateResultsTable()
+            
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
+
+        except Exception as e:
             self.step7StatusLabel.setText(f"Status: Error! {e}")
             slicer.util.errorDisplay(f"Prediction failed: {e}")
-    
+
     def onTrueLandmarkSelected(self, node):
-            self.trueSoftTissueNode = node
-            # Enable the compare button only if both predicted and true nodes exist
-            if self.predictedPronasaleNode and self.trueSoftTissueNode:
-                self.compareButton.setEnabled(True)
-                self.step8StatusLabel.setText("Status: Ready to compare.")
-            else:
-                self.compareButton.setEnabled(False)
+        self.trueSoftTissueNode = node
+        if self.predictedPronasaleNode and self.trueSoftTissueNode:
+            self.compareButton.setEnabled(True)
+            self.step8StatusLabel.setText("Status: Ready to compare.")
+        else:
+            self.compareButton.setEnabled(False)
+        # Auto-update step
+        self.currentStep = self.determineCurrentStep()
+        self.updateStepUI()
 
     def onComparePronasale(self):
         try:
@@ -1078,105 +1805,163 @@ class ThreefoldANSGUI(qt.QWidget):
                 raise ValueError("Predicted pronasale not found. Please complete Step 7.")
             if not hasattr(self, 'trueSoftTissueNode') or not self.trueSoftTissueNode:
                 raise ValueError("True soft tissue landmarks not loaded or selected.")
-            
-            # Use a more robust approach to find the points
+
             predicted_pos = None
             true_pos = None
-            
-            # Find predicted position
+
             for i in range(self.predictedPronasaleNode.GetNumberOfControlPoints()):
                 if "pronasale" in self.predictedPronasaleNode.GetNthControlPointLabel(i).lower():
                     predicted_pos = np.zeros(3)
                     self.predictedPronasaleNode.GetNthControlPointPositionWorld(i, predicted_pos)
                     break
-                    
-            # Find true position
+
             for i in range(self.trueSoftTissueNode.GetNumberOfControlPoints()):
                 if "pronasale" in self.trueSoftTissueNode.GetNthControlPointLabel(i).lower():
                     true_pos = np.zeros(3)
                     self.trueSoftTissueNode.GetNthControlPointPositionWorld(i, true_pos)
                     break
-                    
+
             if predicted_pos is None:
                 raise ValueError("Could not find 'pronasale' in predicted landmarks")
             if true_pos is None:
                 raise ValueError("Could not find 'pronasale' in true landmarks")
-                
-            # Create error visualization line
+
             error_line = slicer.util.getFirstNodeByName("prediction_error") or slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "prediction_error")
             if not error_line.GetDisplayNode():
                 error_line.CreateDefaultDisplayNodes()
-            
             error_line.RemoveAllControlPoints()
             error_line.AddControlPoint(predicted_pos)
             error_line.AddControlPoint(true_pos)
-            error_line.GetDisplayNode().SetSelectedColor(1, 0, 0)  # Red
-            
+            error_line.GetDisplayNode().SetSelectedColor(1, 0, 0)
+
             error_distance = np.linalg.norm(predicted_pos - true_pos)
             self.step8StatusLabel.setText(f"Status: Comparison complete. Prediction Error: {error_distance:.2f} mm")
-            
-            # Update results table
             self.updateResultsTable()
             
+            # Auto-update step
+            self.currentStep = self.determineCurrentStep()
+            self.updateStepUI()
+
         except Exception as e:
             self.step8StatusLabel.setText(f"Status: Error! {e}")
             slicer.util.errorDisplay(f"Comparison failed: {e}")
 
     def onPrevButtonClicked(self):
-        if self.currentStep > 0: self.currentStep -= 1; self.updateStepUI()
-            
-    def onNextButtonClicked(self):
-        self.syncWithScene() 
-        stepComplete = False
-        if self.currentStep == 0: stepComplete = self.landmarksNode is not None
-        elif self.currentStep == 1: stepComplete = self.referencePlane is not None
-        elif self.currentStep == 2: stepComplete = self.boneModel is not None
-        elif self.currentStep == 3: stepComplete = self.boneLeftModel is not None and self.boneRightModel is not None
-        elif self.currentStep == 4: stepComplete = self.step5_complete
-        elif self.currentStep == 5: stepComplete = self.step6_complete 
-        elif self.currentStep == 6: stepComplete = self.predictedPronasaleNode is not None
-        elif self.currentStep == 7: stepComplete = True  # Step 8 is always complete
-        elif self.currentStep == 8: stepComplete = True  # Step 9 is always complete
+        if self.currentStep > 0:
+            self.currentStep -= 1
+            self.updateStepUI()
 
-        if not stepComplete: 
-            slicer.util.warningDisplay(f"Please complete Step {self.currentStep + 1} before proceeding.")
-            return
-            
-        if self.currentStep < self.stepStack.count - 1: 
+    def onNextButtonClicked(self):
+        self.syncWithScene()
+        
+        # Re-determine current step based on scene state
+        self.currentStep = self.determineCurrentStep()
+        
+        # Special handling: if we are at Step 4 and manualVolumeRendering is True, skip it
+        if self.currentStep == 3 and self.manualVolumeRendering and self.boneModel is None:
+            self.step4_skipped = True
+            self.step4StatusLabel.setText("Status: Cutting skipped (Volume Rendering mode).")
             self.currentStep += 1
             self.updateStepUI()
-            
+            return
+
+        stepComplete = False
+        if self.currentStep == 0:
+            stepComplete = self.landmarksNode is not None
+        elif self.currentStep == 1:
+            stepComplete = self.referencePlane is not None
+        elif self.currentStep == 2:
+            stepComplete = (self.boneModel is not None) or self.manualVolumeRendering
+        elif self.currentStep == 3:
+            stepComplete = (self.boneLeftModel is not None and self.boneRightModel is not None) or self.step4_skipped
+        elif self.currentStep == 4:
+            self.vmjAcaLine = slicer.util.getFirstNodeByName("VMJ-aca")
+            stepComplete = self.vmjAcaLine is not None
+        elif self.currentStep == 5:
+            stepComplete = self.step6_complete
+        elif self.currentStep == 6:
+            stepComplete = self.predictedPronasaleNode is not None
+        elif self.currentStep == 7:
+            stepComplete = True  # Step 8 optional
+        elif self.currentStep == 8:
+            stepComplete = True  # Step 9 final
+
+        if not stepComplete:
+            if self.currentStep == 6:
+                slicer.util.warningDisplay("Please perform the prediction first.")
+            else:
+                slicer.util.warningDisplay(f"Please complete Step {self.currentStep + 1} before proceeding.")
+            return
+
+        if self.currentStep < self.stepStack.count - 1:
+            self.currentStep += 1
+            self.updateStepUI()
+
     def updateStepUI(self):
+        """Update the UI for the current step using auto-detection."""
         self.cleanup()
+        
+        # Auto-determine current step
+        self.currentStep = self.determineCurrentStep()
+        
         self.stepStack.setCurrentIndex(self.currentStep)
         self.stepLabel.setText(f"Step {self.currentStep + 1}/{self.stepStack.count}")
         self.prevButton.setEnabled(self.currentStep > 0)
         self.nextButton.setEnabled(self.currentStep < self.stepStack.count - 1)
         
         is_vector_step = (self.currentStep == 5)
-        
-        # Manage visibility of items for Step 6
         if self.nasalSpineVector:
             self.nasalSpineVector.GetDisplayNode().SetVisibility(is_vector_step)
             self.nasalSpineVector.SetLocked(not is_vector_step)
-        
         if self.subProLine:
             self.subProLine.GetDisplayNode().SetVisibility(is_vector_step)
-
+        
         if is_vector_step:
-            if not self.nasalSpineVector: 
+            if not self.nasalSpineVector:
                 self.createNasalSpineVector()
             if self.nasalSpineVector and not self.vectorObserver:
-                self.vectorObserver = self.nasalSpineVector.AddObserver(slicer.vtkMRMLMarkupsNode.PointModifiedEvent, self.onNasalSpineVectorModified)
+                self.vectorObserver = self.nasalSpineVector.AddObserver(
+                    slicer.vtkMRMLMarkupsNode.PointModifiedEvent, self.onNasalSpineVectorModified
+                )
+        
+        # FIXED: Call updateStep4UI and updatePredictionUI directly, NOT updateStepUI again
+        if self.currentStep == 3:
+            self.updateStep4UI()
+        
+        if self.currentStep == 6:
+            self.updatePredictionUI()
+        
+        # Update status label to show current step
+        step_names = [
+            "Load Landmarks",
+            "Create Reference Plane",
+            "Load Bone Model or Volume",
+            "Cut Bone Model (Optional)",
+            "Create VMJ-aca Line",
+            "Define Nasal Spine Vector & mp",
+            "Predict Pronasale",
+            "Validate Prediction",
+            "Results"
+        ]
+        
+        # Try to update a step status label if it exists
+        if hasattr(self, 'stepStatusLabel'):
+            self.stepStatusLabel.setText(f"📍 Step {self.currentStep + 1}: {step_names[self.currentStep]}")
 
-# --- Entry Point ---
+
+# ====== Entry Point ======
 try:
     mainWindow = slicer.util.mainWindow()
     old_gui = mainWindow.findChild(qt.QWidget, "ThreefoldANSGUI")
     if old_gui:
-        if hasattr(old_gui, 'cleanup'): old_gui.cleanup()
-        old_gui.deleteLater(); slicer.app.processEvents()
-except Exception as e: print(f"Error during cleanup: {e}")
+        if hasattr(old_gui, 'cleanup'):
+            old_gui.cleanup()
+        old_gui.deleteLater()
+        slicer.app.processEvents()
+except Exception as e:
+    print(f"Error during cleanup: {e}")
 
-threefoldGui = ThreefoldANSGUI(); threefoldGui.show()
+threefoldGui = ThreefoldANSGUI()
+threefoldGui.show()
+
 ```
