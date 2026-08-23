@@ -10,7 +10,7 @@ They describe it as follows:
 
 Stephan et al. 2003[^5] trialled _“substituting original nasal spine length for that determined by margin of most prominent lateral nasal aperture line to tip of nasal spine on lateral radiographs where the vomer was not detectable_ (referred in Rynn et al. 2010[^7] as PLB)”, but found larger margins of error. Therefore, the VMJ in this guide will be described as the junction of the vomer and maxilla (at the base of the nasal spine) and placed at the purple dot on figure 1 (modified from Grey's 1918[^6]). 
 
-<img src="https://github.com/user-attachments/assets/7e44016c-eaee-4b31-96ea-27af828d6bdf" width="500">
+<img width="868" height="674" alt="image" src="https://github.com/user-attachments/assets/2f8ecbd2-8403-4125-8cc2-d04cd1534cca" />
 
 
 
