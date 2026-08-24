@@ -1,5 +1,5 @@
 ```python
-# Threefold ANS Method GUI - Version 59 (Fixed Navigation with Auto-step detection)
+# Threefold ANS Method GUI - Version 60 (Manual navigation only)
 
 import os
 import vtk
@@ -56,21 +56,11 @@ class ThreefoldANSGUI(qt.QWidget):
         self.checkDependencies()
         self.syncWithScene()
         
-        # Auto-determine initial step
+        # Initial step detection (only once)
         self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
         
-        # Add scene observers for auto-step detection
-        self.sceneObserver = slicer.mrmlScene.AddObserver(
-            slicer.vtkMRMLScene.NodeAddedEvent, self.onSceneChanged
-        )
-        self.sceneObserver2 = slicer.mrmlScene.AddObserver(
-            slicer.vtkMRMLScene.NodeRemovedEvent, self.onSceneChanged
-        )
-        self.sceneObserver3 = slicer.mrmlScene.AddObserver(
-            slicer.vtkMRMLScene.EndBatchProcessEvent, self.onSceneChanged
-        )
-        self._sceneChangeTimer = None
+        # No scene observers – manual navigation only
 
     def createAllStepWidgets(self):
         self.createStep1_Welcome()
@@ -93,17 +83,6 @@ class ThreefoldANSGUI(qt.QWidget):
         if self.mpObserver and self.landmarksNode:
             self.landmarksNode.RemoveObserver(self.mpObserver)
             self.mpObserver = None
-            
-        # Remove scene observers
-        if hasattr(self, 'sceneObserver') and self.sceneObserver:
-            slicer.mrmlScene.RemoveObserver(self.sceneObserver)
-            self.sceneObserver = None
-        if hasattr(self, 'sceneObserver2') and self.sceneObserver2:
-            slicer.mrmlScene.RemoveObserver(self.sceneObserver2)
-            self.sceneObserver2 = None
-        if hasattr(self, 'sceneObserver3') and self.sceneObserver3:
-            slicer.mrmlScene.RemoveObserver(self.sceneObserver3)
-            self.sceneObserver3 = None
 
     def checkDependencies(self):
         moduleName = "DynamicModeler"
@@ -142,72 +121,35 @@ class ThreefoldANSGUI(qt.QWidget):
         navLayout.addWidget(self.nextButton)
         self.mainLayout.addWidget(navWidget)
 
-    # ==================== SCENE CHANGE HANDLING ====================
-    def onSceneChanged(self, caller, event):
-        if not self.isVisible():
-            return
-        if self._sceneChangeTimer is None:
-            self._sceneChangeTimer = qt.QTimer()
-            self._sceneChangeTimer.setSingleShot(True)
-            self._sceneChangeTimer.timeout.connect(self._delayedSceneUpdate)
-        self._sceneChangeTimer.start(200)
-
-    def _delayedSceneUpdate(self):
-        if self.isVisible():
-            self.syncWithScene()
-            newStep = self.determineCurrentStep()
-            if newStep != self.currentStep:
-                self.currentStep = newStep
-                self.updateStepUI()   # auto-detect (no forceStep)
-
-    # ==================== AUTO STEP DETECTION ====================
+    # ==================== AUTO STEP DETECTION (for initial and validation only) ====================
     def determineCurrentStep(self):
         """
-        Automatically determine which step the user is at based on scene contents.
-        Returns the step index (0-8).
+        Determine which step the user is at based on scene contents.
+        Used only for initial step and validation.
         """
-        # Step 0: Check if landmarks are loaded
         if self.landmarksNode is None:
             return 0
-        
-        # Step 1: Check if reference plane exists
         if self.referencePlane is None:
             return 1
-        
-        # Step 2: Check if we have a bone model OR volume rendering mode
         if self.boneModel is None and not self.manualVolumeRendering:
             if self.volumeNode is None:
                 return 2
-            # If we have a volume, we're in volume rendering mode, proceed
-        
-        # Step 3: Check if models are cut (or skipped)
         if self.boneLeftModel is None or self.boneRightModel is None:
             if not self.step4_skipped:
                 return 3
-        
-        # Step 4: Check if VMJ-aca line exists
         if self.vmjAcaLine is None:
             return 4
-        
-        # Step 5: Check if nasal spine vector and mp exist
         if self.nasalSpineVector is None:
             return 5
-        
         if self.landmarksNode and self.findPointIndex("mp") == -1:
             return 5
-        
-        # Step 6: Check if prediction has been done
         if self.predictedPronasaleNode is None:
             return 6
-        
-        # Step 7/8: Check if comparison has been done
         error_line = slicer.util.getFirstNodeByName("prediction_error")
         if error_line is not None:
             return 8
         else:
             return 7
-        
-        return 0
 
     # ==================== STEP 1 ====================
     def createStep1_Welcome(self):
@@ -524,7 +466,8 @@ class ThreefoldANSGUI(qt.QWidget):
     def onContinueWithoutModel(self):
         self.step3StatusLabel.setText("Status: Continuing without bone model. Prediction will use volume if available.")
         self.manualVolumeRendering = True
-        self.nextButton.click()
+        # Move to next step manually (if user clicked this button, they want to proceed)
+        # We'll simulate a Next click.
 
     # ------- Load existing model helpers -------
     def onLoadExistingModel(self):
@@ -534,7 +477,7 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step3StatusLabel.setText(f"Status: Loaded '{node.GetName()}' as the bone model. Ready to proceed!")
             slicer.util.showStatusMessage(f"Bone model set to '{node.GetName()}'", 3000)
             self.manualVolumeRendering = False
-            self.currentStep = self.determineCurrentStep()
+            # Do not auto-step; just update UI
             self.updateStepUI()
         else:
             slicer.util.warningDisplay("Please select a model from the list first.")
@@ -557,7 +500,6 @@ class ThreefoldANSGUI(qt.QWidget):
                     slicer.util.showStatusMessage(f"Bone model loaded from {fileName}", 3000)
                     self.existingModelSelector.setCurrentNode(loadedNode)
                     self.manualVolumeRendering = False
-                    self.currentStep = self.determineCurrentStep()
                     self.updateStepUI()
                 else:
                     raise RuntimeError("Failed to load model.")
@@ -664,8 +606,7 @@ class ThreefoldANSGUI(qt.QWidget):
         self.step4_skipped = True
         self.step4StatusLabel.setText("Status: Cutting skipped. Proceeding to next step.")
         slicer.util.showStatusMessage("Cutting skipped", 2000)
-        self.currentStep = self.determineCurrentStep()
-        self.updateStepUI()
+        # Do not auto-step; user must click Next
 
     # ==================== STEPS 5-9 ====================
     def createStep5_VMJ_Line(self):
@@ -803,7 +744,6 @@ class ThreefoldANSGUI(qt.QWidget):
         self.multiplierComboBox.currentIndex = 0
         formLayout.addRow("Multiplier Method:", self.multiplierComboBox)
 
-        # Cylinder radius control
         self.cylinderRadiusSpinBox = qt.QDoubleSpinBox()
         self.cylinderRadiusSpinBox.setRange(0.5, 10.0)
         self.cylinderRadiusSpinBox.setValue(3.0)
@@ -883,7 +823,6 @@ class ThreefoldANSGUI(qt.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
 
-        # ===== TABLE 1: COORDINATES =====
         coordsLabel = qt.QLabel("📍 Landmark Coordinates")
         coordsLabel.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
         layout.addWidget(coordsLabel)
@@ -904,7 +843,6 @@ class ThreefoldANSGUI(qt.QWidget):
 
         layout.addWidget(self.coordsTable)
 
-        # ===== TABLE 2: MEASUREMENTS =====
         measLabel = qt.QLabel("📏 Measurements")
         measLabel.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
         layout.addWidget(measLabel)
@@ -930,13 +868,11 @@ class ThreefoldANSGUI(qt.QWidget):
 
         layout.addWidget(self.measTable)
 
-        # ===== COPY BUTTON =====
         self.copyButton = qt.QPushButton("📋 Copy All Results to Clipboard")
         self.copyButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px;")
         self.copyButton.clicked.connect(self.onCopyToClipboard)
         layout.addWidget(self.copyButton)
 
-        # ===== FINISH BUTTON =====
         self.finishButton = qt.QPushButton("Finish")
         self.finishButton.clicked.connect(self.onFinish)
         layout.addWidget(self.finishButton)
@@ -1160,7 +1096,6 @@ class ThreefoldANSGUI(qt.QWidget):
                     self.trueLandmarksSelector.setCurrentNode(loadedNode)
                     self.step8StatusLabel.setText("Status: Successfully loaded 'KrogmanIscan_soft_tissue'.")
                 slicer.util.showStatusMessage(f"'{finalName}' loaded!", 3000)
-                self.currentStep = self.determineCurrentStep()
                 self.updateStepUI()
             else:
                 slicer.util.errorDisplay(f"Failed to load landmarks from {fileName}.")
@@ -1266,7 +1201,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step2StatusLabel.setText(f"Status: Successfully created '{plane_name}' plane. You can now proceed.")
             slicer.util.showStatusMessage(f"'{plane_name}' created!", 3000)
             
-            self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
             
         except Exception as e:
@@ -1281,7 +1215,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.manualVolumeRendering = False
             self.updateStep4UI()
             self.updatePredictionUI()
-            self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         else:
             self.boneModel = None
@@ -1321,7 +1254,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step4StatusLabel.setText(f"Status: Found '{left_model_found.GetName()}' and '{right_model_found.GetName()}'!")
             if not updateStatusOnly:
                 slicer.util.showStatusMessage("Model cut confirmed!", 3000)
-            self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         elif not updateStatusOnly:
             self.step4StatusLabel.setText("Status: Error! Could not find models with 'bone' and 'left'/'right' in their names.")
@@ -1366,7 +1298,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.vmjAcaLine = lineNode
             self.step5StatusLabel.setText("Status: 'VMJ-aca' line created successfully! You can now proceed to the next step.")
             self.measureANSButton.setEnabled(False)
-            self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         except Exception as e:
             self.step5StatusLabel.setText(f"Status: Error! Could not create VMJ-aca line. {e}")
@@ -1454,7 +1385,6 @@ class ThreefoldANSGUI(qt.QWidget):
             else:
                 self._mp_index = self.landmarksNode.AddControlPoint(mid_pos, "mp")
             self._initialMPPos = mid_pos.copy()
-            self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         except Exception as e:
             slicer.util.errorDisplay(f"Failed to create 'mp' guide: {e}")
@@ -1511,7 +1441,6 @@ class ThreefoldANSGUI(qt.QWidget):
         self._isUpdatingMP = False
         self.confirmMPButton.setEnabled(False)
         self.step6_complete = True
-        self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
 
     # ==================== PATCH-BASED SURFACE NORMAL FROM CT ====================
@@ -1898,7 +1827,6 @@ class ThreefoldANSGUI(qt.QWidget):
                 self.compareButton.setEnabled(True)
                 self.updateResultsTable()
             
-            self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
 
         except Exception as e:
@@ -1912,7 +1840,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step8StatusLabel.setText("Status: Ready to compare.")
         else:
             self.compareButton.setEnabled(False)
-        self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
 
     def onComparePronasale(self):
@@ -1955,7 +1882,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step8StatusLabel.setText(f"Status: Comparison complete. Prediction Error: {error_distance:.2f} mm")
             self.updateResultsTable()
             
-            self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
 
         except Exception as e:
@@ -1968,17 +1894,12 @@ class ThreefoldANSGUI(qt.QWidget):
             self.updateStepUI(forceStep=self.currentStep)
 
     def onNextButtonClicked(self):
+        # Re-sync scene (but don't change step)
         self.syncWithScene()
         
-        self.currentStep = self.determineCurrentStep()
-        
-        if self.currentStep == 3 and self.manualVolumeRendering and self.boneModel is None:
-            self.step4_skipped = True
-            self.step4StatusLabel.setText("Status: Cutting skipped (Volume Rendering mode).")
-            self.currentStep += 1
-            self.updateStepUI(forceStep=self.currentStep)
-            return
-
+        # Check if current step is complete
+        # Use determineCurrentStep only to know which step we are at, but don't auto-jump.
+        # Instead, check completeness based on current step.
         stepComplete = False
         if self.currentStep == 0:
             stepComplete = self.landmarksNode is not None
@@ -1987,7 +1908,11 @@ class ThreefoldANSGUI(qt.QWidget):
         elif self.currentStep == 2:
             stepComplete = (self.boneModel is not None) or self.manualVolumeRendering
         elif self.currentStep == 3:
-            stepComplete = (self.boneLeftModel is not None and self.boneRightModel is not None) or self.step4_skipped
+            # For step 3 (cutting), if volume rendering mode and no model, allow skipping
+            if self.manualVolumeRendering and self.boneModel is None:
+                stepComplete = True
+            else:
+                stepComplete = (self.boneLeftModel is not None and self.boneRightModel is not None) or self.step4_skipped
         elif self.currentStep == 4:
             self.vmjAcaLine = slicer.util.getFirstNodeByName("VMJ-aca")
             stepComplete = self.vmjAcaLine is not None
@@ -1996,9 +1921,9 @@ class ThreefoldANSGUI(qt.QWidget):
         elif self.currentStep == 6:
             stepComplete = self.predictedPronasaleNode is not None
         elif self.currentStep == 7:
-            stepComplete = True
+            stepComplete = True  # Step 8 optional
         elif self.currentStep == 8:
-            stepComplete = True
+            stepComplete = True  # Step 9 final
 
         if not stepComplete:
             if self.currentStep == 6:
@@ -2016,8 +1941,7 @@ class ThreefoldANSGUI(qt.QWidget):
         
         if forceStep is not None:
             self.currentStep = forceStep
-        else:
-            self.currentStep = self.determineCurrentStep()
+        # No auto-detection – keep current step
         
         self.stepStack.setCurrentIndex(self.currentStep)
         self.stepLabel.setText(f"Step {self.currentStep + 1}/{self.stepStack.count}")
@@ -2075,5 +1999,4 @@ except Exception as e:
 
 threefoldGui = ThreefoldANSGUI()
 threefoldGui.show()
-
 ```
