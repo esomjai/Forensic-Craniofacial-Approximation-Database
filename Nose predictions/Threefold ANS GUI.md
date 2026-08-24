@@ -415,13 +415,25 @@ class ThreefoldANSGUI(qt.QWidget):
         volLayout = qt.QVBoxLayout(self.volumeContainer)
         volLayout.setContentsMargins(0, 0, 0, 0)
 
-        volLabel = qt.QLabel(
-            "You can use Volume Rendering to visualise the skull without creating a permanent model.\n\n"
-            "Select the CT volume you are working with (this will be used for normal detection if no model is loaded)."
-        )
-        volLabel.setWordWrap(True)
-        volLayout.addWidget(volLabel)
+        volTitle = qt.QLabel("<b>📊 Volume Rendering Mode (No Model Required)</b>")
+        volTitle.setStyleSheet("font-weight: bold; font-size: 14px; color: #FF9800;")
+        volTitle.setWordWrap(True)
+        volLayout.addWidget(volTitle)
 
+        volDesc = qt.QLabel(
+            "You will use the CT volume directly — no bone model is needed.\n\n"
+            "<b>Step 1:</b> Select your CT volume from the dropdown below.\n"
+            "<b>Step 2:</b> Click 'Open Volume Rendering' to visualise the skull (use the `Shift` toggle to exclude soft tissue).\n"
+            "<b>Step 3:</b> Use the Volume Rendering module ROI to cut the skull in half for placing the VMJ and the nasal spine line.\n"
+            "<b>Step 4:</b> Click 'Continue without model' to proceed.\n\n"
+            "⚠️ <b>Note:</b> The FSTT cylinder will be computed directly from the CT volume."
+        )
+        volDesc.setWordWrap(True)
+        volDesc.setStyleSheet("background-color: #FFF8E1; padding: 8px; border-radius: 5px;")
+        volLayout.addWidget(volDesc)
+
+        # Volume selector
+        volLayout.addWidget(qt.QLabel("<b>CT Volume:</b>"))
         self.volumeSelectorVR = slicer.qMRMLNodeComboBox()
         self.volumeSelectorVR.nodeTypes = ["vtkMRMLScalarVolumeNode"]
         self.volumeSelectorVR.setMRMLScene(slicer.mrmlScene)
@@ -430,18 +442,50 @@ class ThreefoldANSGUI(qt.QWidget):
         self.volumeSelectorVR.noneEnabled = True
         self.volumeSelectorVR.setToolTip("Select the CT volume for surface normal detection")
         self.volumeSelectorVR.currentNodeChanged.connect(self.onVolumeSelectedVR)
-        volLayout.addWidget(qt.QLabel("CT Volume:"))
         volLayout.addWidget(self.volumeSelectorVR)
 
-        self.openVolumeRenderingButton = qt.QPushButton("Open Volume Rendering Module")
+        # Button row
+        buttonRow = qt.QHBoxLayout()
+        self.openVolumeRenderingButton = qt.QPushButton("📦 Open Volume Rendering Module")
         self.openVolumeRenderingButton.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; padding: 8px;")
+        self.openVolumeRenderingButton.setToolTip("Opens the Volume Rendering module so you can visualise the skull")
         self.openVolumeRenderingButton.clicked.connect(lambda: slicer.util.selectModule('VolumeRendering'))
-        volLayout.addWidget(self.openVolumeRenderingButton)
+        buttonRow.addWidget(self.openVolumeRenderingButton)
 
-        self.continueWithoutModelButton = qt.QPushButton("Continue without model")
+        self.continueWithoutModelButton = qt.QPushButton("✅ Continue without model")
         self.continueWithoutModelButton.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
+        self.continueWithoutModelButton.setToolTip("Proceed to the next step without loading a bone model")
         self.continueWithoutModelButton.clicked.connect(self.onContinueWithoutModel)
-        volLayout.addWidget(self.continueWithoutModelButton)
+        buttonRow.addWidget(self.continueWithoutModelButton)
+        volLayout.addLayout(buttonRow)
+
+        #Quick volume rendering instructions (collapsible)
+        volHelpButton = qt.QPushButton("📖 Show Volume Rendering Tips")
+        volHelpButton.setStyleSheet("background-color: #E3F2FD; color: #1565C0; padding: 5px;")
+        volHelpButton.setCheckable(True)
+        volHelpButton.toggled.connect(lambda checked: volHelpContainer.setVisible(checked))
+        volLayout.addWidget(volHelpButton)
+
+        volHelpContainer = qt.QWidget()
+        volHelpContainer.setVisible(False)
+        volHelpLayout = qt.QVBoxLayout(volHelpContainer)
+        volHelpLayout.setContentsMargins(10, 10, 10, 10)
+        # FIXED: setStyleSheet on the widget, not the layout
+        volHelpContainer.setStyleSheet("background-color: #F5F5F5; border-radius: 5px;")
+
+        volTips = qt.QLabel(
+            "<b>💡 Tips for Volume Rendering:</b><br><br>"
+            "• <b>To see the current ROI:</b> In the Volume Rendering module, under 'Display', "
+            "find the 'Crop' section and click the eye icon next to 'Display ROI' to make the ROI visible.<br><br>"
+            "• <b>To cut the skull in half:</b> Tick the 'Enable' checkbox under Crop. "
+            "Then drag the ROI box handles to cut the skull around the acanthion landmark.<br><br>"
+            "• <b>To orientate the anterior nasal spine vector:</b> It follows the general direction of the anterior nasal spine, like an arrowhead (aca) pointing anteriorly.<br><br>"
+            "• <b>When you're done:</b> Untick 'Enable' under Crop to restore the full skull view, "
+            "and close the eye icon for 'Display ROI'."
+        )
+        volTips.setWordWrap(True)
+        volHelpLayout.addWidget(volTips)
+        volLayout.addWidget(volHelpContainer)
 
         mainLayout.addWidget(self.volumeContainer)
 
@@ -646,24 +690,72 @@ class ThreefoldANSGUI(qt.QWidget):
         widget = qt.QWidget()
         layout = qt.QVBoxLayout(widget)
         layout.setSpacing(15)
+        
         title = qt.QLabel("Step 5: Confirm VMJ Landmark and Create the ANS measurement")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
-
+        
+        # ===== INSTRUCTION IMAGE =====
+        instructionGroup = qt.QGroupBox("📍 VMJ Landmark Location Guide")
+        instructionLayout = qt.QVBoxLayout(instructionGroup)
+        
+        # Description
+        descLabel = qt.QLabel(
+            "<b>The VMJ (Vomer-Maxillary Junction)</b> is the point where the vomer bone meets the maxilla.\n\n"
+            "It is located on the midline of the hard palate, at the junction of the vomer and the maxillary bones.\n\n"
+            "Use the image below as a reference for correct placement."
+        )
+        descLabel.setWordWrap(True)
+        instructionLayout.addWidget(descLabel)
+        
+        # Create a scroll area for the image
+        imageScroll = qt.QScrollArea()
+        imageScroll.setWidgetResizable(True)
+        imageScroll.setMaximumHeight(400)
+        imageScroll.setMinimumHeight(250)
+        imageScroll.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
+        
+        imageContainer = qt.QWidget()
+        imageLayout = qt.QVBoxLayout(imageContainer)
+        imageLayout.setContentsMargins(10, 10, 10, 10)
+        imageLayout.setAlignment(qt.Qt.AlignCenter)
+        
+        # Create a label to hold the image
+        self.vmjImageLabel = qt.QLabel()
+        self.vmjImageLabel.setAlignment(qt.Qt.AlignCenter)
+        self.vmjImageLabel.setStyleSheet("background-color: white; padding: 5px;")
+        self.vmjImageLabel.setText("Loading image...")
+        
+        imageLayout.addWidget(self.vmjImageLabel)
+        imageScroll.setWidget(imageContainer)
+        instructionLayout.addWidget(imageScroll)
+        
+        # Load the image from GitHub using the improved method
+        self.loadVMJImage()
+        
+        layout.addWidget(instructionGroup)
+        
+        # ===== VMJ CONFIRMATION CONTROLS =====
         layout.addWidget(qt.QLabel("1. Manually adjust the 'VMJ' point position if needed."))
         layout.addWidget(qt.QLabel("2. Click to confirm the VMJ position."))
-        self.confirmVMJButton = qt.QPushButton("Confirm VMJ Position")
+        self.confirmVMJButton = qt.QPushButton("✅ Confirm VMJ Position")
         self.confirmVMJButton.clicked.connect(self.onConfirmVMJ)
+        self.confirmVMJButton.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; padding: 8px;")
         layout.addWidget(self.confirmVMJButton)
 
         layout.addWidget(qt.QLabel("3. Click to create the 'VMJ-aca' line."))
-        self.measureANSButton = qt.QPushButton("Create VMJ-aca Line")
+        self.measureANSButton = qt.QPushButton("📏 Create VMJ-aca Line")
         self.measureANSButton.clicked.connect(self.onMeasureANS)
         self.measureANSButton.setEnabled(False)
+        self.measureANSButton.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
         layout.addWidget(self.measureANSButton)
 
         self.step5StatusLabel = qt.QLabel("Status: Please manually adjust VMJ point if needed, then confirm.")
+        self.step5StatusLabel.setWordWrap(True)
+        self.step5StatusLabel.setStyleSheet("padding: 8px; background-color: #f0f0f0; border-radius: 5px;")
         layout.addWidget(self.step5StatusLabel)
+        
+        layout.addStretch(1)
         self.stepStack.addWidget(widget)
 
     def createStep6_VectorAndMidphiltrum(self):
@@ -813,115 +905,224 @@ class ThreefoldANSGUI(qt.QWidget):
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
 
-        resultsLabel = qt.QLabel("Prediction Results:")
-        layout.addWidget(resultsLabel)
+        # ===== TABLE 1: COORDINATES =====
+        coordsLabel = qt.QLabel("📍 Landmark Coordinates")
+        coordsLabel.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
+        layout.addWidget(coordsLabel)
 
-        self.resultsTable = qt.QTableWidget()
-        self.resultsTable.setRowCount(3)
-        self.resultsTable.setColumnCount(5)
-        self.resultsTable.setHorizontalHeaderLabels(["Select", "Metric", "X", "Y", "Z"])
+        self.coordsTable = qt.QTableWidget()
+        self.coordsTable.setRowCount(2)
+        self.coordsTable.setColumnCount(4)
+        self.coordsTable.setHorizontalHeaderLabels(["Landmark", "X", "Y", "Z"])
+        self.coordsTable.horizontalHeader().setStretchLastSection(True)
+        self.coordsTable.setAlternatingRowColors(True)
+        self.coordsTable.setMinimumHeight(80)
 
-        row_metrics = ["Predicted Pronasale", "True Pronasale", "Error Distance"]
+        # Initialize rows
+        self.coordsTable.setItem(0, 0, qt.QTableWidgetItem("Predicted Pronasale"))
+        self.coordsTable.setItem(1, 0, qt.QTableWidgetItem("True Pronasale"))
+        for row in range(2):
+            for col in range(1, 4):
+                self.coordsTable.setItem(row, col, qt.QTableWidgetItem(""))
 
-        for i, metric in enumerate(row_metrics):
-            checkbox_item = qt.QTableWidgetItem()
-            checkbox_item.setFlags(qt.Qt.ItemIsUserCheckable | qt.Qt.ItemIsEnabled)
-            checkbox_item.setCheckState(qt.Qt.Checked)
-            self.resultsTable.setItem(i, 0, checkbox_item)
+        layout.addWidget(self.coordsTable)
 
-            metric_item = qt.QTableWidgetItem(metric)
-            metric_item.setFlags(qt.Qt.ItemIsEnabled)
-            self.resultsTable.setItem(i, 1, metric_item)
+        # ===== TABLE 2: MEASUREMENTS =====
+        measLabel = qt.QLabel("📏 Measurements")
+        measLabel.setStyleSheet("font-weight: bold; font-size: 14px; margin-top: 10px;")
+        layout.addWidget(measLabel)
 
-            self.resultsTable.setItem(i, 2, qt.QTableWidgetItem(""))
-            self.resultsTable.setItem(i, 3, qt.QTableWidgetItem(""))
-            self.resultsTable.setItem(i, 4, qt.QTableWidgetItem(""))
+        self.measTable = qt.QTableWidget()
+        self.measTable.setRowCount(5)
+        self.measTable.setColumnCount(2)
+        self.measTable.setHorizontalHeaderLabels(["Measurement", "Value"])
+        self.measTable.horizontalHeader().setStretchLastSection(True)
+        self.measTable.setAlternatingRowColors(True)
+        self.measTable.setMinimumHeight(120)
 
-        self.resultsTable.horizontalHeader().setStretchLastSection(True)
-        self.resultsTable.setMinimumHeight(150)
-        layout.addWidget(self.resultsTable)
+        # Initialize rows
+        row_labels = [
+            "Prediction Error (mm)",
+            "FSTT (mm)",
+            "Cylinder/Search Radius (mm)",
+            "VMJ-aca Distance (mm)",
+            "Equation Used"
+        ]
+        for row, label in enumerate(row_labels):
+            self.measTable.setItem(row, 0, qt.QTableWidgetItem(label))
+            self.measTable.setItem(row, 1, qt.QTableWidgetItem(""))
 
-        self.copyButton = qt.QPushButton("Copy Selected to Clipboard")
+        layout.addWidget(self.measTable)
+
+        # ===== COPY BUTTON =====
+        self.copyButton = qt.QPushButton("📋 Copy All Results to Clipboard")
+        self.copyButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 10px;")
         self.copyButton.clicked.connect(self.onCopyToClipboard)
         layout.addWidget(self.copyButton)
 
+        # ===== FINISH BUTTON =====
         self.finishButton = qt.QPushButton("Finish")
         self.finishButton.clicked.connect(self.onFinish)
         layout.addWidget(self.finishButton)
 
         self.step9StatusLabel = qt.QLabel("Status: Complete! Review results above.")
+        self.step9StatusLabel.setWordWrap(True)
         layout.addWidget(self.step9StatusLabel)
 
         layout.addStretch(1)
         self.stepStack.addWidget(widget)
 
     # ==================== HELPER METHODS ====================
-    
-    def onCopyToClipboard(self):
-        """Copy selected results to clipboard"""
+    def loadVMJImage(self):
+        """Load the VMJ reference image from GitHub using the Prokopec-Ubelaker approach"""
         try:
-            clipboard_text = "Metric\tX\tY\tZ\n"
+            import urllib.request
             
-            for row in range(self.resultsTable.rowCount):
-                # Check if checkbox in first column is checked
-                checkbox_item = self.resultsTable.item(row, 0)
-                if checkbox_item and checkbox_item.checkState() == qt.Qt.Checked:
-                    metric_item = self.resultsTable.item(row, 1)
-                    x_item = self.resultsTable.item(row, 2)
-                    y_item = self.resultsTable.item(row, 3)
-                    z_item = self.resultsTable.item(row, 4)
-                    
-                    metric = metric_item.text() if metric_item else ""
-                    x_val = x_item.text() if x_item else ""
-                    y_val = y_item.text() if y_item else ""
-                    z_val = z_item.text() if z_item else ""
-                    
-                    clipboard_text += f"{metric}\t{x_val}\t{y_val}\t{z_val}\n"
+            # Correct URL for the raw image content
+            url = "https://github.com/user-attachments/assets/2f8ecbd2-8403-4125-8cc2-d04cd1534cca"
             
-            # Copy to clipboard - FIXED: Use QApplication.clipboard() correctly
-            app_clipboard = qt.QApplication.clipboard()  # Use qt.QApplication, not importing QApplication
+            self.vmjImageLabel.setText("Downloading image...")
+            slicer.app.processEvents()
+            
+            # Download the image data
+            imageData = urllib.request.urlopen(url).read()
+            
+            # Create pixmap from data
+            pixmap = qt.QPixmap()
+            pixmap.loadFromData(imageData)
+            
+            if not pixmap.isNull():
+                # Scale to fit the label while maintaining aspect ratio
+                max_width = 500
+                max_height = 350
+                if pixmap.width() > max_width or pixmap.height() > max_height:
+                    pixmap = pixmap.scaled(max_width, max_height, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
+                
+                self.vmjImageLabel.setPixmap(pixmap)
+                self.vmjImageLabel.setText("")
+                print("VMJ image loaded successfully")
+            else:
+                raise Exception("Failed to load image data - pixmap is null")
+                
+        except Exception as e:
+            print(f"Error loading VMJ image: {e}")
+            self.vmjImageLabel.setText(
+                "📌 VMJ Landmark Location\n\n"
+                "The VMJ (Vomer-Maxillary Junction) is located:\n"
+                "• On the midline of the hard palate\n"
+                "• At the junction of the vomer and maxillary bones\n"
+                "• Posterior to the incisive foramen\n\n"
+                "Please refer to the image description above."
+            )
+            self.vmjImageLabel.setStyleSheet("background-color: #f0f0f0; padding: 20px; font-size: 14px;")
+
+    def onCopyToClipboard(self):
+        """Copy all results to clipboard as tab-separated text"""
+        try:
+            clipboard_text = ""
+
+            # ===== COORDINATES TABLE =====
+            clipboard_text += "Landmark\tX\tY\tZ\n"
+            for row in range(self.coordsTable.rowCount):
+                landmark = self.coordsTable.item(row, 0).text() if self.coordsTable.item(row, 0) else ""
+                x = self.coordsTable.item(row, 1).text() if self.coordsTable.item(row, 1) else ""
+                y = self.coordsTable.item(row, 2).text() if self.coordsTable.item(row, 2) else ""
+                z = self.coordsTable.item(row, 3).text() if self.coordsTable.item(row, 3) else ""
+                clipboard_text += f"{landmark}\t{x}\t{y}\t{z}\n"
+            clipboard_text += "\n"
+
+            # ===== MEASUREMENTS TABLE =====
+            clipboard_text += "Measurement\tValue\n"
+            for row in range(self.measTable.rowCount):
+                label = self.measTable.item(row, 0).text() if self.measTable.item(row, 0) else ""
+                value = self.measTable.item(row, 1).text() if self.measTable.item(row, 1) else ""
+                clipboard_text += f"{label}\t{value}\n"
+
+            # Copy to clipboard
+            app_clipboard = qt.QApplication.clipboard()
             app_clipboard.setText(clipboard_text)
-            slicer.util.infoDisplay("Selected results copied to clipboard!")
-            
+            slicer.util.infoDisplay("All results copied to clipboard!")
+
         except Exception as e:
             slicer.util.errorDisplay(f"Failed to copy to clipboard: {e}")
 
     def updateResultsTable(self):
+        """Update both results tables with current data"""
         try:
+            # ===== UPDATE COORDINATES TABLE =====
+            # Predicted Pronasale
             if self.predictedPronasaleNode and self.predictedPronasaleNode.GetNumberOfControlPoints() > 0:
                 pred_pos = [0, 0, 0]
                 self.predictedPronasaleNode.GetNthControlPointPositionWorld(0, pred_pos)
-                self.resultsTable.item(0, 2).setText(f"{pred_pos[0]:.2f}")
-                self.resultsTable.item(0, 3).setText(f"{pred_pos[1]:.2f}")
-                self.resultsTable.item(0, 4).setText(f"{pred_pos[2]:.2f}")
+                self.coordsTable.item(0, 1).setText(f"{pred_pos[0]:.2f}")
+                self.coordsTable.item(0, 2).setText(f"{pred_pos[1]:.2f}")
+                self.coordsTable.item(0, 3).setText(f"{pred_pos[2]:.2f}")
 
+            # True Pronasale
             if self.trueSoftTissueNode:
                 true_pos = [0, 0, 0]
+                found = False
                 for i in range(self.trueSoftTissueNode.GetNumberOfControlPoints()):
                     label = self.trueSoftTissueNode.GetNthControlPointLabel(i)
                     if "pronasale" in label.lower():
                         self.trueSoftTissueNode.GetNthControlPointPositionWorld(i, true_pos)
-                        self.resultsTable.item(1, 2).setText(f"{true_pos[0]:.2f}")
-                        self.resultsTable.item(1, 3).setText(f"{true_pos[1]:.2f}")
-                        self.resultsTable.item(1, 4).setText(f"{true_pos[2]:.2f}")
-
-                        if self.predictedPronasaleNode and self.predictedPronasaleNode.GetNumberOfControlPoints() > 0:
-                            pred_pos = [0, 0, 0]
-                            self.predictedPronasaleNode.GetNthControlPointPositionWorld(0, pred_pos)
-                            error_distance = np.linalg.norm(np.array(pred_pos) - np.array(true_pos))
-                            self.resultsTable.item(2, 2).setText(f"{error_distance:.2f}")
-                            self.resultsTable.item(2, 3).setText("")
-                            self.resultsTable.item(2, 4).setText("")
+                        found = True
                         break
+                if found:
+                    self.coordsTable.item(1, 1).setText(f"{true_pos[0]:.2f}")
+                    self.coordsTable.item(1, 2).setText(f"{true_pos[1]:.2f}")
+                    self.coordsTable.item(1, 3).setText(f"{true_pos[2]:.2f}")
+                else:
+                    for col in range(1, 4):
+                        self.coordsTable.item(1, col).setText("Not loaded")
+
+            # ===== UPDATE MEASUREMENTS TABLE =====
+            # Row 0: Prediction Error
+            if self.predictedPronasaleNode and self.trueSoftTissueNode:
+                pred_pos = [0, 0, 0]
+                true_pos = [0, 0, 0]
+                self.predictedPronasaleNode.GetNthControlPointPositionWorld(0, pred_pos)
+                found = False
+                for i in range(self.trueSoftTissueNode.GetNumberOfControlPoints()):
+                    label = self.trueSoftTissueNode.GetNthControlPointLabel(i)
+                    if "pronasale" in label.lower():
+                        self.trueSoftTissueNode.GetNthControlPointPositionWorld(i, true_pos)
+                        found = True
+                        break
+                if found:
+                    error = np.linalg.norm(np.array(pred_pos) - np.array(true_pos))
+                    self.measTable.item(0, 1).setText(f"{error:.2f}")
+                else:
+                    self.measTable.item(0, 1).setText("N/A")
             else:
-                self.resultsTable.item(1, 2).setText("")
-                self.resultsTable.item(1, 3).setText("")
-                self.resultsTable.item(1, 4).setText("")
-                self.resultsTable.item(2, 2).setText("")
-                self.resultsTable.item(2, 3).setText("")
-                self.resultsTable.item(2, 4).setText("")
+                self.measTable.item(0, 1).setText("N/A")
+
+            # Row 1: FSTT (perp distance)
+            fstt_value = self.perpDistanceSpinBox.value if hasattr(self, 'perpDistanceSpinBox') else 0
+            self.measTable.item(1, 1).setText(f"{fstt_value:.2f}")
+
+            # Row 2: Cylinder/Search Radius
+            radius_value = self.cylinderRadiusSpinBox.value if hasattr(self, 'cylinderRadiusSpinBox') else 2.0
+            self.measTable.item(2, 1).setText(f"{radius_value:.2f}")
+
+            # Row 3: VMJ-aca Distance
+            if self.vmjAcaLine:
+                vmj_length = self.vmjAcaLine.GetLineLengthWorld()
+                self.measTable.item(3, 1).setText(f"{vmj_length:.2f}")
+            else:
+                self.measTable.item(3, 1).setText("N/A")
+
+            # Row 4: Equation Used
+            multiplier = 3.0 if self.multiplierComboBox.currentIndex == 0 else 1.9
+            equation_text = f"{multiplier:.1f} × ANS (VMJ-aca)"
+            if multiplier == 3.0:
+                equation_text += " [Krogman and Iscan, 1986]"
+            else:
+                equation_text += " [Matsuda et al., 2023]"
+            self.measTable.item(4, 1).setText(equation_text)
+
         except Exception as e:
-            print(f"Error updating results table: {e}")
+            print(f"Error updating results tables: {e}")
 
     def onFinish(self):
         self.close()
@@ -1076,30 +1277,82 @@ class ThreefoldANSGUI(qt.QWidget):
                 p_inion, p_nasion, p_bregma = self.getPos("inion"), self.getPos("nasion"), self.getPos("bregma")
                 v1, v2 = p_nasion - p_inion, p_bregma - p_inion
                 normal, origin = np.cross(v1, v2), p_inion
+                
             elif choice_index == 2:
                 plane_name = "MSP"
                 required = ["nasion", "acanthion", "prosthion", "subspinale"]
                 points = np.array([self.getPos(name) for name in required])
                 centroid = np.mean(points, axis=0)
-                covariance_matrix = np.cov(points - centroid, rowvar=False)
-                eigenvalues, eigenvectors = np.linalg.eigh(covariance_matrix)
-                normal, origin = eigenvectors[:, np.argmin(eigenvalues)], centroid
+                
+                # For a sagittal plane through midline points:
+                # 1. The plane should pass through the centroid
+                # 2. The plane normal should point left-right (X direction in RAS)
+                # 3. The plane should contain the anterior-posterior direction
+                
+                # Compute the principal direction of the points (anterior-posterior)
+                centered = points - centroid
+                
+                # Use SVD to find the principal direction
+                U, S, Vt = np.linalg.svd(centered)
+                principal_direction = Vt[0, :]  # First principal component (Y direction)
+                
+                # Ensure the principal direction points anteriorly (positive Y)
+                if principal_direction[1] < 0:
+                    principal_direction = -principal_direction
+                
+                # The normal of the sagittal plane should be perpendicular to the principal direction
+                # and should point in the left-right direction (X in RAS)
+                # So the normal is the cross product of the principal direction with the superior direction
+                superior = np.array([0, 0, 1])
+                normal = np.cross(principal_direction, superior)
+                
+                # If the normal is too small (parallel to superior), use the original points
+                if np.linalg.norm(normal) < 0.001:
+                    # Use the first two principal components to define the plane
+                    normal = np.cross(Vt[0, :], Vt[1, :])
+                
+                # Ensure the normal is normalized
+                normal = normal / np.linalg.norm(normal)
+                
+                # Ensure the normal points right (positive X in RAS)
+                if normal[0] < 0:
+                    normal = -normal
+                
+                # Final check - if normal is still not along X, force it
+                if abs(normal[0]) < 0.5:
+                    # Fallback: use the cross product of the principal direction with Y
+                    y_dir = np.array([0, 1, 0])
+                    normal = np.cross(principal_direction, y_dir)
+                    normal = normal / np.linalg.norm(normal)
+                    if normal[0] < 0:
+                        normal = -normal
+                
+                # Last resort: force normal to X direction
+                if abs(normal[0]) < 0.5:
+                    normal = np.array([1.0, 0.0, 0.0])
+                
+                origin = centroid
+                
             try:
                 oldPlane = slicer.util.getNode(plane_name)
                 slicer.mrmlScene.RemoveNode(oldPlane)
             except:
                 pass
+            
             planeNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsPlaneNode', plane_name)
             planeNode.SetOrigin(origin)
             planeNode.SetNormal(normal)
             planeNode.SetSize(300, 300)
-            planeNode.GetDisplayNode().SetOpacity(1.0)
+            planeNode.GetDisplayNode().SetOpacity(0.5)
+            
             self.referencePlane = planeNode
             self.step2StatusLabel.setText(f"Status: Successfully created '{plane_name}' plane. You can now proceed.")
             slicer.util.showStatusMessage(f"'{plane_name}' created!", 3000)
+            
             # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
+            
         except Exception as e:
             self.step2StatusLabel.setText(f"Status: Error! Could not create plane. Error: {e}")
             slicer.util.errorDisplay(f"Failed to create plane: {e}")
@@ -1963,5 +2216,6 @@ except Exception as e:
 
 threefoldGui = ThreefoldANSGUI()
 threefoldGui.show()
+
 
 ```
