@@ -1,5 +1,5 @@
 ```python
-# Threefold ANS Method GUI - Version 58 (Auto-step detection)
+# Threefold ANS Method GUI - Version 59 (Fixed Navigation with Auto-step detection)
 
 import os
 import vtk
@@ -60,14 +60,13 @@ class ThreefoldANSGUI(qt.QWidget):
         self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
         
-        # Add scene observers for auto-step detection - FIXED
+        # Add scene observers for auto-step detection
         self.sceneObserver = slicer.mrmlScene.AddObserver(
             slicer.vtkMRMLScene.NodeAddedEvent, self.onSceneChanged
         )
         self.sceneObserver2 = slicer.mrmlScene.AddObserver(
             slicer.vtkMRMLScene.NodeRemovedEvent, self.onSceneChanged
         )
-        # Use EndBatchProcessEvent to detect modifications
         self.sceneObserver3 = slicer.mrmlScene.AddObserver(
             slicer.vtkMRMLScene.EndBatchProcessEvent, self.onSceneChanged
         )
@@ -145,25 +144,21 @@ class ThreefoldANSGUI(qt.QWidget):
 
     # ==================== SCENE CHANGE HANDLING ====================
     def onSceneChanged(self, caller, event):
-        """Handle scene changes by updating step detection."""
         if not self.isVisible():
             return
-        # Use a timer to avoid excessive updates
         if self._sceneChangeTimer is None:
             self._sceneChangeTimer = qt.QTimer()
             self._sceneChangeTimer.setSingleShot(True)
             self._sceneChangeTimer.timeout.connect(self._delayedSceneUpdate)
-        self._sceneChangeTimer.start(200)  # 200ms delay
+        self._sceneChangeTimer.start(200)
 
     def _delayedSceneUpdate(self):
-        """Delayed update after scene changes."""
         if self.isVisible():
             self.syncWithScene()
-            # Re-determine current step
             newStep = self.determineCurrentStep()
             if newStep != self.currentStep:
                 self.currentStep = newStep
-                self.updateStepUI()
+                self.updateStepUI()   # auto-detect (no forceStep)
 
     # ==================== AUTO STEP DETECTION ====================
     def determineCurrentStep(self):
@@ -181,8 +176,6 @@ class ThreefoldANSGUI(qt.QWidget):
         
         # Step 2: Check if we have a bone model OR volume rendering mode
         if self.boneModel is None and not self.manualVolumeRendering:
-            # If no model and not in volume mode, we might be at Step 2
-            # But check if we have a volume (for volume rendering mode)
             if self.volumeNode is None:
                 return 2
             # If we have a volume, we're in volume rendering mode, proceed
@@ -200,7 +193,6 @@ class ThreefoldANSGUI(qt.QWidget):
         if self.nasalSpineVector is None:
             return 5
         
-        # Check if mp point exists
         if self.landmarksNode and self.findPointIndex("mp") == -1:
             return 5
         
@@ -211,11 +203,10 @@ class ThreefoldANSGUI(qt.QWidget):
         # Step 7/8: Check if comparison has been done
         error_line = slicer.util.getFirstNodeByName("prediction_error")
         if error_line is not None:
-            return 8  # Results with comparison
+            return 8
         else:
-            return 7  # Prediction done, ready for validation
+            return 7
         
-        # Default fallback
         return 0
 
     # ==================== STEP 1 ====================
@@ -238,19 +229,16 @@ class ThreefoldANSGUI(qt.QWidget):
         
         self.loadLocalButton = qt.QPushButton("Load Landmarks from Local File")
         self.loadLocalButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
-        self.loadLocalButton.setToolTip("Recommended: Load the '.mrk.json' file you saved on your computer.")
         self.loadLocalButton.clicked.connect(self.onLoadLocalLandmarks)
         buttonLayout.addWidget(self.loadLocalButton, 0, qt.Qt.AlignHCenter)
         
         self.downloadHardButton = qt.QPushButton("Download hard tissue landmarks")
         self.downloadHardButton.setStyleSheet("background-color: #6c757d; color: white; padding: 8px;")
-        self.downloadHardButton.setToolTip("Download the hard tissue landmarks from a public repository.")
         self.downloadHardButton.clicked.connect(self.onDownloadHardLandmarks)
         buttonLayout.addWidget(self.downloadHardButton, 0, qt.Qt.AlignHCenter)
         
         self.downloadSoftButton = qt.QPushButton("Download soft tissue landmarks")
         self.downloadSoftButton.setStyleSheet("background-color: #6c757d; color: white; padding: 8px;")
-        self.downloadSoftButton.setToolTip("Download the soft tissue landmarks (true pronasale) from a public repository.")
         self.downloadSoftButton.clicked.connect(self.onDownloadSoftLandmarks)
         buttonLayout.addWidget(self.downloadSoftButton, 0, qt.Qt.AlignHCenter)
         
@@ -448,13 +436,11 @@ class ThreefoldANSGUI(qt.QWidget):
         buttonRow = qt.QHBoxLayout()
         self.openVolumeRenderingButton = qt.QPushButton("📦 Open Volume Rendering Module")
         self.openVolumeRenderingButton.setStyleSheet("background-color: #FF9800; color: white; font-weight: bold; padding: 8px;")
-        self.openVolumeRenderingButton.setToolTip("Opens the Volume Rendering module so you can visualise the skull")
         self.openVolumeRenderingButton.clicked.connect(lambda: slicer.util.selectModule('VolumeRendering'))
         buttonRow.addWidget(self.openVolumeRenderingButton)
 
         self.continueWithoutModelButton = qt.QPushButton("✅ Continue without model")
         self.continueWithoutModelButton.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold; padding: 8px;")
-        self.continueWithoutModelButton.setToolTip("Proceed to the next step without loading a bone model")
         self.continueWithoutModelButton.clicked.connect(self.onContinueWithoutModel)
         buttonRow.addWidget(self.continueWithoutModelButton)
         volLayout.addLayout(buttonRow)
@@ -470,7 +456,6 @@ class ThreefoldANSGUI(qt.QWidget):
         volHelpContainer.setVisible(False)
         volHelpLayout = qt.QVBoxLayout(volHelpContainer)
         volHelpLayout.setContentsMargins(10, 10, 10, 10)
-        # FIXED: setStyleSheet on the widget, not the layout
         volHelpContainer.setStyleSheet("background-color: #F5F5F5; border-radius: 5px;")
 
         volTips = qt.QLabel(
@@ -549,7 +534,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step3StatusLabel.setText(f"Status: Loaded '{node.GetName()}' as the bone model. Ready to proceed!")
             slicer.util.showStatusMessage(f"Bone model set to '{node.GetName()}'", 3000)
             self.manualVolumeRendering = False
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         else:
@@ -573,7 +557,6 @@ class ThreefoldANSGUI(qt.QWidget):
                     slicer.util.showStatusMessage(f"Bone model loaded from {fileName}", 3000)
                     self.existingModelSelector.setCurrentNode(loadedNode)
                     self.manualVolumeRendering = False
-                    # Auto-update step
                     self.currentStep = self.determineCurrentStep()
                     self.updateStepUI()
                 else:
@@ -681,7 +664,6 @@ class ThreefoldANSGUI(qt.QWidget):
         self.step4_skipped = True
         self.step4StatusLabel.setText("Status: Cutting skipped. Proceeding to next step.")
         slicer.util.showStatusMessage("Cutting skipped", 2000)
-        # Auto-update step
         self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
 
@@ -699,7 +681,6 @@ class ThreefoldANSGUI(qt.QWidget):
         instructionGroup = qt.QGroupBox("📍 VMJ Landmark Location Guide")
         instructionLayout = qt.QVBoxLayout(instructionGroup)
         
-        # Description
         descLabel = qt.QLabel(
             "<b>The VMJ (Vomer-Maxillary Junction)</b> is the point where the vomer bone meets the maxilla.\n\n"
             "It is located on the midline of the hard palate, at the junction of the vomer and the maxillary bones.\n\n"
@@ -708,7 +689,6 @@ class ThreefoldANSGUI(qt.QWidget):
         descLabel.setWordWrap(True)
         instructionLayout.addWidget(descLabel)
         
-        # Create a scroll area for the image
         imageScroll = qt.QScrollArea()
         imageScroll.setWidgetResizable(True)
         imageScroll.setMaximumHeight(400)
@@ -720,7 +700,6 @@ class ThreefoldANSGUI(qt.QWidget):
         imageLayout.setContentsMargins(10, 10, 10, 10)
         imageLayout.setAlignment(qt.Qt.AlignCenter)
         
-        # Create a label to hold the image
         self.vmjImageLabel = qt.QLabel()
         self.vmjImageLabel.setAlignment(qt.Qt.AlignCenter)
         self.vmjImageLabel.setStyleSheet("background-color: white; padding: 5px;")
@@ -730,7 +709,6 @@ class ThreefoldANSGUI(qt.QWidget):
         imageScroll.setWidget(imageContainer)
         instructionLayout.addWidget(imageScroll)
         
-        # Load the image from GitHub using the improved method
         self.loadVMJImage()
         
         layout.addWidget(instructionGroup)
@@ -828,7 +806,7 @@ class ThreefoldANSGUI(qt.QWidget):
         # Cylinder radius control
         self.cylinderRadiusSpinBox = qt.QDoubleSpinBox()
         self.cylinderRadiusSpinBox.setRange(0.5, 10.0)
-        self.cylinderRadiusSpinBox.setValue(3.0)  # Increased from 2.0 to 3.0
+        self.cylinderRadiusSpinBox.setValue(3.0)
         self.cylinderRadiusSpinBox.setSuffix(" mm")
         self.cylinderRadiusSpinBox.setToolTip("Radius of the cylinder (also used as search radius for surface detection)")
         formLayout.addRow("Cylinder/Search Radius:", self.cylinderRadiusSpinBox)
@@ -918,7 +896,6 @@ class ThreefoldANSGUI(qt.QWidget):
         self.coordsTable.setAlternatingRowColors(True)
         self.coordsTable.setMinimumHeight(80)
 
-        # Initialize rows
         self.coordsTable.setItem(0, 0, qt.QTableWidgetItem("Predicted Pronasale"))
         self.coordsTable.setItem(1, 0, qt.QTableWidgetItem("True Pronasale"))
         for row in range(2):
@@ -940,7 +917,6 @@ class ThreefoldANSGUI(qt.QWidget):
         self.measTable.setAlternatingRowColors(True)
         self.measTable.setMinimumHeight(120)
 
-        # Initialize rows
         row_labels = [
             "Prediction Error (mm)",
             "FSTT (mm)",
@@ -974,36 +950,24 @@ class ThreefoldANSGUI(qt.QWidget):
 
     # ==================== HELPER METHODS ====================
     def loadVMJImage(self):
-        """Load the VMJ reference image from GitHub using the Prokopec-Ubelaker approach"""
         try:
             import urllib.request
-            
-            # Correct URL for the raw image content
             url = "https://github.com/user-attachments/assets/2f8ecbd2-8403-4125-8cc2-d04cd1534cca"
-            
             self.vmjImageLabel.setText("Downloading image...")
             slicer.app.processEvents()
-            
-            # Download the image data
             imageData = urllib.request.urlopen(url).read()
-            
-            # Create pixmap from data
             pixmap = qt.QPixmap()
             pixmap.loadFromData(imageData)
-            
             if not pixmap.isNull():
-                # Scale to fit the label while maintaining aspect ratio
                 max_width = 500
                 max_height = 350
                 if pixmap.width() > max_width or pixmap.height() > max_height:
                     pixmap = pixmap.scaled(max_width, max_height, qt.Qt.KeepAspectRatio, qt.Qt.SmoothTransformation)
-                
                 self.vmjImageLabel.setPixmap(pixmap)
                 self.vmjImageLabel.setText("")
                 print("VMJ image loaded successfully")
             else:
                 raise Exception("Failed to load image data - pixmap is null")
-                
         except Exception as e:
             print(f"Error loading VMJ image: {e}")
             self.vmjImageLabel.setText(
@@ -1017,11 +981,8 @@ class ThreefoldANSGUI(qt.QWidget):
             self.vmjImageLabel.setStyleSheet("background-color: #f0f0f0; padding: 20px; font-size: 14px;")
 
     def onCopyToClipboard(self):
-        """Copy all results to clipboard as tab-separated text"""
         try:
             clipboard_text = ""
-
-            # ===== COORDINATES TABLE =====
             clipboard_text += "Landmark\tX\tY\tZ\n"
             for row in range(self.coordsTable.rowCount):
                 landmark = self.coordsTable.item(row, 0).text() if self.coordsTable.item(row, 0) else ""
@@ -1030,27 +991,19 @@ class ThreefoldANSGUI(qt.QWidget):
                 z = self.coordsTable.item(row, 3).text() if self.coordsTable.item(row, 3) else ""
                 clipboard_text += f"{landmark}\t{x}\t{y}\t{z}\n"
             clipboard_text += "\n"
-
-            # ===== MEASUREMENTS TABLE =====
             clipboard_text += "Measurement\tValue\n"
             for row in range(self.measTable.rowCount):
                 label = self.measTable.item(row, 0).text() if self.measTable.item(row, 0) else ""
                 value = self.measTable.item(row, 1).text() if self.measTable.item(row, 1) else ""
                 clipboard_text += f"{label}\t{value}\n"
-
-            # Copy to clipboard
             app_clipboard = qt.QApplication.clipboard()
             app_clipboard.setText(clipboard_text)
             slicer.util.infoDisplay("All results copied to clipboard!")
-
         except Exception as e:
             slicer.util.errorDisplay(f"Failed to copy to clipboard: {e}")
 
     def updateResultsTable(self):
-        """Update both results tables with current data"""
         try:
-            # ===== UPDATE COORDINATES TABLE =====
-            # Predicted Pronasale
             if self.predictedPronasaleNode and self.predictedPronasaleNode.GetNumberOfControlPoints() > 0:
                 pred_pos = [0, 0, 0]
                 self.predictedPronasaleNode.GetNthControlPointPositionWorld(0, pred_pos)
@@ -1058,7 +1011,6 @@ class ThreefoldANSGUI(qt.QWidget):
                 self.coordsTable.item(0, 2).setText(f"{pred_pos[1]:.2f}")
                 self.coordsTable.item(0, 3).setText(f"{pred_pos[2]:.2f}")
 
-            # True Pronasale
             if self.trueSoftTissueNode:
                 true_pos = [0, 0, 0]
                 found = False
@@ -1076,8 +1028,6 @@ class ThreefoldANSGUI(qt.QWidget):
                     for col in range(1, 4):
                         self.coordsTable.item(1, col).setText("Not loaded")
 
-            # ===== UPDATE MEASUREMENTS TABLE =====
-            # Row 0: Prediction Error
             if self.predictedPronasaleNode and self.trueSoftTissueNode:
                 pred_pos = [0, 0, 0]
                 true_pos = [0, 0, 0]
@@ -1097,22 +1047,18 @@ class ThreefoldANSGUI(qt.QWidget):
             else:
                 self.measTable.item(0, 1).setText("N/A")
 
-            # Row 1: FSTT (perp distance)
             fstt_value = self.perpDistanceSpinBox.value if hasattr(self, 'perpDistanceSpinBox') else 0
             self.measTable.item(1, 1).setText(f"{fstt_value:.2f}")
 
-            # Row 2: Cylinder/Search Radius
             radius_value = self.cylinderRadiusSpinBox.value if hasattr(self, 'cylinderRadiusSpinBox') else 2.0
             self.measTable.item(2, 1).setText(f"{radius_value:.2f}")
 
-            # Row 3: VMJ-aca Distance
             if self.vmjAcaLine:
                 vmj_length = self.vmjAcaLine.GetLineLengthWorld()
                 self.measTable.item(3, 1).setText(f"{vmj_length:.2f}")
             else:
                 self.measTable.item(3, 1).setText("N/A")
 
-            # Row 4: Equation Used
             multiplier = 3.0 if self.multiplierComboBox.currentIndex == 0 else 1.9
             equation_text = f"{multiplier:.1f} × ANS (VMJ-aca)"
             if multiplier == 3.0:
@@ -1214,7 +1160,6 @@ class ThreefoldANSGUI(qt.QWidget):
                     self.trueLandmarksSelector.setCurrentNode(loadedNode)
                     self.step8StatusLabel.setText("Status: Successfully loaded 'KrogmanIscan_soft_tissue'.")
                 slicer.util.showStatusMessage(f"'{finalName}' loaded!", 3000)
-                # Auto-update step
                 self.currentStep = self.determineCurrentStep()
                 self.updateStepUI()
             else:
@@ -1283,54 +1228,26 @@ class ThreefoldANSGUI(qt.QWidget):
                 required = ["nasion", "acanthion", "prosthion", "subspinale"]
                 points = np.array([self.getPos(name) for name in required])
                 centroid = np.mean(points, axis=0)
-                
-                # For a sagittal plane through midline points:
-                # 1. The plane should pass through the centroid
-                # 2. The plane normal should point left-right (X direction in RAS)
-                # 3. The plane should contain the anterior-posterior direction
-                
-                # Compute the principal direction of the points (anterior-posterior)
                 centered = points - centroid
-                
-                # Use SVD to find the principal direction
                 U, S, Vt = np.linalg.svd(centered)
-                principal_direction = Vt[0, :]  # First principal component (Y direction)
-                
-                # Ensure the principal direction points anteriorly (positive Y)
+                principal_direction = Vt[0, :]
                 if principal_direction[1] < 0:
                     principal_direction = -principal_direction
-                
-                # The normal of the sagittal plane should be perpendicular to the principal direction
-                # and should point in the left-right direction (X in RAS)
-                # So the normal is the cross product of the principal direction with the superior direction
                 superior = np.array([0, 0, 1])
                 normal = np.cross(principal_direction, superior)
-                
-                # If the normal is too small (parallel to superior), use the original points
                 if np.linalg.norm(normal) < 0.001:
-                    # Use the first two principal components to define the plane
                     normal = np.cross(Vt[0, :], Vt[1, :])
-                
-                # Ensure the normal is normalized
                 normal = normal / np.linalg.norm(normal)
-                
-                # Ensure the normal points right (positive X in RAS)
                 if normal[0] < 0:
                     normal = -normal
-                
-                # Final check - if normal is still not along X, force it
                 if abs(normal[0]) < 0.5:
-                    # Fallback: use the cross product of the principal direction with Y
                     y_dir = np.array([0, 1, 0])
                     normal = np.cross(principal_direction, y_dir)
                     normal = normal / np.linalg.norm(normal)
                     if normal[0] < 0:
                         normal = -normal
-                
-                # Last resort: force normal to X direction
                 if abs(normal[0]) < 0.5:
                     normal = np.array([1.0, 0.0, 0.0])
-                
                 origin = centroid
                 
             try:
@@ -1349,7 +1266,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step2StatusLabel.setText(f"Status: Successfully created '{plane_name}' plane. You can now proceed.")
             slicer.util.showStatusMessage(f"'{plane_name}' created!", 3000)
             
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
             
@@ -1365,7 +1281,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.manualVolumeRendering = False
             self.updateStep4UI()
             self.updatePredictionUI()
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         else:
@@ -1406,7 +1321,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step4StatusLabel.setText(f"Status: Found '{left_model_found.GetName()}' and '{right_model_found.GetName()}'!")
             if not updateStatusOnly:
                 slicer.util.showStatusMessage("Model cut confirmed!", 3000)
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         elif not updateStatusOnly:
@@ -1452,7 +1366,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.vmjAcaLine = lineNode
             self.step5StatusLabel.setText("Status: 'VMJ-aca' line created successfully! You can now proceed to the next step.")
             self.measureANSButton.setEnabled(False)
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         except Exception as e:
@@ -1541,7 +1454,6 @@ class ThreefoldANSGUI(qt.QWidget):
             else:
                 self._mp_index = self.landmarksNode.AddControlPoint(mid_pos, "mp")
             self._initialMPPos = mid_pos.copy()
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
         except Exception as e:
@@ -1599,17 +1511,11 @@ class ThreefoldANSGUI(qt.QWidget):
         self._isUpdatingMP = False
         self.confirmMPButton.setEnabled(False)
         self.step6_complete = True
-        # Auto-update step
         self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
 
     # ==================== PATCH-BASED SURFACE NORMAL FROM CT ====================
     def computeSurfaceNormalFromVolumePatch(self, landmarkPos, searchRadius=3.0, boneThreshold=200):
-        """
-        Detect the OUTER BONE SURFACE within a sphere of radius searchRadius around the landmark.
-        Returns: (normal, baseCenter)
-        Normal is FORCED to point in the anterior direction (from reference plane).
-        """
         if self.volumeNode is None:
             return None, None
 
@@ -1622,7 +1528,6 @@ class ThreefoldANSGUI(qt.QWidget):
         ijkToWorld = vtk.vtkMatrix4x4()
         self.volumeNode.GetIJKToRASMatrix(ijkToWorld)
 
-        # Get anterior direction from reference plane
         if self.referencePlane is not None:
             plane_normal = np.zeros(3)
             self.referencePlane.GetNormalWorld(plane_normal)
@@ -1639,16 +1544,13 @@ class ThreefoldANSGUI(qt.QWidget):
         
         print(f"DEBUG: Anterior direction: {anterior}")
 
-        # Convert landmark to IJK
         landmarkIJK = [0, 0, 0, 1]
         worldToIJK.MultiplyPoint([landmarkPos[0], landmarkPos[1], landmarkPos[2], 1], landmarkIJK)
         i0, j0, k0 = int(round(landmarkIJK[0])), int(round(landmarkIJK[1])), int(round(landmarkIJK[2]))
         
-        # Get the value at the landmark position
         val_at_mp = imageData.GetScalarComponentAsDouble(i0, j0, k0, 0)
         print(f"DEBUG: HU value at mp: {val_at_mp}")
 
-        # If mp is not in bone, find the bone surface by marching outward
         if val_at_mp < boneThreshold:
             print("DEBUG: mp is not in bone. Searching for bone surface...")
             found_bone = False
@@ -1676,7 +1578,6 @@ class ThreefoldANSGUI(qt.QWidget):
                 if found_bone:
                     break
 
-        # Sample ALL voxels in the sphere to find bone surface
         radiusIJK = max(2, int(searchRadius / max(spacing)))
         print(f"DEBUG: radiusIJK: {radiusIJK}")
         
@@ -1729,15 +1630,8 @@ class ThreefoldANSGUI(qt.QWidget):
         points = np.array(surfacePoints)
         baseCenter = np.mean(points, axis=0)
         
-        # CRITICAL FIX: Use the anterior direction as the normal, NOT PCA
-        # The cylinder should point anteriorly, not follow the surface curvature
         normal = anterior.copy()
         
-        # But we also want to ensure it's not exactly parallel to the surface
-        # We can use the PCA normal to determine the surface orientation,
-        # but we want the component that points anteriorly
-        
-        # Compute the surface normal from PCA (just for reference)
         centered = points - baseCenter
         cov = np.cov(centered.T)
         eigenvalues, eigenvectors = np.linalg.eigh(cov)
@@ -1745,13 +1639,9 @@ class ThreefoldANSGUI(qt.QWidget):
         if np.dot(pca_normal, anterior) < 0:
             pca_normal = -pca_normal
         
-        # Combine PCA normal with anterior direction
-        # Weighted average: 70% anterior, 30% PCA normal
-        # This gives a direction that points anteriorly but also respects surface orientation
         combined_normal = 0.7 * anterior + 0.3 * pca_normal
         combined_normal = combined_normal / np.linalg.norm(combined_normal)
         
-        # Ensure it points anteriorly
         if combined_normal[1] < 0:
             combined_normal = -combined_normal
         
@@ -1763,11 +1653,9 @@ class ThreefoldANSGUI(qt.QWidget):
         return combined_normal, baseCenter
 
     def computeGradientNormal(self, landmarkPos, sampleRadius=3.0):
-        """Fallback: simple gradient normal (returns only normal)"""
         if self.volumeNode is None:
             return None
         
-        # Get anterior direction from reference plane
         if self.referencePlane is not None:
             plane_normal = np.zeros(3)
             self.referencePlane.GetNormalWorld(plane_normal)
@@ -1803,7 +1691,6 @@ class ThreefoldANSGUI(qt.QWidget):
             offset = [0,0,0]; offset[axis] = sampleDist
             i_plus = i+offset[0]; j_plus = j+offset[1]; k_plus = k+offset[2]
             i_minus = i-offset[0]; j_minus = j-offset[1]; k_minus = k-offset[2]
-            # Clamp to bounds
             i_plus = max(0, min(dims[0]-1, i_plus))
             j_plus = max(0, min(dims[1]-1, j_plus))
             k_plus = max(0, min(dims[2]-1, k_plus))
@@ -1818,17 +1705,11 @@ class ThreefoldANSGUI(qt.QWidget):
             return None
         normal = -grad / mag
         
-        # Force normal to point anteriorly
         if normal[1] < 0:
             normal = -normal
-        
-        # Also ensure it's generally in the anterior direction
         if np.dot(normal, anterior) < 0:
             normal = -normal
-        
-        # If the normal is still pointing mostly UP (Z), blend with anterior
         if abs(normal[2]) > 0.7:
-            # Too much Z component, blend with anterior
             normal = 0.5 * normal + 0.5 * anterior
             normal = normal / np.linalg.norm(normal)
         
@@ -1845,20 +1726,17 @@ class ThreefoldANSGUI(qt.QWidget):
             if not all([self.landmarksNode, self.vmjAcaLine, self.nasalSpineVector]):
                 raise ValueError("A required node from a previous step is missing.")
 
-            # Get cylinder radius (also used as search radius)
             cylinderRadius = self.cylinderRadiusSpinBox.value
 
             mp_pos = self.getPos("mp")
             baseCenter = None
             normal = None
 
-            # Compute surface normal and base center
             if self.volumeNode is not None:
                 normal, baseCenter = self.computeSurfaceNormalFromVolumePatch(
                     mp_pos, searchRadius=cylinderRadius, boneThreshold=200
                 )
                 
-            # If surface detection failed or we have no volume, use fallback
             if baseCenter is None or normal is None:
                 print("DEBUG: Surface detection failed, using gradient method")
                 normal = self.computeGradientNormal(mp_pos)
@@ -1866,12 +1744,9 @@ class ThreefoldANSGUI(qt.QWidget):
                     raise ValueError("Could not compute normal from CT volume.")
                 baseCenter = mp_pos
             
-            # CRITICAL: Ensure normal points anteriorly (positive Y in RAS)
-            # If normal[1] < 0, flip it
             if normal[1] < 0:
                 normal = -normal
             
-            # Also ensure it's generally in the anterior direction using reference plane
             if self.referencePlane is not None:
                 plane_normal = np.zeros(3)
                 self.referencePlane.GetNormalWorld(plane_normal)
@@ -1886,13 +1761,11 @@ class ThreefoldANSGUI(qt.QWidget):
                 if np.dot(normal, anterior) < 0:
                     normal = -normal
             
-            # Snap the mp landmark to the base center
             if self.landmarksNode is not None:
                 idx = self.findPointIndex("mp")
                 if idx != -1:
                     self.landmarksNode.SetNthControlPointPositionWorld(idx, baseCenter)
 
-            # If we have a bone model but no volume, use the model
             if self.volumeNode is None and self.boneModel is not None:
                 polyData = self.boneModel.GetPolyData()
                 locator = vtk.vtkPointLocator()
@@ -1908,7 +1781,6 @@ class ThreefoldANSGUI(qt.QWidget):
                 normals_filter.ComputePointNormalsOn()
                 normals_filter.Update()
                 normal = np.array(normals_filter.GetOutput().GetPointData().GetNormals().GetTuple(closestId))
-                # Orient using reference plane
                 if self.referencePlane is not None:
                     plane_normal = np.zeros(3)
                     self.referencePlane.GetNormalWorld(plane_normal)
@@ -1923,7 +1795,6 @@ class ThreefoldANSGUI(qt.QWidget):
                     if np.dot(normal, anterior) < 0:
                         normal = -normal
 
-            # Now we have normal and baseCenter
             perp_distance = self.perpDistanceSpinBox.value
             end_point_perp = baseCenter + normal * perp_distance
 
@@ -1931,7 +1802,6 @@ class ThreefoldANSGUI(qt.QWidget):
             print(f"DEBUG: baseCenter: {baseCenter}")
             print(f"DEBUG: end_point_perp: {end_point_perp}")
 
-            # Create FSTT line from baseCenter to end point
             fstt_line = slicer.util.getFirstNodeByName("FSTT mp")
             if not fstt_line:
                 fstt_line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "FSTT mp")
@@ -1941,7 +1811,6 @@ class ThreefoldANSGUI(qt.QWidget):
             fstt_line.GetDisplayNode().SetSelectedColor(0, 1, 0)
             fstt_line.GetDisplayNode().SetLineThickness(0.3)
 
-            # Create cylinder with base circle centered at baseCenter
             cylinder_model = slicer.util.getFirstNodeByName("FSTT mp cylinder")
             if self.showCylinderCheckbox.checked:
                 if not cylinder_model:
@@ -1994,7 +1863,6 @@ class ThreefoldANSGUI(qt.QWidget):
                 if display_node:
                     display_node.SetVisibility(False)
 
-            # --- Pronasale direction from nasal spine vector ---
             spine_start = np.zeros(3)
             spine_end = np.zeros(3)
             self.nasalSpineVector.GetNthControlPointPositionWorld(0, spine_start)
@@ -2007,7 +1875,6 @@ class ThreefoldANSGUI(qt.QWidget):
             multiplier = 3.0 if self.multiplierComboBox.currentIndex == 0 else 1.9
             pronasale_pos = end_point_perp + spine_dir * (self.vmjAcaLine.GetLineLengthWorld() * multiplier)
 
-            # Final line
             final_line = slicer.util.getFirstNodeByName("pronasale_vector")
             if not final_line:
                 final_line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "pronasale_vector")
@@ -2017,7 +1884,6 @@ class ThreefoldANSGUI(qt.QWidget):
             final_line.GetDisplayNode().SetSelectedColor(0, 0, 1)
             final_line.GetDisplayNode().SetLineThickness(0.3)
 
-            # Predicted point
             self.predictedPronasaleNode = slicer.util.getFirstNodeByName("predicted pronasale")
             if not self.predictedPronasaleNode:
                 self.predictedPronasaleNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "predicted pronasale")
@@ -2032,7 +1898,6 @@ class ThreefoldANSGUI(qt.QWidget):
                 self.compareButton.setEnabled(True)
                 self.updateResultsTable()
             
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
 
@@ -2047,7 +1912,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step8StatusLabel.setText("Status: Ready to compare.")
         else:
             self.compareButton.setEnabled(False)
-        # Auto-update step
         self.currentStep = self.determineCurrentStep()
         self.updateStepUI()
 
@@ -2091,7 +1955,6 @@ class ThreefoldANSGUI(qt.QWidget):
             self.step8StatusLabel.setText(f"Status: Comparison complete. Prediction Error: {error_distance:.2f} mm")
             self.updateResultsTable()
             
-            # Auto-update step
             self.currentStep = self.determineCurrentStep()
             self.updateStepUI()
 
@@ -2102,20 +1965,18 @@ class ThreefoldANSGUI(qt.QWidget):
     def onPrevButtonClicked(self):
         if self.currentStep > 0:
             self.currentStep -= 1
-            self.updateStepUI()
+            self.updateStepUI(forceStep=self.currentStep)
 
     def onNextButtonClicked(self):
         self.syncWithScene()
         
-        # Re-determine current step based on scene state
         self.currentStep = self.determineCurrentStep()
         
-        # Special handling: if we are at Step 4 and manualVolumeRendering is True, skip it
         if self.currentStep == 3 and self.manualVolumeRendering and self.boneModel is None:
             self.step4_skipped = True
             self.step4StatusLabel.setText("Status: Cutting skipped (Volume Rendering mode).")
             self.currentStep += 1
-            self.updateStepUI()
+            self.updateStepUI(forceStep=self.currentStep)
             return
 
         stepComplete = False
@@ -2135,9 +1996,9 @@ class ThreefoldANSGUI(qt.QWidget):
         elif self.currentStep == 6:
             stepComplete = self.predictedPronasaleNode is not None
         elif self.currentStep == 7:
-            stepComplete = True  # Step 8 optional
+            stepComplete = True
         elif self.currentStep == 8:
-            stepComplete = True  # Step 9 final
+            stepComplete = True
 
         if not stepComplete:
             if self.currentStep == 6:
@@ -2148,14 +2009,15 @@ class ThreefoldANSGUI(qt.QWidget):
 
         if self.currentStep < self.stepStack.count - 1:
             self.currentStep += 1
-            self.updateStepUI()
+            self.updateStepUI(forceStep=self.currentStep)
 
-    def updateStepUI(self):
-        """Update the UI for the current step using auto-detection."""
+    def updateStepUI(self, forceStep=None):
         self.cleanup()
         
-        # Auto-determine current step
-        self.currentStep = self.determineCurrentStep()
+        if forceStep is not None:
+            self.currentStep = forceStep
+        else:
+            self.currentStep = self.determineCurrentStep()
         
         self.stepStack.setCurrentIndex(self.currentStep)
         self.stepLabel.setText(f"Step {self.currentStep + 1}/{self.stepStack.count}")
@@ -2177,14 +2039,12 @@ class ThreefoldANSGUI(qt.QWidget):
                     slicer.vtkMRMLMarkupsNode.PointModifiedEvent, self.onNasalSpineVectorModified
                 )
         
-        # FIXED: Call updateStep4UI and updatePredictionUI directly, NOT updateStepUI again
         if self.currentStep == 3:
             self.updateStep4UI()
         
         if self.currentStep == 6:
             self.updatePredictionUI()
         
-        # Update status label to show current step
         step_names = [
             "Load Landmarks",
             "Create Reference Plane",
@@ -2197,7 +2057,6 @@ class ThreefoldANSGUI(qt.QWidget):
             "Results"
         ]
         
-        # Try to update a step status label if it exists
         if hasattr(self, 'stepStatusLabel'):
             self.stepStatusLabel.setText(f"📍 Step {self.currentStep + 1}: {step_names[self.currentStep]}")
 
@@ -2216,6 +2075,5 @@ except Exception as e:
 
 threefoldGui = ThreefoldANSGUI()
 threefoldGui.show()
-
 
 ```
