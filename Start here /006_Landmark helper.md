@@ -70,6 +70,7 @@ import re
 import numpy as np
 import qt
 import slicer
+
 SCHEMA_JSON = r'''{
   "schemaVersion": "1.0.0",
   "landmarks": [
@@ -82,8 +83,8 @@ SCHEMA_JSON = r'''{
     {"id":"HT-7","canonicalName":"Acanthion / Anterior Nasal Spine","tissueType":"hard","aka":["acanthion","AC","ANS","ns","a"]},
     {"id":"HT-8","canonicalName":"Orbitale Left","tissueType":"hard","aka":["O_L","orbitale_left","orb_L"]},
     {"id":"HT-9","canonicalName":"Orbitale Right","tissueType":"hard","aka":["O_R","orbitale_right","orb_R"]},
-    {"id":"HT-10","canonicalName":"Inferior Nasal Concha Left","tissueType":"hard","aka":["IC_L"]},
-    {"id":"HT-11","canonicalName":"Inferior Nasal Concha Right","tissueType":"hard","aka":["IC_R"]},
+    {"id":"HT-10","canonicalName":"Inferior Nasal Concha Left (Ryu)","tissueType":"hard","aka":["IC_L"]},
+    {"id":"HT-11","canonicalName":"Inferior Nasal Concha Right (Ryu)","tissueType":"hard","aka":["IC_R"]},
     {"id":"HT-12","canonicalName":"Hard Tissue Alare Left","tissueType":"hard","aka":["A_L","alL","B (PA_L)"]},
     {"id":"HT-13","canonicalName":"Hard Tissue Alare Right","tissueType":"hard","aka":["A_R","alR","A (PA_R)"]},
     {"id":"HT-14","canonicalName":"Left Posterior Piriform Aperture Border","tissueType":"hard","aka":["NAG_L","XL"]},
@@ -103,6 +104,8 @@ SCHEMA_JSON = r'''{
     {"id":"HT-29","canonicalName":"Lateral Point Right Central Incisor","tissueType":"hard","aka":["LCIR"]},
     {"id":"HT-30","canonicalName":"Medial Point Left Central Incisor","tissueType":"hard","aka":["MCIL"]},
     {"id":"HT-31","canonicalName":"Medial Point Right Central Incisor","tissueType":"hard","aka":["MCIR"]},
+    {"id":"HT-32","canonicalName":"Rynn Left Concha / Inferior Turbinate Meets Nasal Border","tissueType":"hard","aka":["CL"]},
+    {"id":"HT-33","canonicalName":"Rynn Right Concha / Inferior Turbinate Meets Nasal Border","tissueType":"hard","aka":["CR"]},
     {"id":"ST-1","canonicalName":"Soft Tissue Nasion","tissueType":"soft","aka":["soft nasion","n'","soft tissue nasion"]},
     {"id":"ST-2","canonicalName":"Subnasale","tissueType":"soft","aka":["subnasale","SN","sn'"]},
     {"id":"ST-3","canonicalName":"Pronasale","tissueType":"soft","aka":["pronasale","PN","prn","pn'"]},
@@ -129,7 +132,6 @@ SCHEMA_JSON = r'''{
     {"id":"ST-24","canonicalName":"Columella Break Point Right","tissueType":"soft","aka":["pt8R"]}
   ]
 }'''
-
 
 def _normalize_label(label):
     """Normalize a label for comparison."""
