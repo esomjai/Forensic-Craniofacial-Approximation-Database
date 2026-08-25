@@ -150,6 +150,7 @@ class LandmarkMergerTool(qt.QDialog):
     Landmark Merger Tool - Standalone window with scrollable content and compact mode.
     Now shows Source/Target Definitions from the markup descriptions.
     Also provides a view to show only unmatched landmarks.
+    Additionally, sets 3D visibility: matched points hidden, unmatched points visible.
     """
     
     def __init__(self, parent=None):
@@ -316,7 +317,9 @@ class LandmarkMergerTool(qt.QDialog):
         descLayout.setContentsMargins(10, 5, 10, 5)
         desc = qt.QLabel(
             "Compare two landmark files and selectively import coordinates from one to another.\n"
-            "Useful for merging landmarks from previous analyses with new sets."
+            "Useful for merging landmarks from previous analyses with new sets.\n\n"
+            "💡 After comparison, **matched** points are hidden in the 3D scene; "
+            "**unmatched** points remain visible so you can spot missing landmarks."
         )
         desc.setWordWrap(True)
         desc.setStyleSheet("color: #555555; font-size: 12px; background-color: #f8f9fa; padding: 6px; border-radius: 4px;")
@@ -410,13 +413,14 @@ class LandmarkMergerTool(qt.QDialog):
         scrollLayout.addWidget(resultsBox)
         self.resultsBox = resultsBox
         
-        # ===== NEW: Unmatched Landmarks Group =====
+        # ===== Unmatched Landmarks Group =====
         unmatchedBox = qt.QGroupBox("🚫 Unmatched Landmarks")
         unmatchedLayout = qt.QVBoxLayout(unmatchedBox)
         unmatchedLayout.setContentsMargins(10, 15, 10, 10)
         unmatchedLabel = qt.QLabel(
             "Landmarks that are present in one file but NOT in the other.\n"
-            "They will NOT be updated (no source coordinates for target-only) or cannot be imported (source-only)."
+            "They will NOT be updated (no source coordinates for target-only) or cannot be imported (source-only).\n"
+            "These points are set to VISIBLE in the 3D scene."
         )
         unmatchedLabel.setWordWrap(True)
         unmatchedLabel.setStyleSheet("color: #555555; background-color: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;")
@@ -455,7 +459,7 @@ class LandmarkMergerTool(qt.QDialog):
         
         # ===== Toggle for showing only unmatched =====
         toggleLayout = qt.QHBoxLayout()
-        self.showUnmatchedOnlyCheck = qt.QCheckBox("Show Unmatched Only (hide matched pairs)")
+        self.showUnmatchedOnlyCheck = qt.QCheckBox("Show Unmatched Only (hide matched pairs in GUI)")
         self.showUnmatchedOnlyCheck.setStyleSheet("font-weight: bold; color: #2c3e50;")
         self.showUnmatchedOnlyCheck.stateChanged.connect(self.onToggleUnmatchedOnly)
         toggleLayout.addWidget(self.showUnmatchedOnlyCheck)
@@ -576,7 +580,7 @@ class LandmarkMergerTool(qt.QDialog):
         self.mainLayout = mainLayout
         self.scrollContent = scrollContent
         
-    # ===== Compact mode toggle (unchanged) =====
+    # ===== Compact mode toggle =====
     def toggleCompactMode(self):
         self.compactMode = not self.compactMode
         if self.compactMode:
@@ -595,16 +599,15 @@ class LandmarkMergerTool(qt.QDialog):
         if self.size().width() < 500 or self.size().height() < 400:
             self.resize(max(self.size().width(), 500), max(self.size().height(), 400))
     
-    # ===== Toggle unmatched-only view =====
+    # ===== Toggle unmatched-only view (GUI only) =====
     def onToggleUnmatchedOnly(self, state):
         showUnmatched = (state == qt.Qt.Checked)
         self.resultsBox.setVisible(not showUnmatched)
         self.unmatchedBox.setVisible(showUnmatched)
-        # Also hide the select all/none buttons when unmatched only is shown
         self.selectAllBtn.setVisible(not showUnmatched)
         self.selectNoneBtn.setVisible(not showUnmatched)
     
-    # ===== Core logic (modified to collect unmatched) =====
+    # ===== Core logic =====
     def _collectNodeLabels(self, node):
         labels = []
         if not node:
@@ -655,6 +658,34 @@ class LandmarkMergerTool(qt.QDialog):
                 'tissueType': self.landmarkById[lm_id]['tissueType']
             })
         return targetOnly, sourceOnly
+    
+    # ===== NEW: Apply 3D visibility based on match status =====
+    def _applyVisibility(self, sourceNode, targetNode):
+        """Hide matched points, show unmatched points in the 3D scene."""
+        if not sourceNode or not targetNode:
+            return
+        
+        # Collect matched indices
+        matched_source_idx = set(m['source_idx'] for m in self.matches)
+        matched_target_idx = set(m['target_idx'] for m in self.matches)
+        
+        # Source node: hide matched, show unmatched
+        total_src = sourceNode.GetNumberOfControlPoints()
+        for i in range(total_src):
+            if i in matched_source_idx:
+                sourceNode.SetNthControlPointVisibility(i, 0)  # Hide
+            else:
+                sourceNode.SetNthControlPointVisibility(i, 1)  # Show
+        
+        # Target node: hide matched, show unmatched
+        total_tgt = targetNode.GetNumberOfControlPoints()
+        for i in range(total_tgt):
+            if i in matched_target_idx:
+                targetNode.SetNthControlPointVisibility(i, 0)  # Hide
+            else:
+                targetNode.SetNthControlPointVisibility(i, 1)  # Show
+        
+        self._setStatus("👁️ Matched points hidden, unmatched points visible in 3D view", "info")
     
     def compareLandmarks(self):
         sourceNode = self.sourceSelector.currentNode()
@@ -721,6 +752,9 @@ class LandmarkMergerTool(qt.QDialog):
         self._updateTable()
         self._updateUnmatchedTables()
         
+        # ===== Apply 3D visibility =====
+        self._applyVisibility(sourceNode, targetNode)
+        
         # Show unmatched notification
         self._showUnmatchedNotification()
         
@@ -733,16 +767,13 @@ class LandmarkMergerTool(qt.QDialog):
             self.applyBtn.setEnabled(False)
             self.deleteBtn.setEnabled(False)
         
-        # If there are unmatched, show the checkbox and maybe auto-check it?
         if self.unmatchedTarget or self.unmatchedSource:
             self.showUnmatchedOnlyCheck.setEnabled(True)
-            # Optionally, we could auto-check it, but let the user decide.
         else:
             self.showUnmatchedOnlyCheck.setEnabled(False)
             self.showUnmatchedOnlyCheck.setChecked(False)
     
     def _updateUnmatchedTables(self):
-        # Target-only
         self.targetOnlyTable.setRowCount(len(self.unmatchedTarget))
         for row, lm in enumerate(self.unmatchedTarget):
             self.targetOnlyTable.setItem(row, 0, qt.QTableWidgetItem(lm['id']))
@@ -750,7 +781,6 @@ class LandmarkMergerTool(qt.QDialog):
             self.targetOnlyTable.setItem(row, 2, qt.QTableWidgetItem(lm['tissueType']))
         self.targetOnlyTable.resizeColumnsToContents()
         
-        # Source-only
         self.sourceOnlyTable.setRowCount(len(self.unmatchedSource))
         for row, lm in enumerate(self.unmatchedSource):
             self.sourceOnlyTable.setItem(row, 0, qt.QTableWidgetItem(lm['id']))
@@ -758,7 +788,6 @@ class LandmarkMergerTool(qt.QDialog):
             self.sourceOnlyTable.setItem(row, 2, qt.QTableWidgetItem(lm['tissueType']))
         self.sourceOnlyTable.resizeColumnsToContents()
         
-        # Show the unmatched group if there are any
         if self.unmatchedTarget or self.unmatchedSource:
             self.unmatchedBox.setVisible(True)
         else:
@@ -988,7 +1017,6 @@ class LandmarkMergerTool(qt.QDialog):
             return
         
         self._updateTable()
-        # Recompute unmatched after changes (they remain the same)
         summary = "📊 MERGE COMPLETE\n" + "=" * 65 + "\n\n"
         if changesApplied > 0:
             summary += "✅ Successfully updated coordinates for " + str(changesApplied) + " landmark(s):\n"
