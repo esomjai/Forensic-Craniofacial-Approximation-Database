@@ -47,7 +47,7 @@ The technique by Rynn et al 2010[^3] has been applied, tested and recalibrated b
 > If you are only interested in reproducing the x, y, z axes and the pron ant, pron vert, pron pFHP, nasal length (nas ln), nasal height (nas ht), nasal depth (nas dp) measurements, allocate ONLY landmarks highlighted with a 🔵 for hard tissue points and 🟧 for soft tissue points.
 
 #### Hard tissue landmarks
-[Rynn_hard_tissue.mrk.json](https://github.com/user-attachments/files/22989769/Rynn_hard_tissue.mrk.json)
+[Rynn_hard_tissue.mrk.json](https://github.com/user-attachments/files/31413384/Rynn_hard_tissue.mrk.json)
 
 
 | Position in code | Position in file | Name in file | Landmark name | Definition | Defined by |
