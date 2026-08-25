@@ -133,6 +133,7 @@ SCHEMA_JSON = r'''{
   ]
 }'''
 
+
 def _normalize_label(label):
     """Normalize a label for comparison."""
     if label is None:
@@ -148,6 +149,7 @@ class LandmarkMergerTool(qt.QDialog):
     """
     Landmark Merger Tool - Standalone window with scrollable content and compact mode.
     Now shows Source/Target Definitions from the markup descriptions.
+    Also provides a view to show only unmatched landmarks.
     """
     
     def __init__(self, parent=None):
@@ -166,6 +168,8 @@ class LandmarkMergerTool(qt.QDialog):
         
         self.matches = []
         self.compactMode = False
+        self.unmatchedTarget = []   # list of dicts for target-only
+        self.unmatchedSource = []   # list of dicts for source-only
         self._buildUI()
         
     def _applyTheme(self):
@@ -306,6 +310,7 @@ class LandmarkMergerTool(qt.QDialog):
         scrollLayout.setSpacing(10)
         scrollLayout.setContentsMargins(0, 0, 0, 0)
         
+        # Description
         self.descBox = qt.QGroupBox()
         descLayout = qt.QVBoxLayout(self.descBox)
         descLayout.setContentsMargins(10, 5, 10, 5)
@@ -318,6 +323,7 @@ class LandmarkMergerTool(qt.QDialog):
         descLayout.addWidget(desc)
         scrollLayout.addWidget(self.descBox)
         
+        # File selectors
         filesBox = qt.QGroupBox("📂 Select Landmark Files to Compare")
         filesLayout = qt.QFormLayout(filesBox)
         filesLayout.setSpacing(6)
@@ -342,6 +348,7 @@ class LandmarkMergerTool(qt.QDialog):
         filesLayout.addRow("📥 Target (Import TO):", self.targetSelector)
         scrollLayout.addWidget(filesBox)
         
+        # Compare button
         btnLayout = qt.QHBoxLayout()
         btnLayout.setContentsMargins(0, 3, 0, 3)
         self.compareBtn = qt.QPushButton("🔍 Compare Landmarks")
@@ -368,6 +375,7 @@ class LandmarkMergerTool(qt.QDialog):
         btnLayout.addStretch()
         scrollLayout.addLayout(btnLayout)
         
+        # ===== Matched Landmarks Table =====
         resultsBox = qt.QGroupBox("📋 Matching Landmarks")
         resultsLayout = qt.QVBoxLayout(resultsBox)
         resultsLayout.setContentsMargins(10, 15, 10, 10)
@@ -379,7 +387,7 @@ class LandmarkMergerTool(qt.QDialog):
         instr.setStyleSheet("color: #555555; background-color: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;")
         resultsLayout.addWidget(instr)
         self.resultsTable = qt.QTableWidget()
-        self.resultsTable.setColumnCount(8)  # UPDATED: 8 columns (added Source/Target Definition)
+        self.resultsTable.setColumnCount(8)
         self.resultsTable.setHorizontalHeaderLabels([
             "Use Source", "ID", "Canonical Name",
             "Source Definition", "Target Definition",
@@ -390,19 +398,71 @@ class LandmarkMergerTool(qt.QDialog):
         self.resultsTable.setMinimumHeight(150)
         self.resultsTable.setMaximumHeight(400)
         self.resultsTable.setAlternatingRowColors(True)
-        # Set column widths (wider for definitions)
-        self.resultsTable.setColumnWidth(0, 70)   # Use Source
-        self.resultsTable.setColumnWidth(1, 80)   # ID
-        self.resultsTable.setColumnWidth(2, 180)  # Canonical Name
-        self.resultsTable.setColumnWidth(3, 200)  # Source Definition
-        self.resultsTable.setColumnWidth(4, 200)  # Target Definition
-        self.resultsTable.setColumnWidth(5, 130)  # Source Label
-        self.resultsTable.setColumnWidth(6, 130)  # Target Label
-        self.resultsTable.setColumnWidth(7, 90)   # Coordinates
+        self.resultsTable.setColumnWidth(0, 70)
+        self.resultsTable.setColumnWidth(1, 80)
+        self.resultsTable.setColumnWidth(2, 180)
+        self.resultsTable.setColumnWidth(3, 200)
+        self.resultsTable.setColumnWidth(4, 200)
+        self.resultsTable.setColumnWidth(5, 130)
+        self.resultsTable.setColumnWidth(6, 130)
+        self.resultsTable.setColumnWidth(7, 90)
         resultsLayout.addWidget(self.resultsTable)
         scrollLayout.addWidget(resultsBox)
         self.resultsBox = resultsBox
         
+        # ===== NEW: Unmatched Landmarks Group =====
+        unmatchedBox = qt.QGroupBox("🚫 Unmatched Landmarks")
+        unmatchedLayout = qt.QVBoxLayout(unmatchedBox)
+        unmatchedLayout.setContentsMargins(10, 15, 10, 10)
+        unmatchedLabel = qt.QLabel(
+            "Landmarks that are present in one file but NOT in the other.\n"
+            "They will NOT be updated (no source coordinates for target-only) or cannot be imported (source-only)."
+        )
+        unmatchedLabel.setWordWrap(True)
+        unmatchedLabel.setStyleSheet("color: #555555; background-color: #f8f9fa; padding: 5px; border-radius: 4px; font-size: 11px;")
+        unmatchedLayout.addWidget(unmatchedLabel)
+        
+        # Two sub-tables: Target-only and Source-only
+        subLayout = qt.QHBoxLayout()
+        # Target-only
+        targetOnlyBox = qt.QGroupBox("🔶 In Target Only")
+        targetOnlyLayout = qt.QVBoxLayout(targetOnlyBox)
+        self.targetOnlyTable = qt.QTableWidget()
+        self.targetOnlyTable.setColumnCount(3)
+        self.targetOnlyTable.setHorizontalHeaderLabels(["ID", "Canonical Name", "Tissue Type"])
+        self.targetOnlyTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+        self.targetOnlyTable.verticalHeader().setVisible(False)
+        self.targetOnlyTable.setAlternatingRowColors(True)
+        targetOnlyLayout.addWidget(self.targetOnlyTable)
+        subLayout.addWidget(targetOnlyBox)
+        
+        # Source-only
+        sourceOnlyBox = qt.QGroupBox("🔷 In Source Only")
+        sourceOnlyLayout = qt.QVBoxLayout(sourceOnlyBox)
+        self.sourceOnlyTable = qt.QTableWidget()
+        self.sourceOnlyTable.setColumnCount(3)
+        self.sourceOnlyTable.setHorizontalHeaderLabels(["ID", "Canonical Name", "Tissue Type"])
+        self.sourceOnlyTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+        self.sourceOnlyTable.verticalHeader().setVisible(False)
+        self.sourceOnlyTable.setAlternatingRowColors(True)
+        sourceOnlyLayout.addWidget(self.sourceOnlyTable)
+        subLayout.addWidget(sourceOnlyBox)
+        
+        unmatchedLayout.addLayout(subLayout)
+        scrollLayout.addWidget(unmatchedBox)
+        self.unmatchedBox = unmatchedBox
+        self.unmatchedBox.setVisible(False)  # hidden initially
+        
+        # ===== Toggle for showing only unmatched =====
+        toggleLayout = qt.QHBoxLayout()
+        self.showUnmatchedOnlyCheck = qt.QCheckBox("Show Unmatched Only (hide matched pairs)")
+        self.showUnmatchedOnlyCheck.setStyleSheet("font-weight: bold; color: #2c3e50;")
+        self.showUnmatchedOnlyCheck.stateChanged.connect(self.onToggleUnmatchedOnly)
+        toggleLayout.addWidget(self.showUnmatchedOnlyCheck)
+        toggleLayout.addStretch()
+        scrollLayout.addLayout(toggleLayout)
+        
+        # Action buttons (Select All, Select None, Apply)
         actionLayout = qt.QHBoxLayout()
         actionLayout.setSpacing(8)
         self.selectAllBtn = qt.QPushButton("✅ Select All")
@@ -460,6 +520,7 @@ class LandmarkMergerTool(qt.QDialog):
         actionLayout.addWidget(self.applyBtn)
         scrollLayout.addLayout(actionLayout)
         
+        # Delete Source button
         deleteLayout = qt.QHBoxLayout()
         deleteLayout.setContentsMargins(0, 2, 0, 2)
         self.deleteBtn = qt.QPushButton("🗑️ Delete Source File (Optional)")
@@ -489,6 +550,7 @@ class LandmarkMergerTool(qt.QDialog):
         self.scrollArea.setWidget(scrollContent)
         mainLayout.addWidget(self.scrollArea)
         
+        # Status bar
         self.status = qt.QLabel("🔹 Ready - Select two landmark files and click 'Compare Landmarks'")
         self.status.setStyleSheet("""
             QLabel {
@@ -514,6 +576,7 @@ class LandmarkMergerTool(qt.QDialog):
         self.mainLayout = mainLayout
         self.scrollContent = scrollContent
         
+    # ===== Compact mode toggle (unchanged) =====
     def toggleCompactMode(self):
         self.compactMode = not self.compactMode
         if self.compactMode:
@@ -532,12 +595,17 @@ class LandmarkMergerTool(qt.QDialog):
         if self.size().width() < 500 or self.size().height() < 400:
             self.resize(max(self.size().width(), 500), max(self.size().height(), 400))
     
-    # -----------------------------------------------------------------
-    # Core functionality – modified to include definitions
-    # -----------------------------------------------------------------
+    # ===== Toggle unmatched-only view =====
+    def onToggleUnmatchedOnly(self, state):
+        showUnmatched = (state == qt.Qt.Checked)
+        self.resultsBox.setVisible(not showUnmatched)
+        self.unmatchedBox.setVisible(showUnmatched)
+        # Also hide the select all/none buttons when unmatched only is shown
+        self.selectAllBtn.setVisible(not showUnmatched)
+        self.selectNoneBtn.setVisible(not showUnmatched)
     
+    # ===== Core logic (modified to collect unmatched) =====
     def _collectNodeLabels(self, node):
-        """Collect labels and descriptions from a landmark node."""
         labels = []
         if not node:
             return labels
@@ -559,38 +627,34 @@ class LandmarkMergerTool(qt.QDialog):
                 return ids[0]
         return None
     
-    def _getSourceLandmarkIds(self, sourceNode):
-        sourceIds = set()
-        if sourceNode:
-            for i in range(sourceNode.GetNumberOfControlPoints()):
-                label = sourceNode.GetNthControlPointLabel(i)
+    def _getAllLandmarkIds(self, node):
+        ids = set()
+        if node:
+            for i in range(node.GetNumberOfControlPoints()):
+                label = node.GetNthControlPointLabel(i)
                 lm_id = self._findLandmarkId(label)
                 if lm_id:
-                    sourceIds.add(lm_id)
-        return sourceIds
+                    ids.add(lm_id)
+        return ids
     
-    def _getTargetLandmarkIds(self, targetNode):
-        targetIds = set()
-        if targetNode:
-            for i in range(targetNode.GetNumberOfControlPoints()):
-                label = targetNode.GetNthControlPointLabel(i)
-                lm_id = self._findLandmarkId(label)
-                if lm_id:
-                    targetIds.add(lm_id)
-        return targetIds
-    
-    def _getUnmatchedTargetLandmarks(self, sourceNode, targetNode):
-        sourceIds = self._getSourceLandmarkIds(sourceNode)
-        targetIds = self._getTargetLandmarkIds(targetNode)
-        unmatchedIds = targetIds - sourceIds
-        unmatchedLandmarks = []
-        for lm_id in sorted(unmatchedIds):
-            unmatchedLandmarks.append({
+    def _getUnmatchedLandmarks(self, sourceNode, targetNode):
+        sourceIds = self._getAllLandmarkIds(sourceNode)
+        targetIds = self._getAllLandmarkIds(targetNode)
+        targetOnly = []
+        for lm_id in sorted(targetIds - sourceIds):
+            targetOnly.append({
                 'id': lm_id,
                 'canonicalName': self.landmarkById[lm_id]['canonicalName'],
                 'tissueType': self.landmarkById[lm_id]['tissueType']
             })
-        return unmatchedLandmarks
+        sourceOnly = []
+        for lm_id in sorted(sourceIds - targetIds):
+            sourceOnly.append({
+                'id': lm_id,
+                'canonicalName': self.landmarkById[lm_id]['canonicalName'],
+                'tissueType': self.landmarkById[lm_id]['tissueType']
+            })
+        return targetOnly, sourceOnly
     
     def compareLandmarks(self):
         sourceNode = self.sourceSelector.currentNode()
@@ -602,7 +666,7 @@ class LandmarkMergerTool(qt.QDialog):
             self._setStatus("❌ Error: Source and target files must be different", "error")
             return
         
-        sourceLabels = self._collectNodeLabels(sourceNode)   # returns (idx, label, desc)
+        sourceLabels = self._collectNodeLabels(sourceNode)
         targetLabels = self._collectNodeLabels(targetNode)
         if not sourceLabels:
             self._setStatus("❌ Error: Source file has no landmarks", "error")
@@ -611,6 +675,7 @@ class LandmarkMergerTool(qt.QDialog):
             self._setStatus("❌ Error: Target file has no landmarks", "error")
             return
         
+        # Build matches
         self.matches = []
         for sourceIdx, sourceLabel, sourceDesc in sourceLabels:
             sourceLandmarkId = self._findLandmarkId(sourceLabel)
@@ -627,6 +692,7 @@ class LandmarkMergerTool(qt.QDialog):
                         targetDesc = tDesc
                         break
                 if targetIdx is None:
+                    # Try matching by canonical name
                     for tIdx, tLabel, tDesc in targetLabels:
                         tLandmarkId = self._findLandmarkId(tLabel)
                         if tLandmarkId and self.landmarkById[tLandmarkId]["canonicalName"] == canonicalName:
@@ -647,8 +713,17 @@ class LandmarkMergerTool(qt.QDialog):
                         'use_source': True
                     })
         self.matches.sort(key=lambda x: x['canonical_name'])
+        
+        # Get unmatched
+        self.unmatchedTarget, self.unmatchedSource = self._getUnmatchedLandmarks(sourceNode, targetNode)
+        
+        # Update tables
         self._updateTable()
-        self._showUnmatchedTargetNotification(sourceNode, targetNode)
+        self._updateUnmatchedTables()
+        
+        # Show unmatched notification
+        self._showUnmatchedNotification()
+        
         if self.matches:
             self._setStatus("✅ Found " + str(len(self.matches)) + " matching landmarks. Select which coordinates to import.", "success")
             self.applyBtn.setEnabled(True)
@@ -657,36 +732,56 @@ class LandmarkMergerTool(qt.QDialog):
             self._setStatus("⚠️ No matching landmarks found between the two files", "warning")
             self.applyBtn.setEnabled(False)
             self.deleteBtn.setEnabled(False)
+        
+        # If there are unmatched, show the checkbox and maybe auto-check it?
+        if self.unmatchedTarget or self.unmatchedSource:
+            self.showUnmatchedOnlyCheck.setEnabled(True)
+            # Optionally, we could auto-check it, but let the user decide.
+        else:
+            self.showUnmatchedOnlyCheck.setEnabled(False)
+            self.showUnmatchedOnlyCheck.setChecked(False)
     
-    def _setStatus(self, message, status_type="info"):
-        styles = {
-            "info": "background-color:#ecf0f1; padding:6px; border-radius:4px; color:#2c3e50; font-weight:bold; font-size:12px;",
-            "success": "background-color:#e8f8f5; padding:6px; border-radius:4px; color:#1a7a5a; font-weight:bold; font-size:12px;",
-            "error": "background-color:#fde8e8; padding:6px; border-radius:4px; color:#c0392b; font-weight:bold; font-size:12px;",
-            "warning": "background-color:#fef9e7; padding:6px; border-radius:4px; color:#b7950b; font-weight:bold; font-size:12px;"
-        }
-        self.status.setText(message)
-        self.status.setStyleSheet(styles.get(status_type, styles["info"]))
+    def _updateUnmatchedTables(self):
+        # Target-only
+        self.targetOnlyTable.setRowCount(len(self.unmatchedTarget))
+        for row, lm in enumerate(self.unmatchedTarget):
+            self.targetOnlyTable.setItem(row, 0, qt.QTableWidgetItem(lm['id']))
+            self.targetOnlyTable.setItem(row, 1, qt.QTableWidgetItem(lm['canonicalName']))
+            self.targetOnlyTable.setItem(row, 2, qt.QTableWidgetItem(lm['tissueType']))
+        self.targetOnlyTable.resizeColumnsToContents()
+        
+        # Source-only
+        self.sourceOnlyTable.setRowCount(len(self.unmatchedSource))
+        for row, lm in enumerate(self.unmatchedSource):
+            self.sourceOnlyTable.setItem(row, 0, qt.QTableWidgetItem(lm['id']))
+            self.sourceOnlyTable.setItem(row, 1, qt.QTableWidgetItem(lm['canonicalName']))
+            self.sourceOnlyTable.setItem(row, 2, qt.QTableWidgetItem(lm['tissueType']))
+        self.sourceOnlyTable.resizeColumnsToContents()
+        
+        # Show the unmatched group if there are any
+        if self.unmatchedTarget or self.unmatchedSource:
+            self.unmatchedBox.setVisible(True)
+        else:
+            self.unmatchedBox.setVisible(False)
     
-    def _showUnmatchedTargetNotification(self, sourceNode, targetNode):
-        unmatchedLandmarks = self._getUnmatchedTargetLandmarks(sourceNode, targetNode)
-        if unmatchedLandmarks:
-            hard_unmatched = [lm for lm in unmatchedLandmarks if lm['tissueType'] == 'hard']
-            soft_unmatched = [lm for lm in unmatchedLandmarks if lm['tissueType'] == 'soft']
+    def _showUnmatchedNotification(self):
+        if self.unmatchedTarget:
+            hard = [lm for lm in self.unmatchedTarget if lm['tissueType'] == 'hard']
+            soft = [lm for lm in self.unmatchedTarget if lm['tissueType'] == 'soft']
             msg = "📋 LANDMARKS IN TARGET BUT NOT IN SOURCE\n" + "=" * 65 + "\n\n"
-            msg += "The following landmarks exist in the TARGET file but are NOT present in the SOURCE file.\n"
+            msg += "These landmarks exist in the TARGET file but are NOT present in the SOURCE file.\n"
             msg += "They will NOT be updated during the merge (no source coordinates available).\n\n"
-            if hard_unmatched:
-                msg += "🔷 HARD TISSUE LANDMARKS (" + str(len(hard_unmatched)) + "):\n"
-                for lm in hard_unmatched:
+            if hard:
+                msg += "🔷 HARD TISSUE (" + str(len(hard)) + "):\n"
+                for lm in hard:
                     msg += "  • " + lm['id'] + ": " + lm['canonicalName'] + "\n"
                 msg += "\n"
-            if soft_unmatched:
-                msg += "🔶 SOFT TISSUE LANDMARKS (" + str(len(soft_unmatched)) + "):\n"
-                for lm in soft_unmatched:
+            if soft:
+                msg += "🔶 SOFT TISSUE (" + str(len(soft)) + "):\n"
+                for lm in soft:
                     msg += "  • " + lm['id'] + ": " + lm['canonicalName'] + "\n"
                 msg += "\n"
-            msg += "Total landmarks that will NOT be updated: " + str(len(unmatchedLandmarks))
+            msg += "Total landmarks that will NOT be updated: " + str(len(self.unmatchedTarget))
             msgBox = qt.QMessageBox(self)
             msgBox.setWindowTitle("Landmarks Not to be Updated")
             msgBox.setText(msg)
@@ -694,9 +789,9 @@ class LandmarkMergerTool(qt.QDialog):
             msgBox.setStandardButtons(qt.QMessageBox.Ok)
             msgBox.setSizeGripEnabled(True)
             msgBox.exec_()
-            self._setStatus("ℹ️ " + str(len(unmatchedLandmarks)) + " target landmarks have no source match - will NOT be updated", "info")
+            self._setStatus("ℹ️ " + str(len(self.unmatchedTarget)) + " target landmarks have no source match - will NOT be updated", "info")
         else:
-            targetIds = self._getTargetLandmarkIds(targetNode)
+            targetIds = self._getAllLandmarkIds(self.targetSelector.currentNode())
             if targetIds:
                 msgBox = qt.QMessageBox(self)
                 msgBox.setWindowTitle("Complete Match!")
@@ -709,6 +804,16 @@ class LandmarkMergerTool(qt.QDialog):
                 msgBox.exec_()
                 self._setStatus("✅ All target landmarks have source matches", "success")
     
+    def _setStatus(self, message, status_type="info"):
+        styles = {
+            "info": "background-color:#ecf0f1; padding:6px; border-radius:4px; color:#2c3e50; font-weight:bold; font-size:12px;",
+            "success": "background-color:#e8f8f5; padding:6px; border-radius:4px; color:#1a7a5a; font-weight:bold; font-size:12px;",
+            "error": "background-color:#fde8e8; padding:6px; border-radius:4px; color:#c0392b; font-weight:bold; font-size:12px;",
+            "warning": "background-color:#fef9e7; padding:6px; border-radius:4px; color:#b7950b; font-weight:bold; font-size:12px;"
+        }
+        self.status.setText(message)
+        self.status.setStyleSheet(styles.get(status_type, styles["info"]))
+    
     def _updateTable(self):
         self.resultsTable.setRowCount(len(self.matches))
         for row, match in enumerate(self.matches):
@@ -717,28 +822,27 @@ class LandmarkMergerTool(qt.QDialog):
             checkbox.stateChanged.connect(lambda state, r=row: self._onCheckboxChanged(r, state))
             self.resultsTable.setCellWidget(row, 0, checkbox)
             
-            # ID
             item = qt.QTableWidgetItem(match['landmark_id'])
             item.setTextAlignment(qt.Qt.AlignCenter)
             self.resultsTable.setItem(row, 1, item)
-            # Canonical Name
+            
             item = qt.QTableWidgetItem(match['canonical_name'])
             self.resultsTable.setItem(row, 2, item)
-            # Source Definition
+            
             item = qt.QTableWidgetItem(match['source_desc'] if match['source_desc'] else "")
             item.setToolTip(match['source_desc'] if match['source_desc'] else "")
             self.resultsTable.setItem(row, 3, item)
-            # Target Definition
+            
             item = qt.QTableWidgetItem(match['target_desc'] if match['target_desc'] else "")
             item.setToolTip(match['target_desc'] if match['target_desc'] else "")
             self.resultsTable.setItem(row, 4, item)
-            # Source Label
+            
             item = qt.QTableWidgetItem(match['source_label'])
             self.resultsTable.setItem(row, 5, item)
-            # Target Label
+            
             item = qt.QTableWidgetItem(match['target_label'])
             self.resultsTable.setItem(row, 6, item)
-            # Status (now column 7)
+            
             status = "✓ OK"
             statusColor = "#27ae60"
             sourceNode = self.sourceSelector.currentNode()
@@ -825,6 +929,9 @@ class LandmarkMergerTool(qt.QDialog):
                 self.applyBtn.setEnabled(False)
                 self.matches = []
                 self.resultsTable.setRowCount(0)
+                self.unmatchedTarget = []
+                self.unmatchedSource = []
+                self._updateUnmatchedTables()
             except Exception as e:
                 self._setStatus("❌ Error deleting file: " + str(e), "error")
     
@@ -881,7 +988,7 @@ class LandmarkMergerTool(qt.QDialog):
             return
         
         self._updateTable()
-        unmatchedLandmarks = self._getUnmatchedTargetLandmarks(sourceNode, targetNode)
+        # Recompute unmatched after changes (they remain the same)
         summary = "📊 MERGE COMPLETE\n" + "=" * 65 + "\n\n"
         if changesApplied > 0:
             summary += "✅ Successfully updated coordinates for " + str(changesApplied) + " landmark(s):\n"
@@ -895,12 +1002,12 @@ class LandmarkMergerTool(qt.QDialog):
             for skip in skippedLandmarks:
                 summary += "  • " + skip + "\n"
             summary += "\n"
-        if unmatchedLandmarks:
-            summary += "📋 LANDMARKS IN TARGET BUT NOT IN SOURCE (" + str(len(unmatchedLandmarks)) + "):\n"
+        if self.unmatchedTarget:
+            summary += "📋 LANDMARKS IN TARGET BUT NOT IN SOURCE (" + str(len(self.unmatchedTarget)) + "):\n"
             summary += "   These landmarks exist in target but not in source.\n"
             summary += "   They were NOT updated (no source coordinates available).\n\n"
-            hard_unmatched = [lm for lm in unmatchedLandmarks if lm['tissueType'] == 'hard']
-            soft_unmatched = [lm for lm in unmatchedLandmarks if lm['tissueType'] == 'soft']
+            hard_unmatched = [lm for lm in self.unmatchedTarget if lm['tissueType'] == 'hard']
+            soft_unmatched = [lm for lm in self.unmatchedTarget if lm['tissueType'] == 'soft']
             if hard_unmatched:
                 summary += "  🔷 Hard tissue:\n"
                 for lm in hard_unmatched:
@@ -910,7 +1017,7 @@ class LandmarkMergerTool(qt.QDialog):
                 for lm in soft_unmatched:
                     summary += "    • " + lm['id'] + ": " + lm['canonicalName'] + "\n"
         else:
-            targetIds = self._getTargetLandmarkIds(targetNode)
+            targetIds = self._getAllLandmarkIds(targetNode)
             if targetIds:
                 summary += "🎉 ALL " + str(len(targetIds)) + " target landmarks have matches in the source file!\n"
                 summary += "   All available landmarks have been updated."
@@ -921,17 +1028,17 @@ class LandmarkMergerTool(qt.QDialog):
         msgBox = qt.QMessageBox(self)
         msgBox.setWindowTitle("Merge Summary")
         msgBox.setText(summary)
-        msgBox.setIcon(qt.QMessageBox.Warning if unmatchedLandmarks else qt.QMessageBox.Information)
+        msgBox.setIcon(qt.QMessageBox.Warning if self.unmatchedTarget else qt.QMessageBox.Information)
         msgBox.setStandardButtons(qt.QMessageBox.Ok)
         msgBox.setSizeGripEnabled(True)
         msgBox.exec_()
         
         if changesApplied > 0:
             self._setStatus("✅ Updated coordinates for " + str(changesApplied) + " landmark(s). " + 
-                          str(len(unmatchedLandmarks)) + " target landmarks have no source match.", "success")
+                          str(len(self.unmatchedTarget)) + " target landmarks have no source match.", "success")
             self.deleteBtn.setEnabled(True)
         else:
-            self._setStatus("ℹ️ No coordinates were updated. " + str(len(unmatchedLandmarks)) + " target landmarks have no source match.", "warning")
+            self._setStatus("ℹ️ No coordinates were updated. " + str(len(self.unmatchedTarget)) + " target landmarks have no source match.", "warning")
             self.deleteBtn.setEnabled(True)
     
     def closeEvent(self, event):
