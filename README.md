@@ -2,6 +2,9 @@
 Often comparisons of the theoretical and anatomical basis, data collection methods, reliability and success rates, as well as details of the sample population used to establish these guides cannot be readily made due to their heterogeneity, leaving them to interpret these recommendations and assess their limitations.
 To improve repeatibility of forensic craniofacial approximation methods, this project aims to “translate” well-known techniques into the world of medical imaging and Python with the help of the open-source programme, 3D Slicer. Please visit their official website for  more information and free download.
 
+<img width="557" height="245" alt="Picture1" src="https://github.com/user-attachments/assets/76380451-d877-44f0-927d-29eeb0469054" />
+
+
 All methodology was developed on [NMDID](https://nmdid.unm.edu/welcome)[^1] post-mortem CTs (Edgar, HJH; Daneshvari Berry, S; Moes, E; Adolphi, NL; Bridges, P; Nolte, KB (2020). New Mexico Decedent Image Database. Office of the Medical Investigator, University of New Mexico. doi.org/10.25827/5s8c-n515.)  but are shown in the guides using the Sample Data by 3D Slicer which is openly accessible.
 
 If this is your first time working with Slicer, please start in the "Start here" folder and First Steps.md file.
@@ -13,14 +16,15 @@ This is a work in progress repository, so take everything with a pinch of salt :
 > [!IMPORTANT]
 > Please note that these guidelines are the researcher’s interpretation of the cited literature. If you notice any errors or have any questions, please do not hesitate to get in touch at [e.m.somjai@dundee.ac.uk](mailto:e.m.somjai@dundee.ac.uk). 
 
-For most protocols, the first step is the re-orientation of the scan in the Frankfort Horizontal Plane (FHP) (and translating the scan so that nasion is at coordinates 0,0,0) so that navigating the models becomes easier. 
+### Setup (Preparation of the raw DICOM files)
+For most protocols, the first step is the re-orientation of the scan in the Frankfort Horizontal Plane (FHP), visualising the FHP and translating the scan so that nasion is at coordinates 0,0,0.  
   - For a step-by-step tutorial,  please visit [this page](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/002_Realign%20CT%20in%20the%20standard%20FHP.md)
   - For the .json file and code only, go to [this release](https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/blob/basics/Start%20here%20/002_Realignment%20GUI.md))
 If you choose to do a segmentation, follow the tutorial at [ROI vs Segmentation](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/003_Roi%20vs%20Segmentation.md)
 
 Do not forget to re-visit the [tutorial](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/blob/basics/004_Copying%20measurements%20to%20Clipboard.md) or [code](https://github.com/esomjai/ForensicCraniofacialApproximationDatabase/releases/tag/CopyMeasurementsToClipboard) for copying measurements to the clipboard
 
-Currently available methodologies for nose approximation and their original papers are: 
+#### Currently available methodologies for nose approximation and their original papers are: 
 
 Method name | Method reference | Step-by-step explanation | Graphic User Interface
 -- | -- | -- | --
