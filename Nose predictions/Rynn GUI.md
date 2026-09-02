@@ -1,5 +1,6 @@
-```python
+This GUI features the original Rynn triangle method with an optional extended reproduction of their network. It also features the recalibrated regression equations by Bulut and Sarilita. 
 
+```python
 import os
 import vtk
 import numpy as np
@@ -8,6 +9,7 @@ import slicer
 import urllib.request
 import tempfile
 import re
+from functools import partial
 
 # =============================================================================
 # REPORT WINDOW
@@ -45,6 +47,8 @@ class ReportWindow(qt.QWidget):
 
         self.results = {}
         self.clear_report()
+        self.tables = {}  # dictionary to store tables with unique keys
+
 
     def append_text(self, text_string):
         self.report_text_edit.append(text_string)
@@ -127,16 +131,52 @@ def restore_camera_state(camera_state):
     threeDView.forceRender()
 
 # =============================================================================
-# MAIN LOGIC
+# MAIN LOGIC (with alias mapping and node attribute storage)
 # =============================================================================
 
 class RynnMethodLogic:
     def __init__(self):
         self.run_number = self.get_next_run_number()
         self.item_counters = {}
+        # --- Tracking for stale node detection ---
+        self.hard_node_guid = None
+        self.plane_method = None
+        self.scaffold_node_guid = None
+        
+        # --- Alias mapping for soft tissue landmarks ---
+        self.alias_to_canonical = {
+            # nasion aliases
+            "nasion": "nasion",
+            "soft nasion": "nasion",
+            "n'": "nasion",
+            "soft tissue nasion": "nasion",
+            # pronasale aliases
+            "pronasale": "pronasale",
+            "pn": "pronasale",
+            "prn": "pronasale",
+            "pn'": "pronasale",
+            # subnasale aliases
+            "subnasale": "subnasale",
+            "sn": "subnasale",
+            "sn'": "subnasale",
+        }
+
+    def get_landmark_canonical(self, label):
+        """Return canonical name (nasion/pronasale/subnasale) for a given label."""
+        if label is None:
+            return None
+        label_lower = label.lower().strip()
+        # Check exact alias match
+        if label_lower in self.alias_to_canonical:
+            return self.alias_to_canonical[label_lower]
+        # Fallback: substring match (for labels like "pronasale_1")
+        for key in self.alias_to_canonical.keys():
+            if key in label_lower:
+                return self.alias_to_canonical[key]
+        return None
     
     def get_next_run_number(self):
-        """Find the next available run number by checking existing nodes."""
+        """Find the highest existing run number by checking existing nodes."""
         max_run = 0
         for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
             match = re.search(r'_(\d+)_\d+$', node.GetName())
@@ -146,7 +186,8 @@ class RynnMethodLogic:
             match = re.search(r'_(\d+)$', node.GetName())
             if match:
                 max_run = max(max_run, int(match.group(1)))
-        return max_run + 1
+        # Return the highest existing run number, not +1
+        return max_run
     
     def reset_item_counter(self, category):
         """Reset the item counter for a category."""
@@ -169,7 +210,10 @@ class RynnMethodLogic:
     
     def get_landmark_positions(self, landmark_node, required_landmarks):
         if not landmark_node: raise ValueError("Landmark node is not selected.")
-        positions = {landmark_node.GetNthControlPointLabel(i).lower(): np.array(landmark_node.GetNthControlPointPositionWorld(i)) for i in range(landmark_node.GetNumberOfControlPoints())}
+        positions = {}
+        for i in range(landmark_node.GetNumberOfControlPoints()):
+            label = landmark_node.GetNthControlPointLabel(i).lower()
+            positions[label] = np.array(landmark_node.GetNthControlPointPositionWorld(i))
         for name in required_landmarks:
             clean_name = name.lower().split(" ")[0]
             if clean_name not in positions and "(if visible)" not in name:
@@ -232,6 +276,13 @@ class RynnMethodLogic:
             create_plane('NPP', pos_np['prosthion'], npp_normal, (0, 1, 0))
             ptp_normal = np.cross(profile_normal, npp_normal); ptp_normal /= np.linalg.norm(ptp_normal)
             create_plane('PTP', pos_np['nasion'], ptp_normal, (0, 0, 1))
+            
+            # Store which node and method were used (and store the node ID as an attribute on the profile plane)
+            self.hard_node_guid = landmark_node.GetID()
+            self.plane_method = "INB" if "INB" in method else "MSP"
+            if profile_plane:
+                profile_plane.SetAttribute("HardNodeID", landmark_node.GetID())
+                profile_plane.SetAttribute("PlaneMethod", self.plane_method)
         finally:
             restore_camera_state(camera_state)
 
@@ -242,9 +293,13 @@ class RynnMethodLogic:
         
         camera_state = save_camera_state()
         try:
-            self.create_line('X_axis', p_nas, p_aca, (1,0,0), use_run_number=False)
+            x_axis = self.create_line('X_axis', p_nas, p_aca, (1,0,0), use_run_number=False)
             self.create_line('Y_axis', p_rhi, p_sub, (0,1,0), use_run_number=False)
             self.create_line('Z_axis', p_nas, p_sub, (0,0,1), use_run_number=False)
+            # Store which node was used for scaffolding (and store the hard node ID as an attribute on X_axis)
+            self.scaffold_node_guid = landmark_node.GetID()
+            if x_axis:
+                x_axis.SetAttribute("HardNodeID", landmark_node.GetID())
         finally:
             restore_camera_state(camera_state)
         
@@ -266,9 +321,13 @@ class RynnMethodLogic:
         
         camera_state = save_camera_state()
         try:
-            self.create_line("Line_1", pos['nasion'] - horizontal_dir*150, pos['nasion'] + horizontal_dir*150, (1,0.5,0), use_run_number=False)
+            line1 = self.create_line("Line_1", pos['nasion'] - horizontal_dir*150, pos['nasion'] + horizontal_dir*150, (1,0.5,0), use_run_number=False)
             self.create_line("Line_2", pos['nasion'] - vertical_dir*150, pos['nasion'] + vertical_dir*150, (1,0.5,0), use_run_number=False)
             self.create_line("Line_3", pos['subspinale'] - horizontal_dir*150, pos['subspinale'] + horizontal_dir*150, (1,0.5,0), use_run_number=False)
+            # Store which node was used for scaffolding (store hard node ID on Line_1 as well)
+            self.scaffold_node_guid = landmark_node.GetID()
+            if line1:
+                line1.SetAttribute("HardNodeID", landmark_node.GetID())
         finally:
             restore_camera_state(camera_state)
 
@@ -302,7 +361,6 @@ class RynnMethodLogic:
                 coeff, var_len, const, eq_str = eq_map[eq]
                 length = coeff * var_len + const
                 line_node = self.create_line("PA", start_pos, start_pos + direction * length, (0.85,0.7,0), use_run_number=True)
-                # THIS IS THE FIX: Show equation name = formula = result
                 report_window.append_text(f"{line_node.GetName()}: {eq} = {eq_str} = {length:.2f} mm")
                 report_window.store_result("PA", line_node.GetName(), eq, length, "mm")
         finally:
@@ -346,7 +404,6 @@ class RynnMethodLogic:
                 point_label = f"pronasale_{line_node.GetName()}"
                 pred_node.AddControlPoint(final_pos, point_label)
                 
-                # THIS IS THE FIX: Show equation name = formula = result
                 report_window.append_text(f"{line_node.GetName()}: {eq_name} = {eq_str} = {length:.2f} mm")
                 report_window.store_result("PV", line_node.GetName(), eq_name, length, "mm")
         finally:
@@ -381,7 +438,6 @@ class RynnMethodLogic:
                 coeff, var_len, const, eq_str = eq_map[eq]
                 length = coeff * var_len + const
                 line_node = self.create_line("pFHP", subsp, subsp + direction * length, (0.9,0.4,0.1), use_run_number=True)
-                # THIS IS THE FIX: Show equation name = formula = result
                 report_window.append_text(f"{line_node.GetName()}: {eq} = {eq_str} = {length:.2f} mm")
                 report_window.store_result("pFHP", line_node.GetName(), eq, length, "mm")
         finally:
@@ -415,7 +471,6 @@ class RynnMethodLogic:
         
         report_window.append_text(f"\n=== Run {self.run_number}: sn (ND circle) ===")
         report_window.append_text(f"Center: {center_label}, Line: {pfhp_line_name}")
-        # THIS IS THE FIX: Show equation name = formula = result
         report_window.append_text(f"{nd_equation} = {eq_str} = {radius:.2f} mm")
         report_window.store_result("ND Radii", f"Run{self.run_number}_{nd_equation}", "Radius", radius, "mm")
         
@@ -477,7 +532,6 @@ class RynnMethodLogic:
         nh_radius, nl_radius = nh_coeff * nh_var + nh_const, nl_coeff * nl_var + nl_const
         
         report_window.append_text(f"\n=== Run {self.run_number}: Nasion ===")
-        # THIS IS THE FIX: Show equation name = formula = result
         report_window.append_text(f"NH: {nh_equation} = {nh_eq_str} = {nh_radius:.2f} mm")
         report_window.append_text(f"NL: {nl_equation} = {nl_eq_str} = {nl_radius:.2f} mm")
         report_window.store_result("NH Radii", f"Run{self.run_number}_{nh_equation}", "Radius", nh_radius, "mm")
@@ -510,8 +564,9 @@ class RynnMethodLogic:
         label=f"nasion_{self.run_number}"
         pred_node.AddControlPoint(closest_pt, label)
         report_window.append_text(f"Created: {label}")
+
 # =============================================================================
-# PART 2: GUI - Steps 2-10 and Main Window
+# PART 2: GUI
 # =============================================================================
 
 class StepWidget(qt.QWidget):
@@ -528,14 +583,22 @@ class StepWidget(qt.QWidget):
     def get_landmark_node(self):
         return self.main_gui.get_selected_landmark_node()
 
-class Step2_LandmarkSetup(StepWidget):
+# =============================================================================
+# STEP 1: LANDMARK SETUP
+# =============================================================================
+
+class Step1_LandmarkSetup(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         
-        self.downloadHardButton = qt.QPushButton("1. Download Hard Tissue Landmarks")
+        
+        self.downloadHardButton = qt.QPushButton("1. Download Hard Tissue Landmarks (Rynn_hard_tissue)")
         self.downloadHardButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
         
-        noteLabel = qt.QLabel("<b>2. Place the required hard tissue landmarks on your model.</b>")
+        self.downloadSoftButton = qt.QPushButton("2. Download Soft Tissue Landmarks (Rynn_soft_tissue)")
+        self.downloadSoftButton.setStyleSheet("background-color: #28A745; color: white; font-weight: bold; padding: 8px;")
+        
+        noteLabel = qt.QLabel("<b>3. Place the required hard tissue landmarks on your model, or download them above.</b>")
         noteLabel.setWordWrap(True); noteLabel.setTextFormat(qt.Qt.RichText)
         
         self.landmarkTable = qt.QTableWidget(7, 1)
@@ -555,20 +618,68 @@ class Step2_LandmarkSetup(StepWidget):
         self.landmarksSelector.addEnabled = True
         self.landmarksSelector.removeEnabled = False
         self.landmarksSelector.noneEnabled = True
-        selectorLayout.addRow("<b>3. Select Landmark Node:</b>", self.landmarksSelector)
+        selectorLayout.addRow("<b>4. Select Landmark Node:</b>", self.landmarksSelector)
         
         self.statusLabel = qt.QLabel("Status: Waiting for user.")
         self.statusLabel.setWordWrap(True)
         
-        for w in [self.downloadHardButton, noteLabel, self.landmarkTable, self.statusLabel]:
+        for w in [self.downloadHardButton, self.downloadSoftButton, noteLabel, self.landmarkTable, self.statusLabel]:
             self.mainLayout.addWidget(w)
         self.mainLayout.addLayout(selectorLayout)
         self.mainLayout.addStretch(1)
         
         self.downloadHardButton.clicked.connect(self.onDownloadHardLandmarks)
+        self.downloadSoftButton.clicked.connect(self.onDownloadSoftLandmarks)
         self.attempt_count = 0
+        
+        # Connect selector change to store the node ID
+        self.landmarksSelector.currentNodeChanged.connect(self._storeHardNodeID)
+    
+    def _storeHardNodeID(self):
+        node = self.landmarksSelector.currentNode()
+        if node:
+            self.data["hard_node_id"] = node.GetID()
+        else:
+            self.data.pop("hard_node_id", None)
+    
+    def _autoSelectHardNode(self):
+        """Auto-select a hard tissue node: first by name containing 'Rynn_hard_tissue', then stored ID, then label scan."""
+        # 1. Try to find any node whose name starts with "Rynn_hard_tissue"
+        preferred_node = None
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+            if node.GetName().startswith("Rynn_hard_tissue"):
+                preferred_node = node
+                break
 
+        if preferred_node:
+            self.landmarksSelector.setCurrentNode(preferred_node)
+            self.data["hard_node_id"] = preferred_node.GetID()  # update stored ID
+            return
+
+        # 2. If no preferred node, try stored ID
+        stored_id = self.data.get("hard_node_id")
+        if stored_id:
+            node = slicer.mrmlScene.GetNodeByID(stored_id)
+            if node and node.IsA("vtkMRMLMarkupsFiducialNode"):
+                self.landmarksSelector.setCurrentNode(node)
+                return
+
+        # 3. Scan for labels (at least 3 of the required ones)
+        required_labels = ["nasion", "prosthion", "rhinion", "subspinale", "acanthion"]
+        best_node = None
+        best_score = 0
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+            labels = [node.GetNthControlPointLabel(i).lower() for i in range(node.GetNumberOfControlPoints())]
+            score = sum(1 for req in required_labels if any(req in label for label in labels))
+            if score >= 3 and score > best_score:
+                best_score = score
+                best_node = node
+        if best_node:
+            self.landmarksSelector.setCurrentNode(best_node)
+    
     def onEnterStep(self):
+        self._autoSelectHardNode()
+        
         if self.landmarksSelector.currentNode():
             self.statusLabel.setText("✓ Status: Landmark node is already selected.")
             return
@@ -580,21 +691,17 @@ class Step2_LandmarkSetup(StepWidget):
         slicer.app.processEvents()
         qt.QApplication.instance().processEvents()
         
-        # Smart search: look for nodes with the required landmarks inside
         required_landmarks = ["nasion", "prosthion", "rhinion", "subspinale", "acanthion"]
         
         for node in slicer.util.getNodesByClass('vtkMRMLMarkupsFiducialNode'):
-            # Check if this node has the required landmarks
             landmark_labels = [node.GetNthControlPointLabel(i).lower() for i in range(node.GetNumberOfControlPoints())]
             matches = sum(1 for req in required_landmarks if any(req in label for label in landmark_labels))
             
-            # If it has at least 3 of the required landmarks, it's probably the right one
             if matches >= 3:
                 self.landmarksSelector.setCurrentNode(node)
                 self.statusLabel.setText(f"✓ Status: Auto-selected '{node.GetName()}' (found {matches} matching landmarks)")
                 return
         
-        # If not found and we haven't tried too many times, try again
         self.attempt_count += 1
         if self.attempt_count < 5:
             qt.QTimer.singleShot(200 * self.attempt_count, self.tryAutoSelect)
@@ -602,9 +709,9 @@ class Step2_LandmarkSetup(StepWidget):
             self.statusLabel.setText("Status: Please download or manually select the landmark node.")
 
     def onDownloadHardLandmarks(self):
-        self.statusLabel.setText("Status: Downloading...")
+        self.statusLabel.setText("Status: Downloading hard tissue...")
         slicer.app.processEvents()
-        url = "https://github.com/user-attachments/files/22989769/Rynn_hard_tissue.mrk.json"
+        url = "https://github.com/user-attachments/files/31413384/Rynn_hard_tissue.mrk.json"
         nodeName = "Rynn_hard_tissue"
         try:
             with urllib.request.urlopen(url) as response, tempfile.NamedTemporaryFile(delete=False, suffix='.mrk.json', mode='wb') as tempFile:
@@ -622,7 +729,38 @@ class Step2_LandmarkSetup(StepWidget):
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step3_PlaneSetup(StepWidget):
+    def onDownloadSoftLandmarks(self):
+        self.statusLabel.setText("Status: Downloading soft tissue...")
+        slicer.app.processEvents()
+        base_name = self.data["soft_tissue_node_name"]
+        nodeName = base_name
+        counter = 2
+        while slicer.util.getFirstNodeByName(nodeName):
+            nodeName = f"{base_name}_{counter}"
+            counter += 1
+        
+        try:
+            with urllib.request.urlopen("https://github.com/user-attachments/files/22989771/Rynn_soft_tissue.mrk.json") as response, \
+                 tempfile.NamedTemporaryFile(delete=False, suffix='.mrk.json', mode='wb') as tempFile:
+                tempFile.write(response.read())
+                tempFilePath = tempFile.name
+            
+            loadedNode = slicer.util.loadMarkups(tempFilePath)
+            os.remove(tempFilePath)
+            
+            if loadedNode:
+                loadedNode.SetName(nodeName)
+                self.statusLabel.setText(f"✓ Status: '{nodeName}' downloaded.")
+            else:
+                raise IOError("Failed to load landmarks.")
+        except Exception as e:
+            self.statusLabel.setText(f"Status: Error! {e}")
+
+# =============================================================================
+# STEP 2: PLANE SETUP
+# =============================================================================
+
+class Step2_PlaneSetup(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         
@@ -639,6 +777,13 @@ class Step3_PlaneSetup(StepWidget):
         planeChoiceLayout.addRow("Profile Plane Method:", self.planeChoiceComboBox)
         
         self.createPlanesButton = qt.QPushButton("Create All Reference Planes")
+        self.createPlanesButton.clicked.connect(self.onCreatePlanes)
+        
+        self.updatePlanesButton = qt.QPushButton("⚠️ Update Planes (Node Changed)")
+        self.updatePlanesButton.setStyleSheet("background-color: #FFA500; color: white; font-weight: bold;")
+        self.updatePlanesButton.clicked.connect(self.onUpdatePlanes)
+        self.updatePlanesButton.setVisible(False)
+        
         self.statusLabel = qt.QLabel("Status: Waiting for user.")
         self.statusLabel.setWordWrap(True)
         
@@ -646,10 +791,68 @@ class Step3_PlaneSetup(StepWidget):
         self.mainLayout.addWidget(noteLabel)
         self.mainLayout.addLayout(planeChoiceLayout)
         self.mainLayout.addWidget(self.createPlanesButton)
+        self.mainLayout.addWidget(self.updatePlanesButton)
         self.mainLayout.addWidget(self.statusLabel)
         self.mainLayout.addStretch(1)
+    
+    def onEnterStep(self):
+        landmark_node = self.get_landmark_node()
+        if not landmark_node:
+            return
         
-        self.createPlanesButton.clicked.connect(self.onCreatePlanes)
+        plane_exists = bool(slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP"))
+        
+        # Try to read the stored method from the plane node
+        profile_plane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
+        if profile_plane:
+            stored_method = profile_plane.GetAttribute("PlaneMethod")
+            if stored_method:
+                if stored_method == "INB":
+                    self.planeChoiceComboBox.setCurrentIndex(1)
+                elif stored_method == "MSP":
+                    self.planeChoiceComboBox.setCurrentIndex(2)
+        
+        if plane_exists and self.logic.hard_node_guid and self.logic.hard_node_guid != landmark_node.GetID():
+            self.updatePlanesButton.setVisible(True)
+            self.statusLabel.setText("⚠️ Hard tissue node changed. Planes are stale. Click 'Update Planes' to refresh them using the current node.")
+            self.createPlanesButton.setEnabled(False)
+            return
+        
+        if plane_exists and self.logic.hard_node_guid == landmark_node.GetID():
+            self.updatePlanesButton.setVisible(False)
+            self.createPlanesButton.setEnabled(True)
+            self.statusLabel.setText("✓ Planes complete. Auto-advancing...")
+            if not self.main_gui.manual_navigation:
+                qt.QTimer.singleShot(200, self._auto_advance)
+            return
+        
+        self.updatePlanesButton.setVisible(False)
+        self.createPlanesButton.setEnabled(True)
+        self.statusLabel.setText("Status: Please select a method and click 'Create All Reference Planes'.")
+    
+    def _auto_advance(self):
+        if self.main_gui.currentStep < len(self.main_gui.step_widgets) - 1:
+            self.main_gui.currentStep += 1
+            self.main_gui.update_ui()
+    
+    def onUpdatePlanes(self):
+        landmark_node = self.get_landmark_node()
+        if not landmark_node:
+            return
+        if not self.logic.plane_method:
+            self.statusLabel.setText("❌ Error: No plane method stored. Please use 'Create All Reference Planes'.")
+            return
+        
+        self.statusLabel.setText("Status: Updating planes...")
+        slicer.app.processEvents()
+        try:
+            self.logic.create_reference_planes(landmark_node, self.logic.plane_method)
+            self.updatePlanesButton.setVisible(False)
+            self.createPlanesButton.setEnabled(True)
+            self.statusLabel.setText(f"✓ Status: Planes updated using {self.logic.plane_method} method.")
+            self.onEnterStep()
+        except Exception as e:
+            self.statusLabel.setText(f"Status: Error! {e}")
     
     def onCreatePlanes(self):
         self.statusLabel.setText("Status: Processing...")
@@ -662,10 +865,15 @@ class Step3_PlaneSetup(StepWidget):
             self.logic.create_reference_planes(landmark_node, choice)
             active_plane_name = "INB" if "INB" in choice else "MSP"
             self.statusLabel.setText(f"✓ Status: Created {active_plane_name}, NPP, and PTP planes.")
+            self.onEnterStep()
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step4_Scaffolding(StepWidget):
+# =============================================================================
+# STEP 3: SCAFFOLDING
+# =============================================================================
+
+class Step3_Scaffolding(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         
@@ -679,16 +887,83 @@ class Step4_Scaffolding(StepWidget):
         self.createNetworkButton = qt.QPushButton("Create Network Lines 1, 2, 3")
         networkLayout.addWidget(self.createNetworkButton)
         
+        self.updateScaffoldingButton = qt.QPushButton("⚠️ Update Scaffolding (Node Changed)")
+        self.updateScaffoldingButton.setStyleSheet("background-color: #FFA500; color: white; font-weight: bold;")
+        self.updateScaffoldingButton.clicked.connect(self.onUpdateScaffolding)
+        self.updateScaffoldingButton.setVisible(False)
+        
         self.statusLabel = qt.QLabel("Status: Waiting for user.")
         self.statusLabel.setWordWrap(True)
         
         self.mainLayout.addWidget(axesGroup)
         self.mainLayout.addWidget(networkGroup)
+        self.mainLayout.addWidget(self.updateScaffoldingButton)
         self.mainLayout.addWidget(self.statusLabel)
         self.mainLayout.addStretch(1)
         
         self.createAxesButton.clicked.connect(self.onCreateAxes)
         self.createNetworkButton.clicked.connect(self.onCreateNetwork)
+    
+    def onEnterStep(self):
+        landmark_node = self.get_landmark_node()
+        if not landmark_node:
+            return
+        
+        axes_exist = bool(slicer.util.getFirstNodeByName("X_axis") and 
+                          slicer.util.getFirstNodeByName("Y_axis") and 
+                          slicer.util.getFirstNodeByName("Z_axis"))
+        network_exist = bool(slicer.util.getFirstNodeByName("Line_1") and 
+                             slicer.util.getFirstNodeByName("Line_2") and 
+                             slicer.util.getFirstNodeByName("Line_3"))
+        
+        if (axes_exist or network_exist) and self.logic.scaffold_node_guid and self.logic.scaffold_node_guid != landmark_node.GetID():
+            self.updateScaffoldingButton.setVisible(True)
+            self.statusLabel.setText("⚠️ Hard tissue node changed. Scaffolding is stale. Click 'Update Scaffolding' to refresh using the current node.")
+            self.createAxesButton.setEnabled(False)
+            self.createNetworkButton.setEnabled(False)
+            return
+        
+        if axes_exist and network_exist and self.logic.scaffold_node_guid == landmark_node.GetID():
+            self.updateScaffoldingButton.setVisible(False)
+            self.createAxesButton.setEnabled(True)
+            self.createNetworkButton.setEnabled(True)
+            self.statusLabel.setText("✓ Scaffolding complete. Auto-advancing...")
+            if not self.main_gui.manual_navigation:
+                qt.QTimer.singleShot(200, self._auto_advance)
+            return
+        
+        self.updateScaffoldingButton.setVisible(False)
+        self.createAxesButton.setEnabled(True)
+        self.createNetworkButton.setEnabled(True)
+        self.statusLabel.setText("Status: Please click 'Create X, Y, Z Axes' and 'Create Network Lines'.")
+    
+    def _auto_advance(self):
+        if self.main_gui.currentStep < len(self.main_gui.step_widgets) - 1:
+            self.main_gui.currentStep += 1
+            self.main_gui.update_ui()
+    
+    def onUpdateScaffolding(self):
+        landmark_node = self.get_landmark_node()
+        if not landmark_node:
+            return
+        
+        self.statusLabel.setText("Status: Updating scaffolding...")
+        slicer.app.processEvents()
+        try:
+            self.logic.create_axes(landmark_node, self.data["report_window"])
+            active_plane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
+            if not active_plane:
+                raise ValueError("Please create Reference Planes in Step 2 first.")
+            plane_name = active_plane.GetName()
+            self.logic.create_network_lines(landmark_node, plane_name)
+            
+            self.updateScaffoldingButton.setVisible(False)
+            self.createAxesButton.setEnabled(True)
+            self.createNetworkButton.setEnabled(True)
+            self.statusLabel.setText(f"✓ Status: Scaffolding updated for Run {self.logic.run_number}.")
+            self.onEnterStep()
+        except Exception as e:
+            self.statusLabel.setText(f"Status: Error! {e}")
     
     def onCreateAxes(self):
         self.statusLabel.setText("Status: Creating axes...")
@@ -697,6 +972,7 @@ class Step4_Scaffolding(StepWidget):
             landmark_node = self.get_landmark_node()
             self.logic.create_axes(landmark_node, self.data["report_window"])
             self.statusLabel.setText(f"✓ Status: Axes created for Run {self.logic.run_number}.")
+            self.onEnterStep()
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
     
@@ -707,14 +983,19 @@ class Step4_Scaffolding(StepWidget):
             landmark_node = self.get_landmark_node()
             active_plane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
             if not active_plane:
-                raise ValueError("Please create Reference Planes in Step 3 first.")
+                raise ValueError("Please create Reference Planes in Step 2 first.")
             plane_name = active_plane.GetName()
             self.logic.create_network_lines(landmark_node, plane_name)
             self.statusLabel.setText(f"✓ Status: Network lines created.")
+            self.onEnterStep()
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step5_PronasaleAnterior(StepWidget):
+# =============================================================================
+# STEPS 4-8 (unchanged)
+# =============================================================================
+
+class Step4_PronasaleAnterior(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         self.mainLayout.addWidget(qt.QLabel("Predict the anterior position of the pronasale."))
@@ -753,7 +1034,7 @@ class Step5_PronasaleAnterior(StepWidget):
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step6_PronasaleVertical(StepWidget):
+class Step5_PronasaleVertical(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         self.mainLayout.addWidget(qt.QLabel("Predict the vertical position of the pronasale."))
@@ -796,11 +1077,10 @@ class Step6_PronasaleVertical(StepWidget):
             widget.deleteLater()
         self.pa_checkbox_list.clear()
         
-        # Find PA lines for this run
         pa_lines = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") if n.GetName().startswith(f"PA_{self.logic.run_number}_")]
         
         if not pa_lines:
-            layout.addWidget(qt.QLabel("No PA lines found. Please complete Step 5."))
+            layout.addWidget(qt.QLabel("No PA lines found. Please complete Step 4."))
         else:
             for ln in pa_lines:
                 cb = qt.QCheckBox(ln.GetName())
@@ -823,7 +1103,7 @@ class Step6_PronasaleVertical(StepWidget):
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step7_PFH(StepWidget):
+class Step6_PFH(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         self.mainLayout.addWidget(qt.QLabel("<b>Select pFHP equation(s)</b>"))
@@ -862,7 +1142,7 @@ class Step7_PFH(StepWidget):
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step8_SoftTissueSN(StepWidget):
+class Step7_SoftTissueSN(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         table_html = """<table border="1" cellspacing="0" cellpadding="3" width="100%">
@@ -934,7 +1214,7 @@ class Step8_SoftTissueSN(StepWidget):
         try:
             active_plane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
             if not active_plane:
-                raise ValueError("Please create Reference Planes in Step 3 first.")
+                raise ValueError("Please create Reference Planes in Step 2 first.")
             plane_name = active_plane.GetName()
             
             center_point_index = self.pronasale_points_group.checkedId()
@@ -949,7 +1229,7 @@ class Step8_SoftTissueSN(StepWidget):
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step9_Nasion(StepWidget):
+class Step8_Nasion(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         
@@ -1038,7 +1318,7 @@ class Step9_Nasion(StepWidget):
         try:
             active_plane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
             if not active_plane:
-                raise ValueError("Please create Reference Planes in Step 3 first.")
+                raise ValueError("Please create Reference Planes in Step 2 first.")
             plane_name = active_plane.GetName()
             
             nh_center_idx = self.nh_center_points_group.checkedId()
@@ -1054,11 +1334,14 @@ class Step9_Nasion(StepWidget):
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
 
-class Step10_Analysis(StepWidget):
+# =============================================================================
+# STEP 9: ANALYSIS
+# =============================================================================
+class Step9_Analysis(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
         
-        # Run Again section
+        # --- Run Again Section ---
         run_again_group = qt.QGroupBox("🔄 Start a New Run")
         run_again_layout = qt.QVBoxLayout(run_again_group)
         
@@ -1075,26 +1358,85 @@ class Step10_Analysis(StepWidget):
         self.runAgainButton.setStyleSheet("background-color: #28A745; color: white; font-weight: bold; padding: 10px;")
         run_again_layout.addWidget(self.runAgainButton)
         
-        # Analysis section
+        # --- Analysis Tools Section ---
         compare_group = qt.QGroupBox("📊 Analysis Tools")
         compare_layout = qt.QVBoxLayout(compare_group)
         
-        self.softNodeStatusLabel = qt.QLabel("Status:")
+        # Soft tissue selector
+        selectorLayout = qt.QFormLayout()
+        self.softTissueSelector = slicer.qMRMLNodeComboBox()
+        self.softTissueSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
+        self.softTissueSelector.setMRMLScene(slicer.mrmlScene)
+        self.softTissueSelector.addEnabled = False
+        self.softTissueSelector.removeEnabled = False
+        self.softTissueSelector.noneEnabled = True
+        self.softTissueSelector.setToolTip("Select the soft tissue landmark file you want to compare against")
+        selectorLayout.addRow("<b>Select Soft Tissue Landmarks:</b>", self.softTissueSelector)
+        compare_layout.addLayout(selectorLayout)
+        
+        self.softNodeStatusLabel = qt.QLabel("Status: No soft tissue node selected.")
         self.softNodeStatusLabel.setWordWrap(True)
         compare_layout.addWidget(self.softNodeStatusLabel)
         
-        self.downloadSoftButton = qt.QPushButton("Download 'Rynn_soft_tissue' Landmarks")
+        # Connect selector change to update status label and store ID
+        self.softTissueSelector.currentNodeChanged.connect(self._updateSoftNodeStatus)
+        self.softTissueSelector.currentNodeChanged.connect(self._storeSoftNodeID)
+        
+        self.downloadSoftButton = qt.QPushButton("Download 'Rynn_soft_tissue' Landmarks (if not yet downloaded)")
         self.downloadSoftButton.setStyleSheet("background-color: #007BFF; color: white;")
         compare_layout.addWidget(self.downloadSoftButton)
         
-        self.basicCompareButton = qt.QPushButton("Run Basic Comparison (Errors & Angles)")
-        self.projectionButton = qt.QPushButton("Create Rynn Projection Network")
-        self.advancedCompareButton = qt.QPushButton("Run Advanced Network Analysis")
+        # Workflow explanation
+        workflow_text = qt.QLabel(
+            "<b>🔍 Recommended Workflow:</b><br>"
+            "① <b>Basic Comparison</b> – independent, run anytime.<br>"
+            "② <b>Projection Network</b> – creates MAW/MNW lines. <b>Must be run first</b> for Advanced Analysis.<br>"
+            "③ <b>Advanced Analysis</b> – requires Projection Network to have been run."
+        )
+        workflow_text.setWordWrap(True)
+        workflow_text.setStyleSheet("background-color: #E8F0FE; padding: 8px; border-radius: 4px;")
+        compare_layout.addWidget(workflow_text)
+        
+        # Buttons
+        self.basicCompareButton = qt.QPushButton("① Run Basic Comparison (Errors & Angles)")
+        self.basicCompareButton.setToolTip(
+            "📏 Measurements created:\n"
+            "• Error lines (red) connecting predicted → actual for Nasion, Pronasale, Subnasale.\n"
+            "• Predicted & True nasal angles.\n\n"
+            "✅ Independent – does not require any other analysis."
+        )
         compare_layout.addWidget(self.basicCompareButton)
+        
+        self.projectionButton = qt.QPushButton("② Create Rynn Projection Network")
+        self.projectionButton.setToolTip(
+            "📏 Measurements created:\n"
+            "• n-pt1R/L, n-pt2R/L, ... n-pt8R/L (direct distances from nasion to each soft tissue point).\n"
+            "• Projected lengths onto NPP (lat), PTP (ant), and INB/MSP (vert) planes.\n"
+            "• MAW (hard tissue alare width) and MNW (soft tissue alare width) lines.\n\n"
+            "⚠️ Required for Advanced Analysis – run this first!"
+        )
         compare_layout.addWidget(self.projectionButton)
+        
+        self.advancedCompareButton = qt.QPushButton("③ Run Advanced Network Analysis")
+        self.advancedCompareButton.setToolTip(
+            "📏 Measurements created:\n"
+            "• Displacement error lines (adv_error_*) between corresponding hard/soft points:\n"
+            "  pt5L↔CL, pt5R↔CR, pt7L↔LL, pt7R↔LR, pt4L↔XL, pt4R↔XR.\n"
+            "• Shortest distance between MAW and MNW lines.\n\n"
+            "⛔ Requires the Projection Network to have been run (creates MAW/MNW)."
+        )
         compare_layout.addWidget(self.advancedCompareButton)
         
-        # Report section
+        # Landmark Comparison Table
+        self.landmarkCompareButton = qt.QPushButton("📊 Show Landmark Comparison Table")
+        self.landmarkCompareButton.setToolTip(
+            "Opens a table with RAS coordinates of each predicted landmark, the corresponding true landmark,\n"
+            "and the Euclidean error distance. If advanced analysis has been run, it also lists the advanced errors."
+        )
+        compare_layout.addWidget(self.landmarkCompareButton)
+        self.landmarkCompareButton.clicked.connect(self.onShowLandmarkComparison)
+        
+        # --- Report & View Section ---
         cleanup_group = qt.QGroupBox("📋 Report & View")
         cleanup_layout = qt.QVBoxLayout(cleanup_group)
         self.toggleReportButton = qt.QPushButton("Show/Hide Calculation Report")
@@ -1102,15 +1444,21 @@ class Step10_Analysis(StepWidget):
         cleanup_layout.addWidget(self.toggleReportButton)
         cleanup_layout.addWidget(self.toggleHelpersButton)
         
+        self.tableButton = qt.QPushButton("📊 Show Comprehensive Results Table")
+        cleanup_layout.addWidget(self.tableButton)
+        self.tableButton.clicked.connect(self.onShowComprehensiveTable)
+        
         self.statusLabel = qt.QLabel(f"✓ Status: Run {self.logic.run_number} complete!")
         self.statusLabel.setWordWrap(True)
         
+        # Add everything to the main layout
         self.mainLayout.addWidget(run_again_group)
         self.mainLayout.addWidget(compare_group)
         self.mainLayout.addWidget(cleanup_group)
         self.mainLayout.addWidget(self.statusLabel)
         self.mainLayout.addStretch(1)
         
+        # Connect signals
         self.runAgainButton.clicked.connect(self.onRunAgain)
         self.downloadSoftButton.clicked.connect(self.onDownloadSoftLandmarks)
         self.basicCompareButton.clicked.connect(self.onBasicCompare)
@@ -1118,53 +1466,155 @@ class Step10_Analysis(StepWidget):
         self.advancedCompareButton.clicked.connect(self.onAdvancedCompare)
         self.toggleReportButton.clicked.connect(self.onToggleReport)
         self.toggleHelpersButton.clicked.connect(self.onToggleHelpers)
+
+    # ----- Helper methods (unchanged) -----
+    def _updateSoftNodeStatus(self):
+        soft_node = self.softTissueSelector.currentNode()
+        if soft_node:
+            self.softNodeStatusLabel.setText(f"✓ <b>Info:</b> Using soft tissue node: <b>'{soft_node.GetName()}'</b>.")
+        else:
+            self.softNodeStatusLabel.setText("<b>Action Needed:</b> Please select a soft tissue node or download one.")
+    
+    def _storeSoftNodeID(self):
+        soft_node = self.softTissueSelector.currentNode()
+        if soft_node:
+            self.data["soft_node_id"] = soft_node.GetID()
+        else:
+            self.data.pop("soft_node_id", None)
+    
+    def _autoSelectSoftNode(self):
+        # 1. Try exact name "Rynn_soft_tissue"
+        preferred_node = None
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+            if node.GetName().startswith("Rynn_soft_tissue"):
+                preferred_node = node
+                break
+        if preferred_node:
+            self.softTissueSelector.setCurrentNode(preferred_node)
+            self.data["soft_node_id"] = preferred_node.GetID()
+            return
+        # 2. Stored ID
+        stored_id = self.data.get("soft_node_id")
+        if stored_id:
+            node = slicer.mrmlScene.GetNodeByID(stored_id)
+            if node and node.IsA("vtkMRMLMarkupsFiducialNode"):
+                self.softTissueSelector.setCurrentNode(node)
+                return
+        # 3. Label scan
+        target_labels = ["pt1R", "pt1L", "pt2R", "pt2L", "pt3R", "pt3L", "pt4R", "pt4L", 
+                         "pt5R", "pt5L", "pt6R", "pt6L", "pt7R", "pt7L", "pt8R", "pt8L",
+                         "n'", "sn'", "pn'"]
+        best_node = None
+        best_score = 0
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+            labels = [node.GetNthControlPointLabel(i).lower() for i in range(node.GetNumberOfControlPoints())]
+            score = sum(1 for lbl in target_labels if any(lbl in label for label in labels))
+            if score >= 3 and score > best_score:
+                best_score = score
+                best_node = node
+        if best_node:
+            self.softTissueSelector.setCurrentNode(best_node)
     
     def onEnterStep(self):
-        found_node = slicer.util.getFirstNodeByName(self.data["soft_tissue_node_name"])
-        if found_node:
-            self.softNodeStatusLabel.setText(f"✓ <b>Info:</b> Found soft tissue node: <b>'{found_node.GetName()}'</b>.")
+        self._autoSelectSoftNode()
+        self._updateSoftNodeStatus()
+        has_projection = bool(slicer.util.getFirstNodeByName("MAW") and slicer.util.getFirstNodeByName("MNW"))
+        if not has_projection:
+            self.advancedCompareButton.setStyleSheet("background-color: #FFF3CD; border: 1px solid #FFA500;")
+            self.advancedCompareButton.setToolTip(
+                "📏 Measurements created:\n"
+                "• Displacement error lines (adv_error_*) between corresponding hard/soft points.\n"
+                "• Shortest distance between MAW and MNW lines.\n\n"
+                "⚠️ Currently DISABLED – MAW/MNW not found. Please run 'Create Rynn Projection Network' first."
+            )
         else:
-            self.softNodeStatusLabel.setText("<b>Action Needed:</b> No soft tissue node found. Please download one.")
-        
-        self.advancedCompareButton.enabled = bool(slicer.util.getFirstNodeByName("n-pt1R"))
+            self.advancedCompareButton.setStyleSheet("")
+            self.advancedCompareButton.setToolTip(
+                "📏 Measurements created:\n"
+                "• Displacement error lines (adv_error_*) between corresponding hard/soft points.\n"
+                "• Shortest distance between MAW and MNW lines.\n\n"
+                "✅ MAW/MNW found – ready to run!"
+            )
         self.statusLabel.setText(f"✓ Status: Run {self.logic.run_number} complete!")
-    
+
+    # ---------- Robust table copy helpers ----------
+    def _copyTableToClipboard(self, table, *args):
+        """Copy the table content as tab-separated values (robust across Qt bindings)."""
+        if not isinstance(table, qt.QTableWidget):
+            slicer.util.showStatusMessage("Table not available.", 3000)
+            return
+
+        # Support both method-style and property-style Qt bindings
+        row_attr = getattr(table, "rowCount", 0)
+        col_attr = getattr(table, "columnCount", 0)
+        rows = row_attr() if callable(row_attr) else int(row_attr)
+        cols = col_attr() if callable(col_attr) else int(col_attr)
+
+        lines = []
+
+        headers = []
+        for c in range(cols):
+            h = table.horizontalHeaderItem(c)
+            headers.append(h.text() if h else f"Col{c+1}")
+        lines.append("\t".join(headers))
+
+        for r in range(rows):
+            row_data = []
+            for c in range(cols):
+                item = table.item(r, c)
+                row_data.append(item.text() if item else "")
+            lines.append("\t".join(row_data))
+
+        slicer.app.clipboard().setText("\n".join(lines))
+        slicer.util.showStatusMessage("Table copied to clipboard as TSV.", 3000)
+        
+    # ----- Slot methods for copy buttons -----
+    def copy_comprehensive_table(self):
+        if hasattr(self, 'comprehensive_table') and self.comprehensive_table:
+            self._copyTableToClipboard(self.comprehensive_table)
+        else:
+            slicer.util.showStatusMessage("No table to copy.", 3000)
+
+    def copy_landmark_table1(self):
+        if hasattr(self, 'landmark_table1') and self.landmark_table1:
+            self._copyTableToClipboard(self.landmark_table1)
+        else:
+            slicer.util.showStatusMessage("No table to copy.", 3000)
+
+    def copy_landmark_table2(self):
+        if hasattr(self, 'landmark_table2') and self.landmark_table2:
+            self._copyTableToClipboard(self.landmark_table2)
+        else:
+            slicer.util.showStatusMessage("No table to copy.", 3000)
+
+    # ----- Other methods (fully implemented) -----
     def onRunAgain(self):
-        # Increment run number
         self.logic.run_number += 1
         self.logic.item_counters = {}
-        
-        # Update the main GUI's run label
         self.main_gui.updateRunLabel()
         
-        # Show message
         msg = qt.QMessageBox()
         msg.setIcon(qt.QMessageBox.Information)
         msg.setText(f"Starting Run {self.logic.run_number}!")
-        msg.setInformativeText("Your previous run's geometry will stay visible so you can compare.\n\nClick OK to jump to Step 5 (PA calculation).")
+        msg.setInformativeText("Your previous run's geometry will stay visible so you can compare.\n\nClick OK to jump to Step 4 (PA calculation).")
         msg.setWindowTitle("New Run Started")
         msg.setStandardButtons(qt.QMessageBox.Ok)
         msg.exec_()
         
-        # Jump to Step 5 (PA - index 4)
-        self.main_gui.currentStep = 4
+        self.main_gui.currentStep = 3
         self.main_gui.update_ui()
         
-        # Add to report
         self.data["report_window"].append_text(f"\n\n{'='*60}")
         self.data["report_window"].append_text(f"STARTING NEW RUN {self.logic.run_number}")
         self.data["report_window"].append_text(f"{'='*60}")
-    
+
     def onDownloadSoftLandmarks(self):
         self.statusLabel.setText("Status: Downloading...")
         slicer.app.processEvents()
         
-        # Smart naming: find a unique name if Rynn_soft_tissue already exists
         base_name = self.data["soft_tissue_node_name"]
         nodeName = base_name
         counter = 2
-        
-        # Check if the name already exists, if so, add a number
         while slicer.util.getFirstNodeByName(nodeName):
             nodeName = f"{base_name}_{counter}"
             counter += 1
@@ -1179,16 +1629,14 @@ class Step10_Analysis(StepWidget):
             
             if loadedNode:
                 loadedNode.SetName(nodeName)
-                if nodeName != base_name:
-                    self.statusLabel.setText(f"✓ Status: Downloaded as '{nodeName}' (original already exists).")
-                else:
-                    self.statusLabel.setText(f"✓ Status: '{nodeName}' downloaded.")
+                self.softTissueSelector.setCurrentNode(loadedNode)
+                self.statusLabel.setText(f"✓ Status: Downloaded as '{nodeName}' and selected.")
                 self.onEnterStep()
             else:
                 raise IOError("Failed to load landmarks.")
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
-    
+
     def _create_or_update_angle(self, name, p1, p2, p3, color, report_window):
         angle_node = slicer.util.getFirstNodeByName(name) or slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsAngleNode', name)
         angle_node.GetDisplayNode().SetColor(color)
@@ -1198,69 +1646,88 @@ class Step10_Analysis(StepWidget):
         angle_node.AddControlPoint(p3)
         angle_deg = angle_node.GetAngleDegrees()
         report_window.store_result("Angles", name, "Angle", angle_deg, "degrees")
-    
+
     def onBasicCompare(self):
         self.statusLabel.setText("Status: Running Basic Comparison...")
         slicer.app.processEvents()
         try:
             pred_node = slicer.util.getNode(f"soft_tissue_pred_{self.logic.run_number}")
-            soft_node = slicer.util.getNode(self.data["soft_tissue_node_name"])
+            soft_node = self.softTissueSelector.currentNode()
             if not pred_node or not soft_node:
-                raise ValueError(f"Nodes not found.")
-            
-            for node in [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") if n.GetName().startswith("error_")]:
-                slicer.mrmlScene.RemoveNode(node)
-            
+                raise ValueError("Prediction node or soft tissue node not selected.")
+
+            for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+                if node.GetName().startswith("error_"):
+                    slicer.mrmlScene.RemoveNode(node)
+
             angles_created, error_lines_created = 0, 0
-            
+
             pred_points = {"nasion": None, "pronasale": None, "subnasale": None}
             for i in range(pred_node.GetNumberOfControlPoints()):
-                label, pos = pred_node.GetNthControlPointLabel(i), np.array(pred_node.GetNthControlPointPositionWorld(i))
-                if "nasion" in label.lower():
-                    pred_points["nasion"] = pos
-                if "pronasale" in label.lower():
-                    pred_points["pronasale"] = pos
-                if "subnasale" in label.lower():
-                    pred_points["subnasale"] = pos
-            
-            if all(v is not None for v in pred_points.values()):
-                self._create_or_update_angle(f"Predicted_Nasal_Angle_Run{self.logic.run_number}", pred_points["nasion"], pred_points["pronasale"], pred_points["subnasale"], (1,1,0), self.data["report_window"])
-                angles_created += 1
-            
+                label = pred_node.GetNthControlPointLabel(i)
+                pos = np.array(pred_node.GetNthControlPointPositionWorld(i))
+                canonical = self.logic.get_landmark_canonical(label)
+                if canonical and canonical in pred_points:
+                    pred_points[canonical] = pos
+
             true_positions = {"nasion": None, "pronasale": None, "subnasale": None}
             for i in range(soft_node.GetNumberOfControlPoints()):
-                label, pos = soft_node.GetNthControlPointLabel(i).lower(), np.array(soft_node.GetNthControlPointPositionWorld(i))
-                if "nasion" in label:
-                    true_positions["nasion"] = pos
-                if "pronasale" in label:
-                    true_positions["pronasale"] = pos
-                if "subnasale" in label:
-                    true_positions["subnasale"] = pos
-            
-            if all(v is not None for v in true_positions.values()):
-                self._create_or_update_angle("True_Nasal_Angle", true_positions["nasion"], true_positions["pronasale"], true_positions["subnasale"], (0,1,1), self.data["report_window"])
+                label = soft_node.GetNthControlPointLabel(i)
+                pos = np.array(soft_node.GetNthControlPointPositionWorld(i))
+                canonical = self.logic.get_landmark_canonical(label)
+                if canonical and canonical in true_positions:
+                    true_positions[canonical] = pos
+
+            if all(v is not None for v in pred_points.values()):
+                self._create_or_update_angle(
+                    f"Predicted_Nasal_Angle_Run{self.logic.run_number}",
+                    pred_points["nasion"], pred_points["pronasale"], pred_points["subnasale"],
+                    (1, 1, 0), self.data["report_window"]
+                )
                 angles_created += 1
-            
+
+            if all(v is not None for v in true_positions.values()):
+                self._create_or_update_angle(
+                    "True_Nasal_Angle",
+                    true_positions["nasion"], true_positions["pronasale"], true_positions["subnasale"],
+                    (0, 1, 1), self.data["report_window"]
+                )
+                angles_created += 1
+
             for i in range(pred_node.GetNumberOfControlPoints()):
-                pred_label, pred_pos = pred_node.GetNthControlPointLabel(i), np.array(pred_node.GetNthControlPointPositionWorld(i))
-                soft_key = "nasion" if "nasion" in pred_label.lower() else "subnasale" if "subnasale" in pred_label.lower() else "pronasale" if "pronasale" in pred_label.lower() else None
-                if soft_key and true_positions.get(soft_key) is not None:
-                    error_dist = np.linalg.norm(pred_pos - true_positions[soft_key])
-                    self.logic.create_line(f"error_{pred_label}", pred_pos, true_positions[soft_key], color=(1,0,0), use_run_number=False)
+                pred_label = pred_node.GetNthControlPointLabel(i)
+                pred_pos = np.array(pred_node.GetNthControlPointPositionWorld(i))
+                canonical = self.logic.get_landmark_canonical(pred_label)
+                if canonical and true_positions.get(canonical) is not None:
+                    true_pos = true_positions[canonical]
+                    error_dist = np.linalg.norm(pred_pos - true_pos)
+                    self.logic.create_line(
+                        f"error_{pred_label}",
+                        pred_pos, true_pos,
+                        color=(1, 0, 0),
+                        use_run_number=False
+                    )
                     error_lines_created += 1
-                    self.data["report_window"].store_result("Basic Errors", pred_label, "Error Distance", error_dist, "mm")
-            
-            self.statusLabel.setText(f"✓ Status: Created {error_lines_created} error lines, {angles_created} angles.")
+                    self.data["report_window"].store_result(
+                        "Basic Errors", pred_label, "Error Distance", error_dist, "mm"
+                    )
+
+            self.statusLabel.setText(
+                f"✓ Status: Created {error_lines_created} error lines, {angles_created} angles."
+            )
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
-    
+            import traceback
+            traceback.print_exc()
+
     def onRunProjection(self):
         self.statusLabel.setText("Status: Running projection network...")
         slicer.app.processEvents()
         try:
-            hard_node, soft_node = self.get_landmark_node(), slicer.util.getNode(self.data["soft_tissue_node_name"])
+            hard_node = self.get_landmark_node()
+            soft_node = self.softTissueSelector.currentNode()
             if not soft_node:
-                raise ValueError(f"Soft tissue node not found.")
+                raise ValueError("Soft tissue node not selected.")
             
             for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
                 if node.GetName().startswith("n-pt") or " lat" in node.GetName() or " ant" in node.GetName() or " vert" in node.GetName() or node.GetName() in ["MAW", "MNW"]:
@@ -1295,14 +1762,18 @@ class Step10_Analysis(StepWidget):
             self.onEnterStep()
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
-    
+
     def onAdvancedCompare(self):
         self.statusLabel.setText("Status: Running Advanced Analysis...")
         slicer.app.processEvents()
         try:
-            hard_node, soft_node = self.get_landmark_node(), slicer.util.getNode(self.data["soft_tissue_node_name"])
+            hard_node = self.get_landmark_node()
+            soft_node = self.softTissueSelector.currentNode()
             if not soft_node:
-                raise ValueError("Soft tissue node not found.")
+                raise ValueError("Soft tissue node not selected.")
+            
+            if not slicer.util.getFirstNodeByName("MAW") or not slicer.util.getFirstNodeByName("MNW"):
+                raise ValueError("MAW/MNW not found. Please run 'Create Rynn Projection Network' first.")
             
             for node in [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") if n.GetName().startswith("adv_error_") or n.GetName() == "Shortest_MNW-MAW"]:
                 slicer.mrmlScene.RemoveNode(node)
@@ -1335,7 +1806,7 @@ class Step10_Analysis(StepWidget):
             self.statusLabel.setText(f"✓ Status: Advanced analysis complete.")
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
-    
+
     def onToggleHelpers(self):
         nodes = (slicer.util.getNodesByClass("vtkMRMLMarkupsPlaneNode") + 
                 slicer.util.getNodesByClass("vtkMRMLMarkupsClosedCurveNode") + 
@@ -1352,17 +1823,223 @@ class Step10_Analysis(StepWidget):
             if node and node.GetDisplayNode():
                 node.GetDisplayNode().SetVisibility(new_visibility)
         self.statusLabel.setText(f"Status: Geometry is now {'visible' if new_visibility else 'hidden'}.")
-    
+
     def onToggleReport(self):
         if self.data["report_window"].isVisible():
             self.data["report_window"].hide()
         else:
             self.data["report_window"].show()
 
-# =============================================================================
+    # ----------------------------------------------------------------------
+    # Comprehensive Results Table
+    # ----------------------------------------------------------------------
+    def onShowComprehensiveTable(self):
+        results = self.data["report_window"].results
+        if not results:
+            qt.QMessageBox.information(self, "No Results", "No results found. Please run calculations first.")
+            return
+
+        all_items = []
+        for category, items in results.items():
+            # Skip advanced errors – they will be shown separately in the Landmark Comparison table
+            if category == "Advanced Errors":
+                continue
+            for item in items:
+                all_items.append({
+                    "category": category,
+                    "id": item["id"],
+                    "measurement": item["measurement"],
+                    "value": item["value"],
+                    "unit": item["unit"]
+                })
+
+        dialog = qt.QDialog(self)
+        dialog.setWindowTitle("Comprehensive Results Table")
+        dialog.setMinimumSize(800, 500)
+        layout = qt.QVBoxLayout(dialog)
+
+        self.comprehensive_table = qt.QTableWidget()
+        self.comprehensive_table.setColumnCount(4)
+        self.comprehensive_table.setHorizontalHeaderLabels(["ID", "Measurement", "Value", "Unit"])
+        self.comprehensive_table.setAlternatingRowColors(True)
+        self.comprehensive_table.setSortingEnabled(True)
+        self.comprehensive_table.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+
+        self.comprehensive_table.setRowCount(len(all_items))
+        for row, item in enumerate(all_items):
+            id_item = qt.QTableWidgetItem(item["id"])
+            self.comprehensive_table.setItem(row, 0, id_item)
+            meas_item = qt.QTableWidgetItem(item["measurement"])
+            self.comprehensive_table.setItem(row, 1, meas_item)
+            val = item["value"]
+            if isinstance(val, (float, np.floating)):
+                val_str = f"{val:.2f}"
+            else:
+                val_str = str(val)
+            val_item = qt.QTableWidgetItem(val_str)
+            self.comprehensive_table.setItem(row, 2, val_item)
+            unit_item = qt.QTableWidgetItem(item["unit"])
+            self.comprehensive_table.setItem(row, 3, unit_item)
+
+        self.comprehensive_table.resizeColumnsToContents()
+        self.comprehensive_table.setSortingEnabled(True)
+
+        copy_btn = qt.QPushButton("Copy Table to Clipboard (TSV)")
+        copy_btn.clicked.connect(self.copy_comprehensive_table)
+        layout.addWidget(self.comprehensive_table)
+        layout.addWidget(copy_btn)
+
+        dialog.exec_()
+
+    # ----------------------------------------------------------------------
+    # Landmark Comparison Table
+    # ----------------------------------------------------------------------
+    def onShowLandmarkComparison(self):
+        pred_node = slicer.util.getNode(f"soft_tissue_pred_{self.logic.run_number}")
+        soft_node = self.softTissueSelector.currentNode()
+        hard_node = self.get_landmark_node()  # needed for advanced errors
+
+        if not pred_node or not soft_node:
+            qt.QMessageBox.warning(self, "Missing Data", "Please select a soft tissue node and run predictions first.")
+            return
+
+        # ----- Table 1: Predicted vs True (unchanged) -----
+        true_dict = {}
+        for i in range(soft_node.GetNumberOfControlPoints()):
+            label = soft_node.GetNthControlPointLabel(i)
+            pos = np.array(soft_node.GetNthControlPointPositionWorld(i))
+            canonical = self.logic.get_landmark_canonical(label)
+            if canonical:
+                true_dict[canonical] = pos
+
+        rows = []
+        for i in range(pred_node.GetNumberOfControlPoints()):
+            pred_label = pred_node.GetNthControlPointLabel(i)
+            pred_pos = np.array(pred_node.GetNthControlPointPositionWorld(i))
+            canonical = self.logic.get_landmark_canonical(pred_label)
+            if canonical and canonical in true_dict:
+                true_pos = true_dict[canonical]
+                error = np.linalg.norm(pred_pos - true_pos)
+                rows.append({
+                    "landmark": pred_label,
+                    "pred_x": pred_pos[0], "pred_y": pred_pos[1], "pred_z": pred_pos[2],
+                    "true_x": true_pos[0], "true_y": true_pos[1], "true_z": true_pos[2],
+                    "error": error
+                })
+
+        if not rows:
+            qt.QMessageBox.information(self, "No Match", "No matching landmarks found between predicted and true nodes.")
+            return
+
+        # ----- Table 2: Advanced Errors (with coordinates) -----
+        adv_rows = []
+        if hard_node and soft_node:
+            # Define the same pairs as in onAdvancedCompare
+            pairs = [
+                ("pt5L", 12, "CL", 7),
+                ("pt5R", 11, "CR", 8),
+                ("pt7L", 16, "LL", 11),
+                ("pt7R", 15, "LR", 12),
+                ("pt4L", 10, "XL", 9),
+                ("pt4R", 9, "XR", 10),
+            ]
+            for soft_label, soft_idx, hard_label, hard_idx in pairs:
+                # Get positions (using the index from the Rynn_soft_tissue markup)
+                # Note: indices are 0-based in the node; the mapping matches the downloaded file
+                try:
+                    soft_pos = np.array(soft_node.GetNthControlPointPositionWorld(soft_idx))
+                    hard_pos = np.array(hard_node.GetNthControlPointPositionWorld(hard_idx))
+                    error = np.linalg.norm(soft_pos - hard_pos)
+                    adv_rows.append({
+                        "pair": f"{soft_label}↔{hard_label}",
+                        "hard_x": hard_pos[0], "hard_y": hard_pos[1], "hard_z": hard_pos[2],
+                        "soft_x": soft_pos[0], "soft_y": soft_pos[1], "soft_z": soft_pos[2],
+                        "error": error
+                    })
+                except Exception:
+                    # Skip if positions cannot be retrieved
+                    pass
+
+        # Build dialog
+        dialog = qt.QDialog(self)
+        dialog.setWindowTitle("Landmark Comparison")
+        dialog.setMinimumSize(1000, 600)
+        layout = qt.QVBoxLayout(dialog)
+
+        # Table 1: Predicted vs True
+        table1_label = qt.QLabel("<b>Predicted vs True Landmark Coordinates and Errors</b>")
+        layout.addWidget(table1_label)
+
+        self.landmark_table1 = qt.QTableWidget()
+        self.landmark_table1.setColumnCount(8)
+        self.landmark_table1.setHorizontalHeaderLabels(["Landmark", "Pred X", "Pred Y", "Pred Z", "True X", "True Y", "True Z", "Error (mm)"])
+        self.landmark_table1.setAlternatingRowColors(True)
+        self.landmark_table1.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+
+        self.landmark_table1.setRowCount(len(rows))
+        for r, data in enumerate(rows):
+            self.landmark_table1.setItem(r, 0, qt.QTableWidgetItem(data["landmark"]))
+            self.landmark_table1.setItem(r, 1, qt.QTableWidgetItem(f"{data['pred_x']:.2f}"))
+            self.landmark_table1.setItem(r, 2, qt.QTableWidgetItem(f"{data['pred_y']:.2f}"))
+            self.landmark_table1.setItem(r, 3, qt.QTableWidgetItem(f"{data['pred_z']:.2f}"))
+            self.landmark_table1.setItem(r, 4, qt.QTableWidgetItem(f"{data['true_x']:.2f}"))
+            self.landmark_table1.setItem(r, 5, qt.QTableWidgetItem(f"{data['true_y']:.2f}"))
+            self.landmark_table1.setItem(r, 6, qt.QTableWidgetItem(f"{data['true_z']:.2f}"))
+            err_item = qt.QTableWidgetItem(f"{data['error']:.2f}")
+            err_item.setForeground(qt.QColor(200, 0, 0) if data['error'] > 5 else qt.QColor(0, 150, 0))
+            self.landmark_table1.setItem(r, 7, err_item)
+
+        self.landmark_table1.resizeColumnsToContents()
+        layout.addWidget(self.landmark_table1)
+
+        # Table 2: Advanced Errors (with coordinates)
+        if adv_rows:
+            table2_label = qt.QLabel("<b>Advanced Displacement Errors (Hard ↔ Soft)</b>")
+            layout.addWidget(table2_label)
+
+            self.landmark_table2 = qt.QTableWidget()
+            self.landmark_table2.setColumnCount(8)
+            self.landmark_table2.setHorizontalHeaderLabels(["Pair", "Hard X", "Hard Y", "Hard Z", "Soft X", "Soft Y", "Soft Z", "Error (mm)"])
+            self.landmark_table2.setAlternatingRowColors(True)
+            self.landmark_table2.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+
+            self.landmark_table2.setRowCount(len(adv_rows))
+            for r, data in enumerate(adv_rows):
+                self.landmark_table2.setItem(r, 0, qt.QTableWidgetItem(data["pair"]))
+                self.landmark_table2.setItem(r, 1, qt.QTableWidgetItem(f"{data['hard_x']:.2f}"))
+                self.landmark_table2.setItem(r, 2, qt.QTableWidgetItem(f"{data['hard_y']:.2f}"))
+                self.landmark_table2.setItem(r, 3, qt.QTableWidgetItem(f"{data['hard_z']:.2f}"))
+                self.landmark_table2.setItem(r, 4, qt.QTableWidgetItem(f"{data['soft_x']:.2f}"))
+                self.landmark_table2.setItem(r, 5, qt.QTableWidgetItem(f"{data['soft_y']:.2f}"))
+                self.landmark_table2.setItem(r, 6, qt.QTableWidgetItem(f"{data['soft_z']:.2f}"))
+                err_item = qt.QTableWidgetItem(f"{data['error']:.2f}")
+                err_item.setForeground(qt.QColor(200, 0, 0) if data['error'] > 5 else qt.QColor(0, 150, 0))
+                self.landmark_table2.setItem(r, 7, err_item)
+
+            self.landmark_table2.resizeColumnsToContents()
+            layout.addWidget(self.landmark_table2)
+        else:
+            # If no advanced errors, set table2 to None (copy button will be hidden)
+            self.landmark_table2 = None
+
+        # Copy buttons – direct connections
+        copy_layout = qt.QHBoxLayout()
+        copy1 = qt.QPushButton("Copy Comparison Table (TSV)")
+        copy1.clicked.connect(self.copy_landmark_table1)
+        copy_layout.addWidget(copy1)
+
+        if self.landmark_table2:
+            copy2 = qt.QPushButton("Copy Advanced Errors (TSV)")
+            copy2.clicked.connect(self.copy_landmark_table2)
+            copy_layout.addWidget(copy2)
+
+        copy_layout.addStretch()
+        layout.addLayout(copy_layout)
+
+        dialog.exec_()
+
 # MAIN GUI
 # =============================================================================
-
 class RynnMethodSimplifiedGUI(qt.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1375,7 +2052,8 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
         self.report_window = ReportWindow()
         self.data = {"report_window": self.report_window, "soft_tissue_node_name": "Rynn_soft_tissue"}
         
-        # Add run number indicator
+        self.manual_navigation = False
+        
         self.run_label = qt.QLabel(f"<b>Current Run: {self.logic.run_number}</b>")
         self.run_label.setStyleSheet("background-color: #4CAF50; color: white; padding: 5px; font-size: 14px;")
         self.run_label.setAlignment(qt.Qt.AlignCenter)
@@ -1386,25 +2064,27 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
         self.mainLayout.addWidget(self.stepStack)
         self.create_all_steps()
         self.setup_navigation()
+        
+        # Initial UI update and then load existing scene info
         self.currentStep = 0
         self.update_ui()
+        self._loadExistingNodeGuids()
+        self._jumpToFirstIncompleteStep()
     
     def updateRunLabel(self):
-        """Update the run label when run number changes."""
         self.run_label.setText(f"<b>Current Run: {self.logic.run_number}</b>")
     
     def create_all_steps(self):
         steps_to_add = [
-            ("Step 1: Welcome", StepWidget),
-            ("Step 2: Landmark Setup", Step2_LandmarkSetup),
-            ("Step 3: Plane Setup", Step3_PlaneSetup),
-            ("Step 4: Scaffolding", Step4_Scaffolding),
-            ("Step 5: Pronasale Anterior", Step5_PronasaleAnterior),
-            ("Step 6: Pronasale Vertical", Step6_PronasaleVertical),
-            ("Step 7: pFHP", Step7_PFH),
-            ("Step 8: Soft Tissue sn", Step8_SoftTissueSN),
-            ("Step 9: Nasion Prediction", Step9_Nasion),
-            ("Step 10: Complete", Step10_Analysis)
+            ("Step 1: Landmark Setup", Step1_LandmarkSetup),
+            ("Step 2: Plane Setup", Step2_PlaneSetup),
+            ("Step 3: Scaffolding", Step3_Scaffolding),
+            ("Step 4: Pronasale Anterior", Step4_PronasaleAnterior),
+            ("Step 5: Pronasale Vertical", Step5_PronasaleVertical),
+            ("Step 6: pFHP", Step6_PFH),
+            ("Step 7: Soft Tissue sn", Step7_SoftTissueSN),
+            ("Step 8: Nasion Prediction", Step8_Nasion),
+            ("Step 9: Analysis", Step9_Analysis)
         ]
         for title, TStep in steps_to_add:
             step_widget = TStep(title, self.logic, self.data, self)
@@ -1412,10 +2092,10 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
             self.stepStack.addWidget(step_widget)
     
     def get_selected_landmark_node(self):
-        step2_widget = self.step_widgets[1]
-        landmark_node = step2_widget.landmarksSelector.currentNode()
+        step1_widget = self.step_widgets[0]
+        landmark_node = step1_widget.landmarksSelector.currentNode()
         if not landmark_node:
-                        raise ValueError("Please select a Landmark Node in Step 2 first.")
+            raise ValueError("Please select a Landmark Node in Step 1 first.")
         return landmark_node
     
     def setup_navigation(self):
@@ -1451,19 +2131,83 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
     
     def on_prev_button_clicked(self):
         if self.currentStep > 0:
+            self.manual_navigation = True
             self.currentStep -= 1
             self.update_ui()
+            qt.QTimer.singleShot(500, lambda: setattr(self, 'manual_navigation', False))
     
     def on_next_button_clicked(self):
+        self.manual_navigation = False
         if self.currentStep == self.stepStack.count - 1:
             self.report_window.close()
             self.close()
         else:
             self.currentStep += 1
             self.update_ui()
+    
+    # ===== NEW: Load existing GUIDs from scene nodes =====
+    def _loadExistingNodeGuids(self):
+        """Load the hard node GUID and plane method from existing planes/scaffolding in the scene."""
+        # 1. Try to find a profile plane (INB or MSP)
+        profile_plane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
+        if profile_plane:
+            hard_id = profile_plane.GetAttribute("HardNodeID")
+            if hard_id:
+                self.logic.hard_node_guid = hard_id
+            method = profile_plane.GetAttribute("PlaneMethod")
+            if method:
+                self.logic.plane_method = method
+
+        # 2. Try to find X_axis (to get scaffolding node ID)
+        x_axis = slicer.util.getFirstNodeByName("X_axis")
+        if x_axis:
+            hard_id = x_axis.GetAttribute("HardNodeID")
+            if hard_id:
+                self.logic.scaffold_node_guid = hard_id
+    
+    def _jumpToFirstIncompleteStep(self):
+        """Jump to the first step that is not yet complete, based on loaded GUIDs."""
+        # Get current hard node from Step 1
+        step1 = self.step_widgets[0]
+        current_node = step1.landmarksSelector.currentNode()
+        if not current_node:
+            return  # no node selected, stay at step 1
+
+        # Check if planes exist
+        plane_exists = bool(slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP"))
+        plane_ok = plane_exists and self.logic.hard_node_guid == current_node.GetID()
+
+        # Check if scaffolding exists
+        axes_exist = bool(slicer.util.getFirstNodeByName("X_axis") and 
+                        slicer.util.getFirstNodeByName("Y_axis") and 
+                        slicer.util.getFirstNodeByName("Z_axis"))
+        network_exist = bool(slicer.util.getFirstNodeByName("Line_1") and 
+                            slicer.util.getFirstNodeByName("Line_2") and 
+                            slicer.util.getFirstNodeByName("Line_3"))
+        scaffold_ok = axes_exist and network_exist and self.logic.scaffold_node_guid == current_node.GetID()
+
+        # NEW: Check if the prediction node (Step 8) already exists for this run
+        pred_node_name = f"soft_tissue_pred_{self.logic.run_number}"
+        pred_node_exists = bool(slicer.util.getFirstNodeByName(pred_node_name))
+
+        # Decide which step to jump to
+        if plane_ok and scaffold_ok and pred_node_exists:
+            # All setup and predictions are done – go straight to Analysis (Step 9)
+            self.currentStep = 8  # index of Step 9 (0‑based)
+        elif plane_ok and scaffold_ok:
+            # Planes and scaffolding ready – start at Pronasale Anterior (Step 4)
+            self.currentStep = 3
+        elif plane_ok:
+            # Only planes exist – jump to Scaffolding (Step 3)
+            self.currentStep = 2
+        else:
+            # Nothing is ready – stay at Plane Setup (Step 2)
+            self.currentStep = 1
+
+        self.update_ui()
 
 # =============================================================================
-# ENTRY POINT - This starts everything!
+# ENTRY POINT
 # =============================================================================
 
 try:
@@ -1480,6 +2224,5 @@ rynnGui.show()
 print(f"\n✅ Rynn Method GUI loaded successfully!")
 print(f"✅ Current run number: {rynnGui.logic.run_number}")
 print(f"✅ Ready to go!")
-print(f"✅ Report will show: PA_1_1: pred Rynn PA = 0.83*Y-3.5 = 26.14 mm")
 
 ```
