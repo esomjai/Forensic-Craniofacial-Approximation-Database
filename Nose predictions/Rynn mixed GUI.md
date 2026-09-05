@@ -1,6 +1,5 @@
-This GUI features the original Rynn triangle method with an optional extended reproduction of their network. It also features the recalibrated regression equations by Bulut and Sarilita. 
-
 ```python
+
 import os
 import vtk
 import numpy as np
@@ -21,34 +20,36 @@ class ReportWindow(qt.QWidget):
         self.setWindowTitle("Calculation Report")
         self.setWindowFlag(qt.Qt.WindowStaysOnTopHint, True)
         self.setGeometry(100, 100, 600, 700)
-        
+
         self.main_layout = qt.QVBoxLayout(self)
+
         self.report_text_edit = qt.QTextEdit()
         self.report_text_edit.setReadOnly(True)
-        self.report_text_edit.setFontFamily("Courier")
-        self.report_text_edit.setLineWrapMode(qt.QTextEdit.NoWrap)
-        
+                self.report_text_edit.setLineWrapMode(qt.QTextEdit.NoWrap)
+        self.main_layout.addWidget(self.report_text_edit)
+
+        # Button layout
         self.button_layout = qt.QHBoxLayout()
         self.clear_button = qt.QPushButton("Clear Report")
-        self.copy_basic_button = qt.QPushButton("Copy Basic Results")
-        self.copy_advanced_button = qt.QPushButton("Copy Advanced Results")
-        
+        self.copy_report_button = qt.QPushButton("Copy Full Report (TSV)")
+        self.save_report_button = qt.QPushButton("Save Report as TXT")
+
         self.button_layout.addWidget(self.clear_button)
         self.button_layout.addStretch(1)
-        self.button_layout.addWidget(self.copy_basic_button)
-        self.button_layout.addWidget(self.copy_advanced_button)
-        
-        self.main_layout.addWidget(self.report_text_edit)
+        self.button_layout.addWidget(self.copy_report_button)
+        self.button_layout.addWidget(self.save_report_button)
+
         self.main_layout.addLayout(self.button_layout)
-        
+
+        # Connections
         self.clear_button.clicked.connect(self.clear_report)
-        self.copy_basic_button.clicked.connect(self.copy_basic_results)
-        self.copy_advanced_button.clicked.connect(self.copy_advanced_results)
+        self.copy_report_button.clicked.connect(self.copy_full_report)
+        self.save_report_button.clicked.connect(self.save_report_to_file)
 
+        # Internal state
         self.results = {}
-        self.clear_report()
-        self.tables = {}  # dictionary to store tables with unique keys
-
+        self.tables = {}          # for future use
+        self.clear_report()       # initialises the report text
 
     def append_text(self, text_string):
         self.report_text_edit.append(text_string)
@@ -61,24 +62,78 @@ class ReportWindow(qt.QWidget):
     def clear_report(self):
         self.report_text_edit.clear(); self.results.clear(); self.append_text("--- Calculation Report ---\n")
 
-    def _generate_report_string(self, categories_to_include):
-        report_lines = ["ID\tMeasurement\tValue\tUnit"]
-        for cat in categories_to_include:
-            if cat in self.results:
-                for item in self.results[cat]:
-                    value_str = f"{item['value']:.2f}" if isinstance(item['value'], (float, np.floating)) else str(item['value'])
-                    report_lines.append(f"{item['id']}\t{item['measurement']}\t{value_str}\t{item['unit']}")
-        return "\n".join(report_lines)
 
-    def copy_basic_results(self):
-        categories = ["Base Measurements", "PA", "PV", "pFHP", "ND Radii", "NH Radii", "NL Radii", "Angles", "Basic Errors"]
-        report = self._generate_report_string(categories)
-        slicer.app.clipboard().setText(report); slicer.util.showStatusMessage("Basic results copied to clipboard.", 3000)
 
-    def copy_advanced_results(self):
-        categories = ["Projection Network", "Advanced Errors"]
-        report = self._generate_report_string(categories)
-        slicer.app.clipboard().setText(report); slicer.util.showStatusMessage("Advanced results copied to clipboard.", 3000)
+    def _generate_full_report_text(self):
+        """Generate the complete report as a TSV string (header + all rows)."""
+        if not self.results:
+            return "--- Calculation Report ---\nNo results available."
+
+        lines = ["Category\tID\tMeasurement\tValue\tUnit"]
+        for category, items in self.results.items():
+            for item in items:
+                if isinstance(item['value'], (float, np.floating)):
+                    value_str = f"{item['value']:.2f}"
+                else:
+                    value_str = str(item['value'])
+                lines.append(f"{category}\t{item['id']}\t{item['measurement']}\t{value_str}\t{item['unit']}")
+        return "\n".join(lines)
+
+    def has_result(self, category, item_id):
+        """Return True if an item with the given ID already exists in the category."""
+        if category not in self.results:
+            return False
+        for item in self.results[category]:
+            if item["id"] == item_id:
+                return True
+        return False
+    
+    def copy_full_report(self):
+        """Copy the full report to the clipboard as TSV (Excel‑friendly)."""
+        text = self._generate_full_report_text()
+        if not text:
+            slicer.util.showStatusMessage("Report is empty. Run calculations first.", 3000)
+            return
+        slicer.app.clipboard().setText(text)
+        slicer.util.showStatusMessage("Full report copied to clipboard as TSV!", 3000)
+
+    def save_report_to_file(self):
+        """Prompt for a Case ID, then save the full report as a .txt file."""
+        if not self.results:
+            qt.QMessageBox.warning(self, "Empty Report", "No results to save. Please run calculations first.")
+            return
+
+        # Ask the user for a Case ID / identifier
+        id_text, ok = qt.QInputDialog.getText(
+            self, 
+            "Enter Case ID", 
+            "Please enter a Case ID or patient identifier for the report:"
+        )
+        if not ok:
+            return  # user cancelled
+
+        # Build a default filename
+        clean_id = id_text.strip().replace(" ", "_") if id_text.strip() else "untitled"
+        default_name = f"Report_{clean_id}.txt"
+
+        # Ask where to save the file
+        file_path, _ = qt.QFileDialog.getSaveFileName(
+            self,
+            "Save Report",
+            default_name,
+            "Text Files (*.txt);;All Files (*)"
+        )
+        if not file_path:
+            return  # user cancelled the save dialog
+
+        # Generate the report and write it
+        text = self._generate_full_report_text()
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(text)
+            slicer.util.showStatusMessage(f"Report saved to {file_path}", 3000)
+        except Exception as e:
+            qt.QMessageBox.critical(self, "Save Error", f"Could not save file:\n{str(e)}")
 
 # =============================================================================
 # CAMERA UTILITIES
@@ -174,7 +229,33 @@ class RynnMethodLogic:
             if key in label_lower:
                 return self.alias_to_canonical[key]
         return None
-    
+
+    def filter_equations_by_mode(self, equations, mode):
+        """Filter a list of equation names by author and sex.
+        Sex-neutral equations (no 'M' or 'F' marker) are included for any sex selection.
+        """
+        if not mode:
+            return equations
+        author = mode.get("author", "")
+        sex = mode.get("sex", "All")
+        filtered = []
+        for eq in equations:
+            if author.lower() not in eq.lower():
+                continue
+            if sex != "All":
+                # Check for explicit sex markers (space or underscore)
+                has_m = " M " in eq or " M_" in eq or "_M" in eq or eq.startswith("M_")
+                has_f = " F " in eq or " F_" in eq or "_F" in eq or eq.startswith("F_")
+                # If equation has male marker and sex is Female, skip
+                if has_m and sex == "F":
+                    continue
+                # If equation has female marker and sex is Male, skip
+                if has_f and sex == "M":
+                    continue
+                # If neither marker (sex-neutral) or matches the selected sex, keep it
+            filtered.append(eq)
+        return filtered
+        
     def get_next_run_number(self):
         """Find the highest existing run number by checking existing nodes."""
         max_run = 0
@@ -229,20 +310,27 @@ class RynnMethodLogic:
         displayNode.SetColor(color); displayNode.SetSelectedColor(color); displayNode.SetLineThickness(0.5)
         return line_node
 
-    def create_circle(self, name, center, radius, plane_normal, color=(0.2, 0.8, 0.2)):
+    def create_circle(self, name, center, radius, plane_normal, color=(0.2, 0.8, 0.2), equation_name=None):
         full_name = self.make_name(name, use_run_number=True)
         curve_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsClosedCurveNode", full_name)
-        curve_node.CreateDefaultDisplayNodes(); display_node = curve_node.GetDisplayNode()
+        curve_node.CreateDefaultDisplayNodes()
+        display_node = curve_node.GetDisplayNode()
         plane_normal = np.array(plane_normal) / np.linalg.norm(np.array(plane_normal))
         arbitrary_vector = np.array([0, 0, 1]) if not np.allclose(plane_normal, [0, 0, 1]) else np.array([1, 0, 0])
-        v1 = np.cross(plane_normal, arbitrary_vector); v1 /= np.linalg.norm(v1)
+        v1 = np.cross(plane_normal, arbitrary_vector)
+        v1 /= np.linalg.norm(v1)
         v2 = np.cross(plane_normal, v1)
         for i in range(36):
             angle = 2 * np.pi * i / 36
             point = center + radius * (np.cos(angle) * v1 + np.sin(angle) * v2)
             curve_node.AddControlPoint(point)
-        display_node.SetColor(color); display_node.SetSelectedColor(color)
-        display_node.SetLineThickness(0.5); display_node.SetTextScale(0)
+        display_node.SetColor(color)
+        display_node.SetSelectedColor(color)
+        display_node.SetLineThickness(0.5)
+        display_node.SetTextScale(0)
+        curve_node.SetAttribute("Radius", str(radius))
+        if equation_name:
+            curve_node.SetAttribute("Equation", equation_name)
         return curve_node
 
     def create_reference_planes(self, landmark_node, method):
@@ -290,19 +378,27 @@ class RynnMethodLogic:
         pos = self.get_landmark_positions(landmark_node, ["nasion", "acanthion", "rhinion", "subspinale"])
         p_nas, p_aca, p_rhi, p_sub = pos['nasion'], pos['acanthion'], pos['rhinion'], pos['subspinale']
         x_len, y_len, z_len = np.linalg.norm(p_nas - p_aca), np.linalg.norm(p_rhi - p_sub), np.linalg.norm(p_nas - p_sub)
-        
+
         camera_state = save_camera_state()
         try:
+            # Create axes first
             x_axis = self.create_line('X_axis', p_nas, p_aca, (1,0,0), use_run_number=False)
             self.create_line('Y_axis', p_rhi, p_sub, (0,1,0), use_run_number=False)
             self.create_line('Z_axis', p_nas, p_sub, (0,0,1), use_run_number=False)
-            # Store which node was used for scaffolding (and store the hard node ID as an attribute on X_axis)
+
+            # Now store per‑run lengths as attributes on each axis
+            x_axis.SetAttribute(f"Run{self.run_number}_X_length", str(x_len))
+            y_axis = slicer.util.getNode('Y_axis')  # or store reference from create_line
+            z_axis = slicer.util.getNode('Z_axis')
+            y_axis.SetAttribute(f"Run{self.run_number}_Y_length", str(y_len))
+            z_axis.SetAttribute(f"Run{self.run_number}_Z_length", str(z_len))
+
             self.scaffold_node_guid = landmark_node.GetID()
             if x_axis:
                 x_axis.SetAttribute("HardNodeID", landmark_node.GetID())
         finally:
             restore_camera_state(camera_state)
-        
+
         report_window.append_text(f"\n=== Run {self.run_number}: Base Measurements ===")
         report_window.append_text(f"X-axis: {x_len:.2f} mm")
         report_window.append_text(f"Y-axis: {y_len:.2f} mm")
@@ -354,13 +450,15 @@ class RynnMethodLogic:
             for eq in equations_to_run:
                 eq_map = {
                     "pred Rynn PA": (0.83, y_len, -3.5, "0.83*Y-3.5"),
-                    "pred Sarilita M PA": (0.57, y_len, 2.33, "0.57*Y+2.33"),
+                    "pred Sarilita PA": (0.57, y_len, 2.33, "0.57*Y+2.33"),
                     "pred Bulut F PA": (0.681, y_len, 2.711, "0.681*Y+2.711"),
                     "pred Bulut M PA": (0.776, y_len, -0.481, "0.776*Y-0.481")
                 }
                 coeff, var_len, const, eq_str = eq_map[eq]
                 length = coeff * var_len + const
                 line_node = self.create_line("PA", start_pos, start_pos + direction * length, (0.85,0.7,0), use_run_number=True)
+                # Store the equation as an attribute on the line node for consistency filtering
+                line_node.SetAttribute("Equation", eq)
                 report_window.append_text(f"{line_node.GetName()}: {eq} = {eq_str} = {length:.2f} mm")
                 report_window.store_result("PA", line_node.GetName(), eq, length, "mm")
         finally:
@@ -392,7 +490,7 @@ class RynnMethodLogic:
             for eq_name in pv_equations_to_run:
                 eq_map = {
                     "pred Rynn PV": (0.9, x_len, -2, "0.9*X-2"),
-                    "pred Sarilita M PV": (0.88, x_len, 0.68, "0.88*X+0.68"),
+                    "pred Sarilita PV": (0.88, x_len, 0.68, "0.88*X+0.68"),
                     "pred Bulut F PV": (0.779, x_len, 5.501, "0.779*X+5.501"),
                     "pred Bulut M PV": (0.954, x_len, -3.53, "0.954*X-3.53")
                 }
@@ -431,13 +529,14 @@ class RynnMethodLogic:
             for eq in equations_to_run:
                 eq_map = {
                     "pred Rynn pFHP": (0.93, y_len, -6, "0.93*Y-6"),
-                    "pred Sarilita M pFHP": (0.58, y_len, 4.55, "0.58*Y+4.55"),
+                    "pred Sarilita pFHP": (0.58, y_len, 4.55, "0.58*Y+4.55"),
                     "pred Bulut F pFHP": (0.775, y_len, 1.161, "0.775*Y+1.161"),
                     "pred Bulut M pFHP": (0.777, y_len, 0.518, "0.777*Y+0.518")
                 }
                 coeff, var_len, const, eq_str = eq_map[eq]
                 length = coeff * var_len + const
                 line_node = self.create_line("pFHP", subsp, subsp + direction * length, (0.9,0.4,0.1), use_run_number=True)
+                line_node.SetAttribute("Equation", eq) 
                 report_window.append_text(f"{line_node.GetName()}: {eq} = {eq_str} = {length:.2f} mm")
                 report_window.store_result("pFHP", line_node.GetName(), eq, length, "mm")
         finally:
@@ -477,7 +576,7 @@ class RynnMethodLogic:
         plane_n = np.array(plane.GetNormal())
         camera_state = save_camera_state()
         try:
-            self.create_circle("ND_circle", center_pos, radius, plane_n)
+            self.create_circle("ND_circle", center_pos, radius, plane_n, equation_name=nd_equation)
         finally:
             restore_camera_state(camera_state)
         
@@ -540,8 +639,8 @@ class RynnMethodLogic:
         plane_n = np.array(plane.GetNormal())
         camera_state = save_camera_state()
         try:
-            self.create_circle("NH_circle", nh_center_pos, nh_radius, plane_n, color=(1,0,0))
-            self.create_circle("NL_circle", nl_center_pos, nl_radius, plane_n, color=(0,0,1))
+            self.create_circle("NH_circle", nh_center_pos, nh_radius, plane_n, color=(1,0,0), equation_name=nh_equation)
+            self.create_circle("NL_circle", nl_center_pos, nl_radius, plane_n, color=(0,0,1), equation_name=nl_equation)
         finally:
             restore_camera_state(camera_state)
         
@@ -590,7 +689,6 @@ class StepWidget(qt.QWidget):
 class Step1_LandmarkSetup(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
-        
         
         self.downloadHardButton = qt.QPushButton("1. Download Hard Tissue Landmarks (Rynn_hard_tissue)")
         self.downloadHardButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
@@ -992,9 +1090,8 @@ class Step3_Scaffolding(StepWidget):
             self.statusLabel.setText(f"Status: Error! {e}")
 
 # =============================================================================
-# STEPS 4-8 (unchanged)
+# STEPS 4-8 (with consistency mode)
 # =============================================================================
-
 class Step4_PronasaleAnterior(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
@@ -1007,20 +1104,36 @@ class Step4_PronasaleAnterior(StepWidget):
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Male</td><td>0.776 * Y - 0.481</td></tr>
             </table><br><b>Y</b> = Y-axis length"""
         self.mainLayout.addWidget(qt.QLabel(table_html))
-        self.pa_equations = ["pred Rynn PA", "pred Sarilita M PA", "pred Bulut F PA", "pred Bulut M PA"]
+        self.pa_equations = ["pred Rynn PA", "pred Sarilita PA", "pred Bulut F PA", "pred Bulut M PA"]
         self.pa_checkbox_list = []
         for eq in self.pa_equations:
             checkbox = qt.QCheckBox(eq)
             self.mainLayout.addWidget(checkbox)
             self.pa_checkbox_list.append(checkbox)
+        
+        # Manual calculation button
         self.calculateButton = qt.QPushButton("Calculate Pronasale Anterior")
+        self.calculateButton.clicked.connect(self.onCalculatePA)
+        self.mainLayout.addWidget(self.calculateButton)
+        
+        # Consistency Mode button
+        self.consistencyButton = qt.QPushButton("Select Consistent Equations (Author & Sex)")
+        self.consistencyButton.setStyleSheet("background-color: #E8F0FE; font-weight: bold;")
+        self.consistencyButton.clicked.connect(self.onConsistencyMode)
+        self.mainLayout.addWidget(self.consistencyButton)
+        
+        # NEW: Run Consistent Workflow button
+        self.workflowButton = qt.QPushButton("▶ Run Consistent Workflow (Auto)")
+        self.workflowButton.setStyleSheet("background-color: #28A745; color: white; font-weight: bold;")
+        self.workflowButton.clicked.connect(self.run_consistent_workflow)
+        self.mainLayout.addWidget(self.workflowButton)
+        
         self.statusLabel = qt.QLabel("Status: Waiting for user.")
         self.statusLabel.setWordWrap(True)
-        self.mainLayout.addWidget(self.calculateButton)
         self.mainLayout.addWidget(self.statusLabel)
         self.mainLayout.addStretch(1)
-        self.calculateButton.clicked.connect(self.onCalculatePA)
     
+    # ----- Existing manual calculation -----
     def onCalculatePA(self):
         self.statusLabel.setText("Status: Calculating...")
         slicer.app.processEvents()
@@ -1033,6 +1146,223 @@ class Step4_PronasaleAnterior(StepWidget):
             self.statusLabel.setText(f"✓ Status: Created {len(chosen)} PA line(s) for Run {self.logic.run_number}.")
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
+
+    # ----- Consistency Mode methods -----
+    def onConsistencyMode(self):
+        dialog = qt.QDialog(self)
+        dialog.setWindowTitle("Select Consistent Equations")
+        dialog.setModal(True)
+        layout = qt.QVBoxLayout(dialog)
+
+        info = qt.QLabel(
+            "Choose an author and biological sex to automatically select matching equations.\n"
+            "After clicking 'Proceed', the checkboxes below will be updated.\n"
+            "Then click 'Calculate Pronasale Anterior' to create the PA lines, or use 'Run Consistent Workflow' to execute every prediction and error measuring step automatically.\n"
+            "Please note that the Rynn (2010) and Sarilita (2018) methods are NOT sex-specific in predicting PA, PV, pFHP; only nasal depth (ND) and nasal length (NL)"
+        )
+        info.setWordWrap(True)
+        info.setStyleSheet("background-color: #FFF3CD; padding: 8px; border-radius: 4px;")
+        layout.addWidget(info)
+
+        author_label = qt.QLabel("Author:")
+        author_combo = qt.QComboBox()
+        author_combo.addItems(["Rynn", "Sarilita", "Bulut"])
+        layout.addWidget(author_label)
+        layout.addWidget(author_combo)
+
+        sex_label = qt.QLabel("Sex:")
+        sex_combo = qt.QComboBox()
+        sex_combo.addItems(["Male", "Female"])
+        layout.addWidget(sex_label)
+        layout.addWidget(sex_combo)
+
+        btn_box = qt.QDialogButtonBox(qt.Qt.Horizontal)
+        proceed_btn = qt.QPushButton("Proceed")
+        cancel_btn = qt.QPushButton("Cancel")
+        btn_box.addButton(proceed_btn, qt.QDialogButtonBox.AcceptRole)
+        btn_box.addButton(cancel_btn, qt.QDialogButtonBox.RejectRole)
+        btn_box.accepted.connect(lambda: self._apply_consistency_mode(dialog, author_combo, sex_combo))
+        btn_box.rejected.connect(dialog.reject)
+        layout.addWidget(btn_box)
+
+        dialog.exec_()
+
+    def _apply_consistency_mode(self, dialog, author_combo, sex_combo):
+        author = author_combo.currentText
+        sex_text = sex_combo.currentText
+        sex_map = {"All": "All", "Male": "M", "Female": "F"}
+        sex = sex_map[sex_text]
+        self.data["consistency_mode"] = {"author": author, "sex": sex}
+        self._apply_to_pa_checkboxes()
+        dialog.accept()
+
+    def _apply_to_pa_checkboxes(self):
+        mode = self.data.get("consistency_mode")
+        if not mode:
+            return
+        filtered = self.logic.filter_equations_by_mode(self.pa_equations, mode)
+        for cb in self.pa_checkbox_list:
+            if cb.text in filtered:
+                cb.setChecked(True)
+            else:
+                cb.setChecked(False)
+
+    def onEnterStep(self):
+        if self.data.get("consistency_mode"):
+            self._apply_to_pa_checkboxes()
+
+    # ===== NEW: Run Consistent Workflow =====
+    def run_consistent_workflow(self):
+        """Run the entire prediction pipeline using consistent equations."""
+        mode = self.data.get("consistency_mode")
+        if not mode:
+            qt.QMessageBox.warning(self, "No Consistency Mode", 
+                "Please click 'Select Consistent Equations' first to choose an author and sex.")
+            return
+
+        # Check if planes and scaffolding are ready
+        if not slicer.util.getFirstNodeByName("INB") and not slicer.util.getFirstNodeByName("MSP"):
+            qt.QMessageBox.warning(self, "Missing Planes", 
+                "Please complete Steps 2 and 3 (Plane Setup and Scaffolding) first.")
+            return
+
+        landmark_node = self.get_landmark_node()
+        if not landmark_node:
+            qt.QMessageBox.warning(self, "Missing Landmarks", 
+                "Please select a hard tissue landmark node in Step 1.")
+            return
+
+        self.statusLabel.setText("Status: Running consistent workflow...")
+        slicer.app.processEvents()
+
+        try:
+            # Step 4: PA
+            pa_equations = self.logic.filter_equations_by_mode(self.pa_equations, mode)
+            if not pa_equations:
+                raise ValueError("No matching PA equations for the selected mode.")
+            self.logic.calculate_pa(landmark_node, pa_equations, self.data["report_window"])
+            self.statusLabel.setText("Status: PA done. Running PV...")
+            slicer.app.processEvents()
+
+            # Get the first PA line created (we need it for PV)
+            pa_lines = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") 
+                       if n.GetName().startswith(f"PA_{self.logic.run_number}_")]
+            if not pa_lines:
+                raise ValueError("No PA lines created.")
+            # We'll use the first one for PV, but we could let user choose. For consistency, we use the first.
+            pa_line_name = pa_lines[0].GetName()
+
+            # Step 5: PV
+            pv_equations = self.logic.filter_equations_by_mode(
+                ["pred Rynn PV", "pred Sarilita PV", "pred Bulut F PV", "pred Bulut M PV"], mode)
+            if pv_equations:
+                self.logic.calculate_pv(pa_line_name, pv_equations, self.data["report_window"])
+                self.statusLabel.setText("Status: PV done. Running pFHP...")
+                slicer.app.processEvents()
+            else:
+                self.statusLabel.setText("Status: No PV equations for mode, skipping.")
+                slicer.app.processEvents()
+
+            # Step 6: pFHP
+            pfhp_equations = self.logic.filter_equations_by_mode(
+                ["pred Rynn pFHP", "pred Sarilita pFHP", "pred Bulut F pFHP", "pred Bulut M pFHP"], mode)
+            if pfhp_equations:
+                self.logic.calculate_pfhp(landmark_node, pfhp_equations, self.data["report_window"])
+                self.statusLabel.setText("Status: pFHP done. Running SN...")
+                slicer.app.processEvents()
+            else:
+                self.statusLabel.setText("Status: No pFHP equations for mode, skipping.")
+                slicer.app.processEvents()
+
+            # Step 7: SN (needs pronasale prediction point and pFHP line)
+            pred_node = slicer.util.getFirstNodeByName(f"soft_tissue_pred_{self.logic.run_number}")
+            if not pred_node:
+                raise ValueError("Prediction node not found. Ensure PV created pronasale points.")
+
+            # Find pronasale point index (the one from the first PV)
+            pronasale_idx = None
+            for i in range(pred_node.GetNumberOfControlPoints()):
+                label = pred_node.GetNthControlPointLabel(i)
+                if "pronasale" in label.lower():
+                    pronasale_idx = i
+                    break
+            if pronasale_idx is None:
+                raise ValueError("No pronasale point found in prediction node.")
+
+            # Find pFHP line (use the first one)
+            pfhp_lines = [n for n in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode") 
+                         if n.GetName().startswith(f"pFHP_{self.logic.run_number}_")]
+            if not pfhp_lines:
+                raise ValueError("No pFHP lines found.")
+            pfhp_line_name = pfhp_lines[0].GetName()
+
+            nd_equations = self.logic.filter_equations_by_mode(
+                ["pred Rynn F ND", "pred Rynn M ND", "pred Sarilita M ND", "pred Sarilita F ND", 
+                 "pred Bulut F ND", "pred Bulut M ND"], mode)
+            if not nd_equations:
+                raise ValueError("No ND equations for mode.")
+            nd_equation = nd_equations[0]  # take the first matching
+
+            active_plane = slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP")
+            if not active_plane:
+                raise ValueError("No profile plane found.")
+            plane_name = active_plane.GetName()
+
+            self.logic.calculate_sn(pronasale_idx, nd_equation, pfhp_line_name, plane_name, self.data["report_window"])
+            self.statusLabel.setText("Status: SN done. Running Nasion...")
+            slicer.app.processEvents()
+
+            # Step 8: Nasion
+            # Find subnasale point index
+            subnasale_idx = None
+            for i in range(pred_node.GetNumberOfControlPoints()):
+                label = pred_node.GetNthControlPointLabel(i)
+                if "subnasale" in label.lower():
+                    subnasale_idx = i
+                    break
+            if subnasale_idx is None:
+                raise ValueError("No subnasale point found in prediction node.")
+
+            nh_equations = self.logic.filter_equations_by_mode(
+                ["pred Rynn EA M NH", "pred Rynn EA F NH", "pred Sarilita M NH", 
+                 "pred Sarilita F NH", "pred Bulut F NH", "pred Bulut M NH"], mode)
+            nl_equations = self.logic.filter_equations_by_mode(
+                ["pred Rynn EA NL", "pred Sarilita F NL", "pred Sarilita M NL", "pred Bulut M NL"], mode)
+            if not nh_equations or not nl_equations:
+                raise ValueError("No NH or NL equations for mode.")
+            nh_eq = nh_equations[0]
+            nl_eq = nl_equations[0]
+
+            self.logic.calculate_nasion(subnasale_idx, nh_eq, pronasale_idx, nl_eq, plane_name, self.data["report_window"])
+            self.statusLabel.setText("Status: Nasion done. Running automatic Basic Comparison...")
+            slicer.app.processEvents()
+
+            # Attempt to run Basic Comparison if a soft tissue node is selected in Step 9
+            step9 = self.main_gui.step_widgets[8]  # Step9_Analysis instance
+            soft_node = step9.softTissueSelector.currentNode()
+            if soft_node:
+                try:
+                    step9.onBasicCompare()   # This will create error lines & angles, and store results
+                    self.statusLabel.setText("Status: Workflow complete, including Basic Comparison.")
+                except Exception as e:
+                    self.statusLabel.setText(f"Status: Basic Comparison failed: {e}")
+            else:
+                self.statusLabel.setText("Status: Workflow complete. (No soft tissue node for Basic Comparison.)")
+
+            slicer.app.processEvents()
+
+            # Jump to Step 9 (Analysis)
+            qt.QMessageBox.information(self, "Workflow Complete", 
+                "All predictions have been generated using consistent equations.\n"
+                "Switching to Step 9 (Analysis). The individual equations and calculations are stored and are visible by clicking the `Show Calculation Report` button.")
+            self.main_gui.currentStep = 8
+            self.main_gui.update_ui()
+
+        except Exception as e:
+            self.statusLabel.setText(f"Status: Error! {e}")
+            import traceback
+            traceback.print_exc()
+
 
 class Step5_PronasaleVertical(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
@@ -1054,7 +1384,7 @@ class Step5_PronasaleVertical(StepWidget):
         pv_group = qt.QGroupBox("2. Select PV Equation(s)")
         self.mainLayout.addWidget(pv_group)
         pv_layout = qt.QVBoxLayout(pv_group)
-        self.pv_equations = ["pred Rynn PV", "pred Sarilita M PV", "pred Bulut F PV", "pred Bulut M PV"]
+        self.pv_equations = ["pred Rynn PV", "pred Sarilita PV", "pred Bulut F PV", "pred Bulut M PV"]
         self.pv_checkbox_list = []
         for eq in self.pv_equations:
             cb = qt.QCheckBox(eq)
@@ -1088,6 +1418,25 @@ class Step5_PronasaleVertical(StepWidget):
                 self.pa_checkbox_list.append(cb)
             if len(self.pa_checkbox_list) == 1:
                 self.pa_checkbox_list[0].setChecked(True)
+        
+        # Apply consistency filtering
+        self._apply_consistency_to_pa_lines()
+    
+    def _apply_consistency_to_pa_lines(self):
+        mode = self.data.get("consistency_mode")
+        if not mode:
+            return
+        filtered_lines = []
+        for cb in self.pa_checkbox_list:
+            line_node = slicer.util.getNode(cb.text)
+            if line_node:
+                eq_attr = line_node.GetAttribute("Equation")
+                if eq_attr and eq_attr in self.logic.filter_equations_by_mode([eq_attr], mode):
+                    filtered_lines.append(cb)
+        for cb in self.pa_checkbox_list:
+            cb.setChecked(False)
+        for cb in filtered_lines:
+            cb.setChecked(True)
     
     def onCalculatePV(self):
         self.statusLabel.setText("Status: Calculating...")
@@ -1115,7 +1464,7 @@ class Step6_PFH(StepWidget):
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Male</td><td>0.518 + 0.777 * Y</td></tr>
             </table><br><b>Y</b> = Y-axis length"""
         self.mainLayout.addWidget(qt.QLabel(table_html))
-        self.pfhp_equations = ["pred Rynn pFHP", "pred Sarilita M pFHP", "pred Bulut F pFHP", "pred Bulut M pFHP"]
+        self.pfhp_equations = ["pred Rynn pFHP", "pred Sarilita pFHP", "pred Bulut F pFHP", "pred Bulut M pFHP"]
         self.pfhp_checkbox_list = []
         for eq in self.pfhp_equations:
             cb = qt.QCheckBox(eq)
@@ -1128,6 +1477,20 @@ class Step6_PFH(StepWidget):
         self.mainLayout.addWidget(self.statusLabel)
         self.mainLayout.addStretch(1)
         self.calculateButton.clicked.connect(self.onCalculatePFHP)
+    
+    def onEnterStep(self):
+        self._apply_consistency_to_pfhp()
+    
+    def _apply_consistency_to_pfhp(self):
+        mode = self.data.get("consistency_mode")
+        if not mode:
+            return
+        filtered = self.logic.filter_equations_by_mode(self.pfhp_equations, mode)
+        for cb in self.pfhp_checkbox_list:
+            if cb.text in filtered:
+                cb.setChecked(True)
+            else:
+                cb.setChecked(False)
     
     def onCalculatePFHP(self):
         self.statusLabel.setText("Status: Calculating...")
@@ -1207,6 +1570,19 @@ class Step7_SoftTissueSN(StepWidget):
         self.pfhp_line_names = [node.GetName() for node in pfhp_nodes]
         pfhp_items = [(name, i) for i, name in enumerate(self.pfhp_line_names)]
         self._populate_radio_group(self.line_group, pfhp_items, self.pfhp_lines_group)
+        
+        # Apply consistency to ND equation
+        self._apply_consistency_to_nd()
+    
+    def _apply_consistency_to_nd(self):
+        mode = self.data.get("consistency_mode")
+        if not mode:
+            return
+        filtered = self.logic.filter_equations_by_mode(self.nd_equations, mode)
+        for i, eq in enumerate(self.nd_equations):
+            if eq in filtered:
+                self.nd_eq_buttons.button(i).setChecked(True)
+                return
     
     def onCalculateSN(self):
         self.statusLabel.setText("Status: Calculating...")
@@ -1311,6 +1687,26 @@ class Step8_Nasion(StepWidget):
         self.nl_center_points_group = qt.QButtonGroup(self)
         nl_items = [(pred_node.GetNthControlPointLabel(i), i) for i in range(pred_node.GetNumberOfControlPoints()) if "pronasale" in pred_node.GetNthControlPointLabel(i).lower()] if pred_node else []
         self._populate_radio_group(self.nl_group, nl_items, self.nl_center_points_group)
+        
+        # Apply consistency to NH and NL
+        self._apply_consistency_to_nh_nl()
+    
+    def _apply_consistency_to_nh_nl(self):
+        mode = self.data.get("consistency_mode")
+        if not mode:
+            return
+        # NH
+        filtered_nh = self.logic.filter_equations_by_mode(self.nh_equations, mode)
+        for i, eq in enumerate(self.nh_equations):
+            if eq in filtered_nh:
+                self.nh_eq_buttons.button(i).setChecked(True)
+                break
+        # NL
+        filtered_nl = self.logic.filter_equations_by_mode(self.nl_equations, mode)
+        for i, eq in enumerate(self.nl_equations):
+            if eq in filtered_nl:
+                self.nl_eq_buttons.button(i).setChecked(True)
+                break
     
     def onCalculateNasion(self):
         self.statusLabel.setText("Status: Calculating...")
@@ -1340,6 +1736,7 @@ class Step8_Nasion(StepWidget):
 class Step9_Analysis(StepWidget):
     def __init__(self, title, logic, data, main_gui, parent=None):
         super().__init__(title, logic, data, main_gui, parent)
+    
         
         # --- Run Again Section ---
         run_again_group = qt.QGroupBox("🔄 Start a New Run")
@@ -1447,7 +1844,12 @@ class Step9_Analysis(StepWidget):
         self.tableButton = qt.QPushButton("📊 Show Comprehensive Results Table")
         cleanup_layout.addWidget(self.tableButton)
         self.tableButton.clicked.connect(self.onShowComprehensiveTable)
-        
+
+        self.copyAllButton = qt.QPushButton("📋 Copy ALL Data (Excel)")
+        self.copyAllButton.setToolTip("Copies the full calculation report, landmark comparison, and advanced errors into one TSV table.")
+        cleanup_layout.addWidget(self.copyAllButton)
+        self.copyAllButton.clicked.connect(self.onCopyAll)
+                
         self.statusLabel = qt.QLabel(f"✓ Status: Run {self.logic.run_number} complete!")
         self.statusLabel.setWordWrap(True)
         
@@ -1537,6 +1939,126 @@ class Step9_Analysis(StepWidget):
             )
         self.statusLabel.setText(f"✓ Status: Run {self.logic.run_number} complete!")
 
+    def _generate_landmark_comparison_tsv(self):
+        """Generate TSV for predicted vs true landmarks (all runs)."""
+        soft_node = self.softTissueSelector.currentNode()
+        if not soft_node:
+            return ""
+
+        # Get all prediction nodes (all runs)
+        all_pred_nodes = []
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+            if node.GetName().startswith("soft_tissue_pred_"):
+                all_pred_nodes.append(node)
+
+        def get_run_number(node):
+            import re
+            match = re.search(r'soft_tissue_pred_(\d+)', node.GetName())
+            return int(match.group(1)) if match else 0
+
+        all_pred_nodes.sort(key=get_run_number)
+        if not all_pred_nodes:
+            return ""
+
+        # Build true dictionary
+        true_dict = {}
+        for i in range(soft_node.GetNumberOfControlPoints()):
+            label = soft_node.GetNthControlPointLabel(i)
+            pos = np.array(soft_node.GetNthControlPointPositionWorld(i))
+            canonical = self.logic.get_landmark_canonical(label)
+            if canonical:
+                true_dict[canonical] = pos
+
+        lines = []
+        lines.append("=== Landmark Comparison (Predicted vs True) ===")
+        lines.append("Run\tLandmark\tPred_X\tPred_Y\tPred_Z\tTrue_X\tTrue_Y\tTrue_Z\tError_mm")
+
+        for pred_node in all_pred_nodes:
+            run_name = pred_node.GetName()
+            for i in range(pred_node.GetNumberOfControlPoints()):
+                pred_label = pred_node.GetNthControlPointLabel(i)
+                pred_pos = np.array(pred_node.GetNthControlPointPositionWorld(i))
+                canonical = self.logic.get_landmark_canonical(pred_label)
+                if canonical and canonical in true_dict:
+                    true_pos = true_dict[canonical]
+                    error = np.linalg.norm(pred_pos - true_pos)
+                    lines.append(f"{run_name}\t{pred_label}\t{pred_pos[0]:.2f}\t{pred_pos[1]:.2f}\t{pred_pos[2]:.2f}\t{true_pos[0]:.2f}\t{true_pos[1]:.2f}\t{true_pos[2]:.2f}\t{error:.2f}")
+
+        return "\n".join(lines)
+
+    def _generate_advanced_errors_tsv(self):
+        """Generate TSV for advanced displacement errors (current run)."""
+        hard_node = self.get_landmark_node()
+        soft_node = self.softTissueSelector.currentNode()
+        if not hard_node or not soft_node:
+            return ""
+
+        # Build label -> position maps
+        hard_map = {}
+        for i in range(hard_node.GetNumberOfControlPoints()):
+            label = hard_node.GetNthControlPointLabel(i)
+            pos = np.array(hard_node.GetNthControlPointPositionWorld(i))
+            hard_map[label] = pos
+
+        soft_map = {}
+        for i in range(soft_node.GetNumberOfControlPoints()):
+            label = soft_node.GetNthControlPointLabel(i)
+            pos = np.array(soft_node.GetNthControlPointPositionWorld(i))
+            soft_map[label] = pos
+
+        adv_pairs = [
+            ("pt5L", "CL"), ("pt5R", "CR"),
+            ("pt7L", "LL"), ("pt7R", "LR"),
+            ("pt4L", "XL"), ("pt4R", "XR"),
+        ]
+
+        lines = []
+        lines.append("=== Advanced Displacement Errors ===")
+        lines.append("Pair\tHard_X\tHard_Y\tHard_Z\tSoft_X\tSoft_Y\tSoft_Z\tError_mm")
+
+        found = False
+        for soft_label, hard_label in adv_pairs:
+            if soft_label in soft_map and hard_label in hard_map:
+                found = True
+                soft_pos = soft_map[soft_label]
+                hard_pos = hard_map[hard_label]
+                error = np.linalg.norm(soft_pos - hard_pos)
+                lines.append(f"{soft_label}↔{hard_label}\t{hard_pos[0]:.2f}\t{hard_pos[1]:.2f}\t{hard_pos[2]:.2f}\t{soft_pos[0]:.2f}\t{soft_pos[1]:.2f}\t{soft_pos[2]:.2f}\t{error:.2f}")
+
+        return "\n".join(lines) if found else ""    
+
+    def onCopyAll(self):
+        """Copy ALL data (report, landmark comparison, advanced errors) as one TSV."""
+        # 1. Full Calculation Report
+        report_text = self.data["report_window"]._generate_full_report_text()
+        if not report_text or report_text.startswith("--- Calculation Report ---\nNo results"):
+            report_text = "# No calculation results available."
+
+        # 2. Landmark Comparison
+        comp_text = self._generate_landmark_comparison_tsv()
+        if not comp_text:
+            comp_text = "# No landmark comparison data available."
+
+        # 3. Advanced Errors
+        adv_text = self._generate_advanced_errors_tsv()
+        if not adv_text:
+            adv_text = "# No advanced errors available."
+
+        # Combine with section headers
+        combined = []
+        combined.append("===== CALCULATION REPORT =====")
+        combined.append(report_text)
+        combined.append("")
+        combined.append(comp_text)
+        combined.append("")
+        combined.append(adv_text)
+
+        full_text = "\n".join(combined)
+
+        # Copy to clipboard
+        slicer.app.clipboard().setText(full_text)
+        slicer.util.showStatusMessage("All data copied to clipboard as TSV (Excel‑friendly).", 3000)
+
     # ---------- Robust table copy helpers ----------
     def _copyTableToClipboard(self, table, *args):
         """Copy the table content as tab-separated values (robust across Qt bindings)."""
@@ -1589,11 +2111,13 @@ class Step9_Analysis(StepWidget):
 
     # ----- Other methods (fully implemented) -----
     def onRunAgain(self):
+        self.data.pop("consistency_mode", None)  # Clear consistency mode
         self.logic.run_number += 1
         self.logic.item_counters = {}
         self.main_gui.updateRunLabel()
         
-        msg = qt.QMessageBox()
+        msg = qt.QMessageBox(self)  # parent is this widget
+        msg.setWindowModality(qt.Qt.ApplicationModal)
         msg.setIcon(qt.QMessageBox.Information)
         msg.setText(f"Starting Run {self.logic.run_number}!")
         msg.setInformativeText("Your previous run's geometry will stay visible so you can compare.\n\nClick OK to jump to Step 4 (PA calculation).")
@@ -1644,8 +2168,7 @@ class Step9_Analysis(StepWidget):
         angle_node.AddControlPoint(p1)
         angle_node.AddControlPoint(p2)
         angle_node.AddControlPoint(p3)
-        angle_deg = angle_node.GetAngleDegrees()
-        report_window.store_result("Angles", name, "Angle", angle_deg, "degrees")
+        return angle_node.GetAngleDegrees()  # return value, no storage
 
     def onBasicCompare(self):
         self.statusLabel.setText("Status: Running Basic Comparison...")
@@ -1656,12 +2179,12 @@ class Step9_Analysis(StepWidget):
             if not pred_node or not soft_node:
                 raise ValueError("Prediction node or soft tissue node not selected.")
 
+            # Remove old error lines
             for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
                 if node.GetName().startswith("error_"):
                     slicer.mrmlScene.RemoveNode(node)
 
-            angles_created, error_lines_created = 0, 0
-
+            # Build predicted and true point dictionaries
             pred_points = {"nasion": None, "pronasale": None, "subnasale": None}
             for i in range(pred_node.GetNumberOfControlPoints()):
                 label = pred_node.GetNthControlPointLabel(i)
@@ -1678,22 +2201,36 @@ class Step9_Analysis(StepWidget):
                 if canonical and canonical in true_positions:
                     true_positions[canonical] = pos
 
+            error_lines_created = 0
+            angles_created = 0
+
+            # --- Predicted Nasal Angle ---
             if all(v is not None for v in pred_points.values()):
-                self._create_or_update_angle(
+                angle_val = self._create_or_update_angle(
                     f"Predicted_Nasal_Angle_Run{self.logic.run_number}",
                     pred_points["nasion"], pred_points["pronasale"], pred_points["subnasale"],
                     (1, 1, 0), self.data["report_window"]
                 )
+                self.data["report_window"].store_result(
+                    "Angles", f"Predicted_Nasal_Angle_Run{self.logic.run_number}",
+                    "Predicted Angle", angle_val, "degrees"
+                )
                 angles_created += 1
 
+            # --- True Nasal Angle (store only once) ---
             if all(v is not None for v in true_positions.values()):
-                self._create_or_update_angle(
+                true_angle_val = self._create_or_update_angle(
                     "True_Nasal_Angle",
                     true_positions["nasion"], true_positions["pronasale"], true_positions["subnasale"],
                     (0, 1, 1), self.data["report_window"]
                 )
-                angles_created += 1
+                if not self.data["report_window"].has_result("Angles", "True_Nasal_Angle"):
+                    self.data["report_window"].store_result(
+                        "Angles", "True_Nasal_Angle",
+                        "True Angle", true_angle_val, "degrees"
+                    )
 
+            # --- Error lines for each matching predicted landmark ---
             for i in range(pred_node.GetNumberOfControlPoints()):
                 pred_label = pred_node.GetNthControlPointLabel(i)
                 pred_pos = np.array(pred_node.GetNthControlPointPositionWorld(i))
@@ -1828,6 +2365,8 @@ class Step9_Analysis(StepWidget):
         if self.data["report_window"].isVisible():
             self.data["report_window"].hide()
         else:
+            # Refresh the report from the scene before showing it
+            self.main_gui._repopulateReportFromScene()
             self.data["report_window"].show()
 
     # ----------------------------------------------------------------------
@@ -1841,8 +2380,8 @@ class Step9_Analysis(StepWidget):
 
         all_items = []
         for category, items in results.items():
-            # Skip advanced errors – they will be shown separately in the Landmark Comparison table
-            if category == "Advanced Errors":
+            # Exclude error categories – they are in the Landmark Comparison Table
+            if category in ["Basic Errors", "Advanced Errors"]:
                 continue
             for item in items:
                 all_items.append({
@@ -1852,6 +2391,10 @@ class Step9_Analysis(StepWidget):
                     "value": item["value"],
                     "unit": item["unit"]
                 })
+
+        if not all_items:
+            qt.QMessageBox.information(self, "No Data", "No results to display.")
+            return
 
         dialog = qt.QDialog(self)
         dialog.setWindowTitle("Comprehensive Results Table")
@@ -1890,20 +2433,32 @@ class Step9_Analysis(StepWidget):
         layout.addWidget(copy_btn)
 
         dialog.exec_()
-
     # ----------------------------------------------------------------------
     # Landmark Comparison Table
     # ----------------------------------------------------------------------
     def onShowLandmarkComparison(self):
-        pred_node = slicer.util.getNode(f"soft_tissue_pred_{self.logic.run_number}")
         soft_node = self.softTissueSelector.currentNode()
-        hard_node = self.get_landmark_node()  # needed for advanced errors
-
-        if not pred_node or not soft_node:
-            qt.QMessageBox.warning(self, "Missing Data", "Please select a soft tissue node and run predictions first.")
+        if not soft_node:
+            qt.QMessageBox.warning(self, "Missing Data", "Please select a soft tissue node first.")
             return
 
-        # ----- Table 1: Predicted vs True (unchanged) -----
+        # Get all prediction nodes (all runs)
+        all_pred_nodes = []
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsFiducialNode"):
+            if node.GetName().startswith("soft_tissue_pred_"):
+                all_pred_nodes.append(node)
+        # Sort by run number (extract number from name)
+        def get_run_number(node):
+            import re
+            match = re.search(r'soft_tissue_pred_(\d+)', node.GetName())
+            return int(match.group(1)) if match else 0
+        all_pred_nodes.sort(key=get_run_number)
+
+        if not all_pred_nodes:
+            qt.QMessageBox.information(self, "No Predictions", "No prediction nodes found. Please run predictions first.")
+            return
+
+        # Build true dictionary once (from the selected soft tissue node)
         true_dict = {}
         for i in range(soft_node.GetNumberOfControlPoints()):
             label = soft_node.GetNthControlPointLabel(i)
@@ -1912,43 +2467,97 @@ class Step9_Analysis(StepWidget):
             if canonical:
                 true_dict[canonical] = pos
 
-        rows = []
-        for i in range(pred_node.GetNumberOfControlPoints()):
-            pred_label = pred_node.GetNthControlPointLabel(i)
-            pred_pos = np.array(pred_node.GetNthControlPointPositionWorld(i))
-            canonical = self.logic.get_landmark_canonical(pred_label)
-            if canonical and canonical in true_dict:
-                true_pos = true_dict[canonical]
-                error = np.linalg.norm(pred_pos - true_pos)
-                rows.append({
-                    "landmark": pred_label,
-                    "pred_x": pred_pos[0], "pred_y": pred_pos[1], "pred_z": pred_pos[2],
-                    "true_x": true_pos[0], "true_y": true_pos[1], "true_z": true_pos[2],
-                    "error": error
-                })
+        # Collect rows for all runs
+        all_rows = []
+        for pred_node in all_pred_nodes:
+            run_name = pred_node.GetName()
+            # Get predicted points from this node
+            for i in range(pred_node.GetNumberOfControlPoints()):
+                pred_label = pred_node.GetNthControlPointLabel(i)
+                pred_pos = np.array(pred_node.GetNthControlPointPositionWorld(i))
+                canonical = self.logic.get_landmark_canonical(pred_label)
+                if canonical and canonical in true_dict:
+                    true_pos = true_dict[canonical]
+                    error = np.linalg.norm(pred_pos - true_pos)
+                    all_rows.append({
+                        "run": run_name,
+                        "landmark": pred_label,
+                        "pred_x": pred_pos[0], "pred_y": pred_pos[1], "pred_z": pred_pos[2],
+                        "true_x": true_pos[0], "true_y": true_pos[1], "true_z": true_pos[2],
+                        "error": error
+                    })
 
-        if not rows:
+        if not all_rows:
             qt.QMessageBox.information(self, "No Match", "No matching landmarks found between predicted and true nodes.")
             return
 
-        # ----- Table 2: Advanced Errors (with coordinates) -----
+        # Build dialog
+        dialog = qt.QDialog(self)
+        dialog.setWindowTitle("Landmark Comparison – All Runs")
+        dialog.setMinimumSize(1200, 600)
+        layout = qt.QVBoxLayout(dialog)
+
+        # Table 1: Predicted vs True (now includes a "Run" column)
+        table1_label = qt.QLabel("<b>Predicted vs True Landmark Coordinates and Errors (All Runs)</b>")
+        layout.addWidget(table1_label)
+
+        self.landmark_table1 = qt.QTableWidget()
+        # Columns: Run, Landmark, Pred X, Pred Y, Pred Z, True X, True Y, True Z, Error
+        self.landmark_table1.setColumnCount(9)
+        self.landmark_table1.setHorizontalHeaderLabels(
+            ["Run", "Landmark", "Pred X", "Pred Y", "Pred Z", "True X", "True Y", "True Z", "Error (mm)"]
+        )
+        self.landmark_table1.setAlternatingRowColors(True)
+        self.landmark_table1.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+
+        self.landmark_table1.setRowCount(len(all_rows))
+        for r, data in enumerate(all_rows):
+            self.landmark_table1.setItem(r, 0, qt.QTableWidgetItem(data["run"]))
+            self.landmark_table1.setItem(r, 1, qt.QTableWidgetItem(data["landmark"]))
+            self.landmark_table1.setItem(r, 2, qt.QTableWidgetItem(f"{data['pred_x']:.2f}"))
+            self.landmark_table1.setItem(r, 3, qt.QTableWidgetItem(f"{data['pred_y']:.2f}"))
+            self.landmark_table1.setItem(r, 4, qt.QTableWidgetItem(f"{data['pred_z']:.2f}"))
+            self.landmark_table1.setItem(r, 5, qt.QTableWidgetItem(f"{data['true_x']:.2f}"))
+            self.landmark_table1.setItem(r, 6, qt.QTableWidgetItem(f"{data['true_y']:.2f}"))
+            self.landmark_table1.setItem(r, 7, qt.QTableWidgetItem(f"{data['true_z']:.2f}"))
+            err_item = qt.QTableWidgetItem(f"{data['error']:.2f}")
+            err_item.setForeground(qt.QColor(200, 0, 0) if data['error'] > 5 else qt.QColor(0, 150, 0))
+            self.landmark_table1.setItem(r, 8, err_item)
+
+        self.landmark_table1.resizeColumnsToContents()
+        layout.addWidget(self.landmark_table1)
+
+        # Table 2: Advanced Errors – using LABEL matching (no hard-coded indices)
+        hard_node = self.get_landmark_node()
         adv_rows = []
         if hard_node and soft_node:
-            # Define the same pairs as in onAdvancedCompare
-            pairs = [
-                ("pt5L", 12, "CL", 7),
-                ("pt5R", 11, "CR", 8),
-                ("pt7L", 16, "LL", 11),
-                ("pt7R", 15, "LR", 12),
-                ("pt4L", 10, "XL", 9),
-                ("pt4R", 9, "XR", 10),
+            # Build dictionaries: label -> position
+            hard_map = {}
+            for i in range(hard_node.GetNumberOfControlPoints()):
+                label = hard_node.GetNthControlPointLabel(i)
+                pos = np.array(hard_node.GetNthControlPointPositionWorld(i))
+                hard_map[label] = pos
+
+            soft_map = {}
+            for i in range(soft_node.GetNumberOfControlPoints()):
+                label = soft_node.GetNthControlPointLabel(i)
+                pos = np.array(soft_node.GetNthControlPointPositionWorld(i))
+                soft_map[label] = pos
+
+            # Define pairs by label (not index)
+            adv_pairs = [
+                ("pt5L", "CL"),
+                ("pt5R", "CR"),
+                ("pt7L", "LL"),
+                ("pt7R", "LR"),
+                ("pt4L", "XL"),
+                ("pt4R", "XR"),
             ]
-            for soft_label, soft_idx, hard_label, hard_idx in pairs:
-                # Get positions (using the index from the Rynn_soft_tissue markup)
-                # Note: indices are 0-based in the node; the mapping matches the downloaded file
-                try:
-                    soft_pos = np.array(soft_node.GetNthControlPointPositionWorld(soft_idx))
-                    hard_pos = np.array(hard_node.GetNthControlPointPositionWorld(hard_idx))
+
+            for soft_label, hard_label in adv_pairs:
+                if soft_label in soft_map and hard_label in hard_map:
+                    soft_pos = soft_map[soft_label]
+                    hard_pos = hard_map[hard_label]
                     error = np.linalg.norm(soft_pos - hard_pos)
                     adv_rows.append({
                         "pair": f"{soft_label}↔{hard_label}",
@@ -1956,50 +2565,19 @@ class Step9_Analysis(StepWidget):
                         "soft_x": soft_pos[0], "soft_y": soft_pos[1], "soft_z": soft_pos[2],
                         "error": error
                     })
-                except Exception:
-                    # Skip if positions cannot be retrieved
+                else:
+                    # Optionally log missing labels, but silently skip
                     pass
 
-        # Build dialog
-        dialog = qt.QDialog(self)
-        dialog.setWindowTitle("Landmark Comparison")
-        dialog.setMinimumSize(1000, 600)
-        layout = qt.QVBoxLayout(dialog)
-
-        # Table 1: Predicted vs True
-        table1_label = qt.QLabel("<b>Predicted vs True Landmark Coordinates and Errors</b>")
-        layout.addWidget(table1_label)
-
-        self.landmark_table1 = qt.QTableWidget()
-        self.landmark_table1.setColumnCount(8)
-        self.landmark_table1.setHorizontalHeaderLabels(["Landmark", "Pred X", "Pred Y", "Pred Z", "True X", "True Y", "True Z", "Error (mm)"])
-        self.landmark_table1.setAlternatingRowColors(True)
-        self.landmark_table1.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
-
-        self.landmark_table1.setRowCount(len(rows))
-        for r, data in enumerate(rows):
-            self.landmark_table1.setItem(r, 0, qt.QTableWidgetItem(data["landmark"]))
-            self.landmark_table1.setItem(r, 1, qt.QTableWidgetItem(f"{data['pred_x']:.2f}"))
-            self.landmark_table1.setItem(r, 2, qt.QTableWidgetItem(f"{data['pred_y']:.2f}"))
-            self.landmark_table1.setItem(r, 3, qt.QTableWidgetItem(f"{data['pred_z']:.2f}"))
-            self.landmark_table1.setItem(r, 4, qt.QTableWidgetItem(f"{data['true_x']:.2f}"))
-            self.landmark_table1.setItem(r, 5, qt.QTableWidgetItem(f"{data['true_y']:.2f}"))
-            self.landmark_table1.setItem(r, 6, qt.QTableWidgetItem(f"{data['true_z']:.2f}"))
-            err_item = qt.QTableWidgetItem(f"{data['error']:.2f}")
-            err_item.setForeground(qt.QColor(200, 0, 0) if data['error'] > 5 else qt.QColor(0, 150, 0))
-            self.landmark_table1.setItem(r, 7, err_item)
-
-        self.landmark_table1.resizeColumnsToContents()
-        layout.addWidget(self.landmark_table1)
-
-        # Table 2: Advanced Errors (with coordinates)
         if adv_rows:
-            table2_label = qt.QLabel("<b>Advanced Displacement Errors (Hard ↔ Soft)</b>")
+            table2_label = qt.QLabel("<b>Advanced Displacement Errors (Current Run – Hard ↔ Soft)</b>")
             layout.addWidget(table2_label)
 
             self.landmark_table2 = qt.QTableWidget()
             self.landmark_table2.setColumnCount(8)
-            self.landmark_table2.setHorizontalHeaderLabels(["Pair", "Hard X", "Hard Y", "Hard Z", "Soft X", "Soft Y", "Soft Z", "Error (mm)"])
+            self.landmark_table2.setHorizontalHeaderLabels(
+                ["Pair", "Hard X", "Hard Y", "Hard Z", "Soft X", "Soft Y", "Soft Z", "Error (mm)"]
+            )
             self.landmark_table2.setAlternatingRowColors(True)
             self.landmark_table2.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
 
@@ -2018,8 +2596,8 @@ class Step9_Analysis(StepWidget):
 
             self.landmark_table2.resizeColumnsToContents()
             layout.addWidget(self.landmark_table2)
+            self.landmark_table2 = self.landmark_table2  # store for copy button
         else:
-            # If no advanced errors, set table2 to None (copy button will be hidden)
             self.landmark_table2 = None
 
         # Copy buttons – direct connections
@@ -2038,6 +2616,7 @@ class Step9_Analysis(StepWidget):
 
         dialog.exec_()
 
+# =============================================================================
 # MAIN GUI
 # =============================================================================
 class RynnMethodSimplifiedGUI(qt.QWidget):
@@ -2070,6 +2649,7 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
         self.update_ui()
         self._loadExistingNodeGuids()
         self._jumpToFirstIncompleteStep()
+        self._repopulateReportFromScene()
     
     def updateRunLabel(self):
         self.run_label.setText(f"<b>Current Run: {self.logic.run_number}</b>")
@@ -2171,13 +2751,14 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
         step1 = self.step_widgets[0]
         current_node = step1.landmarksSelector.currentNode()
         if not current_node:
-            return  # no node selected, stay at step 1
+            # If no hard node selected, stay at Step 1
+            self.currentStep = 0
+            self.update_ui()
+            return
 
-        # Check if planes exist
         plane_exists = bool(slicer.util.getFirstNodeByName("INB") or slicer.util.getFirstNodeByName("MSP"))
         plane_ok = plane_exists and self.logic.hard_node_guid == current_node.GetID()
 
-        # Check if scaffolding exists
         axes_exist = bool(slicer.util.getFirstNodeByName("X_axis") and 
                         slicer.util.getFirstNodeByName("Y_axis") and 
                         slicer.util.getFirstNodeByName("Z_axis"))
@@ -2186,25 +2767,123 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
                             slicer.util.getFirstNodeByName("Line_3"))
         scaffold_ok = axes_exist and network_exist and self.logic.scaffold_node_guid == current_node.GetID()
 
-        # NEW: Check if the prediction node (Step 8) already exists for this run
         pred_node_name = f"soft_tissue_pred_{self.logic.run_number}"
         pred_node_exists = bool(slicer.util.getFirstNodeByName(pred_node_name))
 
-        # Decide which step to jump to
         if plane_ok and scaffold_ok and pred_node_exists:
-            # All setup and predictions are done – go straight to Analysis (Step 9)
-            self.currentStep = 8  # index of Step 9 (0‑based)
+            self.currentStep = 8
         elif plane_ok and scaffold_ok:
-            # Planes and scaffolding ready – start at Pronasale Anterior (Step 4)
             self.currentStep = 3
         elif plane_ok:
-            # Only planes exist – jump to Scaffolding (Step 3)
             self.currentStep = 2
         else:
-            # Nothing is ready – stay at Plane Setup (Step 2)
-            self.currentStep = 1
+            self.currentStep = 0  # Start at Step 1: Landmark Setup if nothing is ready
 
         self.update_ui()
+
+    def _repopulateReportFromScene(self):
+        report = self.report_window
+        logic = self.logic
+        run_num = logic.run_number  # current run (but we will scan all runs)
+        
+        report.results = {}  # clear
+
+        # Helper to safely get line length
+        def get_line_length(node):
+            if node.GetNumberOfControlPoints() >= 2:
+                p1 = np.zeros(3); p2 = np.zeros(3)
+                node.GetNthControlPointPositionWorld(0, p1)
+                node.GetNthControlPointPositionWorld(1, p2)
+                return np.linalg.norm(p2 - p1)
+            return None
+
+        # 1. Base Measurements: scan axes attributes for all runs
+        for axis_name, prefix in [("X_axis", "X"), ("Y_axis", "Y"), ("Z_axis", "Z")]:
+            axis = slicer.util.getFirstNodeByName(axis_name)
+            if axis:
+                # Iterate over all attributes that match pattern
+                attribs = axis.GetAttributeNames()
+                for attr in attribs:
+                    if attr.endswith(f"_{prefix}_length"):
+                        # e.g., "Run5_X_length"
+                        run_str = attr.split('_')[0]  # "Run5"
+                        run_id = run_str[3:]  # "5"
+                        value = float(axis.GetAttribute(attr))
+                        report.store_result("Base Measurements", f"Run{run_id}_{prefix}", f"{prefix}-axis", value, "mm")
+
+        # 2. Lines: PA, PV, pFHP (they have Equation attribute)
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+            name = node.GetName()
+            if name.startswith(("PA_", "PV_", "pFHP_")):
+                length = get_line_length(node)
+                if length is not None:
+                    eq_attr = node.GetAttribute("Equation")
+                    measurement = eq_attr if eq_attr else name
+                    # Determine category from prefix
+                    if name.startswith("PA_"):
+                        category = "PA"
+                    elif name.startswith("PV_"):
+                        category = "PV"
+                    else:
+                        category = "pFHP"
+                    report.store_result(category, name, measurement, length, "mm")
+
+        # 3. Circle radii (ND, NH, NL)
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsClosedCurveNode"):
+            name = node.GetName()
+            if name.startswith(("ND_circle", "NH_circle", "NL_circle")):
+                radius_attr = node.GetAttribute("Radius")
+                if radius_attr:
+                    radius = float(radius_attr)
+                    eq_attr = node.GetAttribute("Equation")
+                    measurement = eq_attr if eq_attr else "Radius"
+                    if name.startswith("ND_circle"):
+                        category = "ND Radii"
+                    elif name.startswith("NH_circle"):
+                        category = "NH Radii"
+                    else:
+                        category = "NL Radii"
+                    report.store_result(category, name, measurement, radius, "mm")
+
+        # 4. Angles
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsAngleNode"):
+            name = node.GetName()
+            if "Nasal_Angle" in name:
+                angle_deg = node.GetAngleDegrees()
+                # Set measurement label based on node name
+                if name.startswith("Predicted_Nasal_Angle"):
+                    measurement = "Predicted Angle"
+                elif name == "True_Nasal_Angle":
+                    measurement = "True Angle"
+                else:
+                    measurement = "Angle"
+                report.store_result("Angles", name, measurement, angle_deg, "degrees")
+
+        # 5. Projection Network (n-pt* and projections, MAW/MNW)
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+            name = node.GetName()
+            if name.startswith("n-pt") or " lat" in name or " ant" in name or " vert" in name or name in ["MAW", "MNW"]:
+                length = get_line_length(node)
+                if length is not None:
+                    report.store_result("Projection Network", name, "Length", length, "mm")
+
+        # 6. Basic Errors (error_*)
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+            name = node.GetName()
+            if name.startswith("error_"):
+                length = get_line_length(node)
+                if length is not None:
+                    report.store_result("Basic Errors", name, "Error Distance", length, "mm")
+
+        # 7. Advanced Errors (adv_error_* and Shortest_MNW-MAW)
+        for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
+            name = node.GetName()
+            if name.startswith("adv_error_") or name == "Shortest_MNW-MAW":
+                length = get_line_length(node)
+                if length is not None:
+                    report.store_result("Advanced Errors", name, "Distance", length, "mm")
+
+        report.append_text("\n--- Report repopulated from existing scene ---")
 
 # =============================================================================
 # ENTRY POINT
@@ -2224,5 +2903,4 @@ rynnGui.show()
 print(f"\n✅ Rynn Method GUI loaded successfully!")
 print(f"✅ Current run number: {rynnGui.logic.run_number}")
 print(f"✅ Ready to go!")
-
 ```
