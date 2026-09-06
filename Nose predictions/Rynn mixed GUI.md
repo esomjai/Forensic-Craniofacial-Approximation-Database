@@ -1254,7 +1254,7 @@ class Step4_PronasaleAnterior(StepWidget):
         table_html = """<table border="1" cellspacing="0" cellpadding="3" width="100%">
             <tr><th>Literature</th><th>Ancestry</th><th>Sex</th><th>Equation</th></tr>
             <tr><td>Rynn 2010</td><td>ANY</td><td>All</td><td>0.83 * Y - 3.5</td></tr>
-            <tr><td>Sarilita 2018</td><td>Indonesian</td><td>Male</td><td>0.57 * Y + 2.33</td></tr>
+            <tr><td>Sarilita 2018</td><td>Indonesian</td><td>ANY</td><td>0.57 * Y + 2.33</td></tr>
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Female</td><td>0.681 * Y + 2.711</td></tr>
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Male</td><td>0.776 * Y - 0.481</td></tr>
             </table><br><b>Y</b> = Y-axis length"""
@@ -1505,7 +1505,7 @@ class Step5_PronasaleVertical(StepWidget):
         table_html = """<table border="1" cellspacing="0" cellpadding="3" width="100%">
             <tr><th>Literature</th><th>Ancestry</th><th>Sex</th><th>Equation</th></tr>
             <tr><td>Rynn 2010</td><td>ANY</td><td>All</td><td>0.9 * X - 2</td></tr>
-            <tr><td>Sarilita 2018</td><td>Indonesian</td><td>Male</td><td>0.88 * X + 0.68</td></tr>
+            <tr><td>Sarilita 2018</td><td>Indonesian</td><td>All</td><td>0.88 * X + 0.68</td></tr>
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Female</td><td>0.779 * X + 5.501</td></tr>
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Male</td><td>0.954 * X - 3.53</td></tr>
             </table><br><b>X</b> = X-axis length"""
@@ -1592,7 +1592,7 @@ class Step6_PFH(StepWidget):
         table_html = """<table border="1" cellspacing="0" cellpadding="3" width="100%">
             <tr><th>Literature</th><th>Ancestry</th><th>Sex</th><th>Equation</th></tr>
             <tr><td>Rynn 2010</td><td>ANY</td><td>All</td><td>0.93 * Y - 6</td></tr>
-            <tr><td>Sarilita 2018</td><td>Indonesian</td><td>Male</td><td>0.58 * Y + 4.55</td></tr>
+            <tr><td>Sarilita 2018</td><td>Indonesian</td><td>All</td><td>0.58 * Y + 4.55</td></tr>
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Female</td><td>1.161 + 0.775 * Y</td></tr>
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Male</td><td>0.518 + 0.777 * Y</td></tr>
             </table><br><b>Y</b> = Y-axis length"""
@@ -1756,6 +1756,7 @@ class Step8_Nasion(StepWidget):
             <tr><td>Rynn 2010</td><td>European American</td><td>ANY</td><td>0.74*Z+3.5</td></tr>
             <tr><td>Sarilita 2018</td><td>Indonesian</td><td>Female</td><td>0.71*Z+6.624</td></tr>
             <tr><td>Sarilita 2018</td><td>Indonesian</td><td>Male</td><td>0.807*Z+0.764</td></tr>
+            <tr><td>Bulut 2019</td><td>Turkish</td><td>Female</td><td>0.71*Z+6.624</td></tr>
             <tr><td>Bulut 2019</td><td>Turkish</td><td>Male</td><td>0.66*X+7.77</td></tr>
             </table><br><b>X</b> = X-axis, <b>Z</b> = Z-axis"""
 
