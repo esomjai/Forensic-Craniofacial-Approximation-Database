@@ -89,6 +89,28 @@ class ReportWindow(qt.QWidget):
             return int(match.group(1))
         return None
 
+    def _generate_report_text_excluding(self, exclude_categories=None):
+        """
+        Generate the report as TSV but skip certain categories.
+        exclude_categories: list of category names to exclude (e.g., ["Basic Errors"])
+        """
+        if exclude_categories is None:
+            exclude_categories = []
+        if not self.results:
+            return "--- Calculation Report ---\nNo results available."
+
+        lines = ["Category\tID\tMeasurement\tValue\tUnit"]
+        for category, items in self.results.items():
+            if category in exclude_categories:
+                continue
+            for item in items:
+                if isinstance(item['value'], (float, np.floating)):
+                    value_str = f"{item['value']:.2f}"
+                else:
+                    value_str = str(item['value'])
+                lines.append(f"{category}\t{item['id']}\t{item['measurement']}\t{value_str}\t{item['unit']}")
+        return "\n".join(lines)
+
     def _generate_full_report_text(self):
         """Generate the complete report as a TSV string (header + all rows)."""
         if not self.results:
@@ -2122,7 +2144,7 @@ class Step9_Analysis(StepWidget):
         return "\n".join(lines) if found else ""
 
     def onCopyAll(self):
-        report_text = self.data["report_window"]._generate_full_report_text()
+        report_text = self.data["report_window"]._generate_report_text_excluding(["Basic Errors", "Advanced Errors"])
         if not report_text or report_text.startswith("--- Calculation Report ---\nNo results"):
             report_text = "# No calculation results available."
 
