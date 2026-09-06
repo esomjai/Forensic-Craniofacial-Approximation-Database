@@ -268,6 +268,7 @@ class RynnMethodLogic:
             "pred Rynn EA NL": "0.74*Z+3.5",
             "pred Sarilita F NL": "0.71*Z+6.624",
             "pred Sarilita M NL": "0.807*Z+0.764",
+            "pred Bulut F NL": "0.71*Z+6.624",
             "pred Bulut M NL": "0.66*X+7.77",
         }
 
@@ -763,6 +764,7 @@ class RynnMethodLogic:
             "pred Rynn EA NL": (0.74, z_len, 3.5, "0.74*Z+3.5"),
             "pred Sarilita F NL": (0.71, z_len, 6.624, "0.71*Z+6.624"),
             "pred Sarilita M NL": (0.807, z_len, 0.764, "0.807*Z+0.764"),
+            "pred Bulut F NL": (0.71, z_len, 6.624, "0.71*Z+6.624"),
             "pred Bulut M NL": (0.66, x_len, 7.77, "0.66*X+7.77")
         }
 
@@ -1440,7 +1442,7 @@ class Step4_PronasaleAnterior(StepWidget):
                 ["pred Rynn EA M NH", "pred Rynn EA F NH", "pred Sarilita M NH",
                  "pred Sarilita F NH", "pred Bulut F NH", "pred Bulut M NH"], mode)
             nl_equations = self.logic.filter_equations_by_mode(
-                ["pred Rynn EA NL", "pred Sarilita F NL", "pred Sarilita M NL", "pred Bulut M NL"], mode)
+                ["pred Rynn EA NL", "pred Sarilita F NL", "pred Sarilita M NL", "pred Bulut F NL", "pred Bulut M NL"], mode)
             if not nh_equations or not nl_equations:
                 raise ValueError("No NH or NL equations for mode.")
             nh_eq = nh_equations[0]
@@ -1748,7 +1750,7 @@ class Step8_Nasion(StepWidget):
         self.nh_equations = ["pred Rynn EA M NH", "pred Rynn EA F NH", "pred Sarilita M NH", "pred Sarilita F NH", "pred Bulut F NH", "pred Bulut M NH"]
         self.nh_eq_buttons = self._add_buttons_to_group(nh_eq_layout, self.nh_equations)
 
-        self.nl_equations = ["pred Rynn EA NL", "pred Sarilita F NL", "pred Sarilita M NL", "pred Bulut M NL"]
+        self.nl_equations = ["pred Rynn EA NL", "pred Sarilita F NL", "pred Sarilita M NL","pred Bulut F NL", "pred Bulut M NL"]
         self.nl_eq_buttons = self._add_buttons_to_group(nl_eq_layout, self.nl_equations)
 
         self.calculateButton = qt.QPushButton("Draw Circles and Predict Nasion")
@@ -2982,6 +2984,7 @@ rynnGui.show()
 print(f"\n✅ Rynn Method GUI loaded successfully!")
 print(f"✅ Current run number: {rynnGui.logic.run_number}")
 print(f"✅ Ready to go!")
+
 
 
 ```
