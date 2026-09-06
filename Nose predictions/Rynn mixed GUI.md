@@ -2465,7 +2465,7 @@ class Step9_Analysis(StepWidget):
                     std_id_short = self.logic.generate_standard_id("Projection Network", "Shortest_MNW-MAW", "Distance", dist, "mm")
                     self.data['report_window'].store_result("Projection Network", "Shortest_MNW-MAW", "Distance", dist, "mm", std_id=std_id_short)
                 
-            # ---- Additional hard tissue measurements (stored under Projection Network) ----
+            # ---- Additional hard tissue measurements (Projection Network) ----
             hard_map = {}
             for i in range(hard_node.GetNumberOfControlPoints()):
                 label = hard_node.GetNthControlPointLabel(i)
@@ -2481,21 +2481,27 @@ class Step9_Analysis(StepWidget):
 
             if lcil_pos is not None and mcil_pos is not None:
                 left_incisor_width = np.linalg.norm(lcil_pos - mcil_pos)
+                # Create line in 3D
+                self.logic.create_line("Left_Incisor_Width", lcil_pos, mcil_pos, color=(0.8, 0.2, 0.8), use_run_number=False)
                 std_id = self.logic.generate_standard_id("Projection Network", "Left_Incisor_Width", "Distance", left_incisor_width, "mm")
                 self.data['report_window'].store_result("Projection Network", "Left_Incisor_Width", "Distance", left_incisor_width, "mm", std_id=std_id)
 
             if lcir_pos is not None and mcir_pos is not None:
                 right_incisor_width = np.linalg.norm(lcir_pos - mcir_pos)
+                self.logic.create_line("Right_Incisor_Width", lcir_pos, mcir_pos, color=(0.8, 0.2, 0.8), use_run_number=False)
                 std_id = self.logic.generate_standard_id("Projection Network", "Right_Incisor_Width", "Distance", right_incisor_width, "mm")
                 self.data['report_window'].store_result("Projection Network", "Right_Incisor_Width", "Distance", right_incisor_width, "mm", std_id=std_id)
 
             if icl_pos is not None and icr_pos is not None:
                 intercanine_width = np.linalg.norm(icl_pos - icr_pos)
+                self.logic.create_line("Intercanine_Width", icl_pos, icr_pos, color=(0.9, 0.5, 0.1), use_run_number=False)
                 std_id = self.logic.generate_standard_id("Projection Network", "Intercanine_Width", "Distance", intercanine_width, "mm")
                 self.data['report_window'].store_result("Projection Network", "Intercanine_Width", "Distance", intercanine_width, "mm", std_id=std_id)
-            self.statusLabel.setText(f"✓ Status: Advanced analysis complete.")
+            self.statusLabel.setText("✓ Status: Advanced analysis complete.")
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
+            import traceback
+            traceback.print_exc()
 
     def onToggleHelpers(self):
         nodes = (slicer.util.getNodesByClass("vtkMRMLMarkupsPlaneNode") +
@@ -2988,7 +2994,7 @@ class RynnMethodSimplifiedGUI(qt.QWidget):
         # 5. Projection Network
         for node in slicer.util.getNodesByClass("vtkMRMLMarkupsLineNode"):
             name = node.GetName()
-            if name.startswith("n-pt") or " lat" in name or " ant" in name or " vert" in name or name in ["MAW", "MNW"]:
+            if name.startswith("n-pt") or " lat" in name or " ant" in name or " vert" in name or name in ["MAW", "MNW", "Left_Incisor_Width", "Right_Incisor_Width", "Intercanine_Width"]:
                 length = get_line_length(node)
                 if length is not None:
                     std_id = self.logic.generate_standard_id("Projection Network", name, "Length", length, "mm")
@@ -3036,6 +3042,7 @@ rynnGui.show()
 print(f"\n✅ Rynn Method GUI loaded successfully!")
 print(f"✅ Current run number: {rynnGui.logic.run_number}")
 print(f"✅ Ready to go!")
+
 
 
 ```
