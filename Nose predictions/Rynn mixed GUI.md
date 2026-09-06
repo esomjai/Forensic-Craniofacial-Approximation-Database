@@ -2453,17 +2453,46 @@ class Step9_Analysis(StepWidget):
 
             mnw, maw = slicer.util.getNode("MNW"), slicer.util.getNode("MAW")
             if mnw and maw:
-                p0,p1,q0,q1=np.array(mnw.GetNthControlPointPositionWorld(0)),np.array(mnw.GetNthControlPointPositionWorld(1)),np.array(maw.GetNthControlPointPositionWorld(0)),np.array(maw.GetNthControlPointPositionWorld(1))
-                u,v,w=p1-p0,q1-q0,p0-q0
-                a,b,c,d,e=np.dot(u,u),np.dot(u,v),np.dot(v,v),np.dot(u,w),np.dot(v,w)
-                den=a*c-b*b
-                sc,tc = ((b*e-c*d)/den,(a*e-b*d)/den) if den!=0 else (0,np.dot(-w,v)/c if c!=0 else 0)
-                pa, pb = p0+sc*u, q0+tc*v
-                dist = np.linalg.norm(pa - pb)
-                self.logic.create_line("Shortest_MNW-MAW",pa,pb,color=(0.13,0.55,0.13), use_run_number=False)
-                std_id_short = self.logic.generate_standard_id("Advanced Errors", "Shortest_MNW-MAW", "Distance", dist, "mm")
-                self.data['report_window'].store_result("Advanced Errors", "Shortest_MNW-MAW", "Distance", dist, "mm", std_id=std_id_short)
+                    p0,p1,q0,q1=np.array(mnw.GetNthControlPointPositionWorld(0)),np.array(mnw.GetNthControlPointPositionWorld(1)),np.array(maw.GetNthControlPointPositionWorld(0)),np.array(maw.GetNthControlPointPositionWorld(1))
+                    u,v,w=p1-p0,q1-q0,p0-q0
+                    a,b,c,d,e=np.dot(u,u),np.dot(u,v),np.dot(v,v),np.dot(u,w),np.dot(v,w)
+                    den=a*c-b*b
+                    sc,tc = ((b*e-c*d)/den,(a*e-b*d)/den) if den!=0 else (0,np.dot(-w,v)/c if c!=0 else 0)
+                    pa, pb = p0+sc*u, q0+tc*v
+                    dist = np.linalg.norm(pa - pb)
+                    self.logic.create_line("Shortest_MNW-MAW",pa,pb,color=(0.13,0.55,0.13), use_run_number=False)
+                    # Store under Projection Network, NOT Advanced Errors
+                    std_id_short = self.logic.generate_standard_id("Projection Network", "Shortest_MNW-MAW", "Distance", dist, "mm")
+                    self.data['report_window'].store_result("Projection Network", "Shortest_MNW-MAW", "Distance", dist, "mm", std_id=std_id_short)
+                
+            # ---- Additional hard tissue measurements (stored under Projection Network) ----
+            hard_map = {}
+            for i in range(hard_node.GetNumberOfControlPoints()):
+                label = hard_node.GetNthControlPointLabel(i)
+                pos = np.array(hard_node.GetNthControlPointPositionWorld(i))
+                hard_map[label] = pos
 
+            lcil_pos = hard_map.get("LCIL")
+            mcil_pos = hard_map.get("MCIL")
+            lcir_pos = hard_map.get("LCIR")
+            mcir_pos = hard_map.get("MCIR")
+            icl_pos = hard_map.get("ICL")
+            icr_pos = hard_map.get("ICR")
+
+            if lcil_pos is not None and mcil_pos is not None:
+                left_incisor_width = np.linalg.norm(lcil_pos - mcil_pos)
+                std_id = self.logic.generate_standard_id("Projection Network", "Left_Incisor_Width", "Distance", left_incisor_width, "mm")
+                self.data['report_window'].store_result("Projection Network", "Left_Incisor_Width", "Distance", left_incisor_width, "mm", std_id=std_id)
+
+            if lcir_pos is not None and mcir_pos is not None:
+                right_incisor_width = np.linalg.norm(lcir_pos - mcir_pos)
+                std_id = self.logic.generate_standard_id("Projection Network", "Right_Incisor_Width", "Distance", right_incisor_width, "mm")
+                self.data['report_window'].store_result("Projection Network", "Right_Incisor_Width", "Distance", right_incisor_width, "mm", std_id=std_id)
+
+            if icl_pos is not None and icr_pos is not None:
+                intercanine_width = np.linalg.norm(icl_pos - icr_pos)
+                std_id = self.logic.generate_standard_id("Projection Network", "Intercanine_Width", "Distance", intercanine_width, "mm")
+                self.data['report_window'].store_result("Projection Network", "Intercanine_Width", "Distance", intercanine_width, "mm", std_id=std_id)
             self.statusLabel.setText(f"✓ Status: Advanced analysis complete.")
         except Exception as e:
             self.statusLabel.setText(f"Status: Error! {e}")
@@ -3007,7 +3036,6 @@ rynnGui.show()
 print(f"\n✅ Rynn Method GUI loaded successfully!")
 print(f"✅ Current run number: {rynnGui.logic.run_number}")
 print(f"✅ Ready to go!")
-
 
 
 ```
