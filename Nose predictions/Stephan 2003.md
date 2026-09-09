@@ -63,8 +63,8 @@ The guide contains the following steps:
 | 4                | 5                | rhinion      | rhinion         | Most rostral (end) point on the internasal suture                                                                              | Rynn et al. 2010[^7] |
 | 5                | 6                | acanthion    | acanthion       | Most anterior tip of the anterior nasal spine                                                                                 | Rynn et al. 2010[^7] |
 | 6                | 7                | point A      | point A         | Point of most flexion on maxilla in profile/The deepest point seen in the profile view below the anterior nasal spine          | George 1987[^6]      |
-| 7                | 8                | LL           | left lowest     | The left lowest point on the aperture border in profile view                                                                  | Somjai           |
-| 8                | 9                | RL           | right lowest    | The right lowest point on the aperture border in profile view                                                                 | Somjai           |
+| 7                | 8                | LL           | left lowest     | The left lowest point on the aperture border in profile view                                                                  | Rynn et al. 2010[^7]          |
+| 8                | 9                | RL           | right lowest    | The right lowest point on the aperture border in profile view                                                                 | Rynn et al. 2010[^7]          |
 
 Download the landmarks (file)[lmrks_Stephan. mrk. json](https://github.com/user-attachments/files/22662064/lmrks_Stephan.mrk.json)
 
