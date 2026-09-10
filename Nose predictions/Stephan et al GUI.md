@@ -1,27 +1,4 @@
 ```python
-# =============================================================================
-#
-#  Stephan Method GUI - Final, Feature-Complete Version
-#
-#  Hello esomjai! This is the final version of your script, with all the
-#  new features and UI improvements you requested. Congratulations!
-#
-#  Changes in this version:
-#  - Step 3: The framework table now includes the description for the
-#    "nasal aperture base" line.
-#  - Step 4: A new table has been added to explain measurements A-E.
-#  - Step 5: The prediction formulas are now displayed in the GUI.
-#  - Step 6: This step is now fully functional! It creates an error line,
-#    displays coordinates and error distance in tables, and includes
-#    "Copy to Clipboard" buttons for easy data export.
-#
-#  Instructions:
-#  1. Open the Python Console in 3D Slicer.
-#  2. Copy and paste this entire script.
-#  3. Press Enter. Your custom GUI window will appear!
-#
-# =============================================================================
-
 import os
 import vtk
 import numpy as np
@@ -73,15 +50,32 @@ class StephanMethodGUI(qt.QWidget):
 
     def createStep1_Setup(self):
         widget = qt.QWidget(); layout = qt.QVBoxLayout(widget); layout.setSpacing(15)
-        title = qt.QLabel("Step 1: Load Hard Tissue Landmarks"); title.setStyleSheet("font-weight: bold; font-size: 16px;")
-        desc = qt.QLabel("Begin by loading the required hard tissue landmarks. This file contains all the necessary points for the workflow.")
+        title = qt.QLabel("Step 1: Load Hard Tissue Landmarks")
+        title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        desc = qt.QLabel("Load the hard tissue landmarks required for the workflow. "
+                         "If a 'lmrks_Stephan' node is already in the scene, you can "
+                         "reuse it directly.")
         desc.setWordWrap(True)
-        self.downloadLandmarksButton = qt.QPushButton("Download and Load Landmarks")
-        self.downloadLandmarksButton.setStyleSheet("background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
+
+        # --- Two distinct actions ---
+        self.useExistingLandmarksButton = qt.QPushButton("Use Landmarks Already in Scene")
+        self.useExistingLandmarksButton.setStyleSheet(
+            "background-color: #6c757d; color: white; font-weight: bold; padding: 8px;")
+        self.useExistingLandmarksButton.clicked.connect(self.onUseExistingLandmarks)
+
+        self.downloadLandmarksButton = qt.QPushButton("Download and Load Fresh Copy")
+        self.downloadLandmarksButton.setStyleSheet(
+            "background-color: #007BFF; color: white; font-weight: bold; padding: 8px;")
         self.downloadLandmarksButton.clicked.connect(self.onDownloadHardTissue)
+
         self.step1StatusLabel = qt.QLabel("Status: Waiting for user.")
-        layout.addWidget(title); layout.addWidget(desc); layout.addWidget(self.downloadLandmarksButton, 0, qt.Qt.AlignHCenter)
-        layout.addWidget(self.step1StatusLabel); layout.addStretch(1)
+
+        layout.addWidget(title)
+        layout.addWidget(desc)
+        layout.addWidget(self.useExistingLandmarksButton, 0, qt.Qt.AlignHCenter)
+        layout.addWidget(self.downloadLandmarksButton, 0, qt.Qt.AlignHCenter)
+        layout.addWidget(self.step1StatusLabel)
+        layout.addStretch(1)
         self.stepStack.addWidget(widget)
 
     def createStep2_PlaneSetup(self):
@@ -185,33 +179,44 @@ class StephanMethodGUI(qt.QWidget):
         self.compareButton = qt.QPushButton("Measure Prediction Error")
         self.compareButton.clicked.connect(self.onCompare)
         
-        # Create widgets for results, initially hidden
-        self.step6ResultsWidget = qt.QWidget(); resultsLayout = qt.QVBoxLayout(self.step6ResultsWidget)
+        # Results panel (hidden until user clicks "Measure Prediction Error")
+        self.step6ResultsWidget = qt.QWidget()
+        resultsLayout = qt.QVBoxLayout(self.step6ResultsWidget)
         self.step6ResultsWidget.setVisible(False)
-        
-        # Table 1: Coordinates
-        self.coordsTable = qt.QTableWidget(2, 4); self.coordsTable.setHorizontalHeaderLabels(["Point", "R (x)", "A (y)", "S (z)"])
-        self.coordsTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
-        self.coordsTable.verticalHeader().setVisible(False)
-        self.copyCoordsButton = qt.QPushButton("Copy Coordinates to Clipboard")
-        self.copyCoordsButton.clicked.connect(self.onCopyCoords)
-        
-        # Table 2: Error
-        self.errorTable = qt.QTableWidget(1, 2); self.errorTable.setHorizontalHeaderLabels(["Item", "Value"])
-        self.errorTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
-        self.errorTable.verticalHeader().setVisible(False)
-        self.copyErrorButton = qt.QPushButton("Copy Error to Clipboard")
-        self.copyErrorButton.clicked.connect(self.onCopyError)
 
-        resultsLayout.addWidget(qt.QLabel("<b>Results:</b>")); resultsLayout.addWidget(self.coordsTable); resultsLayout.addWidget(self.copyCoordsButton)
-        resultsLayout.addSpacing(15); resultsLayout.addWidget(self.errorTable); resultsLayout.addWidget(self.copyErrorButton)
+        # --- Table: Per-landmark predicted vs. true comparison -------------
+        resultsLayout.addWidget(qt.QLabel("<b>Landmark Comparison</b>"))
+        self.landmarkTable = qt.QTableWidget(1, 8)
+        self.landmarkTable.setHorizontalHeaderLabels([
+            "Landmark",
+            "Pred X", "Pred Y", "Pred Z",
+            "True X", "True Y", "True Z",
+            "Error (mm)",
+        ])
+        self.landmarkTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+        self.landmarkTable.verticalHeader().setVisible(False)
+        resultsLayout.addWidget(self.landmarkTable)
+
         
+        # --- Table 3: Measurements A–E ----------------------------------
+        resultsLayout.addWidget(qt.QLabel("<b>Measurements</b>"))
+        self.measurementsTable = qt.QTableWidget(5, 3)
+        self.measurementsTable.setHorizontalHeaderLabels(
+            ["Measurement", "Value", "Unit"])
+        self.measurementsTable.setEditTriggers(qt.QAbstractItemView.NoEditTriggers)
+        self.measurementsTable.verticalHeader().setVisible(False)
+        resultsLayout.addWidget(self.measurementsTable)
+
+        # --- Single copy button -----------------------------------------
+        self.copyAllButton = qt.QPushButton("Copy All Results to Clipboard")
+        self.copyAllButton.clicked.connect(self.onCopyAll)
+        resultsLayout.addWidget(self.copyAllButton)
         self.step6StatusLabel = qt.QLabel("Status: Waiting for user.")
 
         # A finish button to close the GUI
         finishButton = qt.QPushButton("Finish")
         finishButton.setStyleSheet("background-color: #6c757d; color: white; padding: 8px;")
-        finishButton.clicked.connect(self.close) # self.close is a built-in function to close the widget
+        finishButton.clicked.connect(self.onFinishClicked)
 
         layout.addWidget(title); layout.addWidget(desc); layout.addWidget(self.downloadSoftTissueButton)
         layout.addWidget(self.compareButton); layout.addWidget(self.step6ResultsWidget); layout.addWidget(self.step6StatusLabel); layout.addStretch(1)
@@ -228,6 +233,9 @@ class StephanMethodGUI(qt.QWidget):
             if self.currentStep < self.stepStack.count - 1: self.currentStep += 1; self.updateStepUI()
         else: slicer.util.warningDisplay("Please complete the current step before proceeding.")
     
+    def onFinishClicked(self):
+        self.hide()
+
     def updateStepUI(self):
         self.checkSceneAndSetState()
         self.stepStack.setCurrentIndex(self.currentStep)
@@ -241,7 +249,28 @@ class StephanMethodGUI(qt.QWidget):
             isComplete, message = self.logic.isStepComplete(i)
             label.setText(f"Status: {message}" if isComplete else "Status: Waiting for user.")
     
-    def onDownloadHardTissue(self): self.logic.downloadAndLoadHardTissue(); self.updateStepUI()
+    def onUseExistingLandmarks(self):
+        node = self.logic.getNode('lmrks_Stephan', "vtkMRMLMarkupsFiducialNode")
+        if not node:
+            slicer.util.warningDisplay(
+                "No 'lmrks_Stephan' fiducial node was found in the scene.\n"
+                "Use 'Download and Load Fresh Copy' instead.")
+            return
+        self.updateStepUI()
+
+    def onDownloadHardTissue(self):
+        existing = self.logic.getNode('lmrks_Stephan', "vtkMRMLMarkupsFiducialNode")
+        if existing:
+            ok = slicer.util.confirmOkCancelDisplay(
+                f"'{existing.GetName()}' already exists in the scene.\n\n"
+                "Downloading a fresh copy will REPLACE it and discard any\n"
+                "edits you have made to the current landmarks.\n\n"
+                "Continue?")
+            if not ok:
+                return
+        self.logic.downloadAndLoadHardTissue()
+        self.updateStepUI()
+
     def onCreatePlane(self, plane_type): self.logic.createReferencePlane(plane_type); self.updateStepUI()
     def onCreateFramework(self): self.logic.createFramework(); self.updateStepUI()
     def onCreateMeasurements(self): self.logic.createMeasurements(); self.updateStepUI()
@@ -249,37 +278,85 @@ class StephanMethodGUI(qt.QWidget):
     def onDownloadSoftTissue(self): self.logic.downloadAndLoadSoftTissue(); self.updateStepUI()
     
     def onCompare(self):
-        results = self.logic.comparePrediction()
-        if results:
-            true_pos, pred_pos, error_dist = results
-            # Populate coordinates table
-            self.coordsTable.setItem(0, 0, qt.QTableWidgetItem("True Pronasale")); self.coordsTable.setItem(1, 0, qt.QTableWidgetItem("Predicted Pronasale"))
-            for i in range(3):
-                self.coordsTable.setItem(0, i+1, qt.QTableWidgetItem(f"{true_pos[i]:.2f}"))
-                self.coordsTable.setItem(1, i+1, qt.QTableWidgetItem(f"{pred_pos[i]:.2f}"))
-            self.coordsTable.resizeColumnsToContents()
-            
-            # Populate error table
-            self.errorTable.setItem(0, 0, qt.QTableWidgetItem("pronasale error")); self.errorTable.setItem(0, 1, qt.QTableWidgetItem(f"{error_dist:.2f} mm"))
-            self.errorTable.resizeColumnsToContents()
-            
-            self.step6ResultsWidget.setVisible(True)
-            self.updateStepUI()
+        try:
+            rows = self.logic.comparePrediction()
+        except Exception as e:
+            slicer.util.errorDisplay(str(e))
+            return
 
-    def onCopyCoords(self):
-        clipboard = qt.QApplication.clipboard()
-        text = "Point\tR (x)\tA (y)\tS (z)\n"
-        text += f"True Pronasale\t{self.coordsTable.item(0, 1).text()}\t{self.coordsTable.item(0, 2).text()}\t{self.coordsTable.item(0, 3).text()}\n"
-        text += f"Predicted Pronasale\t{self.coordsTable.item(1, 1).text()}\t{self.coordsTable.item(1, 2).text()}\t{self.coordsTable.item(1, 3).text()}"
-        clipboard.setText(text)
-        slicer.util.infoDisplay("Coordinates copied to clipboard.")
+        # --- Per-landmark table ---
+        try:
+            self.landmarkTable.setRowCount(len(rows))
+            for r, row in enumerate(rows):
+                self.landmarkTable.setItem(r, 0, qt.QTableWidgetItem(row["name"]))
+                for c, key in enumerate(("pred", "true")):
+                    pos = row[key]
+                    if pos is None:
+                        for k in range(3):
+                            self.landmarkTable.setItem(
+                                r, 1 + c * 3 + k, qt.QTableWidgetItem("-"))
+                    else:
+                        for k in range(3):
+                            self.landmarkTable.setItem(
+                                r, 1 + c * 3 + k,
+                                qt.QTableWidgetItem(f"{pos[k]:.2f}"))
+                err_txt = "-" if row["error"] is None else f"{row['error']:.2f}"
+                self.landmarkTable.setItem(r, 7, qt.QTableWidgetItem(err_txt))
+            self.landmarkTable.resizeColumnsToContents()
+        except Exception as e:
+            print(f"Landmark table failed: {e}")
 
-    def onCopyError(self):
-        clipboard = qt.QApplication.clipboard()
-        text = "Item\tValue\n"
-        text += f"pronasale error\t{self.errorTable.item(0, 1).text()}"
-        clipboard.setText(text)
-        slicer.util.infoDisplay("Error measurement copied to clipboard.")
+        
+        # --- Measurements table ---
+        try:
+            specs = [
+                ("A) nasal bone angle",  "GetAngleDegrees", "deg"),
+                ("B) line",              "length",          "mm"),
+                ("C) line",              "length",          "mm"),
+                ("D) nasal spine angle", "GetAngleDegrees", "deg"),
+                ("E) line",              "length",          "mm"),
+            ]
+            for r, (node_name, kind, unit) in enumerate(specs):
+                value = self.logic.getMeasurementValue(node_name, kind)
+                self.measurementsTable.setItem(r, 0, qt.QTableWidgetItem(node_name))
+                self.measurementsTable.setItem(
+                    r, 1, qt.QTableWidgetItem("-" if value is None else f"{value:.2f}"))
+                self.measurementsTable.setItem(r, 2, qt.QTableWidgetItem(unit))
+            self.measurementsTable.resizeColumnsToContents()
+        except Exception as e:
+            print(f"Measurements table failed: {e}")
+
+        # Always reveal the panel — even a partially-filled one is useful
+        self.step6ResultsWidget.setVisible(True)
+        self.updateStepUI()
+    def onCopyAll(self):
+        if not self.step6ResultsWidget.isVisible():
+            slicer.util.warningDisplay("Run 'Measure Prediction Error' first.")
+            return
+
+        def dump_table(table):
+            rows = []
+            headers = [table.horizontalHeaderItem(c).text()
+                       for c in range(table.columnCount)]
+            rows.append("\t".join(headers))
+            for r in range(table.rowCount):
+                cells = []
+                for c in range(table.columnCount):
+                    item = table.item(r, c)
+                    cells.append(item.text() if item else "")
+                rows.append("\t".join(cells))
+            return rows
+
+        lines = []
+        lines.append("=== Landmark Comparison ===")
+        lines.extend(dump_table(self.landmarkTable))
+        lines.append("")     
+        
+        lines.append("=== Measurements ===")
+        lines.extend(dump_table(self.measurementsTable))
+
+        qt.QApplication.clipboard().setText("\n".join(lines))
+        slicer.util.infoDisplay("All results copied to clipboard.")
 
 #
 # LOGIC CLASS - THE "ENGINE"
@@ -300,8 +377,8 @@ class StephanMethodLogic:
         elif step_index == 5:
             if self.getNode('pronasale error', 'vtkMRMLMarkupsLineNode'):
                 return True, "Comparison complete."
-            elif self.getNode('soft_tissue_Stephan', "vtkMRMLMarkupsFiducialNode"):
-                return True, "True landmarks loaded. Ready to measure error."
+            if self.findPronasaleInAllLandmarks():
+                return True, "True pronasale found. Ready to measure error."
             return False, ""
         return False, ""
 
@@ -332,11 +409,80 @@ class StephanMethodLogic:
             if name_lower in node.GetName().lower(): return node
         return None
 
+    def buildLandmarkComparison(self, pred_node_name="pronasale pred"):
+        pred_node = self.getNode(pred_node_name, "vtkMRMLMarkupsFiducialNode")
+        if not pred_node:
+            return []
+
+        # Harvest every (label → position) from every non-prediction fiducial node
+        true_index = {}   # key: normalised label -> (pos, node_name, original_label)
+        nodes = slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
+        for i in range(nodes.GetNumberOfItems()):
+            node = nodes.GetItemAsObject(i)
+            if node is pred_node or node.GetName() == pred_node_name:
+                continue
+            for j in range(node.GetNumberOfControlPoints()):
+                label = node.GetNthControlPointLabel(j)
+                key = label.lower().replace(" ", "").replace("(", "").replace(")", "")
+                pos = self.getNthPointPos(node, j)
+                # Prefer nodes whose name suggests "true" / "soft" tissue
+                pref = 0 if "soft" in node.GetName().lower() else 1
+                prev = true_index.get(key)
+                if prev is None or pref < prev[3]:
+                    true_index[key] = (pos, node.GetName(), label, pref)
+
+        results = []
+        for i in range(pred_node.GetNumberOfControlPoints()):
+            pred_label = pred_node.GetNthControlPointLabel(i)
+            pred_pos = self.getNthPointPos(pred_node, i)
+
+            # Strip the "(Predicted)" suffix, then normalise
+            key = pred_label.lower()
+            for suffix in ("(predicted)", "pred", "predicted"):
+                key = key.replace(suffix, "")
+            key = key.replace(" ", "").replace("(", "").replace(")", "")
+
+            match = true_index.get(key)
+            if match is None:
+                # Loose fallback: substring match either way
+                for k, v in true_index.items():
+                    if key and (key in k or k in key):
+                        match = v
+                        break
+
+            if match is not None:
+                true_pos, src_node, src_label, _ = match
+                err = float(np.linalg.norm(np.asarray(pred_pos) - np.asarray(true_pos)))
+                results.append({
+                    "name": pred_label,
+                    "pred": np.asarray(pred_pos, dtype=float),
+                    "true": np.asarray(true_pos, dtype=float),
+                    "error": err,
+                    "true_source": (src_node, src_label),
+                })
+            else:
+                results.append({
+                    "name": pred_label,
+                    "pred": np.asarray(pred_pos, dtype=float),
+                    "true": None,
+                    "error": None,
+                    "true_source": None,
+                })
+        return results
+
     def lineIntersection(self, p1, v1, p2, v2):
         A = np.array([v1, -v2]).T; b = p2 - p1
         try:
             ts = np.linalg.lstsq(A, b, rcond=None)[0]; return p1 + ts[0] * v1
         except np.linalg.LinAlgError: return None
+
+    def _safe_normalize(self, v, fallback=None):
+        v = np.asarray(v, dtype=float)
+        n = np.linalg.norm(v)
+        if not np.isfinite(n) or n < 1e-8:
+            return np.asarray(fallback, dtype=float) if fallback is not None else None
+        return v / n
+
 
     def getPointPosByName(self, nodeName, pointNames):
         node = self.getNode(nodeName, className="vtkMRMLMarkupsFiducialNode")
@@ -365,7 +511,7 @@ class StephanMethodLogic:
         return local_path
 
     def downloadAndLoadHardTissue(self):
-        path = self.downloadFile("https://github.com/esomjai/Forensic-Craniofacial-Approximation-Database/raw/main/Nose%20predictions/Stephan%20(2003)/lmrks_Stephan.mrk.json", "lmrks_Stephan.mrk.json")
+        path = self.downloadFile("https://github.com/user-attachments/files/22662064/lmrks_Stephan.mrk.json", "lmrks_Stephan.mrk.json")
         if path:
             self.getNode("lmrks_Stephan", exact=True) and slicer.mrmlScene.RemoveNode(self.getNode("lmrks_Stephan", exact=True))
             node = slicer.util.loadMarkups(path); node.SetName("lmrks_Stephan")
@@ -374,16 +520,40 @@ class StephanMethodLogic:
 
     def createReferencePlane(self, plane_type):
         self.cleanup()
-        points = self.getPointPosByName('lmrks_Stephan', ["Inion", "Nasion", "Bregma"] if plane_type == 'INB' else ["Nasion", "Rhinion", "Acanthion", "Point A", "Prosthion"])
-        if not points: return False
+        points = self.getPointPosByName('lmrks_Stephan',
+            ["Inion", "Nasion", "Bregma"] if plane_type == 'INB'
+            else ["Nasion", "Rhinion", "Acanthion", "Point A", "Prosthion"])
+        if not points:
+            slicer.util.errorDisplay(f"Required landmarks for {plane_type} plane not found.")
+            return False
+
         if plane_type == 'INB':
-            normal = np.cross(points[1] - points[0], points[2] - points[0]); origin = points[0]
+            v1 = np.asarray(points[1]) - np.asarray(points[0])
+            v2 = np.asarray(points[2]) - np.asarray(points[0])
+            normal = np.cross(v1, v2)
+            origin = np.asarray(points[0], dtype=float)
         else:
-            points_array = np.array(points); centroid = np.mean(points_array, axis=0)
-            covariance_matrix = np.cov(points_array - centroid, rowvar=False); eigenvalues, eigenvectors = np.linalg.eigh(covariance_matrix)
-            normal = eigenvectors[:, np.argmin(eigenvalues)]; origin = centroid
-        planeNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsPlaneNode", plane_type)
-        planeNode.SetOrigin(origin); planeNode.SetNormal(normal); planeNode.GetDisplayNode().SetOpacity(0.7)
+            pts = np.asarray(points, dtype=float)
+            centroid = pts.mean(axis=0)
+            # Use SVD — more numerically stable than eigh on covariance
+            U, S, Vt = np.linalg.svd(pts - centroid, full_matrices=False)
+            normal = Vt[-1]              # smallest singular vector = plane normal
+            origin = centroid
+
+        # --- GUARD: reject / repair zero-length normals ---
+        norm = np.linalg.norm(normal)
+        if not np.isfinite(norm) or norm < 1e-8:
+            slicer.util.errorDisplay(
+                f"Cannot compute a valid {plane_type} plane: the selected "
+                f"landmarks are collinear or coincident.")
+            return False
+        normal = normal / norm
+
+        planeNode = slicer.mrmlScene.AddNewNodeByClass(
+            "vtkMRMLMarkupsPlaneNode", plane_type)
+        planeNode.SetOrigin(origin.tolist())
+        planeNode.SetNormal(normal.tolist())
+        planeNode.GetDisplayNode().SetOpacity(0.7)
         return True
 
     def isFrameworkComplete(self):
@@ -397,6 +567,32 @@ class StephanMethodLogic:
                   "D) nasal spine angle": "vtkMRMLMarkupsAngleNode", "E) line": "vtkMRMLMarkupsLineNode" }
         return all(self.getNode(name, className) for name, className in items.items())
 
+    def getMeasurementValue(self, node_name, kind):
+        """Return a scalar value for a measurement node.
+        kind='GetAngleDegrees' → returns angle node's degrees.
+        kind='length'           → returns length of the line node in mm.
+        Returns None if the node is missing or malformed."""
+        if kind == "GetAngleDegrees":
+            node = self.getNode(node_name, "vtkMRMLMarkupsAngleNode")
+            if not node:
+                return None
+            try:
+                return float(node.GetAngleDegrees())
+            except AttributeError:
+                # Fallback for Slicer builds that expose only GetMeasurement
+                try:
+                    return float(node.GetMeasurement('angle'))
+                except Exception:
+                    return None
+        if kind == "length":
+            node = self.getNode(node_name, "vtkMRMLMarkupsLineNode")
+            if not node or node.GetNumberOfControlPoints() < 2:
+                return None
+            p0 = self.getNthPointPos(node, 0)
+            p1 = self.getNthPointPos(node, 1)
+            return float(np.linalg.norm(np.asarray(p0) - np.asarray(p1)))
+        return None
+
     def createFramework(self):
         self.cleanup(partial=True)
         planeNode = self.getNode('INB', "vtkMRMLMarkupsPlaneNode") or self.getNode('MSP', "vtkMRMLMarkupsPlaneNode")
@@ -409,9 +605,31 @@ class StephanMethodLogic:
         if not points: return False
 
         nasion_pos, pointA_pos, pointAA_pos, ll_pos, rl_pos = points
-        planeNormal = np.array(planeNode.GetNormal()); fhpNormal = np.array([0, 0, 1])
-        dirX = np.cross(fhpNormal, planeNormal); dirX /= np.linalg.norm(dirX)
-        dirY = np.cross(dirX, planeNormal); dirY /= np.linalg.norm(dirY)
+        planeNormal = self._safe_normalize(np.array(planeNode.GetNormal()))
+        if planeNormal is None:
+            slicer.util.errorDisplay("Reference plane has a degenerate normal.")
+            return False
+
+        # FHP is assumed to be the axial plane (S-I normal).
+        fhpNormal = np.array([0.0, 0.0, 1.0])
+
+        # dirX = intersection of the reference plane with FHP.
+        dirX = np.cross(fhpNormal, planeNormal)
+        n_dirX = np.linalg.norm(dirX)
+        if n_dirX < 1e-6:
+            # Reference plane is ~parallel to FHP → no unique intersection.
+            # Fall back to a direction defined by real landmarks on the plane.
+            inion_pos = self.getPointPosByName('lmrks_Stephan', ["Inion"])
+            if inion_pos is not None and np.linalg.norm(np.array(inion_pos) - nasion_pos) > 1e-6:
+                dirX = np.array(inion_pos) - nasion_pos   # Nasion→Inion line
+            else:
+                dirX = np.array([0.0, 1.0, 0.0])          # anterior, last resort
+            n_dirX = np.linalg.norm(dirX)
+        dirX = dirX / n_dirX
+
+        # dirY is the plane normal (out of plane).
+        dirY = planeNormal
+        
         def create_line(name, p1, p2, color):
             node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLMarkupsLineNode', name)
             node.AddControlPoint(p1); node.AddControlPoint(p2)
@@ -519,28 +737,67 @@ class StephanMethodLogic:
             return True
         return False
 
-    def comparePrediction(self):
-        self.cleanup(comparison=True)
-        try:
-            pred_node = self.getNode("pronasale pred", "vtkMRMLMarkupsFiducialNode")
-            true_node = self.getNode("soft_tissue_Stephan", "vtkMRMLMarkupsFiducialNode")
-            if not pred_node or not true_node:
-                raise ValueError("Predicted pronasale and/or true soft tissue points not found.")
-            
-            pred_pos = self.getNthPointPos(pred_node, 0)
-            true_pos = self.getNthPointPos(true_node, 0) # Assuming the true pronasale is the first point
-
-            error_line = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsLineNode", "pronasale error")
-            error_line.AddControlPoint(pred_pos)
-            error_line.AddControlPoint(true_pos)
-            error_line.GetDisplayNode().SetSelectedColor(1,1,0) # Yellow
-            
-            error_dist = np.linalg.norm(pred_pos - true_pos)
-            return true_pos, pred_pos, error_dist
-
-        except Exception as e:
-            slicer.util.errorDisplay(f"Failed to measure error. Error: {e}")
+    def findPronasaleInAllLandmarks(self):
+        """
+        Search every vtkMRMLMarkupsFiducialNode in the scene (excluding our own
+        prediction node) for a control point whose label contains 'pronasale'.
+        Returns (position_np_array, node_name, point_label) or None.
+        """
+        nodes = slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
+        matches = []
+        for i in range(nodes.GetNumberOfItems()):
+            node = nodes.GetItemAsObject(i)
+            if node.GetName() == "pronasale pred":
+                continue
+            for j in range(node.GetNumberOfControlPoints()):
+                label = node.GetNthControlPointLabel(j)
+                if "pronasale" in label.lower():
+                    pos = np.zeros(3)
+                    node.GetNthControlPointPositionWorld(j, pos)
+                    matches.append((pos.copy(), node.GetName(), label))
+        if not matches:
             return None
+        # If multiple matches, prefer the one from a node whose name
+        # contains 'soft' (i.e. the true soft-tissue file); else first match.
+        matches.sort(key=lambda m: (("soft" not in m[1].lower()), m[1]))
+        return matches[0]
+
+    def listPronasaleMatches(self):
+        """Return all matches for display/debugging."""
+        nodes = slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode")
+        out = []
+        for i in range(nodes.GetNumberOfItems()):
+            node = nodes.GetItemAsObject(i)
+            if node.GetName() == "pronasale pred":
+                continue
+            for j in range(node.GetNumberOfControlPoints()):
+                label = node.GetNthControlPointLabel(j)
+                if "pronasale" in label.lower():
+                    pos = np.zeros(3); node.GetNthControlPointPositionWorld(j, pos)
+                    out.append((node.GetName(), label, pos.copy()))
+        return out
+    
+    def comparePrediction(self):
+        """Returns (rows, overall_error_mm) where rows is the list produced
+        by buildLandmarkComparison. Also draws one error line per matched
+        landmark."""
+        self.cleanup(comparison=True)
+        rows = self.buildLandmarkComparison()
+        if not rows:
+            raise ValueError("No predicted landmarks found. Run Step 5 first.")
+        matched = [r for r in rows if r["error"] is not None]
+        if not matched:
+            raise ValueError(
+                "No matching true landmarks were found. Load a fiducial list "
+                "that contains a 'pronasale' (or corresponding) control point.")
+
+        for r in matched:
+            line = slicer.mrmlScene.AddNewNodeByClass(
+                "vtkMRMLMarkupsLineNode", f"error_{r['name']}")
+            line.AddControlPoint(r["pred"].tolist())
+            line.AddControlPoint(r["true"].tolist())
+            line.GetDisplayNode().SetSelectedColor(1, 1, 0)
+        return rows
 
 # --- Entry Point to start the GUI ---
 try:
