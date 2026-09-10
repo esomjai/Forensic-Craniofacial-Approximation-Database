@@ -259,7 +259,7 @@ class StephanMethodGUI(qt.QWidget):
         self.updateStepUI()
 
     def onDownloadHardTissue(self):
-        existing = self.logic.getNode('lmrks_Stephan', "vtkMRMLMarkupsFiducialNode")
+        existing = self.logic.getNode('lmrks_Stephan', "vtkMRMLMarkupsFiducialNode", exact=True)
         if existing:
             ok = slicer.util.confirmOkCancelDisplay(
                 f"'{existing.GetName()}' already exists in the scene.\n\n"
@@ -364,7 +364,7 @@ class StephanMethodGUI(qt.QWidget):
 class StephanMethodLogic:
     def isStepComplete(self, step_index):
         if step_index == 0:
-            return self.getNode('lmrks_Stephan', "vtkMRMLMarkupsFiducialNode") is not None, "Landmarks loaded successfully."
+            return self.getNode('lmrks_Stephan', "vtkMRMLMarkupsFiducialNode", exact=True) is not None, "Landmarks loaded successfully."
         elif step_index == 1:
             plane_node = self.getNode('INB', "vtkMRMLMarkupsPlaneNode") or self.getNode('MSP', "vtkMRMLMarkupsPlaneNode")
             return plane_node is not None, f"'{plane_node.GetName()}' plane is active." if plane_node else ""
@@ -503,12 +503,17 @@ class StephanMethodLogic:
     def getNthPointPos(self, node, i):
         pos = np.zeros(3); node.GetNthControlPointPositionWorld(i, pos); return pos
 
-    def downloadFile(self, url, filename):
+    def downloadFile(self, url, filename, force=False):
         local_path = os.path.join(slicer.app.temporaryPath, filename)
-        if not os.path.exists(local_path) or slicer.util.confirmOkCancelDisplay(f"'{filename}' exists. Download a fresh copy?"):
-            try: print(f"Downloading {filename}..."); urllib.request.urlretrieve(url, local_path); return local_path
-            except Exception as e: slicer.util.errorDisplay(f"Download failed: {e}"); return None
-        return local_path
+        if not force and os.path.exists(local_path):
+            return local_path
+        try:
+            print(f"Downloading {filename}...")
+            urllib.request.urlretrieve(url, local_path)
+            return local_path
+        except Exception as e:
+            slicer.util.errorDisplay(f"Download failed: {e}")
+            return None
 
     def downloadAndLoadHardTissue(self):
         path = self.downloadFile("https://github.com/user-attachments/files/22662064/lmrks_Stephan.mrk.json", "lmrks_Stephan.mrk.json")
@@ -800,10 +805,15 @@ class StephanMethodLogic:
         return rows
 
 # --- Entry Point to start the GUI ---
+# Close any previous top-level GUI windows of this type
 try:
-    old_gui = slicer.util.mainWindow().findChild(qt.QWidget, "StephanMethodGUI")
-    if old_gui: old_gui.deleteLater()
-except: pass
+    for w in qt.QApplication.topLevelWidgets():
+        if w.objectName == "StephanMethodGUI":
+            w.close()
+            w.deleteLater()
+except Exception:
+    pass
+
 stephanGui = StephanMethodGUI()
 stephanGui.show()
 
